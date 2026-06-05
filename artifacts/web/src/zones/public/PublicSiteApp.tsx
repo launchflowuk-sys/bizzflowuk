@@ -1191,7 +1191,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* Team CTA */}
       <section className="relative py-20 overflow-hidden">
-        <img src="/amo-team.webp" alt="AMO Rendering team" className="absolute inset-0 w-full h-full object-cover object-top"/>
+        <img src="/amo-team.webp" alt="AMO Rendering team" className="absolute inset-0 w-full h-full object-cover object-center"/>
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(10,22,40,0.88) 0%, rgba(10,22,40,0.60) 60%, transparent 100%)' }}/>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
           <div className="max-w-lg space-y-5">
