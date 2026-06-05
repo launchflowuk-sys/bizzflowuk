@@ -6,7 +6,7 @@ import {
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
-import { maskSecrets } from "../lib/settingsHelpers";
+import { maskSecretsForAuth } from "../lib/settingsHelpers";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -62,10 +62,10 @@ router.get("/settings", requireTenantAccess, async (req, res) => {
     const settings = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid(req))).limit(1);
     if (!settings.length) {
       const newSettings = await db.insert(tenantSettingsTable).values({ tenantId: tid(req) }).returning();
-      res.json(maskSecrets(newSettings[0]));
+      res.json(maskSecretsForAuth(newSettings[0]));
       return;
     }
-    res.json(maskSecrets(settings[0]));
+    res.json(maskSecretsForAuth(settings[0]));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -79,11 +79,11 @@ router.patch("/settings", requireTenantAccess, async (req, res) => {
     const existing = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid(req))).limit(1);
     if (!existing.length) {
       const newSettings = await db.insert(tenantSettingsTable).values({ ...body, tenantId: tid(req) }).returning();
-      res.json(maskSecrets(newSettings[0]));
+      res.json(maskSecretsForAuth(newSettings[0]));
       return;
     }
     const updated = await db.update(tenantSettingsTable).set(body).where(eq(tenantSettingsTable.tenantId, tid(req))).returning();
-    res.json(maskSecrets(updated[0]));
+    res.json(maskSecretsForAuth(updated[0]));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

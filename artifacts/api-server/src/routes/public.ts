@@ -6,7 +6,7 @@ import {
   faqsTable, blogPostsTable, blogCategoriesTable
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
-import { maskSecrets } from "../lib/settingsHelpers";
+import { publicSettingsOnly } from "../lib/settingsHelpers";
 
 const router = Router();
 
@@ -41,7 +41,7 @@ router.get("/public/:tenantSlug/site", async (req, res) => {
     const caseStudies = await db.select().from(caseStudiesTable).where(and(eq(caseStudiesTable.tenantId, tid), sql`${caseStudiesTable.published} = true`)).limit(3);
     const beforeAfter = await db.select().from(beforeAfterTable).where(eq(beforeAfterTable.tenantId, tid)).limit(4);
     const faqs = await db.select().from(faqsTable).where(and(eq(faqsTable.tenantId, tid), sql`${faqsTable.global} = true`)).orderBy(faqsTable.sortOrder).limit(10);
-    res.json({ tenant, settings: maskSecrets(settings) ?? null, featuredServices: services.filter(s => s.featured), featuredReviews: reviews, recentCaseStudies: caseStudies, featuredBeforeAfter: beforeAfter, globalFaqs: faqs });
+    res.json({ tenant, settings: publicSettingsOnly(settings) ?? null, featuredServices: services.filter(s => s.featured), featuredReviews: reviews, recentCaseStudies: caseStudies, featuredBeforeAfter: beforeAfter, globalFaqs: faqs });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

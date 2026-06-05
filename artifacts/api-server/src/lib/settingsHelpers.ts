@@ -2,13 +2,45 @@ import type { SmtpConfig } from "./email";
 import type { SmsCreds } from "./sms";
 
 /**
- * Strip credentials that must never leave the server.
- * Applied to ALL settings-returning API responses, including public ones.
+ * Fields from tenantSettings that are safe to expose on the unauthenticated public site
+ * endpoint. This is an ALLOWLIST — any new column added to the table will be hidden from
+ * the public by default unless it is explicitly listed here.
  */
-export function maskSecrets(row: Record<string, unknown> | null | undefined) {
+const PUBLIC_SETTINGS_ALLOWLIST = new Set([
+  "id", "tenantId",
+  "logoUrl", "faviconUrl",
+  "primaryColor", "secondaryColor", "accentColor",
+  "heroHeadline", "heroSubheadline", "ctaText", "ctaUrl",
+  "aboutText", "serviceAreaText", "footerText",
+  "email", "phone", "address",
+  "socialFacebook", "socialInstagram", "socialTwitter", "socialLinkedin",
+  "googleAnalyticsId",
+  "createdAt", "updatedAt",
+]);
+
+/**
+ * Return only presentation-safe fields for unauthenticated public responses.
+ * Any sensitive, operational, or credential field is excluded by default.
+ */
+export function publicSettingsOnly(row: Record<string, unknown> | null | undefined) {
   if (!row) return row;
-  const { smtpPass: _sp, twilioAuthToken: _tat, ...safe } = row;
-  return safe;
+  return Object.fromEntries(
+    Object.entries(row).filter(([k]) => PUBLIC_SETTINGS_ALLOWLIST.has(k))
+  );
+}
+
+/**
+ * For authenticated settings responses: mask secrets as empty strings so the client
+ * knows the field exists (and can leave it blank to preserve the stored value)
+ * without ever receiving the actual credential.
+ */
+export function maskSecretsForAuth(row: Record<string, unknown> | null | undefined) {
+  if (!row) return row;
+  return {
+    ...row,
+    smtpPass: row.smtpPass ? "" : null,
+    twilioAuthToken: row.twilioAuthToken ? "" : null,
+  };
 }
 
 export function buildSmtpConfig(settings: Record<string, unknown> | null | undefined): SmtpConfig | null {
