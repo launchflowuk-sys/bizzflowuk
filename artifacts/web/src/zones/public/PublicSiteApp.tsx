@@ -379,16 +379,61 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       <TrustBar/>
 
-      {/* Before & After */}
-      {featuredBeforeAfter?.length > 0 && (
-        <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12">
-              <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Transformations</p>
-              <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>See What Professional Rendering Can Do</h2>
-              <p className="mt-4 max-w-2xl mx-auto" style={{ color: MUTED }}>From cracked render and tired pebbledash to clean modern exterior finishes.</p>
+      {/* Transformations */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+
+          {/* Header */}
+          <div className="text-center mb-12">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Real Results</p>
+            <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>See What Professional Rendering Can Do</h2>
+            <p className="mt-4 max-w-2xl mx-auto" style={{ color: MUTED }}>From cracked render and tired pebbledash to clean, modern exterior finishes that last decades.</p>
+          </div>
+
+          {/* Featured showcase */}
+          <div className="rounded-3xl overflow-hidden shadow-xl border border-slate-200 bg-white">
+            <img
+              src="/ba-silicone.webp"
+              alt="Silicone render before and after — Essex property transformation by AMO Rendering"
+              className="w-full object-cover"
+            />
+            {/* Trust strip below the image */}
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100">
+              {[
+                { icon: "🛡️", label: "Up to 15-Year Guarantee", sub: "Written & backed by AMO" },
+                { icon: "🌧️", label: "Weather-Resistant Finish", sub: "Silicone repels rain & damp" },
+                { icon: "📍", label: "Essex & London", sub: "Local specialists, fast quotes" },
+                { icon: "📸", label: "Free Photo Quote", sub: "Upload photos, get a price" },
+              ].map(({ icon, label, sub }) => (
+                <div key={label} className="px-6 py-5 flex items-start gap-3">
+                  <span className="text-2xl">{icon}</span>
+                  <div>
+                    <p className="text-sm font-bold" style={{ color: TEXT }}>{label}</p>
+                    <p className="text-xs mt-0.5" style={{ color: MUTED }}>{sub}</p>
+                  </div>
+                </div>
+              ))}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          </div>
+
+          {/* Stats row */}
+          <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              { num: "100+", label: "Projects Completed" },
+              { num: "15yr", label: "Guarantee Available" },
+              { num: "Essex", label: "& London Coverage" },
+              { num: "5★", label: "Average Customer Rating" },
+            ].map(({ num, label }) => (
+              <div key={label} className="rounded-2xl bg-white border border-slate-200 py-6 text-center shadow-sm">
+                <div className="text-3xl font-bold" style={{ color: BLUE }}>{num}</div>
+                <div className="text-xs font-medium mt-1" style={{ color: MUTED }}>{label}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* DB-driven cards (shown when real project photos are available) */}
+          {featuredBeforeAfter?.length > 0 && (
+            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
               {featuredBeforeAfter.slice(0, 4).map((ba: any) => (
                 <div key={ba.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
                   <div className="grid grid-cols-2">
@@ -405,12 +450,13 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </div>
               ))}
             </div>
-            <div className="mt-10 text-center">
-              <BlueBtn href={`${siteBase}/gallery`}>View All Transformations</BlueBtn>
-            </div>
+          )}
+
+          <div className="mt-10 text-center">
+            <BlueBtn href={`${siteBase}/gallery`}>View All Transformations</BlueBtn>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
 
       {/* Services */}
       <section className="py-20 bg-white">
