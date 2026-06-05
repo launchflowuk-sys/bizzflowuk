@@ -15,38 +15,30 @@ const ALL_AREAS = [
 ];
 
 const STATIC_SERVICES = [
-  { slug: "silicone-render", name: "Silicone Rendering", desc: "Flexible, breathable and weather-resistant render finish ideal for long-lasting protection and a clean modern exterior.", icon: "🏠" },
-  { slug: "monocouche-render", name: "Monocouche Rendering", desc: "A coloured-through render system designed to create a durable, low-maintenance finish with a sharp modern look.", icon: "🎨" },
-  { slug: "k-rend", name: "K Rend", desc: "A popular render system for UK homes, offering textured finishes, strong weather protection and a clean external appearance.", icon: "🧱" },
-  { slug: "ewi-systems", name: "External Wall Insulation", desc: "Improve the appearance and thermal performance of your property with an insulated render system.", icon: "🌡️" },
-  { slug: "pebble-dash-removal", name: "Pebbledash Removal", desc: "Remove dated pebbledash and replace it with a smooth, modern rendered finish.", icon: "⛏️" },
-  { slug: "render-repairs", name: "Render Repairs", desc: "Repair cracked, damaged or failing render before it becomes a bigger issue.", icon: "🔧" },
+  { slug: "silicone-render", name: "Silicone Rendering", tagline: "THE UK'S MOST POPULAR MODERN RENDER", desc: "Flexible, breathable and weather-resistant render finish ideal for long-lasting protection and a clean modern exterior.", benefits: ["Fully weatherproof","Self-cleaning surface","15-year guarantee"] },
+  { slug: "monocouche-render", name: "Monocouche Rendering", tagline: "THROUGH-COLOURED RENDER FOR LASTING BEAUTY", desc: "A coloured-through render system designed to create a durable, low-maintenance finish with a sharp modern look.", benefits: ["Through-coloured","Single coat application","Highly durable"] },
+  { slug: "k-rend", name: "K Rend", tagline: "SPECIALIST K-REND APPROVED APPLICATORS", desc: "A popular render system for UK homes, offering textured finishes, strong weather protection and a clean external appearance.", benefits: ["K-Rend approved applicators","Superior colour retention","High durability"] },
+  { slug: "ewi-systems", name: "External Wall Insulation", tagline: "IMPROVE THERMAL PERFORMANCE AND APPEARANCE", desc: "Improve the appearance and thermal performance of your property with an insulated render system.", benefits: ["Improves EPC rating","Reduces heating bills","Modern exterior finish"] },
+  { slug: "pebble-dash-removal", name: "Pebbledash Removal", tagline: "REMOVE DATED PEBBLEDASH FOR GOOD", desc: "Remove dated pebbledash and replace it with a smooth, modern rendered finish.", benefits: ["Complete removal","Surface prepared correctly","Modern finish applied"] },
+  { slug: "render-repairs", name: "Render Repairs", tagline: "STOP DAMAGE BEFORE IT SPREADS", desc: "Repair cracked, damaged or failing render before it becomes a bigger issue.", benefits: ["Crack and impact repairs","Colour-matched finish","Prevents water ingress"] },
 ];
 
 const PROCESS_STEPS = [
-  { n: 1, title: "Send Photos or Request a Visit", body: "Upload property photos or send your details for a free quote request." },
-  { n: 2, title: "Get Clear Advice", body: "We assess your walls, existing surface and preferred finish." },
-  { n: 3, title: "Choose Your Render System", body: "Select from silicone render, monocouche, K Rend, EWI or repair options." },
-  { n: 4, title: "Professional Preparation", body: "Surfaces are prepared properly before rendering starts." },
-  { n: 5, title: "Clean Modern Finish", body: "Your property is finished with a sharp, durable exterior render." },
+  { n: 1, title: "Send Photos", body: "Upload photos of your property exterior so we can assess the existing condition." },
+  { n: 2, title: "Discuss Finish", body: "Choose the render system and appearance that suits your property and budget." },
+  { n: 3, title: "Get a Quote", body: "Receive clear next steps and a quote based on the work required." },
+  { n: 4, title: "Professional Preparation", body: "Surfaces are properly prepared before any rendering begins." },
+  { n: 5, title: "Clean Modern Finish", body: "Your property is completed with a sharp, durable exterior render." },
 ];
 
 const WHY_POINTS = [
-  "Rendering specialists, not general builders",
+  "Rendering specialists — not general builders",
   "Based locally in Grays, Thurrock",
   "Serving Essex and London",
   "Clean modern finishes on every project",
   "Photo-based quote requests available",
   "Clear communication from enquiry to completion",
   "Work focused on kerb appeal, protection and long-term finish",
-];
-
-const TRUST_ITEMS = [
-  "Local rendering specialists",
-  "Premium render systems",
-  "Domestic and commercial work",
-  "Free quote requests",
-  "Photo upload available",
 ];
 
 function PageSEO({ title, description }: { title: string; description: string }) {
@@ -105,17 +97,6 @@ function OutlineBtn({ href, children, dark = false }: { href: string; children: 
   );
 }
 
-function SectionHero({ title, subtitle, dark = true }: { title: string; subtitle?: string; dark?: boolean }) {
-  return (
-    <div style={{ backgroundColor: dark ? NAVY : BLUE }} className="py-16 px-4 text-center text-white">
-      <div className="max-w-3xl mx-auto space-y-3">
-        <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
-        {subtitle && <p className="text-lg opacity-80">{subtitle}</p>}
-      </div>
-    </div>
-  );
-}
-
 function ImageUpload({ onUploaded, label = "Upload photo", hint }: { onUploaded: (url: string) => void; label?: string; hint?: string }) {
   const requestUrl = useRequestUploadUrl();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -162,6 +143,31 @@ function ImageUpload({ onUploaded, label = "Upload photo", hint }: { onUploaded:
   );
 }
 
+function TopBar() {
+  return (
+    <div className="hidden md:block text-xs text-white py-2" style={{ backgroundColor: "#0A1F3A" }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
+        <span>Based in Grays, Thurrock — serving Essex &amp; London</span>
+        <span className="text-slate-400">Silicone Rendering • K Rend • EWI • Pebbledash Removal</span>
+      </div>
+    </div>
+  );
+}
+
+function MobileBar({ tenantSlug, phone }: { tenantSlug: string; phone?: string }) {
+  return (
+    <div className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden border-t border-slate-200 shadow-lg">
+      <a href={phone ? `tel:${phone}` : `tel:01375123456`} className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-bold bg-white text-[#26323F] hover:bg-slate-50 transition-colors">
+        <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
+        Call AMO
+      </a>
+      <a href={`/site/${tenantSlug}/quote`} className="flex-1 flex items-center justify-center py-4 text-sm font-bold text-white" style={{ backgroundColor: BLUE }}>
+        Get Quote
+      </a>
+    </div>
+  );
+}
+
 function SiteNav({ tenant, settings, tenantSlug }: any) {
   const [open, setOpen] = useState(false);
   const links = [
@@ -170,11 +176,10 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
     { label: "Areas", href: `/site/${tenantSlug}/areas` },
     { label: "Case Studies", href: `/site/${tenantSlug}/case-studies` },
     { label: "Reviews", href: `/site/${tenantSlug}/reviews` },
-    { label: "Blog", href: `/site/${tenantSlug}/blog` },
     { label: "Contact", href: `/site/${tenantSlug}/contact` },
   ];
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+    <nav className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
         <a href={`/site/${tenantSlug}`} className="font-bold text-xl flex-shrink-0" style={{ color: NAVY }}>
           {tenant?.name || "AMO Rendering"}
@@ -209,13 +214,33 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
   );
 }
 
+function PageHero({ tenantSlug, crumb, title, subtitle }: { tenantSlug: string; crumb: string; title: string; subtitle: string }) {
+  return (
+    <section style={{ backgroundColor: NAVY }} className="py-16 px-4 text-white">
+      <div className="max-w-4xl mx-auto space-y-4">
+        <div className="flex items-center gap-2 text-xs text-slate-400">
+          <a href={`/site/${tenantSlug}`} className="hover:text-white transition-colors">AMO Rendering</a>
+          <span>/</span>
+          <span>{crumb}</span>
+        </div>
+        <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
+        <p className="text-lg text-slate-300 leading-relaxed max-w-2xl">{subtitle}</p>
+        <div className="flex flex-wrap gap-3 pt-2">
+          <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
+          <OutlineBtn href={`/site/${tenantSlug}/gallery`} dark>View Before &amp; After</OutlineBtn>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function SiteFooter({ tenant, settings, tenantSlug }: any) {
   return (
-    <footer style={{ backgroundColor: NAVY }} className="text-slate-300 pt-16 pb-8">
+    <footer style={{ backgroundColor: NAVY }} className="text-slate-300 pt-16 pb-8 pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="md:col-span-2 space-y-4">
           <div className="font-bold text-xl text-white">{tenant?.name || "AMO Rendering"}</div>
-          <p className="text-sm leading-relaxed text-slate-400">Premium rendering specialists based in Grays, Thurrock, serving Essex and London.</p>
+          <p className="text-sm leading-relaxed text-slate-400">Premium rendering specialists based in Grays, Thurrock, serving Essex and London. Focused on silicone rendering, K Rend, monocouche systems, EWI, pebbledash removal and render repairs.</p>
           <div className="space-y-1 text-sm text-slate-400">
             <p>Grays, Thurrock, Essex</p>
             <p><a href="mailto:info@amorendering.co.uk" className="hover:text-white transition-colors">info@amorendering.co.uk</a></p>
@@ -224,15 +249,15 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
           </div>
         </div>
         <div className="space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-widest text-slate-500">Services</div>
-          {["Silicone Rendering","Monocouche Rendering","K Rend","Pebbledash Removal","External Wall Insulation","Render Repairs"].map(s => (
+          <div className="text-sm font-bold text-white mb-3">Services</div>
+          {["Silicone Rendering","Monocouche Rendering","K Rend","External Wall Insulation","Pebbledash Removal","Render Repairs"].map(s => (
             <a key={s} href={`/site/${tenantSlug}/services`} className="block text-sm text-slate-400 hover:text-white transition-colors">{s}</a>
           ))}
         </div>
         <div className="space-y-3">
-          <div className="text-xs font-semibold uppercase tracking-widest text-slate-500">Areas</div>
-          {["Grays","Thurrock","Essex","London","Basildon","Romford","Chelmsford","Southend"].map(a => (
-            <span key={a} className="block text-sm text-slate-400">{a}</span>
+          <div className="text-sm font-bold text-white mb-3">Areas</div>
+          {["Grays","Thurrock","Essex","London","Basildon","Romford","Chelmsford","Brentwood"].map(a => (
+            <a key={a} href={`/site/${tenantSlug}/areas`} className="block text-sm text-slate-400 hover:text-white transition-colors">{a}</a>
           ))}
           <div className="pt-2">
             <BlueBtn href={`/site/${tenantSlug}/quote`}>Get a Free Quote</BlueBtn>
@@ -266,6 +291,25 @@ function QuoteCTASection({ tenantSlug, phone }: { tenantSlug: string; phone?: st
   );
 }
 
+function TrustBar() {
+  return (
+    <div style={{ backgroundColor: "#E8F3FF" }} className="border-b border-[#8EC8FF]/40 py-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-center gap-6 text-sm font-medium" style={{ color: TEXT }}>
+        {["Rendering Specialists","Based in Grays, Thurrock","Essex & London","Free Quote Requests","Photo Upload Available"].map(t => (
+          <div key={t} className="flex items-center gap-1.5">
+            <CheckIcon color={BLUE}/>
+            {t}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HOME PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
 function HomePage({ tenantSlug }: { tenantSlug: string }) {
   const { data, isLoading } = useGetPublicSite(tenantSlug);
   if (isLoading) return <Spinner/>;
@@ -276,6 +320,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="AMO Rendering | Silicone Render Specialists — Grays, Essex & London" description="AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Hero */}
@@ -313,7 +358,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                   </svg>
                 </div>
                 <p className="text-slate-400 text-sm font-medium">Clean · Modern · Durable</p>
-                <p className="text-slate-500 text-xs">Before &amp; after images available on the gallery page</p>
+                <p className="text-slate-500 text-xs">Before &amp; after images on the gallery page</p>
               </div>
             </div>
             <div className="absolute -bottom-4 -right-4 rounded-xl bg-[#1F8CFF] text-white px-4 py-3 text-xs font-semibold shadow-lg">
@@ -323,39 +368,23 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      {/* Trust Bar */}
-      <section style={{ backgroundColor: "#E8F3FF" }} className="border-b border-[#8EC8FF]/40 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-center gap-6 text-sm font-medium" style={{ color: TEXT }}>
-          {TRUST_ITEMS.map(t => (
-            <div key={t} className="flex items-center gap-2">
-              <CheckIcon color={BLUE}/>
-              {t}
-            </div>
-          ))}
-        </div>
-      </section>
+      <TrustBar/>
 
-      {/* Before & After Showcase */}
+      {/* Before & After */}
       {featuredBeforeAfter?.length > 0 && (
         <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="text-center mb-12">
               <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Transformations</p>
               <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>See What Professional Rendering Can Do</h2>
-              <p className="mt-4 max-w-2xl mx-auto" style={{ color: MUTED }}>From cracked render and tired pebbledash to clean modern exterior finishes, our work helps homeowners improve kerb appeal and protect their property.</p>
+              <p className="mt-4 max-w-2xl mx-auto" style={{ color: MUTED }}>From cracked render and tired pebbledash to clean modern exterior finishes.</p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {featuredBeforeAfter.slice(0, 4).map((ba: any) => (
                 <div key={ba.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
                   <div className="grid grid-cols-2">
-                    <div className="relative">
-                      <img src={ba.beforeImageUrl} alt="Before" className="w-full h-52 object-cover"/>
-                      <span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span>
-                    </div>
-                    <div className="relative">
-                      <img src={ba.afterImageUrl} alt="After" className="w-full h-52 object-cover"/>
-                      <span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span>
-                    </div>
+                    <div className="relative"><img src={ba.beforeImageUrl} alt="Before" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span></div>
+                    <div className="relative"><img src={ba.afterImageUrl} alt="After" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span></div>
                   </div>
                   <div className="p-5 flex items-center justify-between">
                     <div>
@@ -384,22 +413,18 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.slice(0, 6).map((s: any) => (
               <a key={s.id || s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all bg-white">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: BLUE + "15" }}>
-                  <svg className="w-5 h-5" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
-                  </svg>
-                </div>
                 <h3 className="font-bold text-lg" style={{ color: TEXT }}>{s.name}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{s.tagline || s.desc || s.description}</p>
+                {(s.benefits as string[])?.slice(0,3).map((b: string) => (
+                  <div key={b} className="flex items-center gap-2 text-xs" style={{ color: MUTED }}><CheckIcon color={BLUE}/>{b}</div>
+                ))}
                 <span className="inline-flex items-center gap-1 text-sm font-semibold group-hover:gap-2 transition-all" style={{ color: BLUE }}>
                   Find out more <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
                 </span>
               </a>
             ))}
           </div>
-          <div className="mt-10 text-center">
-            <BlueBtn href={`/site/${tenantSlug}/services`}>View All Services</BlueBtn>
-          </div>
+          <div className="mt-10 text-center"><BlueBtn href={`/site/${tenantSlug}/services`}>View All Services</BlueBtn></div>
         </div>
       </section>
 
@@ -412,9 +437,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             <ul className="space-y-4">
               {WHY_POINTS.map(p => (
                 <li key={p} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}>
-                    <CheckIcon color="white"/>
-                  </div>
+                  <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
                   <span className="text-base" style={{ color: TEXT }}>{p}</span>
                 </li>
               ))}
@@ -422,12 +445,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
           </div>
           <div className="grid grid-cols-2 gap-4">
-            {[
-              { label: "Silicone Rendering", sub: "Weather-resistant finish" },
-              { label: "Pebbledash Removal", sub: "Clean modern replacement" },
-              { label: "External Wall Insulation", sub: "Thermal performance" },
-              { label: "Render Repairs", sub: "Stop damage spreading" },
-            ].map(c => (
+            {[{ label: "Silicone Rendering", sub: "Weather-resistant finish" },{ label: "Pebbledash Removal", sub: "Clean modern replacement" },{ label: "External Wall Insulation", sub: "Thermal performance" },{ label: "Render Repairs", sub: "Stop damage spreading" }].map(c => (
               <div key={c.label} className="rounded-xl p-5 bg-white border border-slate-200 space-y-1">
                 <div className="font-semibold text-sm" style={{ color: TEXT }}>{c.label}</div>
                 <div className="text-xs" style={{ color: MUTED }}>{c.sub}</div>
@@ -450,9 +468,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 {i < PROCESS_STEPS.length - 1 && (
                   <div className="hidden lg:block absolute top-6 left-[60%] w-full h-px border-t-2 border-dashed border-slate-200"/>
                 )}
-                <div className="relative w-12 h-12 rounded-full flex items-center justify-center mx-auto text-white font-bold text-lg" style={{ backgroundColor: BLUE }}>
-                  {s.n}
-                </div>
+                <div className="relative w-12 h-12 rounded-full flex items-center justify-center mx-auto text-white font-bold text-lg" style={{ backgroundColor: BLUE }}>{s.n}</div>
                 <h3 className="font-bold text-sm" style={{ color: TEXT }}>{s.title}</h3>
                 <p className="text-xs leading-relaxed" style={{ color: MUTED }}>{s.body}</p>
               </div>
@@ -472,12 +488,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {recentCaseStudies.map((cs: any) => (
                 <a key={cs.id} href={`/site/${tenantSlug}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
-                  {cs.heroImageUrl
-                    ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"/>
-                    : <div className="w-full h-48 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}>
-                        <svg className="w-12 h-12 opacity-30" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
-                      </div>
-                  }
+                  {cs.heroImageUrl ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-48 object-cover"/> : <div className="w-full h-48 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}><svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg></div>}
                   <div className="p-5 space-y-2">
                     {cs.location && <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{cs.location}</div>}
                     <h3 className="font-bold" style={{ color: TEXT }}>{cs.title}</h3>
@@ -486,9 +497,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </a>
               ))}
             </div>
-            <div className="mt-10 text-center">
-              <BlueBtn href={`/site/${tenantSlug}/case-studies`}>View All Case Studies</BlueBtn>
-            </div>
+            <div className="mt-10 text-center"><BlueBtn href={`/site/${tenantSlug}/case-studies`}>View All Case Studies</BlueBtn></div>
           </div>
         </section>
       )}
@@ -530,9 +539,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </div>
               ))}
             </div>
-            <div className="mt-10 text-center">
-              <OutlineBtn href={`/site/${tenantSlug}/reviews`} dark>Read All Reviews</OutlineBtn>
-            </div>
+            <div className="mt-10 text-center"><OutlineBtn href={`/site/${tenantSlug}/reviews`} dark>Read All Reviews</OutlineBtn></div>
           </div>
         </section>
       )}
@@ -556,67 +563,124 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </details>
               ))}
             </div>
-            <div className="mt-8 text-center">
-              <BlueBtn href={`/site/${tenantSlug}/faqs`}>View All FAQs</BlueBtn>
-            </div>
+            <div className="mt-8 text-center"><BlueBtn href={`/site/${tenantSlug}/faqs`}>View All FAQs</BlueBtn></div>
           </div>
         </section>
       )}
 
-      {/* Quote CTA */}
       <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
 
-      {/* Final CTA */}
       <section style={{ backgroundColor: BLUE }} className="py-14">
         <div className="max-w-3xl mx-auto px-4 text-center text-white space-y-5">
           <h2 className="text-3xl font-bold">Transform Your Exterior With AMO Rendering</h2>
-          <a href={`/site/${tenantSlug}/quote`} className="inline-flex items-center rounded-md bg-white px-8 py-3 text-sm font-bold hover:bg-slate-50 transition-colors" style={{ color: BLUE }}>
-            Get My Free Quote
-          </a>
+          <a href={`/site/${tenantSlug}/quote`} className="inline-flex items-center rounded-md bg-white px-8 py-3 text-sm font-bold hover:bg-slate-50 transition-colors" style={{ color: BLUE }}>Get My Free Quote</a>
         </div>
       </section>
 
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICES PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: services, isLoading } = useListPublicServices(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
   const list = (services as any[])?.length ? (services as any[]) : STATIC_SERVICES;
+
   return (
     <div>
       <PageSEO title="Rendering Services | AMO Rendering — Essex & London" description="Expert rendering services across Essex and London — silicone render, monocouche, K Rend, EWI, pebbledash removal and repair. Get a free quote."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <SectionHero title="Rendering Services" subtitle="Professional rendering solutions for homes and commercial properties across Essex and London"/>
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
-        {isLoading ? <Spinner/> : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {list.map((s: any) => (
-              <a key={s.id || s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 bg-white p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all">
-                <h2 className="text-xl font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{s.name}</h2>
-                {s.tagline && <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{s.tagline}</p>}
-                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{s.desc || s.description}</p>
-                {(s.benefits as string[])?.length > 0 && (
-                  <ul className="space-y-2">
-                    {(s.benefits as string[]).slice(0, 3).map((b: string) => (
-                      <li key={b} className="flex items-center gap-2 text-xs" style={{ color: MUTED }}><CheckIcon color={BLUE}/>{b}</li>
-                    ))}
-                  </ul>
-                )}
-                <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: BLUE }}>Find out more →</span>
+      <PageHero tenantSlug={tenantSlug} crumb="Rendering Services Across Essex & London" title="Rendering Services Across Essex & London" subtitle="Specialist exterior rendering services for homeowners and properties across Grays, Thurrock, Essex and London."/>
+
+      {/* Service Cards */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Services</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT }}>Choose The Right Render System For Your Property</h2>
+            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed" style={{ color: MUTED }}>Every property is different. AMO Rendering helps customers choose the right approach based on the existing surface, desired finish, property type and long-term appearance.</p>
+          </div>
+          {isLoading ? <Spinner/> : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {list.map((s: any) => (
+                <a key={s.id || s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 bg-white p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg text-white" style={{ backgroundColor: BLUE }}>{(s.name || '?')[0]}</div>
+                  <h2 className="text-xl font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{s.name}</h2>
+                  {(s.tagline) && <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{s.tagline}</p>}
+                  <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{s.desc || s.description}</p>
+                  {(s.benefits as string[])?.length > 0 && (
+                    <ul className="space-y-2">
+                      {(s.benefits as string[]).slice(0, 3).map((b: string) => (
+                        <li key={b} className="flex items-center gap-2 text-xs" style={{ color: MUTED }}><CheckIcon color={BLUE}/>{b}</li>
+                      ))}
+                    </ul>
+                  )}
+                  <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: BLUE }}>Explore {s.name} →</span>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Not sure section */}
+      <section style={{ backgroundColor: NAVY }} className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="space-y-6 text-white">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#8EC8FF" }}>How We Help</p>
+            <h2 className="text-3xl font-bold">Not Sure Which Rendering Service You Need?</h2>
+            <p className="text-slate-300 leading-relaxed">Customers often know the problem before they know the correct render system. AMO can review photos, discuss the existing wall condition and guide you towards the most suitable option.</p>
+            <div className="space-y-6">
+              {[{ n: 1, title: "Send photos", body: "Show the current exterior wall condition." },{ n: 2, title: "Discuss finish", body: "Choose the appearance and render type that suits your property." },{ n: 3, title: "Get a quote", body: "Receive next steps based on the work required." }].map(step => (
+                <div key={step.n} className="flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold" style={{ backgroundColor: BLUE }}>{step.n}</div>
+                  <div>
+                    <h3 className="font-bold text-white">{step.title}</h3>
+                    <p className="text-sm text-slate-400">{step.body}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request A Quote</BlueBtn>
+          </div>
+          <div className="rounded-2xl p-8 bg-slate-800 border border-slate-700 space-y-4">
+            <h3 className="font-bold text-white text-lg">Services Available</h3>
+            {STATIC_SERVICES.map(s => (
+              <a key={s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="flex items-center justify-between py-3 border-b border-slate-700 last:border-0 hover:text-[#8EC8FF] transition-colors">
+                <span className="text-slate-300 text-sm font-medium">{s.name}</span>
+                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
               </a>
             ))}
           </div>
-        )}
+        </div>
       </section>
-      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
+
+      {/* CTA */}
+      <section className="py-14 bg-white">
+        <div className="max-w-3xl mx-auto px-4 text-center space-y-5">
+          <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Send Photos For A Rendering Quote</h2>
+          <p style={{ color: MUTED }}>Tell AMO what your property needs and upload clear photos of the exterior walls.</p>
+          <BlueBtn href={`/site/${tenantSlug}/quote`}>Request A Quote</BlueBtn>
+        </div>
+      </section>
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SERVICE DETAIL PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
@@ -624,94 +688,219 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
   const { tenant, settings } = (siteData as any) || {};
   const s = service as any;
   const staticService = STATIC_SERVICES.find(ss => ss.slug === slug);
-  const fallback = staticService || { name: slug.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' '), desc: "" };
+  const fallback = staticService || { name: slug.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' '), desc: "", tagline: "", benefits: [] };
+
+  const name = s?.name || fallback.name;
+  const description = s?.description || fallback.desc;
+  const benefits = (s?.benefits as string[])?.length ? (s.benefits as string[]) : fallback.benefits;
 
   return (
     <div>
-      <PageSEO title={`${s?.name || fallback.name} | AMO Rendering`} description={s?.description || fallback.desc || `Professional ${s?.name || fallback.name} service across Essex and London. AMO Rendering — request a free quote today.`}/>
+      <PageSEO title={`${name} in Essex & London | AMO Rendering`} description={description || `Professional ${name} service across Essex and London. AMO Rendering — free quotes available.`}/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+
       {isLoading ? <Spinner/> : (
         <>
-          <div style={{ backgroundColor: NAVY }} className="py-16 px-4 sm:px-6 text-white">
-            <div className="max-w-4xl mx-auto space-y-4">
-              <a href={`/site/${tenantSlug}/services`} className="text-xs font-semibold uppercase tracking-wide opacity-60 hover:opacity-100 transition-opacity">← All Services</a>
-              {(s?.tagline) && <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "#8EC8FF" }}>{s.tagline}</p>}
-              <h1 className="text-4xl font-bold">{s?.name || fallback.name}</h1>
-              <p className="text-lg text-slate-300 leading-relaxed max-w-2xl">{s?.description || fallback.desc}</p>
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
-            </div>
-          </div>
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-14 space-y-12">
-            {(s?.benefits as string[])?.length > 0 && (
-              <div>
-                <h2 className="text-2xl font-bold mb-6" style={{ color: TEXT }}>Key Benefits</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {(s.benefits as string[]).map((b: string) => (
-                    <div key={b} className="flex items-start gap-3 rounded-xl border border-slate-200 p-4 bg-white">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}>
-                        <CheckIcon color="white"/>
-                      </div>
-                      <span className="text-sm" style={{ color: TEXT }}>{b}</span>
+          <PageHero tenantSlug={tenantSlug} crumb={`${name} in Essex & London`} title={`${name} in Essex & London`} subtitle={description || `Expert ${name} for homeowners and properties across Grays, Thurrock, Essex and London.`}/>
+
+          {/* Main content + sidebar */}
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <article className="lg:col-span-2 space-y-10">
+                  {/* What is it */}
+                  <div className="space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: BLUE }}>Service Detail</p>
+                    <h2 className="text-2xl font-bold" style={{ color: TEXT }}>What Is {name}?</h2>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>{description || `${name} is a professional exterior rendering service that improves the appearance and protection of your property's exterior walls.`}</p>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>AMO Rendering works with homeowners and property owners who want a cleaner, sharper and more modern exterior finish. The focus is not just applying render — it is improving the way the property looks and helping protect exterior walls with the right system.</p>
+                  </div>
+
+                  {/* Why choose */}
+                  {benefits.length > 0 && (
+                    <div className="space-y-4">
+                      <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Why Homeowners Choose This Service</h2>
+                      <ul className="space-y-3">
+                        {benefits.map((b: string) => (
+                          <li key={b} className="flex items-start gap-3">
+                            <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                            <span className="text-sm" style={{ color: TEXT }}>{b}</span>
+                          </li>
+                        ))}
+                        <li className="flex items-start gap-3">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                          <span className="text-sm" style={{ color: TEXT }}>Suitable for Essex and London properties</span>
+                        </li>
+                        <li className="flex items-start gap-3">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                          <span className="text-sm" style={{ color: TEXT }}>Quote available with property photos</span>
+                        </li>
+                      </ul>
                     </div>
-                  ))}
-                </div>
+                  )}
+
+                  {/* Before & After impact */}
+                  <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white">
+                    <div className="grid grid-cols-2">
+                      <div className="relative bg-slate-100 h-48 flex items-center justify-center">
+                        <span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span>
+                        <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                      </div>
+                      <div className="relative bg-slate-200 h-48 flex items-center justify-center" style={{ backgroundColor: BLUE + "15" }}>
+                        <span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span>
+                        <svg className="w-12 h-12" style={{ color: BLUE + "60" }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                      </div>
+                    </div>
+                    <div className="p-5">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>Essex</span>
+                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{name}</span>
+                      </div>
+                      <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Exterior transformation example</h3>
+                      <p className="text-xs mt-1" style={{ color: MUTED }}>A typical visual upgrade from a tired surface to a modern rendered finish. <a href={`/site/${tenantSlug}/gallery`} className="font-semibold" style={{ color: BLUE }}>View real before &amp; afters →</a></p>
+                    </div>
+                  </div>
+
+                  {/* Our process */}
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Our Process</h2>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>We start by understanding your property, current exterior wall condition and the finish you want to achieve. Photos help us assess the work needed before we discuss the most appropriate render system.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {[{ n: 1, title: "Send photos", body: "Show us the existing surface and wall condition." },{ n: 2, title: "Discuss finish", body: "Choose the render system and colour direction." },{ n: 3, title: "Get a quote", body: "Receive a clear quote based on the work required." }].map(step => (
+                        <div key={step.n} className="rounded-xl border border-slate-200 p-5 space-y-2 bg-white">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm" style={{ backgroundColor: BLUE }}>{step.n}</div>
+                          <h3 className="font-bold text-sm" style={{ color: TEXT }}>{step.title}</h3>
+                          <p className="text-xs" style={{ color: MUTED }}>{step.body}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {s?.content && <div className="prose prose-slate max-w-none leading-relaxed" style={{ color: MUTED }}>{s.content}</div>}
+                </article>
+
+                {/* Sidebar */}
+                <aside className="space-y-6">
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
+                    <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote for {name}</h3>
+                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
+                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <div className="space-y-2 pt-2">
+                      <a href={`/site/${tenantSlug}/gallery`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>View Before &amp; After →</a>
+                      <a href={`/site/${tenantSlug}/contact`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Contact AMO →</a>
+                      <a href={`/site/${tenantSlug}/visualiser`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Render Visualiser →</a>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
+                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>Other Services</h3>
+                    {STATIC_SERVICES.filter(ss => ss.slug !== slug).map(ss => (
+                      <a key={ss.slug} href={`/site/${tenantSlug}/services/${ss.slug}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{ss.name}</a>
+                    ))}
+                  </div>
+                  <div className="rounded-2xl p-6 space-y-3 text-white" style={{ backgroundColor: NAVY }}>
+                    <h3 className="font-bold">Based in Grays, Thurrock</h3>
+                    <p className="text-sm text-slate-400">Serving Essex and London. Photo-based quotes available.</p>
+                    <a href={`/site/${tenantSlug}/areas`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>View Areas Covered →</a>
+                  </div>
+                </aside>
               </div>
-            )}
-            {s?.content && <div className="prose prose-slate max-w-none leading-relaxed" style={{ color: MUTED }}>{s.content}</div>}
-            <div className="rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: BLUE + "10", border: `1px solid ${BLUE}30` }}>
-              <h3 className="text-xl font-bold" style={{ color: TEXT }}>Interested in {s?.name || fallback.name}?</h3>
-              <p className="text-sm" style={{ color: MUTED }}>Get a free quote — no obligation, photo upload available.</p>
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
             </div>
-          </div>
+          </section>
+
+          <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
         </>
       )}
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AREAS PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function AreasPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: areas, isLoading } = useListPublicAreas(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+
   return (
     <div>
-      <PageSEO title="Areas We Cover | AMO Rendering — Essex & London" description="AMO Rendering covers Grays, Thurrock, Essex, London, Basildon, Romford, Chelmsford, Brentwood and surrounding areas. Request a rendering quote for your location."/>
+      <PageSEO title="Areas We Cover | AMO Rendering — Essex & London" description="AMO Rendering covers Grays, Thurrock, Essex, London, Basildon, Romford, Chelmsford and surrounding areas. Local rendering specialists."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <SectionHero title="Areas We Cover" subtitle="Rendering services across Essex and London for domestic and commercial properties"/>
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
-        {isLoading ? <Spinner/> : (
-          <>
-            {(areas as any[])?.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-                {(areas as any[]).map((a: any) => (
-                  <a key={a.id} href={`/site/${tenantSlug}/areas/${a.slug}`} className="group rounded-2xl border border-slate-200 bg-white p-7 space-y-3 hover:border-[#1F8CFF] hover:shadow-md transition-all">
-                    <h2 className="text-xl font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a.name}</h2>
-                    {a.county && <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{a.county}</p>}
-                    {a.description && <p className="text-sm leading-relaxed line-clamp-3" style={{ color: MUTED }}>{a.description}</p>}
-                    <span className="text-sm font-semibold" style={{ color: BLUE }}>See rendering services →</span>
-                  </a>
-                ))}
-              </div>
-            )}
-            <div className="rounded-2xl p-8" style={{ backgroundColor: LIGHT_BG }}>
-              <h2 className="text-xl font-bold mb-4" style={{ color: TEXT }}>Additional Areas</h2>
-              <div className="flex flex-wrap gap-3">
-                {ALL_AREAS.map(a => (
-                  <span key={a} className="rounded-full border border-slate-200 bg-white px-4 py-1.5 text-sm" style={{ color: TEXT }}>{a}</span>
-                ))}
-              </div>
-              <p className="mt-6 text-sm" style={{ color: MUTED }}>Not listed? <a href={`/site/${tenantSlug}/contact`} className="font-semibold" style={{ color: BLUE }}>Contact us to check availability.</a></p>
+      <PageHero tenantSlug={tenantSlug} crumb="Rendering Services Across Essex & London" title="Rendering Services Across Essex & London" subtitle="AMO Rendering is based in Grays, Thurrock and serves homeowners across Essex, London and surrounding areas."/>
+
+      {/* Area Cards */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Areas Covered</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT }}>Local Rendering Services Where You Need Them</h2>
+            <p className="mt-4 max-w-2xl mx-auto text-sm" style={{ color: MUTED }}>Dedicated local area pages help customers find rendering services near them across Essex and London.</p>
+          </div>
+          {isLoading ? <Spinner/> : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+              {((areas as any[])?.length ? (areas as any[]) : ALL_AREAS.map(a => ({ name: a, slug: a.toLowerCase(), county: a === 'London' ? 'Greater London' : 'Essex', description: `Silicone rendering, K Rend, monocouche render, EWI and pebbledash removal for properties in ${a} and nearby areas.` }))).map((a: any) => (
+                <a key={a.id || a.slug || a.name} href={`/site/${tenantSlug}/areas/${a.slug || a.name?.toLowerCase()}`} className="group rounded-2xl border border-slate-200 bg-white p-6 space-y-3 hover:border-[#1F8CFF] hover:shadow-md transition-all">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg text-white" style={{ backgroundColor: BLUE }}>{(a.name || '?')[0]}</div>
+                  <h2 className="text-lg font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>Rendering in {a.name}</h2>
+                  {a.county && <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{a.county}</p>}
+                  <p className="text-xs leading-relaxed" style={{ color: MUTED }}>{a.description || `Silicone rendering, K Rend, monocouche and pebbledash removal for properties in ${a.name}.`}</p>
+                  <span className="text-xs font-semibold" style={{ color: BLUE }}>View Area →</span>
+                </a>
+              ))}
             </div>
-          </>
-        )}
+          )}
+        </div>
       </section>
+
+      {/* Full area list */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-14">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-6">
+          <h2 className="text-2xl font-bold" style={{ color: TEXT }}>All Areas Covered</h2>
+          <p className="text-sm" style={{ color: MUTED }}>AMO Rendering regularly serves these towns and areas across Essex and Greater London.</p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            {ALL_AREAS.map(a => (
+              <a key={a} href={`/site/${tenantSlug}/areas`} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-medium hover:border-[#1F8CFF] hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a}</a>
+            ))}
+          </div>
+          <p className="text-sm" style={{ color: MUTED }}>Not listed? <a href={`/site/${tenantSlug}/contact`} className="font-semibold" style={{ color: BLUE }}>Contact us to check availability.</a></p>
+        </div>
+      </section>
+
+      {/* Why local matters */}
+      <section style={{ backgroundColor: NAVY }} className="py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+          {[
+            { title: "Based in Grays, Thurrock", body: "Our base means we can respond quickly to enquiries and visits across Essex and London." },
+            { title: "Locally focused", body: "We understand the property types, weather conditions and render challenges typical to Essex and London homes." },
+            { title: "Short travel times", body: "Serving the same area consistently helps us build a local reputation for quality rendering work." },
+          ].map(c => (
+            <div key={c.title} className="text-white space-y-3">
+              <div className="w-10 h-10 rounded-full flex items-center justify-center" style={{ backgroundColor: BLUE }}>
+                <CheckIcon color="white"/>
+              </div>
+              <h3 className="font-bold text-lg">{c.title}</h3>
+              <p className="text-sm text-slate-400 leading-relaxed">{c.body}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// AREA DETAIL PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
@@ -719,327 +908,675 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
   const { tenant, settings } = (siteData as any) || {};
   const a = area as any;
   const areaName = a?.name || slug.split('-').map((w: string) => w[0].toUpperCase() + w.slice(1)).join(' ');
+
   return (
     <div>
       <PageSEO title={`Rendering in ${areaName} | AMO Rendering`} description={a?.description || `Professional silicone rendering, monocouche, K Rend and pebbledash removal in ${areaName}. AMO Rendering — free quotes available.`}/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+
       {isLoading ? <Spinner/> : a ? (
         <>
-          <div style={{ backgroundColor: NAVY }} className="py-16 px-4 sm:px-6 text-white">
-            <div className="max-w-4xl mx-auto space-y-3">
-              <a href={`/site/${tenantSlug}/areas`} className="text-xs font-semibold uppercase tracking-wide opacity-60 hover:opacity-100 transition-opacity">← All Areas</a>
-              {a.county && <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: "#8EC8FF" }}>{a.county}</p>}
-              <h1 className="text-4xl font-bold">Rendering Services in {a.name}</h1>
-              {a.description && <p className="text-lg text-slate-300 leading-relaxed max-w-2xl">{a.description}</p>}
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Get a Quote for {a.name}</BlueBtn>
-            </div>
-          </div>
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-10">
-            <div>
-              <h2 className="text-2xl font-bold mb-4" style={{ color: TEXT }}>Services Available in {a.name}</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {STATIC_SERVICES.map(s => (
-                  <a key={s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="rounded-xl border border-slate-200 bg-white p-4 hover:border-[#1F8CFF] transition-colors">
-                    <h3 className="font-semibold text-sm" style={{ color: TEXT }}>{s.name}</h3>
-                    <p className="text-xs mt-1" style={{ color: MUTED }}>{s.desc}</p>
-                  </a>
-                ))}
+          <PageHero tenantSlug={tenantSlug} crumb={`Rendering in ${areaName}`} title={`Rendering in ${areaName}`} subtitle={a.description || `Silicone rendering, K Rend, monocouche render, external wall insulation and pebbledash removal for properties in ${areaName}.`}/>
+
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <article className="lg:col-span-2 space-y-10">
+                  <div className="space-y-4">
+                    <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: BLUE }}>Local Rendering</p>
+                    <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Exterior Rendering Services in {areaName}</h2>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>AMO Rendering provides professional exterior rendering services for homeowners and property owners in {areaName}. The focus is on transforming tired walls, dated pebbledash and failing exterior finishes into cleaner, sharper and more modern rendered surfaces.</p>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>Whether your property needs silicone rendering, K Rend, monocouche render, pebbledash removal or render repairs, AMO can review your property details and help identify the right next step.</p>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Services Available in {areaName}</h2>
+                    <ul className="space-y-2">
+                      {["Silicone Rendering","Monocouche Rendering","K Rend","External Wall Insulation","Pebbledash Removal","Render Repairs"].map(s => (
+                        <li key={s} className="flex items-center gap-3">
+                          <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                          <span className="text-sm font-medium" style={{ color: TEXT }}>{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="space-y-4">
+                    <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Local Project Style</h2>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>Many properties across Essex and London benefit from a cleaner external finish. Rendering can improve kerb appeal, refresh dated walls and create a more consistent property exterior.</p>
+                    {a.content && <p className="leading-relaxed" style={{ color: MUTED }}>{a.content}</p>}
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {STATIC_SERVICES.map(s => (
+                      <a key={s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="group rounded-xl border border-slate-200 bg-white p-5 hover:border-[#1F8CFF] transition-colors">
+                        <h3 className="font-semibold text-sm group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{s.name}</h3>
+                        <p className="text-xs mt-1 leading-relaxed" style={{ color: MUTED }}>{s.desc}</p>
+                      </a>
+                    ))}
+                  </div>
+                </article>
+
+                <aside className="space-y-6">
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
+                    <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote in {areaName}</h3>
+                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
+                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <div className="space-y-2 pt-2">
+                      <a href={`/site/${tenantSlug}/gallery`} className="block text-sm font-semibold" style={{ color: BLUE }}>View Before &amp; After →</a>
+                      <a href={`/site/${tenantSlug}/contact`} className="block text-sm font-semibold" style={{ color: BLUE }}>Contact AMO →</a>
+                    </div>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
+                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>Other Areas</h3>
+                    {["Grays","Thurrock","Essex","London","Basildon","Brentwood","Romford"].filter(n => n.toLowerCase() !== slug).map(n => (
+                      <a key={n} href={`/site/${tenantSlug}/areas/${n.toLowerCase()}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{n}</a>
+                    ))}
+                  </div>
+                </aside>
               </div>
             </div>
-            {a.content && <p className="leading-relaxed" style={{ color: MUTED }}>{a.content}</p>}
-            <div className="rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: BLUE + "10", border: `1px solid ${BLUE}30` }}>
-              <h3 className="text-xl font-bold" style={{ color: TEXT }}>Get a Free Rendering Quote in {a.name}</h3>
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
+          </section>
+
+          {/* Services section */}
+          <section style={{ backgroundColor: LIGHT_BG }} className="py-14">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-8">
+              <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Rendering Services in {areaName}</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-left">
+                {STATIC_SERVICES.slice(0,3).map(s => (
+                  <div key={s.slug} className="rounded-xl bg-white border border-slate-200 p-5 space-y-2">
+                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>{s.name}</h3>
+                    <p className="text-xs" style={{ color: MUTED }}>{s.desc}</p>
+                    <a href={`/site/${tenantSlug}/services/${s.slug}`} className="text-xs font-semibold" style={{ color: BLUE }}>Learn more →</a>
+                  </div>
+                ))}
+              </div>
+              <BlueBtn href={`/site/${tenantSlug}/quote`}>Get a Free Quote for {areaName}</BlueBtn>
             </div>
-          </div>
+          </section>
         </>
-      ) : <div className="p-8 text-center text-slate-500">Area not found</div>}
+      ) : <div className="p-8 text-center" style={{ color: MUTED }}>Area not found</div>}
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// GALLERY / BEFORE & AFTER PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: images, isLoading } = useBrowsePublicGallery(tenantSlug);
   const { data: beforeAfter } = useListPublicBeforeAfter(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const [filter, setFilter] = useState("All");
+  const filters = ["All","Silicone Rendering","K Rend","Pebbledash Removal","EWI"];
+  const baList = beforeAfter as any[] || [];
+  const filtered = filter === "All" ? baList : baList.filter((ba: any) => (ba.serviceName || "").toLowerCase().includes(filter.toLowerCase()));
+
   return (
     <div>
-      <PageSEO title="Before & After Gallery | AMO Rendering — Essex & London" description="See real rendering transformations across Essex and London. Silicone render, monocouche and EWI before and after photos from AMO Rendering projects."/>
+      <PageSEO title="Before & After Rendering Gallery | AMO Rendering" description="See real rendering transformations across Essex and London. Silicone render, monocouche and EWI before and after photos from AMO Rendering."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <SectionHero title="Before & After Gallery" subtitle="Real rendering projects across Essex and London — see the transformation"/>
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
-        {(beforeAfter as any[])?.length > 0 && (
-          <div className="mb-16">
-            <h2 className="text-2xl font-bold mb-8 text-center" style={{ color: TEXT }}>Rendering Transformations</h2>
+      <PageHero tenantSlug={tenantSlug} crumb="Before & After Rendering Transformations" title="Before & After Rendering Transformations" subtitle="See how professional rendering can change tired exterior walls, dated pebbledash and failing render into clean modern finishes."/>
+
+      {/* Filters */}
+      <section className="bg-white border-b border-slate-200 py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap gap-2">
+          {filters.map(f => (
+            <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${filter === f ? 'text-white' : 'bg-slate-100 hover:bg-slate-200'}`} style={filter === f ? { backgroundColor: BLUE } : { color: TEXT }}>
+              {f}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Before & After Cards */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {baList.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {(beforeAfter as any[]).map((ba: any) => (
+              {(filtered.length ? filtered : baList).map((ba: any) => (
                 <div key={ba.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
                   <div className="grid grid-cols-2">
                     <div className="relative"><img src={ba.beforeImageUrl} alt="Before" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span></div>
                     <div className="relative"><img src={ba.afterImageUrl} alt="After" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span></div>
                   </div>
                   <div className="p-5">
+                    <div className="flex items-center gap-2 mb-2">
+                      {ba.location && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100" style={{ color: MUTED }}>{ba.location}</span>}
+                      {ba.serviceName && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{ba.serviceName}</span>}
+                    </div>
                     <h3 className="font-semibold text-sm" style={{ color: TEXT }}>{ba.title}</h3>
                     {ba.description && <p className="text-xs mt-1" style={{ color: MUTED }}>{ba.description}</p>}
                   </div>
                 </div>
               ))}
             </div>
-          </div>
-        )}
-        {isLoading ? <Spinner/> : (images as any[])?.length > 0 && (
-          <>
+          ) : <Spinner/>}
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section style={{ backgroundColor: NAVY }} className="py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-white">
+          {[{ num: "100+", label: "Projects Completed" },{ num: "Essex", label: "& London Coverage" },{ num: "15yr", label: "Guarantee Available" },{ num: "Free", label: "Photo Quotes" }].map(s => (
+            <div key={s.label} className="space-y-1">
+              <div className="text-3xl font-bold" style={{ color: "#8EC8FF" }}>{s.num}</div>
+              <div className="text-sm text-slate-400">{s.label}</div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Gallery Grid */}
+      {isLoading ? <Spinner/> : (images as any[])?.length > 0 && (
+        <section style={{ backgroundColor: LIGHT_BG }} className="py-16">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <h2 className="text-2xl font-bold mb-8 text-center" style={{ color: TEXT }}>Project Gallery</h2>
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
               {(images as any[]).map((img: any) => (
                 <div key={img.id} className="break-inside-avoid rounded-xl overflow-hidden border border-slate-100">
-                  <img src={img.imageUrl} alt={img.altText || img.caption || ''} className="w-full object-cover"/>
+                  <img src={img.imageUrl} alt={img.altText || img.caption || "Rendering project"} className="w-full object-cover"/>
                   {img.caption && <p className="p-3 text-xs" style={{ color: MUTED }}>{img.caption}</p>}
                 </div>
               ))}
             </div>
-          </>
-        )}
-      </section>
+          </div>
+        </section>
+      )}
+
       <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// REVIEWS PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: reviews, isLoading } = useListPublicReviews(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
-  const list = reviews as any[];
-  const avgRating = list?.length ? Math.round(list.reduce((s, r) => s + r.rating, 0) / list.length * 10) / 10 : 0;
+  const list = (reviews as any[]) || [];
+  const avgRating = list?.length ? Math.round(list.reduce((s, r) => s + r.rating, 0) / list.length * 10) / 10 : 5;
+
   return (
     <div>
       <PageSEO title="Customer Reviews | AMO Rendering — Essex & London" description="Read verified customer reviews from homeowners across Essex and London. AMO Rendering — trusted rendering specialists."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <div style={{ backgroundColor: NAVY }} className="py-16 px-4 text-center text-white">
-        <h1 className="text-4xl font-bold">Trusted By Homeowners Across Essex And London</h1>
-        {list?.length > 0 && (
-          <div className="mt-4 flex items-center justify-center gap-2">
-            <StarRating rating={5}/>
-            <span className="text-slate-300 text-sm">{avgRating} average from {list.length} reviews</span>
+
+      {/* Hero with aggregate */}
+      <section style={{ backgroundColor: NAVY }} className="py-16 px-4 text-white">
+        <div className="max-w-4xl mx-auto space-y-4">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <a href={`/site/${tenantSlug}`} className="hover:text-white">AMO Rendering</a>
+            <span>/</span><span>Reviews</span>
           </div>
-        )}
-      </div>
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
-        {isLoading ? <Spinner/> : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {list?.map((r: any) => (
-              <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-7 space-y-4">
-                <StarRating rating={r.rating}/>
-                {r.title && <h3 className="font-bold" style={{ color: TEXT }}>{r.title}</h3>}
-                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>"{r.content}"</p>
-                <div className="pt-3 border-t border-slate-100">
-                  <div className="font-semibold text-sm" style={{ color: TEXT }}>{r.reviewerName}</div>
-                  {r.reviewerLocation && <div className="text-xs mt-0.5" style={{ color: MUTED }}>{r.reviewerLocation}</div>}
+          <h1 className="text-4xl font-bold">AMO Rendering Reviews</h1>
+          <p className="text-lg text-slate-300 max-w-2xl">Customer feedback from homeowners looking for cleaner exterior finishes, better communication and modern rendering work.</p>
+          {list.length > 0 && (
+            <div className="flex items-center gap-4 pt-2">
+              <StarRating rating={5}/>
+              <span className="text-2xl font-bold">{avgRating}/5</span>
+              <span className="text-slate-400">from {list.length} reviews</span>
+            </div>
+          )}
+          <div className="flex flex-wrap gap-3 pt-2">
+            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
+            <OutlineBtn href={`/site/${tenantSlug}/gallery`} dark>View Before &amp; After</OutlineBtn>
+          </div>
+        </div>
+      </section>
+
+      {/* Review cards */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {isLoading ? <Spinner/> : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {list.map((r: any) => (
+                <div key={r.id} className="rounded-2xl border border-slate-200 bg-white p-7 space-y-4">
+                  <StarRating rating={r.rating}/>
+                  {r.title && <h3 className="font-bold" style={{ color: TEXT }}>{r.title}</h3>}
+                  <p className="text-sm leading-relaxed" style={{ color: MUTED }}>"{r.content}"</p>
+                  <div className="pt-3 border-t border-slate-100">
+                    <div className="font-semibold text-sm" style={{ color: TEXT }}>{r.reviewerName}</div>
+                    {r.reviewerLocation && <div className="text-xs mt-0.5" style={{ color: MUTED }}>{r.reviewerLocation}</div>}
+                  </div>
                 </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Trust badges */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-12">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-8">
+          <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Why Homeowners Trust AMO Rendering</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[{ title: "Local Specialists", body: "Based in Grays, Thurrock — not a national call centre." },{ title: "Photo-Based Quotes", body: "Upload property photos for an accurate quote." },{ title: "Clear Communication", body: "Updates from first enquiry to finished project." },{ title: "Modern Finishes", body: "Clean, durable render systems applied correctly." }].map(t => (
+              <div key={t.title} className="rounded-xl bg-white border border-slate-200 p-5 space-y-2">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                <h3 className="font-bold text-sm" style={{ color: TEXT }}>{t.title}</h3>
+                <p className="text-xs" style={{ color: MUTED }}>{t.body}</p>
               </div>
             ))}
           </div>
-        )}
+        </div>
       </section>
+
       <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CASE STUDIES PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: caseStudies, isLoading } = useListPublicCaseStudies(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+
   return (
     <div>
       <PageSEO title="Rendering Case Studies | AMO Rendering — Essex & London" description="Detailed rendering project case studies from across Essex and London. See the challenge, solution and results from real AMO Rendering projects."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <SectionHero title="Case Studies" subtitle="Detailed rendering projects from across Essex and London"/>
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
-        {isLoading ? <Spinner/> : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(caseStudies as any[])?.map((cs: any) => (
-              <a key={cs.id} href={`/site/${tenantSlug}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
-                {cs.heroImageUrl
-                  ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"/>
-                  : <div className="w-full h-48 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}>
-                      <svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+      <PageHero tenantSlug={tenantSlug} crumb="Rendering Case Studies" title="Rendering Case Studies" subtitle="Detailed examples of rendering projects across Essex and London, showing the problem, solution and finished exterior result."/>
+
+      {/* Case study cards */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {isLoading ? <Spinner/> : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(caseStudies as any[])?.map((cs: any) => (
+                <a key={cs.id} href={`/site/${tenantSlug}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
+                  {cs.heroImageUrl
+                    ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
+                    : <div className="w-full h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}>
+                        <svg className="w-14 h-14 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                      </div>
+                  }
+                  <div className="p-5 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {cs.location && <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{cs.location}</span>}
                     </div>
-                }
-                <div className="p-5 space-y-2">
-                  {cs.location && <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{cs.location}</div>}
-                  <h2 className="font-bold" style={{ color: TEXT }}>{cs.title}</h2>
-                  <p className="text-sm" style={{ color: MUTED }}>{cs.tagline}</p>
-                  {cs.projectDuration && <div className="text-xs" style={{ color: MUTED }}>Duration: {cs.projectDuration}</div>}
+                    <h2 className="font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{cs.title}</h2>
+                    <p className="text-sm" style={{ color: MUTED }}>{cs.tagline}</p>
+                    {cs.projectDuration && <div className="text-xs" style={{ color: MUTED }}>Duration: {cs.projectDuration}</div>}
+                    <span className="text-xs font-semibold" style={{ color: BLUE }}>Read Case Study →</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Why case studies section */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-14">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+          <div className="space-y-5">
+            <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: BLUE }}>What Case Studies Show</p>
+            <h2 className="text-2xl font-bold" style={{ color: TEXT }}>More Than Just A Finished Photo</h2>
+            <p className="text-sm leading-relaxed" style={{ color: MUTED }}>Each case study outlines the original problem — what the property looked like and why the homeowner wanted to change it — and the solution chosen by AMO Rendering. Then the result: what the property looks like now and what the customer achieved.</p>
+          </div>
+          <div className="space-y-4">
+            {[{ title: "The Problem", body: "What the existing surface looked like and why it needed attention." },{ title: "The Solution", body: "Which render system was selected and how it was applied." },{ title: "The Result", body: "The completed exterior and the outcome for the homeowner." }].map(s => (
+              <div key={s.title} className="flex items-start gap-4 rounded-xl bg-white border border-slate-200 p-4">
+                <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                <div>
+                  <h3 className="font-bold text-sm" style={{ color: TEXT }}>{s.title}</h3>
+                  <p className="text-xs mt-0.5" style={{ color: MUTED }}>{s.body}</p>
                 </div>
-              </a>
+              </div>
             ))}
           </div>
-        )}
+        </div>
       </section>
+
       <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CASE STUDY DETAIL PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: cs, isLoading } = useGetPublicCaseStudy(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
   const c = cs as any;
+
   return (
     <div>
       <PageSEO title={c ? `${c.title} | AMO Rendering` : "Case Study | AMO Rendering"} description={c?.tagline || "Detailed rendering project case study from AMO Rendering — see the challenge, solution and results."}/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+
       {isLoading ? <Spinner/> : c ? (
         <>
           {c.heroImageUrl && <img src={c.heroImageUrl} alt={c.title} className="w-full h-72 object-cover"/>}
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-12 space-y-8">
-            <div>
-              <a href={`/site/${tenantSlug}/case-studies`} className="text-xs font-semibold uppercase tracking-wide" style={{ color: MUTED }}>← Case Studies</a>
-              {c.location && <div className="text-sm font-semibold uppercase tracking-widest mt-3" style={{ color: BLUE }}>{c.location}</div>}
-              <h1 className="text-3xl font-bold mt-2" style={{ color: TEXT }}>{c.title}</h1>
-              {c.tagline && <p className="text-xl mt-2" style={{ color: MUTED }}>{c.tagline}</p>}
-              <div className="flex flex-wrap gap-4 mt-4 text-sm" style={{ color: MUTED }}>
+          <section style={{ backgroundColor: NAVY }} className={`py-12 px-4 text-white ${c.heroImageUrl ? '' : 'pt-16'}`}>
+            <div className="max-w-4xl mx-auto space-y-3">
+              <div className="flex items-center gap-2 text-xs text-slate-400">
+                <a href={`/site/${tenantSlug}/case-studies`} className="hover:text-white">Case Studies</a>
+                <span>/</span><span>{c.title}</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {c.location && <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ backgroundColor: BLUE + "30", color: "#8EC8FF" }}>{c.location}</span>}
+              </div>
+              <h1 className="text-3xl font-bold">{c.title}</h1>
+              {c.tagline && <p className="text-lg text-slate-300">{c.tagline}</p>}
+              <div className="flex flex-wrap gap-4 text-sm text-slate-400">
                 {c.clientName && <span>Client: {c.clientName}</span>}
                 {c.projectDuration && <span>Duration: {c.projectDuration}</span>}
               </div>
             </div>
-            {c.challenge && (
-              <div>
-                <h2 className="text-xl font-bold mb-3" style={{ color: TEXT }}>The Challenge</h2>
-                <p className="leading-relaxed" style={{ color: MUTED }}>{c.challenge}</p>
+          </section>
+
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <article className="lg:col-span-2 space-y-8">
+                  <div className="flex items-center gap-3 p-4 rounded-xl" style={{ backgroundColor: LIGHT_BG }}>
+                    <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>Project Summary</div>
+                    {c.location && <span className="text-xs" style={{ color: MUTED }}>{c.location}</span>}
+                    {c.projectDuration && <span className="text-xs" style={{ color: MUTED }}>Duration: {c.projectDuration}</span>}
+                  </div>
+
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-bold" style={{ color: TEXT }}>The Problem</h2>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>{c.challenge || "The property exterior looked tired and needed a more modern, cleaner finish. The existing surface affected kerb appeal and made the home look older than it needed to."}</p>
+                  </div>
+
+                  <div className="space-y-3">
+                    <h2 className="text-xl font-bold" style={{ color: TEXT }}>The Solution</h2>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>{c.solution || "AMO Rendering reviewed the exterior condition and selected a suitable rendering approach. The aim was to create a clean, consistent finish that improved the look of the property while supporting external wall protection."}</p>
+                  </div>
+
+                  {/* Before/After */}
+                  <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white">
+                    <div className="grid grid-cols-2">
+                      <div className="relative bg-slate-100 h-52 flex items-center justify-center">
+                        <span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span>
+                        <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                      </div>
+                      <div className="relative h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "15" }}>
+                        <span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span>
+                        <svg className="w-10 h-10" style={{ color: BLUE + "60" }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Finished Result</h3>
+                      <p className="text-xs mt-1" style={{ color: MUTED }}>The completed exterior gave the property a sharper, more modern appearance.</p>
+                    </div>
+                  </div>
+
+                  <div className="rounded-2xl p-6" style={{ backgroundColor: BLUE + "10", border: `1px solid ${BLUE}30` }}>
+                    <h2 className="text-xl font-bold mb-3" style={{ color: TEXT }}>Customer Outcome</h2>
+                    <p className="leading-relaxed" style={{ color: TEXT }}>{c.result || "The main result was a visible exterior transformation: a cleaner frontage, improved finish and stronger kerb appeal."}</p>
+                  </div>
+                </article>
+
+                <aside className="space-y-6">
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
+                    <h3 className="font-bold text-lg" style={{ color: TEXT }}>Want A Similar Finish?</h3>
+                    <p className="text-sm" style={{ color: MUTED }}>Request a quote and upload photos of your property.</p>
+                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <a href={`/site/${tenantSlug}/gallery`} className="block text-sm font-semibold pt-2" style={{ color: BLUE }}>View More Transformations →</a>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
+                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>More Case Studies</h3>
+                    <a href={`/site/${tenantSlug}/case-studies`} className="block text-sm py-2 font-semibold" style={{ color: BLUE }}>← Back to all case studies</a>
+                  </div>
+                  <div className="rounded-2xl p-6 space-y-3 text-white" style={{ backgroundColor: NAVY }}>
+                    <h3 className="font-bold">Based in Grays, Thurrock</h3>
+                    <p className="text-sm text-slate-400">Free quotes available for Essex and London properties.</p>
+                    <a href={`/site/${tenantSlug}/contact`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>Contact AMO →</a>
+                  </div>
+                </aside>
               </div>
-            )}
-            {c.solution && (
-              <div>
-                <h2 className="text-xl font-bold mb-3" style={{ color: TEXT }}>Our Solution</h2>
-                <p className="leading-relaxed" style={{ color: MUTED }}>{c.solution}</p>
-              </div>
-            )}
-            {c.result && (
-              <div className="rounded-2xl p-6" style={{ backgroundColor: BLUE + "10", border: `1px solid ${BLUE}30` }}>
-                <h2 className="text-xl font-bold mb-3" style={{ color: TEXT }}>The Result</h2>
-                <p className="leading-relaxed" style={{ color: TEXT }}>{c.result}</p>
-              </div>
-            )}
-            <div className="rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: LIGHT_BG }}>
-              <h3 className="text-xl font-bold" style={{ color: TEXT }}>Like what you see?</h3>
-              <p className="text-sm" style={{ color: MUTED }}>Request a free quote for your property.</p>
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Get a Free Quote</BlueBtn>
             </div>
-          </div>
+          </section>
         </>
-      ) : <div className="p-8 text-center text-slate-500">Case study not found</div>}
+      ) : <div className="p-8 text-center" style={{ color: MUTED }}>Case study not found</div>}
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// FAQs PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: faqs, isLoading } = useListPublicFaqs(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+
   return (
     <div>
-      <PageSEO title="Rendering FAQs | AMO Rendering — Essex & London" description="Answers to common questions about rendering, including silicone render, monocouche, K Rend, pebbledash removal and EWI. AMO Rendering — Essex & London specialists."/>
+      <PageSEO title="Rendering FAQs | AMO Rendering — Essex & London" description="Answers to common questions about rendering, including silicone render, monocouche, K Rend, pebbledash removal and EWI."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <SectionHero title="Frequently Asked Questions" subtitle="Everything you need to know about rendering"/>
-      <section className="py-16 max-w-3xl mx-auto px-4 sm:px-6 space-y-3">
-        {isLoading ? <Spinner/> : (faqs as any[])?.map((faq: any) => (
-          <details key={faq.id} className="group rounded-xl border border-slate-200 bg-white px-6 py-5">
-            <summary className="flex cursor-pointer items-center justify-between font-semibold" style={{ color: TEXT }}>
-              {faq.question}
-              <svg className="w-5 h-5 flex-shrink-0 transition-transform group-open:rotate-180" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
-            </summary>
-            <p className="mt-4 text-sm leading-relaxed" style={{ color: MUTED }}>{faq.answer}</p>
-          </details>
-        ))}
+      <PageHero tenantSlug={tenantSlug} crumb="Rendering FAQs" title="Rendering FAQs" subtitle="Common questions about silicone rendering, pebbledash removal, K Rend, EWI and quote requests."/>
+
+      {/* FAQ intro */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-10 border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+          {["Silicone Rendering","Pebbledash Removal","K Rend & EWI","Quote Process"].map(t => (
+            <div key={t} className="rounded-xl bg-white border border-slate-200 p-4">
+              <p className="text-xs font-semibold" style={{ color: BLUE }}>{t}</p>
+            </div>
+          ))}
+        </div>
       </section>
-      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
+
+      {/* FAQs */}
+      <section className="py-16 bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          {isLoading ? <Spinner/> : (
+            <div className="space-y-3">
+              {(faqs as any[])?.map((faq: any) => (
+                <details key={faq.id} className="group rounded-xl border border-slate-200 bg-white px-6 py-5">
+                  <summary className="flex cursor-pointer items-center justify-between font-semibold" style={{ color: TEXT }}>
+                    {faq.question}
+                    <svg className="w-5 h-5 flex-shrink-0 transition-transform group-open:rotate-180" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+                  </summary>
+                  <p className="mt-4 text-sm leading-relaxed" style={{ color: MUTED }}>{faq.answer}</p>
+                </details>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      {/* Still have questions */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-14">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="rounded-2xl bg-white border border-slate-200 p-7 space-y-4">
+            <h3 className="font-bold text-lg" style={{ color: TEXT }}>Still Have Questions?</h3>
+            <p className="text-sm" style={{ color: MUTED }}>Send AMO a message and we'll respond with the information you need.</p>
+            <BlueBtn href={`/site/${tenantSlug}/contact`}>Contact AMO</BlueBtn>
+          </div>
+          <div className="rounded-2xl bg-white border border-slate-200 p-7 space-y-4">
+            <h3 className="font-bold text-lg" style={{ color: TEXT }}>Ready To Get A Quote?</h3>
+            <p className="text-sm" style={{ color: MUTED }}>Upload photos of your property and tell us what exterior finish you're looking for.</p>
+            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request A Quote</BlueBtn>
+          </div>
+        </div>
+      </section>
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOG LIST PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: posts, isLoading } = useBrowsePublicBlog(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+
   return (
     <div>
-      <PageSEO title="Rendering Advice & News | AMO Rendering Blog" description="Guides, project showcases and rendering tips for homeowners across Essex and London from AMO Rendering."/>
+      <PageSEO title="Rendering Advice & Guides | AMO Rendering Blog" description="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation across Essex and London."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <SectionHero title="Rendering Advice & News" subtitle="Guides, project showcases and tips for homeowners"/>
-      <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
-        {isLoading ? <Spinner/> : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(posts as any[])?.map((post: any) => (
-              <a key={post.id} href={`/site/${tenantSlug}/blog/${post.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
-                {post.heroImageUrl && <img src={post.heroImageUrl} alt={post.title} className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"/>}
-                <div className="p-5 space-y-2">
-                  <h2 className="font-bold group-hover:text-[#1F8CFF] transition-colors line-clamp-2" style={{ color: TEXT }}>{post.title}</h2>
-                  {post.excerpt && <p className="text-sm line-clamp-3" style={{ color: MUTED }}>{post.excerpt}</p>}
-                  <div className="flex items-center gap-3 text-xs pt-2" style={{ color: MUTED }}>
-                    {post.authorName && <span>{post.authorName}</span>}
-                    {post.readTime && <span>{post.readTime} min read</span>}
+      <PageHero tenantSlug={tenantSlug} crumb="Rendering Advice & Guides" title="Rendering Advice & Guides" subtitle="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation."/>
+
+      {/* Blog posts */}
+      <section className="py-16 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          {isLoading ? <Spinner/> : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {(posts as any[])?.map((post: any) => (
+                <a key={post.id} href={`/site/${tenantSlug}/blog/${post.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
+                  {post.heroImageUrl
+                    ? <img src={post.heroImageUrl} alt={post.title} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
+                    : <div className="w-full h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "08" }}><svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg></div>
+                  }
+                  <div className="p-5 space-y-2">
+                    <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>Rendering Guide</div>
+                    <h2 className="font-bold group-hover:text-[#1F8CFF] transition-colors line-clamp-2" style={{ color: TEXT }}>{post.title}</h2>
+                    {post.excerpt && <p className="text-sm line-clamp-2" style={{ color: MUTED }}>{post.excerpt}</p>}
+                    <div className="flex items-center gap-3 text-xs pt-2" style={{ color: MUTED }}>
+                      {post.authorName && <span>{post.authorName}</span>}
+                      {post.readTime && <span>{post.readTime} min read</span>}
+                    </div>
+                    <span className="text-xs font-semibold" style={{ color: BLUE }}>Read Article →</span>
                   </div>
-                </div>
-              </a>
-            ))}
-          </div>
-        )}
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
+
+      {/* CTA */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-14">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-5">
+          <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Ready to Get Started?</h2>
+          <p style={{ color: MUTED }}>Request a free quote or upload photos of your property for a more detailed assessment.</p>
+          <div className="flex flex-wrap gap-3 justify-center">
+            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
+            <OutlineBtn href={`/site/${tenantSlug}/visualiser`}>Render Visualiser</OutlineBtn>
+          </div>
+        </div>
+      </section>
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// BLOG POST PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: post, isLoading } = useGetPublicBlogPost(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
   const p = post as any;
+
   return (
     <div>
       <PageSEO title={p ? `${p.title} | AMO Rendering` : "Blog | AMO Rendering"} description={p?.excerpt || "Rendering advice and tips from AMO Rendering — specialists in silicone render, monocouche and EWI across Essex and London."}/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+
       {isLoading ? <Spinner/> : p ? (
         <>
           {p.heroImageUrl && <img src={p.heroImageUrl} alt={p.title} className="w-full h-64 object-cover"/>}
-          <article className="max-w-3xl mx-auto px-4 sm:px-6 py-12">
-            <div className="mb-8 space-y-3">
-              <a href={`/site/${tenantSlug}/blog`} className="text-xs font-semibold uppercase tracking-wide" style={{ color: MUTED }}>← Blog</a>
-              <h1 className="text-3xl font-bold" style={{ color: TEXT }}>{p.title}</h1>
-              <div className="flex items-center gap-4 text-sm" style={{ color: MUTED }}>
-                {p.authorName && <span>By {p.authorName}</span>}
-                {p.readTime && <span>{p.readTime} min read</span>}
-                {p.publishedAt && <span>{new Date(p.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+                <article className="lg:col-span-2 space-y-6">
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
+                      <a href={`/site/${tenantSlug}/blog`} className="font-semibold hover:text-[#1F8CFF]">← Blog</a>
+                      <span>/</span>
+                      <span className="font-semibold uppercase tracking-wide" style={{ color: BLUE }}>Rendering Guide</span>
+                    </div>
+                    <h1 className="text-3xl font-bold" style={{ color: TEXT }}>{p.title}</h1>
+                    <div className="flex items-center gap-4 text-sm" style={{ color: MUTED }}>
+                      {p.authorName && <span>By {p.authorName}</span>}
+                      {p.readTime && <span>{p.readTime} min read</span>}
+                      {p.publishedAt && <span>{new Date(p.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
+                    </div>
+                    {p.excerpt && <p className="text-lg font-medium leading-relaxed border-l-4 pl-4" style={{ color: TEXT, borderColor: BLUE }}>{p.excerpt}</p>}
+                  </div>
+                  <div className="prose prose-slate max-w-none leading-relaxed" style={{ color: TEXT }}>{p.content}</div>
+                  <div className="rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: LIGHT_BG }}>
+                    <h3 className="text-xl font-bold" style={{ color: TEXT }}>Ready to transform your property?</h3>
+                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos for a free rendering quote from AMO.</p>
+                    <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
+                  </div>
+                </article>
+
+                <aside className="space-y-6">
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
+                    <h3 className="font-bold" style={{ color: TEXT }}>Get A Free Quote</h3>
+                    <p className="text-sm" style={{ color: MUTED }}>Upload photos of your property and tell us about the finish you want.</p>
+                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
+                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>Our Services</h3>
+                    {STATIC_SERVICES.map(s => (
+                      <a key={s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{s.name}</a>
+                    ))}
+                  </div>
+                  <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
+                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>More Guides</h3>
+                    <a href={`/site/${tenantSlug}/blog`} className="block text-sm font-semibold" style={{ color: BLUE }}>← Back to all guides</a>
+                  </div>
+                </aside>
               </div>
-              {p.excerpt && <p className="text-lg font-medium leading-relaxed border-l-4 pl-4" style={{ color: TEXT, borderColor: BLUE }}>{p.excerpt}</p>}
             </div>
-            <div className="prose prose-slate max-w-none leading-relaxed" style={{ color: TEXT }}>{p.content}</div>
-            <div className="mt-12 rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: LIGHT_BG }}>
-              <h3 className="text-xl font-bold" style={{ color: TEXT }}>Ready to transform your property?</h3>
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
-            </div>
-          </article>
+          </section>
         </>
-      ) : <div className="p-8 text-center text-slate-500">Post not found</div>}
+      ) : <div className="p-8 text-center" style={{ color: MUTED }}>Post not found</div>}
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
 
-const PROPERTY_TYPES = ["Detached house","Semi-detached house","Terraced house","End-of-terrace","Bungalow","Commercial property","Flat / apartment block","Other"];
+// ─────────────────────────────────────────────────────────────────────────────
+// QUOTE PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+const PROPERTY_TYPES = ["Terraced house","Semi-detached","Detached","End-of-terrace","Bungalow","Commercial property","Flat / apartment block","Other"];
 const SURFACE_TYPES = ["Existing render","Pebbledash","Brick","Block","Other / not sure"];
-const TIMEFRAMES = ["ASAP","Within 1 month","1–3 months","3–6 months","Planning stage"];
+const TIMEFRAMES = ["As soon as possible","Within 1 month","1–3 months","3–6 months","Planning stage"];
 
 function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
@@ -1065,77 +1602,130 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
-      <PageSEO title="Get a Free Rendering Quote | AMO Rendering — Essex & London" description="Request a free rendering quote from AMO Rendering. Upload photos of your property and we'll recommend the right render system. Serving Essex and London."/>
+      <PageSEO title="Get a Free Rendering Quote | AMO Rendering — Essex & London" description="Request a free rendering quote from AMO Rendering. Upload photos of your property and we'll recommend the right render system."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <div style={{ backgroundColor: NAVY }} className="py-16 px-4 text-center text-white">
-        <h1 className="text-4xl font-bold">Request A Rendering Quote</h1>
-        <p className="text-lg text-slate-300 mt-3 max-w-xl mx-auto">Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system.</p>
-      </div>
-      <section className="py-16 max-w-2xl mx-auto px-4 sm:px-6">
-        {submitted ? (
-          <div className="text-center space-y-5 py-16">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
-              <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+      <PageHero tenantSlug={tenantSlug} crumb="Request A Rendering Quote" title="Request A Rendering Quote" subtitle="Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system."/>
+
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+
+            {/* Intro aside */}
+            <aside className="lg:col-span-2 space-y-6">
+              <div className="rounded-2xl border border-slate-200 p-7 space-y-5 bg-white shadow-sm">
+                <h2 className="text-xl font-bold" style={{ color: TEXT }}>Get A Clearer Starting Point</h2>
+                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>The more detail you provide, the easier it is for AMO to understand your exterior walls, current surface and desired finish.</p>
+                <ul className="space-y-3">
+                  {["Upload front, side and rear photos","Tell us your existing surface","Select the service you are interested in","Add your postcode and timeframe"].map(b => (
+                    <li key={b} className="flex items-start gap-2">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                      <span className="text-sm" style={{ color: TEXT }}>{b}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: NAVY }}>
+                <h3 className="font-bold">What Happens Next?</h3>
+                <div className="space-y-3">
+                  {[{ n: 1, text: "AMO reviews your photos and property details." },{ n: 2, text: "A suitable rendering option is recommended." },{ n: 3, text: "You receive a quote based on the work required." }].map(s => (
+                    <div key={s.n} className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: BLUE }}>{s.n}</div>
+                      <p className="text-sm text-slate-300">{s.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
+
+            {/* Form */}
+            <div className="lg:col-span-3">
+              {submitted ? (
+                <div className="text-center space-y-5 py-16">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
+                    <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Quote Request Received</h2>
+                  <p style={{ color: MUTED }}>Thank you. We'll review your request and be in touch within 24 hours.</p>
+                  <BlueBtn href={`/site/${tenantSlug}`}>Back to Home</BlueBtn>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+                  <h2 className="font-bold text-lg" style={{ color: TEXT }}>Your Details</h2>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className={labelCls} style={{ color: MUTED }}>Full name *</label><input required className={inputCls} placeholder="Full name" value={form.firstName + (form.lastName ? ' ' + form.lastName : '')} onChange={e => { const parts = e.target.value.split(' '); setForm({ ...form, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') }); }}/></div>
+                    <div><label className={labelCls} style={{ color: MUTED }}>Phone number *</label><input required className={inputCls} placeholder="Phone number" value={form.phone} onChange={f('phone')}/></div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className={labelCls} style={{ color: MUTED }}>Email address</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/></div>
+                    <div><label className={labelCls} style={{ color: MUTED }}>Postcode *</label><input required className={inputCls} placeholder="Postcode" value={form.postcode} onChange={f('postcode')}/></div>
+                  </div>
+                  <div><label className={labelCls} style={{ color: MUTED }}>Property address</label><input className={inputCls} placeholder="Street address" value={form.address} onChange={f('address')}/></div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Property type</label>
+                      <select className={inputCls} value={form.propertyType} onChange={f('propertyType')}>
+                        <option value="">Select type...</option>
+                        {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Service required</label>
+                      <select className={inputCls} value={form.serviceInterest} onChange={f('serviceInterest')}>
+                        <option value="">Select service...</option>
+                        {["Silicone Rendering","Monocouche Rendering","K Rend","External Wall Insulation","Pebbledash Removal","Render Repairs","Not sure"].map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Existing surface</label>
+                      <select className={inputCls} value={form.existingSurface} onChange={f('existingSurface')}>
+                        <option value="">Select...</option>
+                        {SURFACE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Desired finish</label>
+                      <select className={inputCls} value={form.desiredFinish} onChange={f('desiredFinish')}>
+                        <option value="">Select...</option>
+                        {["Smooth modern finish","Textured finish","Coloured render","Insulated render","Not sure"].map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div>
+                    <label className={labelCls} style={{ color: MUTED }}>Preferred timeframe</label>
+                    <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
+                      <option value="">Select...</option>
+                      {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                  </div>
+                  <div><label className={labelCls} style={{ color: MUTED }}>Additional notes</label><textarea rows={3} className={inputCls} placeholder="Anything else about your property or project..." value={form.notes} onChange={f('notes')}/></div>
+                  <ImageUpload
+                    label="Property photos (recommended — helps us quote accurately)"
+                    hint="Upload front, side or rear views · JPG or PNG · max 10MB"
+                    onUploaded={url => setForm({ ...form, photoUrls: [url] })}
+                  />
+                  <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
+                    {mutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
+                  </button>
+                  {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
+                </form>
+              )}
             </div>
-            <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Quote Request Received</h2>
-            <p style={{ color: MUTED }}>Thank you! We'll review your request and be in touch within 24 hours.</p>
-            <BlueBtn href={`/site/${tenantSlug}`}>Back to Home</BlueBtn>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={labelCls} style={{ color: MUTED }}>First name *</label><input required className={inputCls} value={form.firstName} onChange={f('firstName')}/></div>
-              <div><label className={labelCls} style={{ color: MUTED }}>Last name *</label><input required className={inputCls} value={form.lastName} onChange={f('lastName')}/></div>
-            </div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Phone *</label><input required className={inputCls} value={form.phone} onChange={f('phone')}/></div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Email *</label><input required type="email" className={inputCls} value={form.email} onChange={f('email')}/></div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Property address</label><input className={inputCls} value={form.address} onChange={f('address')}/></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className={labelCls} style={{ color: MUTED }}>Town / city</label><input className={inputCls} value={form.city} onChange={f('city')}/></div>
-              <div><label className={labelCls} style={{ color: MUTED }}>Postcode</label><input className={inputCls} value={form.postcode} onChange={f('postcode')}/></div>
-            </div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Property type</label>
-              <select className={inputCls} value={form.propertyType} onChange={f('propertyType')}>
-                <option value="">Select...</option>
-                {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Service required</label>
-              <select className={inputCls} value={form.serviceInterest} onChange={f('serviceInterest')}>
-                <option value="">Select...</option>
-                {["Silicone Rendering","Monocouche Rendering","K Rend","External Wall Insulation","Pebbledash Removal","Render Repairs","Crack Repairs","Not sure"].map(s => <option key={s} value={s}>{s}</option>)}
-              </select>
-            </div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Existing surface</label>
-              <select className={inputCls} value={form.existingSurface} onChange={f('existingSurface')}>
-                <option value="">Select...</option>
-                {SURFACE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Desired finish</label><input className={inputCls} placeholder="e.g. smooth white silicone, light grey monocouche..." value={form.desiredFinish} onChange={f('desiredFinish')}/></div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Timeframe</label>
-              <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
-                <option value="">Select...</option>
-                {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
-              </select>
-            </div>
-            <div><label className={labelCls} style={{ color: MUTED }}>Additional notes</label><textarea rows={4} className={inputCls} placeholder="Any additional details about your property or project..." value={form.notes} onChange={f('notes')}/></div>
-            <ImageUpload
-              label="Property photos (optional — helps us quote accurately)"
-              hint="Upload a photo of your property exterior · JPG or PNG · max 10MB"
-              onUploaded={url => setForm({ ...form, photoUrls: [url] })}
-            />
-            <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
-              {mutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
-            </button>
-            {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
-          </form>
-        )}
+        </div>
       </section>
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CONTACT PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function ContactPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
@@ -1156,72 +1746,106 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Contact AMO Rendering | Rendering Specialists — Essex & London" description="Get in touch with AMO Rendering to discuss your property and rendering options. Based in Grays, Thurrock — serving Essex and London."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <SectionHero title="Contact AMO Rendering" subtitle="Get in touch — we're happy to discuss your property and rendering options"/>
-      <section className="py-16 max-w-4xl mx-auto px-4 sm:px-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          <div className="space-y-8">
-            <div>
-              <h2 className="text-xl font-bold mb-5" style={{ color: TEXT }}>Get In Touch</h2>
-              <div className="space-y-4 text-sm" style={{ color: MUTED }}>
-                {settings?.phone && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: BLUE + "15" }}>
-                      <svg className="w-4 h-4" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
+      <PageHero tenantSlug={tenantSlug} crumb="Contact AMO Rendering" title="Contact AMO Rendering" subtitle="Speak to AMO Rendering about silicone rendering, K Rend, EWI, pebbledash removal or render repairs across Essex and London."/>
+
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+            {/* Contact details */}
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-200 p-7 space-y-5 bg-white shadow-sm">
+                <h2 className="text-xl font-bold" style={{ color: TEXT }}>Contact Details</h2>
+                <div className="space-y-4 text-sm">
+                  <div>
+                    <p className="font-semibold" style={{ color: TEXT }}>Email</p>
+                    <a href="mailto:info@amorendering.co.uk" className="hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>info@amorendering.co.uk</a>
+                  </div>
+                  <div>
+                    <p className="font-semibold" style={{ color: TEXT }}>Direct Contact</p>
+                    <a href="mailto:mark@amorendering.co.uk" className="hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>mark@amorendering.co.uk</a>
+                  </div>
+                  {settings?.phone && (
+                    <div>
+                      <p className="font-semibold" style={{ color: TEXT }}>Phone</p>
+                      <a href={`tel:${settings.phone}`} className="hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{settings.phone}</a>
                     </div>
-                    <div><p className="font-semibold" style={{ color: TEXT }}>Phone</p><a href={`tel:${settings.phone}`} className="hover:text-[#1F8CFF] transition-colors">{settings.phone}</a></div>
+                  )}
+                  <div>
+                    <p className="font-semibold" style={{ color: TEXT }}>Location</p>
+                    <p style={{ color: MUTED }}>Based in Grays, Thurrock. Serving Essex and London.</p>
                   </div>
-                )}
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: BLUE + "15" }}>
-                    <svg className="w-4 h-4" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+                  <div>
+                    <p className="font-semibold" style={{ color: TEXT }}>Services</p>
+                    <p style={{ color: MUTED }}>Silicone rendering, K Rend, monocouche, EWI, pebbledash removal and repairs.</p>
                   </div>
-                  <div><p className="font-semibold" style={{ color: TEXT }}>Email</p><a href="mailto:info@amorendering.co.uk" className="hover:text-[#1F8CFF] transition-colors">info@amorendering.co.uk</a></div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: BLUE + "15" }}>
-                    <svg className="w-4 h-4" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/></svg>
-                  </div>
-                  <div><p className="font-semibold" style={{ color: TEXT }}>Location</p><p>Grays, Thurrock, Essex</p><p className="text-xs">Serving Essex and London</p></div>
                 </div>
               </div>
-            </div>
-            <div className="rounded-xl p-5 space-y-2" style={{ backgroundColor: LIGHT_BG }}>
-              <p className="font-semibold text-sm" style={{ color: TEXT }}>Prefer to send photos?</p>
-              <p className="text-sm" style={{ color: MUTED }}>Use our quote form to upload photos of your property and we'll provide a more accurate quote.</p>
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Photo Quote</BlueBtn>
-            </div>
-          </div>
-          <div>
-            {submitted ? (
-              <div className="text-center space-y-4 py-12">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
-                  <svg className="w-6 h-6" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
-                </div>
-                <h3 className="font-bold text-lg" style={{ color: TEXT }}>Message Sent</h3>
-                <p className="text-sm" style={{ color: MUTED }}>We'll get back to you within 24 hours.</p>
+
+              <div className="rounded-2xl border border-slate-200 p-7 space-y-4 bg-white">
+                <h3 className="font-bold" style={{ color: TEXT }}>Prefer to Send Photos?</h3>
+                <p className="text-sm" style={{ color: MUTED }}>Use the quote form to upload photos of your property and we'll provide a more accurate quote.</p>
+                <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Photo Quote</BlueBtn>
               </div>
-            ) : (
-              <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                <h3 className="font-bold text-lg" style={{ color: TEXT }}>Send a Message</h3>
-                <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Your name *</label><input required className="w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F8CFF]" value={form.senderName} onChange={e => setForm({ ...form, senderName: e.target.value })}/></div>
-                <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Email</label><input type="email" className={inputCls} value={form.senderEmail} onChange={e => setForm({ ...form, senderEmail: e.target.value })}/></div>
-                <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Phone</label><input className={inputCls} value={form.senderPhone} onChange={e => setForm({ ...form, senderPhone: e.target.value })}/></div>
-                <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Subject</label><input className={inputCls} value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}/></div>
-                <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Message *</label><textarea required rows={5} className={inputCls} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}/></div>
-                <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
-                  {mutation.isPending ? 'Sending...' : 'Send Message'}
-                </button>
-                {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
-              </form>
-            )}
+
+              <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: NAVY }}>
+                <h3 className="font-bold">Areas We Cover</h3>
+                <div className="flex flex-wrap gap-2">
+                  {["Grays","Thurrock","Essex","London","Basildon","Romford"].map(a => (
+                    <span key={a} className="text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-300">{a}</span>
+                  ))}
+                </div>
+                <a href={`/site/${tenantSlug}/areas`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>View All Areas →</a>
+              </div>
+            </div>
+
+            {/* Form */}
+            <div>
+              {submitted ? (
+                <div className="text-center space-y-4 py-12">
+                  <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
+                    <svg className="w-6 h-6" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <h3 className="font-bold text-lg" style={{ color: TEXT }}>Message Sent</h3>
+                  <p className="text-sm" style={{ color: MUTED }}>We'll get back to you within 24 hours.</p>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-2xl border border-slate-200 p-7 shadow-sm">
+                  <h3 className="font-bold text-lg" style={{ color: TEXT }}>Send A Message</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Name *</label><input required className={inputCls} placeholder="Name" value={form.senderName} onChange={e => setForm({ ...form, senderName: e.target.value })}/></div>
+                    <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Phone</label><input className={inputCls} placeholder="Phone" value={form.senderPhone} onChange={e => setForm({ ...form, senderPhone: e.target.value })}/></div>
+                  </div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Email</label><input type="email" className={inputCls} placeholder="Email" value={form.senderEmail} onChange={e => setForm({ ...form, senderEmail: e.target.value })}/></div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Reason for enquiry</label>
+                    <select className={inputCls} value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })}>
+                      <option value="">Select...</option>
+                      {["Quote request","Service question","Existing project","General enquiry"].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Message *</label><textarea required rows={5} className={inputCls} placeholder="How can AMO help?" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}/></div>
+                  <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
+                    {mutation.isPending ? 'Sending...' : 'Send Message'}
+                  </button>
+                  {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
+                </form>
+              )}
+            </div>
           </div>
         </div>
       </section>
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// VISUALISER PAGE
+// ─────────────────────────────────────────────────────────────────────────────
 
 function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
@@ -1242,49 +1866,117 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Render Visualiser | AMO Rendering — See Your Property Transformed" description="Upload a photo of your property and AMO Rendering will show you what new render could look like. Free visualisation service — Essex and London."/>
+      <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <div style={{ backgroundColor: NAVY }} className="py-16 px-4 text-center text-white">
-        <h1 className="text-4xl font-bold">Render Visualiser</h1>
-        <p className="text-lg text-slate-300 mt-3">Upload a photo of your property and we'll show you what new render could look like</p>
-      </div>
-      <section className="py-16 max-w-2xl mx-auto px-4 sm:px-6">
-        {submitted ? (
-          <div className="text-center space-y-5 py-16">
-            <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
-              <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+      <PageHero tenantSlug={tenantSlug} crumb="Render Visualiser Request" title="Render Visualiser Request" subtitle="Upload your property photos, choose a render finish and tell AMO what exterior look you want to achieve."/>
+
+      <section className="py-16 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+
+            {/* Colour/finish panel */}
+            <div className="space-y-6">
+              <div className="rounded-2xl border border-slate-200 p-7 space-y-6 bg-white shadow-sm">
+                <h2 className="text-xl font-bold" style={{ color: TEXT }}>Choose Your Finish Direction</h2>
+                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>This service helps AMO understand your preferred style. Upload photos and choose a finish and colour direction.</p>
+
+                <div>
+                  <h3 className="font-bold text-sm mb-3" style={{ color: TEXT }}>Popular colour directions</h3>
+                  <div className="flex gap-3">
+                    {[
+                      { name: "White", hex: "#F5F5F0", border: "#D1D5DB" },
+                      { name: "Light Grey", hex: "#D4D4D4", border: "#9CA3AF" },
+                      { name: "Cream", hex: "#FEF3C7", border: "#D97706" },
+                      { name: "Sand", hex: "#E8D5B0", border: "#92400E" },
+                    ].map(c => (
+                      <div key={c.name} className="text-center space-y-1">
+                        <div className="w-12 h-12 rounded-full border-2 cursor-pointer hover:scale-110 transition-transform" style={{ backgroundColor: c.hex, borderColor: c.border }}/>
+                        <p className="text-xs" style={{ color: MUTED }}>{c.name}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="font-bold text-sm mb-3" style={{ color: TEXT }}>Finish types</h3>
+                  <ul className="space-y-2">
+                    {["Smooth silicone render","Textured K Rend style","Coloured monocouche render","Insulated render finish"].map(f => (
+                      <li key={f} className="flex items-center gap-2 text-sm" style={{ color: MUTED }}>
+                        <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: BLUE }}/>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+
+              <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: NAVY }}>
+                <h3 className="font-bold">How The Visualiser Works</h3>
+                <div className="space-y-3">
+                  {[{ n: 1, text: "Upload a clear photo of your property's exterior." },{ n: 2, text: "Choose a render finish and colour direction." },{ n: 3, text: "AMO applies the chosen finish digitally to your photo." },{ n: 4, text: "You receive a visualisation to help decide." }].map(s => (
+                    <div key={s.n} className="flex items-start gap-3">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: BLUE }}>{s.n}</div>
+                      <p className="text-sm text-slate-300">{s.text}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-            <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Request Received</h2>
-            <p style={{ color: MUTED }}>We'll create a visualisation of your property and send it to you within 48 hours.</p>
-            <BlueBtn href={`/site/${tenantSlug}`}>Back to Home</BlueBtn>
+
+            {/* Form */}
+            <div>
+              {submitted ? (
+                <div className="text-center space-y-5 py-12">
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
+                    <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                  </div>
+                  <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Request Received</h2>
+                  <p style={{ color: MUTED }}>We'll create a visualisation of your property and send it to you within 48 hours.</p>
+                  <BlueBtn href={`/site/${tenantSlug}`}>Back to Home</BlueBtn>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-2xl border border-slate-200 p-7 shadow-sm">
+                  <h3 className="font-bold text-lg" style={{ color: TEXT }}>Submit Visualiser Request</h3>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>First name *</label><input required className={inputCls} placeholder="First name" value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })}/></div>
+                    <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Last name *</label><input required className={inputCls} placeholder="Last name" value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })}/></div>
+                  </div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Email *</label><input required type="email" className={inputCls} placeholder="Email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}/></div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Phone</label><input className={inputCls} placeholder="Phone" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}/></div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Property address</label><input className={inputCls} placeholder="Property address or postcode" value={form.address} onChange={e => setForm({ ...form, address: e.target.value })}/></div>
+                  <div>
+                    <label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Preferred colour direction</label>
+                    <select className={inputCls} value={form.colourPreference} onChange={e => setForm({ ...form, colourPreference: e.target.value })}>
+                      <option value="">Select...</option>
+                      {["White / off-white","Light grey","Cream / sand","Dark grey","Not sure — open to suggestions"].map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  </div>
+                  <ImageUpload
+                    label="Property photo (strongly recommended)"
+                    hint="Upload a clear front view of your property · JPG or PNG · max 10MB"
+                    onUploaded={url => setForm({ ...form, photoUrls: [url] })}
+                  />
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Describe the look you want</label><textarea rows={3} className={inputCls} placeholder="Tell us what exterior look you want to achieve..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></div>
+                  <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
+                    {mutation.isPending ? 'Submitting...' : 'Submit Visualiser Request'}
+                  </button>
+                  {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
+                </form>
+              )}
+            </div>
           </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-            <p className="text-sm leading-relaxed" style={{ color: MUTED }}>Upload a photo of your property and we'll show you exactly what it could look like with new render applied.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>First name *</label><input required className={inputCls} value={form.firstName} onChange={e => setForm({ ...form, firstName: e.target.value })}/></div>
-              <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Last name *</label><input required className={inputCls} value={form.lastName} onChange={e => setForm({ ...form, lastName: e.target.value })}/></div>
-            </div>
-            <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Email *</label><input required type="email" className={inputCls} value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}/></div>
-            <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Phone</label><input className={inputCls} value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}/></div>
-            <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Property address</label><input className={inputCls} value={form.address} onChange={e => setForm({ ...form, address: e.target.value })}/></div>
-            <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Colour preference</label><input placeholder="e.g. Off-white, light grey, cream..." className={inputCls} value={form.colourPreference} onChange={e => setForm({ ...form, colourPreference: e.target.value })}/></div>
-            <ImageUpload
-              label="Property photo (optional but recommended)"
-              hint="JPG or PNG · max 10MB — we'll apply the colour digitally"
-              onUploaded={url => setForm({ ...form, photoUrls: [url] })}
-            />
-            <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Additional notes</label><textarea rows={3} className={inputCls} value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}/></div>
-            <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
-              {mutation.isPending ? 'Submitting...' : 'Submit Visualiser Request'}
-            </button>
-            {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
-          </form>
-        )}
+        </div>
       </section>
+
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ROUTER
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function PublicSiteApp() {
   const params = useParams<{ tenantSlug: string }>();

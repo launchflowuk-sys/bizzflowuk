@@ -1,0 +1,49 @@
+REPLIT INTEGRATION INSTRUCTION
+
+Use this AMO Rendering static frontend design pack as the source of truth for the public-facing AMO website.
+
+Do not rebuild the backend.
+Do not change the database schema unless absolutely required.
+Do not change the dashboard, CRM, portal or API architecture.
+Do not change multi-tenant logic.
+
+Port these static HTML/CSS layouts into the existing React + Vite AMO tenant public website routes.
+
+Routes to update:
+- /site/amo-rendering
+- /site/amo-rendering/services
+- /site/amo-rendering/services/:slug
+- /site/amo-rendering/areas
+- /site/amo-rendering/areas/:slug
+- /site/amo-rendering/gallery
+- /site/amo-rendering/before-after
+- /site/amo-rendering/case-studies
+- /site/amo-rendering/case-studies/:slug
+- /site/amo-rendering/reviews
+- /site/amo-rendering/faqs
+- /site/amo-rendering/blog
+- /site/amo-rendering/blog/:slug
+- /site/amo-rendering/quote
+- /site/amo-rendering/contact
+- /site/amo-rendering/visualiser
+
+Rules:
+- Every page must be full top-to-bottom, not one section.
+- Use AMO blue #1F8CFF for CTAs.
+- No orange buttons.
+- No SaaS styling.
+- No floating software widgets.
+- No startup/tech wording.
+- No Manchester, Salford, Bolton, Oldham, Birmingham or West Midlands.
+- Keep Essex/London targeting.
+- Keep silicone rendering as the primary service focus.
+- Keep rendering transformation as the emotional driver.
+
+Wire forms:
+- Quote form -> existing quote API
+- Contact form -> existing contact API
+- Visualiser form -> existing visualiser API
+- Upload fields -> existing object storage/upload flow if available
+
+Final check:
+Every public route must look complete on desktop and mobile, with multiple designed sections, proper CTAs, full copy and consistent AMO Rendering brand direction.
