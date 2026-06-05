@@ -559,18 +559,40 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {recentCaseStudies?.length > 0 && (
         <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="text-center mb-12">
-              <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Our Work</p>
-              <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Featured Case Studies</h2>
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: BLUE }}>Our Work</p>
+                <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Featured Case Studies</h2>
+                <p className="mt-2 text-sm" style={{ color: MUTED }}>Real projects. Real results. Click to read the full story.</p>
+              </div>
+              <a href={`${siteBase}/case-studies`} className="text-sm font-semibold shrink-0" style={{ color: BLUE }}>View all case studies →</a>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {recentCaseStudies.map((cs: any) => (
-                <a key={cs.id} href={`${siteBase}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
-                  {cs.heroImageUrl ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-48 object-cover"/> : <div className="w-full h-48 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}><svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg></div>}
-                  <div className="p-5 space-y-2">
-                    {cs.location && <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{cs.location}</div>}
-                    <h3 className="font-bold" style={{ color: TEXT }}>{cs.title}</h3>
-                    {cs.tagline && <p className="text-sm" style={{ color: MUTED }}>{cs.tagline}</p>}
+                <a
+                  key={cs.id}
+                  href={`${siteBase}/case-studies/${cs.slug}`}
+                  className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col"
+                  style={{ minHeight: "380px" }}
+                >
+                  {/* Image */}
+                  {cs.heroImageUrl
+                    ? <img src={cs.heroImageUrl} alt={cs.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                    : <div className="absolute inset-0" style={{ backgroundColor: NAVY }}/>
+                  }
+                  {/* Gradient overlay */}
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,22,40,0.92) 0%, rgba(10,22,40,0.35) 50%, transparent 100%)" }}/>
+                  {/* Location badge top-left */}
+                  {cs.location && (
+                    <div className="relative z-10 p-4">
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full text-white" style={{ backgroundColor: BLUE }}>{cs.location}</span>
+                    </div>
+                  )}
+                  {/* Text pinned to bottom */}
+                  <div className="relative z-10 mt-auto p-6 space-y-2">
+                    <h3 className="font-bold text-lg text-white leading-snug">{cs.title}</h3>
+                    {cs.tagline && <p className="text-sm text-slate-300 leading-relaxed">{cs.tagline}</p>}
+                    <span className="inline-block text-xs font-semibold pt-2" style={{ color: "#8EC8FF" }}>Read case study →</span>
                   </div>
                 </a>
               ))}
@@ -1288,21 +1310,27 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
           {isLoading ? <Spinner/> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(caseStudies as any[])?.map((cs: any) => (
-                <a key={cs.id} href={`${siteBase}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
+                <a
+                  key={cs.id}
+                  href={`${siteBase}/case-studies/${cs.slug}`}
+                  className="group relative rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow duration-300 flex flex-col"
+                  style={{ minHeight: "360px" }}
+                >
                   {cs.heroImageUrl
-                    ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
-                    : <div className="w-full h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}>
-                        <svg className="w-14 h-14 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
-                      </div>
+                    ? <img src={cs.heroImageUrl} alt={cs.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                    : <div className="absolute inset-0" style={{ backgroundColor: NAVY }}/>
                   }
-                  <div className="p-5 space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {cs.location && <span className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{cs.location}</span>}
+                  <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,22,40,0.92) 0%, rgba(10,22,40,0.35) 55%, transparent 100%)" }}/>
+                  {cs.location && (
+                    <div className="relative z-10 p-4">
+                      <span className="text-xs font-semibold px-2 py-1 rounded-full text-white" style={{ backgroundColor: BLUE }}>{cs.location}</span>
                     </div>
-                    <h2 className="font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{cs.title}</h2>
-                    <p className="text-sm" style={{ color: MUTED }}>{cs.tagline}</p>
-                    {cs.projectDuration && <div className="text-xs" style={{ color: MUTED }}>Duration: {cs.projectDuration}</div>}
-                    <span className="text-xs font-semibold" style={{ color: BLUE }}>Read Case Study →</span>
+                  )}
+                  <div className="relative z-10 mt-auto p-6 space-y-2">
+                    <h2 className="font-bold text-lg text-white leading-snug">{cs.title}</h2>
+                    <p className="text-sm text-slate-300">{cs.tagline}</p>
+                    {cs.projectDuration && <p className="text-xs text-slate-400">Duration: {cs.projectDuration}</p>}
+                    <span className="inline-block text-xs font-semibold pt-1" style={{ color: "#8EC8FF" }}>Read case study →</span>
                   </div>
                 </a>
               ))}
