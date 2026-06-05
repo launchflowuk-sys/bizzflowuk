@@ -1247,25 +1247,69 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      {/* Project gallery (photo grid — shown when real photos are uploaded) */}
-      {!isLoading && (images as any[])?.length > 0 && (
-        <section className="py-16 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <div className="mb-10">
-              <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: BLUE }}>Project Photos</p>
-              <h2 className="text-2xl font-bold" style={{ color: TEXT }}>From Our Portfolio</h2>
-            </div>
-            <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
-              {(images as any[]).map((img: any) => (
-                <div key={img.id} className="break-inside-avoid rounded-xl overflow-hidden border border-slate-100 shadow-sm">
-                  <img src={img.imageUrl} alt={img.altText || img.caption || "Rendering project"} className="w-full object-cover"/>
-                  {img.caption && <p className="px-4 py-3 text-xs" style={{ color: MUTED }}>{img.caption}</p>}
+      {/* Project gallery — regular photos in 3-col grid, featured images as full-width partitions */}
+      {!isLoading && (images as any[])?.length > 0 && (() => {
+        const sorted = [...(images as any[])].sort((a, b) => (a.sortOrder ?? 999) - (b.sortOrder ?? 999));
+        // Split into segments: each segment is an array of regular images, followed by an optional featured divider
+        const segments: { regulars: any[]; divider: any | null }[] = [];
+        let current: any[] = [];
+        for (const img of sorted) {
+          if (img.featured) {
+            segments.push({ regulars: current, divider: img });
+            current = [];
+          } else {
+            current.push(img);
+          }
+        }
+        if (current.length > 0) segments.push({ regulars: current, divider: null });
+
+        return (
+          <section className="py-16 bg-white">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6">
+              <div className="mb-10">
+                <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: BLUE }}>Project Portfolio</p>
+                <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Work Across Essex & London</h2>
+              </div>
+              {segments.map((seg, si) => (
+                <div key={si}>
+                  {/* Regular photos grid */}
+                  {seg.regulars.length > 0 && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                      {seg.regulars.map((img: any) => (
+                        <div key={img.id} className="rounded-xl overflow-hidden border border-slate-100 shadow-sm group">
+                          <div className="overflow-hidden">
+                            <img src={img.imageUrl} alt={img.altText || img.caption || "Rendering project"} className="w-full aspect-[4/3] object-cover group-hover:scale-[1.03] transition-transform duration-500"/>
+                          </div>
+                          {img.caption && (
+                            <div className="px-4 py-3 flex items-center gap-2">
+                              <span className="text-xs" style={{ color: MUTED }}>📍</span>
+                              <p className="text-xs font-medium" style={{ color: MUTED }}>{img.caption}</p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {/* Featured full-width divider */}
+                  {seg.divider && (
+                    <div className="mb-6 rounded-2xl overflow-hidden shadow-lg relative group">
+                      <img
+                        src={seg.divider.imageUrl}
+                        alt={seg.divider.altText || seg.divider.caption || "Transformation"}
+                        className="w-full object-cover"
+                        style={{ maxHeight: "480px", objectPosition: "center" }}
+                      />
+                      <div className="absolute bottom-0 left-0 right-0 px-6 py-4" style={{ background: "linear-gradient(to top, rgba(10,22,40,0.75), transparent)" }}>
+                        <p className="text-white font-semibold text-sm">📍 {seg.divider.caption}</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
-          </div>
-        </section>
-      )}
+          </section>
+        );
+      })()}
 
       <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
