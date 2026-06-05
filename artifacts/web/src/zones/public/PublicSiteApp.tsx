@@ -34,6 +34,15 @@ const STATIC_SERVICES = [
   { slug: "render-repairs", name: "Render Repairs", tagline: "STOP DAMAGE BEFORE IT SPREADS", desc: "Repair cracked, damaged or failing render before it becomes a bigger issue.", benefits: ["Crack and impact repairs","Colour-matched finish","Prevents water ingress"] },
 ];
 
+const SERVICE_CARD_IMAGES: Record<string, string> = {
+  "silicone-render":    "/svc-silicone.webp",
+  "monocouche-render":  "/svc-monocouche.webp",
+  "k-rend":             "/svc-krend.webp",
+  "ewi-systems":        "/gal-ewi-ba.webp",
+  "pebble-dash-removal":"/svc-pebbledash.webp",
+  "render-repairs":     "/ba-silicone.webp",
+};
+
 const PROCESS_STEPS = [
   { n: 1, title: "Send Photos", body: "Upload photos of your property exterior so we can assess the existing condition." },
   { n: 2, title: "Discuss Finish", body: "Choose the render system and appearance that suits your property and budget." },
@@ -710,32 +719,66 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <PageHero tenantSlug={tenantSlug} crumb="Rendering Services Across Essex & London" title="Rendering Services Across Essex & London" subtitle="Specialist exterior rendering services for homeowners and properties across Grays, Thurrock, Essex and London."/>
 
-      {/* Service Cards */}
+      {/* Service Photo Cards */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
-            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Services</p>
+            <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>What We Do</p>
             <h2 className="text-3xl font-bold" style={{ color: TEXT }}>Choose The Right Render System For Your Property</h2>
-            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed" style={{ color: MUTED }}>Every property is different. AMO Rendering helps customers choose the right approach based on the existing surface, desired finish, property type and long-term appearance.</p>
+            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed" style={{ color: MUTED }}>Every property is different. AMO Rendering helps you choose the right approach based on existing surface condition, desired finish and long-term performance.</p>
           </div>
           {isLoading ? <Spinner/> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {list.map((s: any) => (
-                <a key={s.id || s.slug} href={`${siteBase}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 bg-white p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg text-white" style={{ backgroundColor: BLUE }}>{(s.name || '?')[0]}</div>
-                  <h2 className="text-xl font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{s.name}</h2>
-                  {(s.tagline) && <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{s.tagline}</p>}
-                  <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{s.desc || s.description}</p>
-                  {(s.benefits as string[])?.length > 0 && (
-                    <ul className="space-y-2">
-                      {(s.benefits as string[]).slice(0, 3).map((b: string) => (
-                        <li key={b} className="flex items-center gap-2 text-xs" style={{ color: MUTED }}><CheckIcon color={BLUE}/>{b}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <span className="inline-flex items-center gap-1 text-sm font-semibold" style={{ color: BLUE }}>Explore {s.name} →</span>
-                </a>
-              ))}
+              {list.map((s: any) => {
+                const img = SERVICE_CARD_IMAGES[s.slug];
+                return (
+                  <a
+                    key={s.id || s.slug}
+                    href={`${siteBase}/services/${s.slug}`}
+                    className="group rounded-2xl overflow-hidden border border-slate-200 bg-white hover:shadow-xl hover:border-[#1F8CFF] transition-all flex flex-col"
+                  >
+                    {/* Photo */}
+                    <div className="relative overflow-hidden" style={{ height: 220 }}>
+                      {img ? (
+                        <img
+                          src={img}
+                          alt={s.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white" style={{ backgroundColor: NAVY }}>
+                          {(s.name || '?')[0]}
+                        </div>
+                      )}
+                      {/* Tagline pill */}
+                      {s.tagline && (
+                        <div className="absolute top-3 left-3">
+                          <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: BLUE }}>
+                            {s.tagline}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {/* Content */}
+                    <div className="p-6 flex flex-col flex-1 space-y-3">
+                      <h2 className="text-lg font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{s.name}</h2>
+                      <p className="text-sm leading-relaxed flex-1" style={{ color: MUTED }}>{s.desc || s.description}</p>
+                      {(s.benefits as string[])?.length > 0 && (
+                        <ul className="space-y-1.5 pt-1">
+                          {(s.benefits as string[]).slice(0, 3).map((b: string) => (
+                            <li key={b} className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
+                              <CheckIcon color={BLUE}/>{b}
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                      <span className="inline-flex items-center gap-1 text-sm font-semibold pt-1" style={{ color: BLUE }}>
+                        See {s.name} <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
+                      </span>
+                    </div>
+                  </a>
+                );
+              })}
             </div>
           )}
         </div>
@@ -747,9 +790,9 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="space-y-6 text-white">
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#8EC8FF" }}>How We Help</p>
             <h2 className="text-3xl font-bold">Not Sure Which Rendering Service You Need?</h2>
-            <p className="text-slate-300 leading-relaxed">Customers often know the problem before they know the correct render system. AMO can review photos, discuss the existing wall condition and guide you towards the most suitable option.</p>
+            <p className="text-slate-300 leading-relaxed">Customers often know the problem — not the solution. AMO can review photos of your property, discuss the existing wall condition and guide you towards the most suitable option for your budget and finish goals.</p>
             <div className="space-y-6">
-              {[{ n: 1, title: "Send photos", body: "Show the current exterior wall condition." },{ n: 2, title: "Discuss finish", body: "Choose the appearance and render type that suits your property." },{ n: 3, title: "Get a quote", body: "Receive next steps based on the work required." }].map(step => (
+              {[{ n: 1, title: "Send photos", body: "Show the current exterior wall condition so we can assess what's there." },{ n: 2, title: "Discuss finish", body: "Choose the appearance and render type that suits your property and budget." },{ n: 3, title: "Get a quote", body: "Receive clear next steps and a price based on the work required." }].map(step => (
                 <div key={step.n} className="flex items-start gap-4">
                   <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white font-bold" style={{ backgroundColor: BLUE }}>{step.n}</div>
                   <div>
@@ -761,13 +804,12 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
             </div>
             <BlueBtn href={`${siteBase}/quote`}>Request A Quote</BlueBtn>
           </div>
-          <div className="rounded-2xl p-8 bg-slate-800 border border-slate-700 space-y-4">
-            <h3 className="font-bold text-white text-lg">Services Available</h3>
-            {STATIC_SERVICES.map(s => (
-              <a key={s.slug} href={`${siteBase}/services/${s.slug}`} className="flex items-center justify-between py-3 border-b border-slate-700 last:border-0 hover:text-[#8EC8FF] transition-colors">
-                <span className="text-slate-300 text-sm font-medium">{s.name}</span>
-                <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
-              </a>
+          {/* 2×2 photo mosaic */}
+          <div className="grid grid-cols-2 gap-3">
+            {["/svc-silicone.webp", "/svc-monocouche.webp", "/svc-krend.webp", "/svc-pebbledash.webp"].map((src, i) => (
+              <div key={i} className="rounded-xl overflow-hidden" style={{ height: 170 }}>
+                <img src={src} alt="AMO Rendering work" className="w-full h-full object-cover"/>
+              </div>
             ))}
           </div>
         </div>
