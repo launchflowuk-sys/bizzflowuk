@@ -6,7 +6,7 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useGetMe, setAuthTokenGetter, getGetMeQueryKey } from "@workspace/api-client-react";
+import { useGetMe, setAuthTokenGetter, getGetMeQueryKey, useResolveTenantDomain } from "@workspace/api-client-react";
 
 import NotFound from "@/pages/not-found";
 
@@ -270,6 +270,33 @@ function ZoneLoader() {
   return <div className="flex h-screen items-center justify-center text-muted-foreground text-sm">Loading...</div>;
 }
 
+function DomainRouteGuard({ children }: { children: React.ReactNode }) {
+  const hostname = window.location.hostname;
+  const isKnownHost =
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname.includes('.repl') ||
+    hostname.includes('.replit');
+
+  const { data, isLoading, isError } = useResolveTenantDomain(
+    { host: hostname },
+    { query: { enabled: !isKnownHost, retry: false, staleTime: Infinity, gcTime: Infinity } as any }
+  );
+
+  if (!isKnownHost && isLoading) return <ZoneLoader />;
+
+  const slug = (data as any)?.slug;
+  if (!isKnownHost && !isError && slug) {
+    return (
+      <Suspense fallback={<ZoneLoader />}>
+        <PublicSiteApp forcedSlug={slug} forcedBase="" />
+      </Suspense>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 function ClerkProviderWithRoutes() {
   const [, setLocation] = useLocation();
   return (
@@ -286,18 +313,20 @@ function ClerkProviderWithRoutes() {
         <AuthTokenSetup />
         <ClerkQueryClientCacheInvalidator />
         <TooltipProvider>
-          <Suspense fallback={<ZoneLoader />}>
-            <Switch>
-              <Route path="/" component={HomeRedirect} />
-              <Route path="/sign-in/*?" component={SignInPage} />
-              <Route path="/sign-up/*?" component={SignUpPage} />
-              <Route path="/dashboard/*?" component={DashboardApp} />
-              <Route path="/portal/*?" component={PortalApp} />
-              <Route path="/admin/*?" component={AdminApp} />
-              <Route path="/site/:tenantSlug/*?" component={PublicSiteApp} />
-              <Route component={NotFound} />
-            </Switch>
-          </Suspense>
+          <DomainRouteGuard>
+            <Suspense fallback={<ZoneLoader />}>
+              <Switch>
+                <Route path="/" component={HomeRedirect} />
+                <Route path="/sign-in/*?" component={SignInPage} />
+                <Route path="/sign-up/*?" component={SignUpPage} />
+                <Route path="/dashboard/*?" component={DashboardApp} />
+                <Route path="/portal/*?" component={PortalApp} />
+                <Route path="/admin/*?" component={AdminApp} />
+                <Route path="/site/:tenantSlug/*?" component={(_p: any) => <PublicSiteApp />} />
+                <Route component={NotFound} />
+              </Switch>
+            </Suspense>
+          </DomainRouteGuard>
         </TooltipProvider>
       </QueryClientProvider>
     </ClerkProvider>

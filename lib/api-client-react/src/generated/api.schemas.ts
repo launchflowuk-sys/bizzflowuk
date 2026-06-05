@@ -60,6 +60,26 @@ export interface UserSync {
   tenantSlug?: string;
 }
 
+export type UserUpdateRole = typeof UserUpdateRole[keyof typeof UserUpdateRole];
+
+
+export const UserUpdateRole = {
+  SUPER_ADMIN: 'SUPER_ADMIN',
+  TENANT_ADMIN: 'TENANT_ADMIN',
+  STAFF: 'STAFF',
+  CUSTOMER: 'CUSTOMER',
+} as const;
+
+export interface UserUpdate {
+  role?: UserUpdateRole;
+  /** @nullable */
+  tenantId?: number | null;
+}
+
+export interface DomainResolution {
+  slug: string;
+}
+
 export type TenantStatus = typeof TenantStatus[keyof typeof TenantStatus];
 
 
@@ -74,7 +94,7 @@ export interface Tenant {
   slug: string;
   businessType: string;
   /** @nullable */
-  domain?: string | null;
+  customDomain?: string | null;
   /** @nullable */
   phone?: string | null;
   /** @nullable */
@@ -101,7 +121,7 @@ export interface TenantInput {
   /** @minLength 1 */
   slug: string;
   businessType: string;
-  domain?: string;
+  customDomain?: string;
   phone?: string;
   email?: string;
   adminEmail?: string;
@@ -114,7 +134,7 @@ export interface TenantInput {
 export interface TenantUpdate {
   name?: string;
   businessType?: string;
-  domain?: string;
+  customDomain?: string;
   phone?: string;
   email?: string;
   adminEmail?: string;
@@ -1126,6 +1146,10 @@ export interface PipelineStage {
 export interface PipelineData {
   stages: PipelineStage[];
 }
+
+export type ResolveTenantDomainParams = {
+host: string;
+};
 
 export type ListLeadsParams = {
 status?: string;

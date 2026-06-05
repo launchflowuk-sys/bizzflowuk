@@ -30,7 +30,7 @@ router.post("/public/:tenantSlug/contact", async (req, res) => {
       sendEmail({ ...buildContactAdminEmail({ tenantName: tenant.name, name: req.body.name, email: adminEmail, phone: req.body.phone, message: req.body.message }), to: adminEmail }).catch(e => req.log.error({ err: e }, "Failed to send contact admin email"));
     }
     if (customerEmail) {
-      sendEmail({ ...buildContactCustomerEmail({ tenantName: tenant.name, tenantPhone: tenant.phone || '', tenantEmail: adminEmail || tenant.email || '' }), to: customerEmail }).catch(e => req.log.error({ err: e }, "Failed to send contact customer email"));
+      sendEmail({ ...buildContactCustomerEmail({ tenantName: tenant.name, name: req.body.senderName || req.body.name || '', tenantPhone: tenant.phone || '', tenantEmail: adminEmail || tenant.email || '' }), to: customerEmail }).catch(e => req.log.error({ err: e }, "Failed to send contact customer email"));
     }
 
     res.status(201).json(msg[0]);

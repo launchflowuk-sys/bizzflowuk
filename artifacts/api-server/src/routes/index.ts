@@ -13,6 +13,7 @@ import visualiserRouter from "./visualiser";
 import contactRouter from "./contact";
 import dashboardRouter from "./dashboard";
 import publicRouter from "./public";
+import usersRouter from "./users";
 
 const router: IRouter = Router();
 
@@ -30,5 +31,6 @@ router.use(visualiserRouter);
 router.use(contactRouter);
 router.use(dashboardRouter);
 router.use(publicRouter);
+router.use(usersRouter);
 
 export default router;

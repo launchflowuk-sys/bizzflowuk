@@ -55,6 +55,46 @@ export const SyncUserResponse = zod.object({
 
 
 /**
+ * @summary List all users (super admin)
+ */
+export const ListUsersResponseItem = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "firstName": zod.string().nullish(),
+  "lastName": zod.string().nullish(),
+  "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
+  "tenantId": zod.number().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})
+export const ListUsersResponse = zod.array(ListUsersResponseItem)
+
+
+/**
+ * @summary Update user role and tenant assignment (super admin)
+ */
+export const UpdateUserParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdateUserBody = zod.object({
+  "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']).optional(),
+  "tenantId": zod.number().nullish()
+})
+
+export const UpdateUserResponse = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "firstName": zod.string().nullish(),
+  "lastName": zod.string().nullish(),
+  "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
+  "tenantId": zod.number().nullish(),
+  "createdAt": zod.coerce.date().optional()
+})
+
+
+/**
  * @summary List all tenants (super admin)
  */
 export const ListTenantsResponseItem = zod.object({
@@ -62,7 +102,7 @@ export const ListTenantsResponseItem = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "businessType": zod.string(),
-  "domain": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "email": zod.string().nullish(),
   "adminEmail": zod.string().nullish(),
@@ -88,7 +128,7 @@ export const CreateTenantBody = zod.object({
   "name": zod.string().min(1),
   "slug": zod.string().min(1),
   "businessType": zod.string(),
-  "domain": zod.string().optional(),
+  "customDomain": zod.string().optional(),
   "phone": zod.string().optional(),
   "email": zod.string().optional(),
   "adminEmail": zod.string().optional(),
@@ -111,7 +151,7 @@ export const GetTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "businessType": zod.string(),
-  "domain": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "email": zod.string().nullish(),
   "adminEmail": zod.string().nullish(),
@@ -135,7 +175,7 @@ export const UpdateTenantParams = zod.object({
 export const UpdateTenantBody = zod.object({
   "name": zod.string().optional(),
   "businessType": zod.string().optional(),
-  "domain": zod.string().optional(),
+  "customDomain": zod.string().optional(),
   "phone": zod.string().optional(),
   "email": zod.string().optional(),
   "adminEmail": zod.string().optional(),
@@ -151,7 +191,7 @@ export const UpdateTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "businessType": zod.string(),
-  "domain": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "email": zod.string().nullish(),
   "adminEmail": zod.string().nullish(),
@@ -189,7 +229,7 @@ export const SuspendTenantResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "businessType": zod.string(),
-  "domain": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "email": zod.string().nullish(),
   "adminEmail": zod.string().nullish(),
@@ -248,7 +288,7 @@ export const GetPublicSiteResponse = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
   "businessType": zod.string(),
-  "domain": zod.string().nullish(),
+  "customDomain": zod.string().nullish(),
   "phone": zod.string().nullish(),
   "email": zod.string().nullish(),
   "adminEmail": zod.string().nullish(),
@@ -353,6 +393,18 @@ export const GetPublicSiteResponse = zod.object({
   "sortOrder": zod.number().optional(),
   "createdAt": zod.coerce.date().optional()
 })).optional()
+})
+
+
+/**
+ * @summary Resolve a custom domain to a tenant slug
+ */
+export const ResolveTenantDomainQueryParams = zod.object({
+  "host": zod.coerce.string()
+})
+
+export const ResolveTenantDomainResponse = zod.object({
+  "slug": zod.string()
 })
 
 

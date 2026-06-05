@@ -14,6 +14,20 @@ async function getTenantBySlug(slug: string) {
   return tenants[0] ?? null;
 }
 
+router.get("/public/resolve-domain", async (req, res) => {
+  try {
+    const host = req.query.host as string;
+    if (!host) { res.status(400).json({ error: "host query param required" }); return; }
+    const tenants = await db
+      .select({ slug: tenantsTable.slug })
+      .from(tenantsTable)
+      .where(and(eq(tenantsTable.customDomain, host), sql`${tenantsTable.suspended} = false`))
+      .limit(1);
+    if (!tenants.length) { res.status(404).json({ error: "Domain not found" }); return; }
+    res.json({ slug: tenants[0].slug });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // Full public site data bundle
 router.get("/public/:tenantSlug/site", async (req, res) => {
   try {

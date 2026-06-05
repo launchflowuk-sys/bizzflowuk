@@ -12,7 +12,7 @@ export interface TenantInput {
   /** @minLength 1 */
   slug: string;
   businessType: string;
-  domain?: string;
+  customDomain?: string;
   phone?: string;
   email?: string;
   adminEmail?: string;

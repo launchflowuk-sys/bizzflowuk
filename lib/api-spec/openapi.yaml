@@ -99,6 +99,47 @@ paths:
               schema:
                 $ref: "#/components/schemas/User"
 
+  # ─── Admin Users ──────────────────────────────────────────────────────────
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [auth]
+      summary: List all users (super admin)
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/users/{id}:
+    patch:
+      operationId: updateUser
+      tags: [auth]
+      summary: Update user role and tenant assignment (super admin)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserUpdate"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
   # ─── Tenants ─────────────────────────────────────────────────────────────
   /tenants:
     get:
@@ -263,6 +304,27 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicSiteData"
+
+  /public/resolve-domain:
+    get:
+      operationId: resolveTenantDomain
+      tags: [tenants]
+      summary: Resolve a custom domain to a tenant slug
+      parameters:
+        - name: host
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Resolved tenant slug
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DomainResolution"
+        "404":
+          description: Domain not found
 
   # ─── Leads ───────────────────────────────────────────────────────────────
   /leads:
@@ -2454,6 +2516,22 @@ components:
         tenantSlug:
           type: string
 
+    UserUpdate:
+      type: object
+      properties:
+        role:
+          type: string
+          enum: [SUPER_ADMIN, TENANT_ADMIN, STAFF, CUSTOMER]
+        tenantId:
+          type: ["integer", "null"]
+
+    DomainResolution:
+      type: object
+      required: [slug]
+      properties:
+        slug:
+          type: string
+
     # ─── Tenant ───────────────────────────────────────────────────────────
     Tenant:
       type: object
@@ -2467,7 +2545,7 @@ components:
           type: string
         businessType:
           type: string
-        domain:
+        customDomain:
           type: ["string", "null"]
         phone:
           type: ["string", "null"]
@@ -2504,7 +2582,7 @@ components:
           minLength: 1
         businessType:
           type: string
-        domain:
+        customDomain:
           type: string
         phone:
           type: string
@@ -2528,7 +2606,7 @@ components:
           type: string
         businessType:
           type: string
-        domain:
+        customDomain:
           type: string
         phone:
           type: string

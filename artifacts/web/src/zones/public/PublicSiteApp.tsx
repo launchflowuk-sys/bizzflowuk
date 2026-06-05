@@ -1,6 +1,8 @@
 import { Switch, Route, useParams, Router as WouterRouter } from "wouter";
 import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl } from "@workspace/api-client-react";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, createContext, useContext } from "react";
+const SiteBaseCtx = createContext('');
+const useSiteBase = () => useContext(SiteBaseCtx);
 
 const BLUE = "#1F8CFF";
 const NAVY = "#0A121C";
@@ -155,13 +157,14 @@ function TopBar() {
 }
 
 function MobileBar({ tenantSlug, phone }: { tenantSlug: string; phone?: string }) {
+  const siteBase = useSiteBase();
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden border-t border-slate-200 shadow-lg">
       <a href={phone ? `tel:${phone}` : `tel:01375123456`} className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-bold bg-white text-[#26323F] hover:bg-slate-50 transition-colors">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
         Call AMO
       </a>
-      <a href={`/site/${tenantSlug}/quote`} className="flex-1 flex items-center justify-center py-4 text-sm font-bold text-white" style={{ backgroundColor: BLUE }}>
+      <a href={`${siteBase}/quote`} className="flex-1 flex items-center justify-center py-4 text-sm font-bold text-white" style={{ backgroundColor: BLUE }}>
         Get Quote
       </a>
     </div>
@@ -169,19 +172,20 @@ function MobileBar({ tenantSlug, phone }: { tenantSlug: string; phone?: string }
 }
 
 function SiteNav({ tenant, settings, tenantSlug }: any) {
+  const siteBase = useSiteBase();
   const [open, setOpen] = useState(false);
   const links = [
-    { label: "Services", href: `/site/${tenantSlug}/services` },
-    { label: "Before & After", href: `/site/${tenantSlug}/gallery` },
-    { label: "Areas", href: `/site/${tenantSlug}/areas` },
-    { label: "Case Studies", href: `/site/${tenantSlug}/case-studies` },
-    { label: "Reviews", href: `/site/${tenantSlug}/reviews` },
-    { label: "Contact", href: `/site/${tenantSlug}/contact` },
+    { label: "Services", href: `${siteBase}/services` },
+    { label: "Before & After", href: `${siteBase}/gallery` },
+    { label: "Areas", href: `${siteBase}/areas` },
+    { label: "Case Studies", href: `${siteBase}/case-studies` },
+    { label: "Reviews", href: `${siteBase}/reviews` },
+    { label: "Contact", href: `${siteBase}/contact` },
   ];
   return (
     <nav className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
-        <a href={`/site/${tenantSlug}`} className="font-bold text-xl flex-shrink-0" style={{ color: NAVY }}>
+        <a href={siteBase || '/'} className="font-bold text-xl flex-shrink-0" style={{ color: NAVY }}>
           {tenant?.name || "AMO Rendering"}
         </a>
         <div className="hidden lg:flex items-center gap-6 text-sm font-medium flex-1">
@@ -193,7 +197,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
           {settings?.phone && (
             <a href={`tel:${settings.phone}`} className="text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{settings.phone}</a>
           )}
-          <BlueBtn href={`/site/${tenantSlug}/quote`}>Get Quote</BlueBtn>
+          <BlueBtn href={`${siteBase}/quote`}>Get Quote</BlueBtn>
         </div>
         <button className="lg:hidden p-2 rounded-md hover:bg-slate-100" onClick={() => setOpen(!open)}>
           <svg className="w-6 h-6" style={{ color: TEXT }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,7 +211,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
             <a key={l.href} href={l.href} className="block py-2 text-sm font-medium hover:text-[#1F8CFF]" style={{ color: TEXT }}>{l.label}</a>
           ))}
           {settings?.phone && <a href={`tel:${settings.phone}`} className="block py-2 text-sm font-semibold" style={{ color: BLUE }}>{settings.phone}</a>}
-          <div className="pt-2"><BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Get a Free Quote</BlueBtn></div>
+          <div className="pt-2"><BlueBtn href={`${siteBase}/quote`} className="w-full">Get a Free Quote</BlueBtn></div>
         </div>
       )}
     </nav>
@@ -215,19 +219,20 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
 }
 
 function PageHero({ tenantSlug, crumb, title, subtitle }: { tenantSlug: string; crumb: string; title: string; subtitle: string }) {
+  const siteBase = useSiteBase();
   return (
     <section style={{ backgroundColor: NAVY }} className="py-16 px-4 text-white">
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex items-center gap-2 text-xs text-slate-400">
-          <a href={`/site/${tenantSlug}`} className="hover:text-white transition-colors">AMO Rendering</a>
+          <a href={siteBase || '/'} className="hover:text-white transition-colors">AMO Rendering</a>
           <span>/</span>
           <span>{crumb}</span>
         </div>
         <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
         <p className="text-lg text-slate-300 leading-relaxed max-w-2xl">{subtitle}</p>
         <div className="flex flex-wrap gap-3 pt-2">
-          <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
-          <OutlineBtn href={`/site/${tenantSlug}/gallery`} dark>View Before &amp; After</OutlineBtn>
+          <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
+          <OutlineBtn href={`${siteBase}/gallery`} dark>View Before &amp; After</OutlineBtn>
         </div>
       </div>
     </section>
@@ -235,6 +240,7 @@ function PageHero({ tenantSlug, crumb, title, subtitle }: { tenantSlug: string; 
 }
 
 function SiteFooter({ tenant, settings, tenantSlug }: any) {
+  const siteBase = useSiteBase();
   return (
     <footer style={{ backgroundColor: NAVY }} className="text-slate-300 pt-16 pb-8 pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
@@ -251,24 +257,24 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
         <div className="space-y-3">
           <div className="text-sm font-bold text-white mb-3">Services</div>
           {["Silicone Rendering","Monocouche Rendering","K Rend","External Wall Insulation","Pebbledash Removal","Render Repairs"].map(s => (
-            <a key={s} href={`/site/${tenantSlug}/services`} className="block text-sm text-slate-400 hover:text-white transition-colors">{s}</a>
+            <a key={s} href={`${siteBase}/services`} className="block text-sm text-slate-400 hover:text-white transition-colors">{s}</a>
           ))}
         </div>
         <div className="space-y-3">
           <div className="text-sm font-bold text-white mb-3">Areas</div>
           {["Grays","Thurrock","Essex","London","Basildon","Romford","Chelmsford","Brentwood"].map(a => (
-            <a key={a} href={`/site/${tenantSlug}/areas`} className="block text-sm text-slate-400 hover:text-white transition-colors">{a}</a>
+            <a key={a} href={`${siteBase}/areas`} className="block text-sm text-slate-400 hover:text-white transition-colors">{a}</a>
           ))}
           <div className="pt-2">
-            <BlueBtn href={`/site/${tenantSlug}/quote`}>Get a Free Quote</BlueBtn>
+            <BlueBtn href={`${siteBase}/quote`}>Get a Free Quote</BlueBtn>
           </div>
         </div>
       </div>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-12 pt-8 border-t border-slate-800 flex flex-wrap gap-4 items-center justify-between text-xs text-slate-600">
         <span>&copy; {new Date().getFullYear()} {tenant?.name || "AMO Rendering"}. All rights reserved.</span>
         <div className="flex gap-4">
-          <a href={`/site/${tenantSlug}/faqs`} className="hover:text-slate-400 transition-colors">FAQs</a>
-          <a href={`/site/${tenantSlug}/contact`} className="hover:text-slate-400 transition-colors">Contact</a>
+          <a href={`${siteBase}/faqs`} className="hover:text-slate-400 transition-colors">FAQs</a>
+          <a href={`${siteBase}/contact`} className="hover:text-slate-400 transition-colors">Contact</a>
         </div>
       </div>
     </footer>
@@ -276,14 +282,15 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
 }
 
 function QuoteCTASection({ tenantSlug, phone }: { tenantSlug: string; phone?: string }) {
+  const siteBase = useSiteBase();
   return (
     <section style={{ backgroundColor: NAVY }} className="py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white space-y-6">
         <h2 className="text-3xl font-bold">Ready to Modernise Your Property Exterior?</h2>
         <p className="text-lg text-slate-300">Send us your details and upload photos of your property. AMO Rendering will review your project and help you choose the right rendering solution.</p>
         <div className="flex flex-wrap justify-center gap-4">
-          <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
-          <OutlineBtn href={`/site/${tenantSlug}/visualiser`} dark>Upload Property Photos</OutlineBtn>
+          <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
+          <OutlineBtn href={`${siteBase}/visualiser`} dark>Upload Property Photos</OutlineBtn>
         </div>
         {phone && <p className="text-slate-400 text-sm">Or call us directly: <a href={`tel:${phone}`} className="text-white font-semibold hover:text-[#8EC8FF]">{phone}</a></p>}
       </div>
@@ -311,6 +318,7 @@ function TrustBar() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function HomePage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data, isLoading } = useGetPublicSite(tenantSlug);
   if (isLoading) return <Spinner/>;
   if (!data) return <div className="p-8 text-center text-slate-500">Site not found</div>;
@@ -337,8 +345,8 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
               AMO Rendering provides silicone rendering, monocouche render, K Rend, external wall insulation and pebbledash removal for homes and properties across Grays, Thurrock, Essex and London.
             </p>
             <div className="flex flex-wrap gap-4">
-              <BlueBtn href={`/site/${tenantSlug}/quote`} className="h-12 px-8 text-base">Request a Free Quote</BlueBtn>
-              <OutlineBtn href={`/site/${tenantSlug}/gallery`} dark>View Before &amp; After Work</OutlineBtn>
+              <BlueBtn href={`${siteBase}/quote`} className="h-12 px-8 text-base">Request a Free Quote</BlueBtn>
+              <OutlineBtn href={`${siteBase}/gallery`} dark>View Before &amp; After Work</OutlineBtn>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
               {["Based in Grays, Thurrock","Serving Essex & London","Silicone Render Specialists","Photo Quotes Available"].map(t => (
@@ -397,7 +405,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
               ))}
             </div>
             <div className="mt-10 text-center">
-              <BlueBtn href={`/site/${tenantSlug}/gallery`}>View All Transformations</BlueBtn>
+              <BlueBtn href={`${siteBase}/gallery`}>View All Transformations</BlueBtn>
             </div>
           </div>
         </section>
@@ -412,7 +420,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.slice(0, 6).map((s: any) => (
-              <a key={s.id || s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all bg-white">
+              <a key={s.id || s.slug} href={`${siteBase}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all bg-white">
                 <h3 className="font-bold text-lg" style={{ color: TEXT }}>{s.name}</h3>
                 <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{s.tagline || s.desc || s.description}</p>
                 {(s.benefits as string[])?.slice(0,3).map((b: string) => (
@@ -424,7 +432,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
               </a>
             ))}
           </div>
-          <div className="mt-10 text-center"><BlueBtn href={`/site/${tenantSlug}/services`}>View All Services</BlueBtn></div>
+          <div className="mt-10 text-center"><BlueBtn href={`${siteBase}/services`}>View All Services</BlueBtn></div>
         </div>
       </section>
 
@@ -442,7 +450,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </li>
               ))}
             </ul>
-            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
+            <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
           </div>
           <div className="grid grid-cols-2 gap-4">
             {[{ label: "Silicone Rendering", sub: "Weather-resistant finish" },{ label: "Pebbledash Removal", sub: "Clean modern replacement" },{ label: "External Wall Insulation", sub: "Thermal performance" },{ label: "Render Repairs", sub: "Stop damage spreading" }].map(c => (
@@ -487,7 +495,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {recentCaseStudies.map((cs: any) => (
-                <a key={cs.id} href={`/site/${tenantSlug}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
+                <a key={cs.id} href={`${siteBase}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
                   {cs.heroImageUrl ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-48 object-cover"/> : <div className="w-full h-48 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}><svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg></div>}
                   <div className="p-5 space-y-2">
                     {cs.location && <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{cs.location}</div>}
@@ -497,7 +505,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </a>
               ))}
             </div>
-            <div className="mt-10 text-center"><BlueBtn href={`/site/${tenantSlug}/case-studies`}>View All Case Studies</BlueBtn></div>
+            <div className="mt-10 text-center"><BlueBtn href={`${siteBase}/case-studies`}>View All Case Studies</BlueBtn></div>
           </div>
         </section>
       )}
@@ -511,10 +519,10 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           </div>
           <div className="flex flex-wrap gap-3 justify-center">
             {ALL_AREAS.map(a => (
-              <a key={a} href={`/site/${tenantSlug}/areas`} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-medium hover:border-[#1F8CFF] hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a}</a>
+              <a key={a} href={`${siteBase}/areas`} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-medium hover:border-[#1F8CFF] hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a}</a>
             ))}
           </div>
-          <p className="text-center mt-8 text-sm" style={{ color: MUTED }}>Not sure if we cover your area? <a href={`/site/${tenantSlug}/contact`} className="font-semibold hover:underline" style={{ color: BLUE }}>Get in touch and we'll let you know.</a></p>
+          <p className="text-center mt-8 text-sm" style={{ color: MUTED }}>Not sure if we cover your area? <a href={`${siteBase}/contact`} className="font-semibold hover:underline" style={{ color: BLUE }}>Get in touch and we'll let you know.</a></p>
         </div>
       </section>
 
@@ -539,7 +547,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </div>
               ))}
             </div>
-            <div className="mt-10 text-center"><OutlineBtn href={`/site/${tenantSlug}/reviews`} dark>Read All Reviews</OutlineBtn></div>
+            <div className="mt-10 text-center"><OutlineBtn href={`${siteBase}/reviews`} dark>Read All Reviews</OutlineBtn></div>
           </div>
         </section>
       )}
@@ -563,7 +571,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 </details>
               ))}
             </div>
-            <div className="mt-8 text-center"><BlueBtn href={`/site/${tenantSlug}/faqs`}>View All FAQs</BlueBtn></div>
+            <div className="mt-8 text-center"><BlueBtn href={`${siteBase}/faqs`}>View All FAQs</BlueBtn></div>
           </div>
         </section>
       )}
@@ -573,7 +581,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       <section style={{ backgroundColor: BLUE }} className="py-14">
         <div className="max-w-3xl mx-auto px-4 text-center text-white space-y-5">
           <h2 className="text-3xl font-bold">Transform Your Exterior With AMO Rendering</h2>
-          <a href={`/site/${tenantSlug}/quote`} className="inline-flex items-center rounded-md bg-white px-8 py-3 text-sm font-bold hover:bg-slate-50 transition-colors" style={{ color: BLUE }}>Get My Free Quote</a>
+          <a href={`${siteBase}/quote`} className="inline-flex items-center rounded-md bg-white px-8 py-3 text-sm font-bold hover:bg-slate-50 transition-colors" style={{ color: BLUE }}>Get My Free Quote</a>
         </div>
       </section>
 
@@ -588,6 +596,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: services, isLoading } = useListPublicServices(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -611,7 +620,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
           {isLoading ? <Spinner/> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {list.map((s: any) => (
-                <a key={s.id || s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 bg-white p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all">
+                <a key={s.id || s.slug} href={`${siteBase}/services/${s.slug}`} className="group rounded-2xl border border-slate-200 bg-white p-7 space-y-4 hover:border-[#1F8CFF] hover:shadow-md transition-all">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg text-white" style={{ backgroundColor: BLUE }}>{(s.name || '?')[0]}</div>
                   <h2 className="text-xl font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{s.name}</h2>
                   {(s.tagline) && <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{s.tagline}</p>}
@@ -649,12 +658,12 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
                 </div>
               ))}
             </div>
-            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request A Quote</BlueBtn>
+            <BlueBtn href={`${siteBase}/quote`}>Request A Quote</BlueBtn>
           </div>
           <div className="rounded-2xl p-8 bg-slate-800 border border-slate-700 space-y-4">
             <h3 className="font-bold text-white text-lg">Services Available</h3>
             {STATIC_SERVICES.map(s => (
-              <a key={s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="flex items-center justify-between py-3 border-b border-slate-700 last:border-0 hover:text-[#8EC8FF] transition-colors">
+              <a key={s.slug} href={`${siteBase}/services/${s.slug}`} className="flex items-center justify-between py-3 border-b border-slate-700 last:border-0 hover:text-[#8EC8FF] transition-colors">
                 <span className="text-slate-300 text-sm font-medium">{s.name}</span>
                 <svg className="w-4 h-4 text-slate-500" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
               </a>
@@ -668,7 +677,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
         <div className="max-w-3xl mx-auto px-4 text-center space-y-5">
           <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Send Photos For A Rendering Quote</h2>
           <p style={{ color: MUTED }}>Tell AMO what your property needs and upload clear photos of the exterior walls.</p>
-          <BlueBtn href={`/site/${tenantSlug}/quote`}>Request A Quote</BlueBtn>
+          <BlueBtn href={`${siteBase}/quote`}>Request A Quote</BlueBtn>
         </div>
       </section>
 
@@ -683,6 +692,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: service, isLoading } = useGetPublicService(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
@@ -758,7 +768,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                         <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{name}</span>
                       </div>
                       <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Exterior transformation example</h3>
-                      <p className="text-xs mt-1" style={{ color: MUTED }}>A typical visual upgrade from a tired surface to a modern rendered finish. <a href={`/site/${tenantSlug}/gallery`} className="font-semibold" style={{ color: BLUE }}>View real before &amp; afters →</a></p>
+                      <p className="text-xs mt-1" style={{ color: MUTED }}>A typical visual upgrade from a tired surface to a modern rendered finish. <a href={`${siteBase}/gallery`} className="font-semibold" style={{ color: BLUE }}>View real before &amp; afters →</a></p>
                     </div>
                   </div>
 
@@ -785,23 +795,23 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote for {name}</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
-                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
                     <div className="space-y-2 pt-2">
-                      <a href={`/site/${tenantSlug}/gallery`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>View Before &amp; After →</a>
-                      <a href={`/site/${tenantSlug}/contact`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Contact AMO →</a>
-                      <a href={`/site/${tenantSlug}/visualiser`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Render Visualiser →</a>
+                      <a href={`${siteBase}/gallery`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>View Before &amp; After →</a>
+                      <a href={`${siteBase}/contact`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Contact AMO →</a>
+                      <a href={`${siteBase}/visualiser`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Render Visualiser →</a>
                     </div>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>Other Services</h3>
                     {STATIC_SERVICES.filter(ss => ss.slug !== slug).map(ss => (
-                      <a key={ss.slug} href={`/site/${tenantSlug}/services/${ss.slug}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{ss.name}</a>
+                      <a key={ss.slug} href={`${siteBase}/services/${ss.slug}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{ss.name}</a>
                     ))}
                   </div>
                   <div className="rounded-2xl p-6 space-y-3 text-white" style={{ backgroundColor: NAVY }}>
                     <h3 className="font-bold">Based in Grays, Thurrock</h3>
                     <p className="text-sm text-slate-400">Serving Essex and London. Photo-based quotes available.</p>
-                    <a href={`/site/${tenantSlug}/areas`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>View Areas Covered →</a>
+                    <a href={`${siteBase}/areas`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>View Areas Covered →</a>
                   </div>
                 </aside>
               </div>
@@ -823,6 +833,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AreasPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: areas, isLoading } = useListPublicAreas(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -845,7 +856,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
           {isLoading ? <Spinner/> : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
               {((areas as any[])?.length ? (areas as any[]) : ALL_AREAS.map(a => ({ name: a, slug: a.toLowerCase(), county: a === 'London' ? 'Greater London' : 'Essex', description: `Silicone rendering, K Rend, monocouche render, EWI and pebbledash removal for properties in ${a} and nearby areas.` }))).map((a: any) => (
-                <a key={a.id || a.slug || a.name} href={`/site/${tenantSlug}/areas/${a.slug || a.name?.toLowerCase()}`} className="group rounded-2xl border border-slate-200 bg-white p-6 space-y-3 hover:border-[#1F8CFF] hover:shadow-md transition-all">
+                <a key={a.id || a.slug || a.name} href={`${siteBase}/areas/${a.slug || a.name?.toLowerCase()}`} className="group rounded-2xl border border-slate-200 bg-white p-6 space-y-3 hover:border-[#1F8CFF] hover:shadow-md transition-all">
                   <div className="w-10 h-10 rounded-xl flex items-center justify-center font-bold text-lg text-white" style={{ backgroundColor: BLUE }}>{(a.name || '?')[0]}</div>
                   <h2 className="text-lg font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>Rendering in {a.name}</h2>
                   {a.county && <p className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>{a.county}</p>}
@@ -865,10 +876,10 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
           <p className="text-sm" style={{ color: MUTED }}>AMO Rendering regularly serves these towns and areas across Essex and Greater London.</p>
           <div className="flex flex-wrap gap-3 justify-center">
             {ALL_AREAS.map(a => (
-              <a key={a} href={`/site/${tenantSlug}/areas`} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-medium hover:border-[#1F8CFF] hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a}</a>
+              <a key={a} href={`${siteBase}/areas`} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-medium hover:border-[#1F8CFF] hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a}</a>
             ))}
           </div>
-          <p className="text-sm" style={{ color: MUTED }}>Not listed? <a href={`/site/${tenantSlug}/contact`} className="font-semibold" style={{ color: BLUE }}>Contact us to check availability.</a></p>
+          <p className="text-sm" style={{ color: MUTED }}>Not listed? <a href={`${siteBase}/contact`} className="font-semibold" style={{ color: BLUE }}>Contact us to check availability.</a></p>
         </div>
       </section>
 
@@ -903,6 +914,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: area, isLoading } = useGetPublicArea(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
@@ -950,7 +962,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     {STATIC_SERVICES.map(s => (
-                      <a key={s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="group rounded-xl border border-slate-200 bg-white p-5 hover:border-[#1F8CFF] transition-colors">
+                      <a key={s.slug} href={`${siteBase}/services/${s.slug}`} className="group rounded-xl border border-slate-200 bg-white p-5 hover:border-[#1F8CFF] transition-colors">
                         <h3 className="font-semibold text-sm group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{s.name}</h3>
                         <p className="text-xs mt-1 leading-relaxed" style={{ color: MUTED }}>{s.desc}</p>
                       </a>
@@ -962,16 +974,16 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote in {areaName}</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
-                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
                     <div className="space-y-2 pt-2">
-                      <a href={`/site/${tenantSlug}/gallery`} className="block text-sm font-semibold" style={{ color: BLUE }}>View Before &amp; After →</a>
-                      <a href={`/site/${tenantSlug}/contact`} className="block text-sm font-semibold" style={{ color: BLUE }}>Contact AMO →</a>
+                      <a href={`${siteBase}/gallery`} className="block text-sm font-semibold" style={{ color: BLUE }}>View Before &amp; After →</a>
+                      <a href={`${siteBase}/contact`} className="block text-sm font-semibold" style={{ color: BLUE }}>Contact AMO →</a>
                     </div>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>Other Areas</h3>
                     {["Grays","Thurrock","Essex","London","Basildon","Brentwood","Romford"].filter(n => n.toLowerCase() !== slug).map(n => (
-                      <a key={n} href={`/site/${tenantSlug}/areas/${n.toLowerCase()}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{n}</a>
+                      <a key={n} href={`${siteBase}/areas/${n.toLowerCase()}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{n}</a>
                     ))}
                   </div>
                 </aside>
@@ -988,11 +1000,11 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
                   <div key={s.slug} className="rounded-xl bg-white border border-slate-200 p-5 space-y-2">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>{s.name}</h3>
                     <p className="text-xs" style={{ color: MUTED }}>{s.desc}</p>
-                    <a href={`/site/${tenantSlug}/services/${s.slug}`} className="text-xs font-semibold" style={{ color: BLUE }}>Learn more →</a>
+                    <a href={`${siteBase}/services/${s.slug}`} className="text-xs font-semibold" style={{ color: BLUE }}>Learn more →</a>
                   </div>
                 ))}
               </div>
-              <BlueBtn href={`/site/${tenantSlug}/quote`}>Get a Free Quote for {areaName}</BlueBtn>
+              <BlueBtn href={`${siteBase}/quote`}>Get a Free Quote for {areaName}</BlueBtn>
             </div>
           </section>
         </>
@@ -1103,6 +1115,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: reviews, isLoading } = useListPublicReviews(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -1119,7 +1132,7 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
       <section style={{ backgroundColor: NAVY }} className="py-16 px-4 text-white">
         <div className="max-w-4xl mx-auto space-y-4">
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <a href={`/site/${tenantSlug}`} className="hover:text-white">AMO Rendering</a>
+            <a href={siteBase || '/'} className="hover:text-white">AMO Rendering</a>
             <span>/</span><span>Reviews</span>
           </div>
           <h1 className="text-4xl font-bold">AMO Rendering Reviews</h1>
@@ -1132,8 +1145,8 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
             </div>
           )}
           <div className="flex flex-wrap gap-3 pt-2">
-            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
-            <OutlineBtn href={`/site/${tenantSlug}/gallery`} dark>View Before &amp; After</OutlineBtn>
+            <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
+            <OutlineBtn href={`${siteBase}/gallery`} dark>View Before &amp; After</OutlineBtn>
           </div>
         </div>
       </section>
@@ -1187,6 +1200,7 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: caseStudies, isLoading } = useListPublicCaseStudies(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -1204,7 +1218,7 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
           {isLoading ? <Spinner/> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(caseStudies as any[])?.map((cs: any) => (
-                <a key={cs.id} href={`/site/${tenantSlug}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
+                <a key={cs.id} href={`${siteBase}/case-studies/${cs.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
                   {cs.heroImageUrl
                     ? <img src={cs.heroImageUrl} alt={cs.title} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
                     : <div className="w-full h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "10" }}>
@@ -1261,6 +1275,7 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: cs, isLoading } = useGetPublicCaseStudy(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
@@ -1278,7 +1293,7 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
           <section style={{ backgroundColor: NAVY }} className={`py-12 px-4 text-white ${c.heroImageUrl ? '' : 'pt-16'}`}>
             <div className="max-w-4xl mx-auto space-y-3">
               <div className="flex items-center gap-2 text-xs text-slate-400">
-                <a href={`/site/${tenantSlug}/case-studies`} className="hover:text-white">Case Studies</a>
+                <a href={`${siteBase}/case-studies`} className="hover:text-white">Case Studies</a>
                 <span>/</span><span>{c.title}</span>
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -1341,17 +1356,17 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Want A Similar Finish?</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Request a quote and upload photos of your property.</p>
-                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
-                    <a href={`/site/${tenantSlug}/gallery`} className="block text-sm font-semibold pt-2" style={{ color: BLUE }}>View More Transformations →</a>
+                    <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <a href={`${siteBase}/gallery`} className="block text-sm font-semibold pt-2" style={{ color: BLUE }}>View More Transformations →</a>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>More Case Studies</h3>
-                    <a href={`/site/${tenantSlug}/case-studies`} className="block text-sm py-2 font-semibold" style={{ color: BLUE }}>← Back to all case studies</a>
+                    <a href={`${siteBase}/case-studies`} className="block text-sm py-2 font-semibold" style={{ color: BLUE }}>← Back to all case studies</a>
                   </div>
                   <div className="rounded-2xl p-6 space-y-3 text-white" style={{ backgroundColor: NAVY }}>
                     <h3 className="font-bold">Based in Grays, Thurrock</h3>
                     <p className="text-sm text-slate-400">Free quotes available for Essex and London properties.</p>
-                    <a href={`/site/${tenantSlug}/contact`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>Contact AMO →</a>
+                    <a href={`${siteBase}/contact`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>Contact AMO →</a>
                   </div>
                 </aside>
               </div>
@@ -1371,6 +1386,7 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
 // ─────────────────────────────────────────────────────────────────────────────
 
 function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: faqs, isLoading } = useListPublicFaqs(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -1418,12 +1434,12 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="rounded-2xl bg-white border border-slate-200 p-7 space-y-4">
             <h3 className="font-bold text-lg" style={{ color: TEXT }}>Still Have Questions?</h3>
             <p className="text-sm" style={{ color: MUTED }}>Send AMO a message and we'll respond with the information you need.</p>
-            <BlueBtn href={`/site/${tenantSlug}/contact`}>Contact AMO</BlueBtn>
+            <BlueBtn href={`${siteBase}/contact`}>Contact AMO</BlueBtn>
           </div>
           <div className="rounded-2xl bg-white border border-slate-200 p-7 space-y-4">
             <h3 className="font-bold text-lg" style={{ color: TEXT }}>Ready To Get A Quote?</h3>
             <p className="text-sm" style={{ color: MUTED }}>Upload photos of your property and tell us what exterior finish you're looking for.</p>
-            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request A Quote</BlueBtn>
+            <BlueBtn href={`${siteBase}/quote`}>Request A Quote</BlueBtn>
           </div>
         </div>
       </section>
@@ -1439,6 +1455,7 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: posts, isLoading } = useBrowsePublicBlog(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -1456,7 +1473,7 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
           {isLoading ? <Spinner/> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {(posts as any[])?.map((post: any) => (
-                <a key={post.id} href={`/site/${tenantSlug}/blog/${post.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
+                <a key={post.id} href={`${siteBase}/blog/${post.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
                   {post.heroImageUrl
                     ? <img src={post.heroImageUrl} alt={post.title} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
                     : <div className="w-full h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "08" }}><svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg></div>
@@ -1484,8 +1501,8 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
           <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Ready to Get Started?</h2>
           <p style={{ color: MUTED }}>Request a free quote or upload photos of your property for a more detailed assessment.</p>
           <div className="flex flex-wrap gap-3 justify-center">
-            <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
-            <OutlineBtn href={`/site/${tenantSlug}/visualiser`}>Render Visualiser</OutlineBtn>
+            <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
+            <OutlineBtn href={`${siteBase}/visualiser`}>Render Visualiser</OutlineBtn>
           </div>
         </div>
       </section>
@@ -1501,6 +1518,7 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: post, isLoading } = useGetPublicBlogPost(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
@@ -1521,7 +1539,7 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
                 <article className="lg:col-span-2 space-y-6">
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
-                      <a href={`/site/${tenantSlug}/blog`} className="font-semibold hover:text-[#1F8CFF]">← Blog</a>
+                      <a href={`${siteBase}/blog`} className="font-semibold hover:text-[#1F8CFF]">← Blog</a>
                       <span>/</span>
                       <span className="font-semibold uppercase tracking-wide" style={{ color: BLUE }}>Rendering Guide</span>
                     </div>
@@ -1537,7 +1555,7 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
                   <div className="rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: LIGHT_BG }}>
                     <h3 className="text-xl font-bold" style={{ color: TEXT }}>Ready to transform your property?</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload property photos for a free rendering quote from AMO.</p>
-                    <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Free Quote</BlueBtn>
+                    <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
                   </div>
                 </article>
 
@@ -1545,17 +1563,17 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
                     <h3 className="font-bold" style={{ color: TEXT }}>Get A Free Quote</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload photos of your property and tell us about the finish you want.</p>
-                    <BlueBtn href={`/site/${tenantSlug}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>Our Services</h3>
                     {STATIC_SERVICES.map(s => (
-                      <a key={s.slug} href={`/site/${tenantSlug}/services/${s.slug}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{s.name}</a>
+                      <a key={s.slug} href={`${siteBase}/services/${s.slug}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{s.name}</a>
                     ))}
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>More Guides</h3>
-                    <a href={`/site/${tenantSlug}/blog`} className="block text-sm font-semibold" style={{ color: BLUE }}>← Back to all guides</a>
+                    <a href={`${siteBase}/blog`} className="block text-sm font-semibold" style={{ color: BLUE }}>← Back to all guides</a>
                   </div>
                 </aside>
               </div>
@@ -1579,6 +1597,7 @@ const SURFACE_TYPES = ["Existing render","Pebbledash","Brick","Block","Other / n
 const TIMEFRAMES = ["As soon as possible","Within 1 month","1–3 months","3–6 months","Planning stage"];
 
 function QuotePage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
   const mutation = useSubmitQuoteRequest();
@@ -1647,7 +1666,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                   </div>
                   <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Quote Request Received</h2>
                   <p style={{ color: MUTED }}>Thank you. We'll review your request and be in touch within 24 hours.</p>
-                  <BlueBtn href={`/site/${tenantSlug}`}>Back to Home</BlueBtn>
+                  <BlueBtn href={siteBase || '/'}>Back to Home</BlueBtn>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
@@ -1728,6 +1747,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ContactPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
   const mutation = useSubmitContact();
@@ -1787,7 +1807,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
               <div className="rounded-2xl border border-slate-200 p-7 space-y-4 bg-white">
                 <h3 className="font-bold" style={{ color: TEXT }}>Prefer to Send Photos?</h3>
                 <p className="text-sm" style={{ color: MUTED }}>Use the quote form to upload photos of your property and we'll provide a more accurate quote.</p>
-                <BlueBtn href={`/site/${tenantSlug}/quote`}>Request a Photo Quote</BlueBtn>
+                <BlueBtn href={`${siteBase}/quote`}>Request a Photo Quote</BlueBtn>
               </div>
 
               <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: NAVY }}>
@@ -1797,7 +1817,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
                     <span key={a} className="text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-300">{a}</span>
                   ))}
                 </div>
-                <a href={`/site/${tenantSlug}/areas`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>View All Areas →</a>
+                <a href={`${siteBase}/areas`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>View All Areas →</a>
               </div>
             </div>
 
@@ -1848,6 +1868,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
   const mutation = useCreateVisualiserRequest();
@@ -1932,7 +1953,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
                   </div>
                   <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Request Received</h2>
                   <p style={{ color: MUTED }}>We'll create a visualisation of your property and send it to you within 48 hours.</p>
-                  <BlueBtn href={`/site/${tenantSlug}`}>Back to Home</BlueBtn>
+                  <BlueBtn href={siteBase || '/'}>Back to Home</BlueBtn>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-4 bg-white rounded-2xl border border-slate-200 p-7 shadow-sm">
@@ -1978,12 +1999,13 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
 // ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function PublicSiteApp() {
+export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?: string; forcedBase?: string } = {}) {
   const params = useParams<{ tenantSlug: string }>();
-  const tenantSlug = params.tenantSlug || '';
-  const base = `/site/${tenantSlug}`;
+  const tenantSlug = forcedSlug || params.tenantSlug || '';
+  const siteBase = forcedBase !== undefined ? forcedBase : `/site/${tenantSlug}`;
   return (
-    <WouterRouter base={base}>
+    <SiteBaseCtx.Provider value={siteBase}>
+    <WouterRouter base={siteBase}>
       <Switch>
         <Route path="/" component={() => <HomePage tenantSlug={tenantSlug}/>}/>
         <Route path="/services" component={() => <ServicesPage tenantSlug={tenantSlug}/>}/>
@@ -2003,5 +2025,6 @@ export default function PublicSiteApp() {
         <Route component={() => <HomePage tenantSlug={tenantSlug}/>}/>
       </Switch>
     </WouterRouter>
+    </SiteBaseCtx.Provider>
   );
 }

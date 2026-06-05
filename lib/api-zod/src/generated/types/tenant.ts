@@ -13,7 +13,7 @@ export interface Tenant {
   slug: string;
   businessType: string;
   /** @nullable */
-  domain?: string | null;
+  customDomain?: string | null;
   /** @nullable */
   phone?: string | null;
   /** @nullable */

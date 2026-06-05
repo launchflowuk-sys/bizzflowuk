@@ -9,7 +9,7 @@
 export interface TenantUpdate {
   name?: string;
   businessType?: string;
-  domain?: string;
+  customDomain?: string;
   phone?: string;
   email?: string;
   adminEmail?: string;

@@ -18,6 +18,7 @@ export const tenantsTable = pgTable("tenants", {
   country: text("country").default("UK"),
   website: text("website"),
   description: text("description"),
+  customDomain: text("custom_domain"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
