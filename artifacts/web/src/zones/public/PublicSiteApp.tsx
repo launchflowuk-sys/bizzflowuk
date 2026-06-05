@@ -16,6 +16,15 @@ const ALL_AREAS = [
   "Southend","Dartford","Gravesend","Chigwell","Epping","London","Essex",
 ];
 
+const SERVICE_BA_IMAGES: Record<string, string> = {
+  "silicone-render":    "/ba-silicone.webp",
+  "monocouche-render":  "/ba-monocouche.webp",
+  "k-rend":             "/ba-krend.webp",
+  "ewi-systems":        "/gal-ewi-ba.webp",
+  "pebble-dash-removal":"/ba-pebbledash.webp",
+  "render-repairs":     "/ba-silicone.webp",
+};
+
 const STATIC_SERVICES = [
   { slug: "silicone-render", name: "Silicone Rendering", tagline: "THE UK'S MOST POPULAR MODERN RENDER", desc: "Flexible, breathable and weather-resistant render finish ideal for long-lasting protection and a clean modern exterior.", benefits: ["Fully weatherproof","Self-cleaning surface","15-year guarantee"] },
   { slug: "monocouche-render", name: "Monocouche Rendering", tagline: "THROUGH-COLOURED RENDER FOR LASTING BEAUTY", desc: "A coloured-through render system designed to create a durable, low-maintenance finish with a sharp modern look.", benefits: ["Through-coloured","Single coat application","Highly durable"] },
@@ -843,26 +852,32 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                   )}
 
                   {/* Before & After impact */}
-                  <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white">
-                    <div className="grid grid-cols-2">
-                      <div className="relative bg-slate-100 h-48 flex items-center justify-center">
-                        <span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span>
-                        <svg className="w-12 h-12 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                  {(() => {
+                    const baImg = SERVICE_BA_IMAGES[slug];
+                    return baImg ? (
+                      <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+                        <div className="relative">
+                          <img
+                            src={baImg}
+                            alt={`${name} before and after — Essex property transformation`}
+                            className="w-full object-cover"
+                          />
+                          <div className="absolute top-3 left-3 flex gap-2 pointer-events-none">
+                            <span className="rounded-md bg-slate-900/80 px-2 py-1 text-xs text-white font-semibold">Before</span>
+                            <span className="rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span>
+                          </div>
+                        </div>
+                        <div className="p-5">
+                          <div className="flex items-center gap-2 mb-2">
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>Essex</span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{name}</span>
+                          </div>
+                          <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Real transformation — Essex property</h3>
+                          <p className="text-xs mt-1" style={{ color: MUTED }}>See the full difference a quality render makes. <a href={`${siteBase}/gallery`} className="font-semibold" style={{ color: BLUE }}>View more before &amp; afters →</a></p>
+                        </div>
                       </div>
-                      <div className="relative bg-slate-200 h-48 flex items-center justify-center" style={{ backgroundColor: BLUE + "15" }}>
-                        <span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span>
-                        <svg className="w-12 h-12" style={{ color: BLUE + "60" }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
-                      </div>
-                    </div>
-                    <div className="p-5">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>Essex</span>
-                        <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{name}</span>
-                      </div>
-                      <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Exterior transformation example</h3>
-                      <p className="text-xs mt-1" style={{ color: MUTED }}>A typical visual upgrade from a tired surface to a modern rendered finish. <a href={`${siteBase}/gallery`} className="font-semibold" style={{ color: BLUE }}>View real before &amp; afters →</a></p>
-                    </div>
-                  </div>
+                    ) : null;
+                  })()}
 
                   {/* Our process */}
                   <div className="space-y-4">
