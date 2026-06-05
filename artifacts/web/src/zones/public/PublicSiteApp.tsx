@@ -297,7 +297,7 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
           <img
             src="/amo-logo-dark.webp"
             alt={tenant?.name || "AMO Rendering"}
-            className="h-10 w-auto object-contain"
+            className="h-16 w-auto object-contain"
           />
           <p className="text-sm leading-relaxed text-slate-400">
             Rendering specialists based in Grays, Thurrock — serving Essex and London with silicone render, monocouche, K Rend, EWI and pebbledash removal.
