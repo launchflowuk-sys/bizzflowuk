@@ -184,10 +184,10 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
   ];
   return (
     <nav className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 grid grid-cols-3 items-center">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 grid grid-cols-3 items-center">
         {/* Left — logo */}
         <a href={siteBase || '/'} className="flex-shrink-0 justify-self-start">
-          <img src={settings?.logoUrl || "/amo-logo.webp"} alt={tenant?.name || "AMO Rendering"} className="h-9 w-auto object-contain" />
+          <img src={settings?.logoUrl || "/amo-logo.webp"} alt={tenant?.name || "AMO Rendering"} className="h-14 w-auto object-contain" />
         </a>
         {/* Centre — nav links */}
         <div className="hidden lg:flex items-center justify-center gap-6 text-sm font-medium">
