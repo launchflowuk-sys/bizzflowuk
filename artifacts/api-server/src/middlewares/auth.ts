@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { verifyToken } from "@clerk/backend";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, SQL } from "drizzle-orm";
 
 export interface AuthUser {
   id: number;
@@ -61,4 +61,14 @@ export function requireSuperAdmin(req: Request, res: Response, next: NextFunctio
 
 export function requireTenantAccess(req: Request, res: Response, next: NextFunction) {
   return requireRole("SUPER_ADMIN", "TENANT_ADMIN", "STAFF")(req, res, next);
+}
+
+/**
+ * Returns a Drizzle where condition that filters by tenantId for regular users,
+ * or undefined (no filter = all tenants) for SUPER_ADMIN.
+ * Use: .where(tenantFilter(req, table.tenantId))
+ */
+export function tenantFilter(req: Request, column: any): SQL | undefined {
+  if (req.authUser?.role === "SUPER_ADMIN") return undefined;
+  return eq(column, req.authUser?.tenantId ?? -1);
 }

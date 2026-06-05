@@ -23,7 +23,7 @@ function AdminSidebar({ currentPath }: { currentPath: string }) {
         ))}
       </nav>
       <div className="p-4 border-t border-slate-800">
-        <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: 'w-7 h-7' } }}/>
+        <UserButton appearance={{ elements: { avatarBox: 'w-7 h-7' } }}/>
       </div>
     </aside>
   );
@@ -216,7 +216,7 @@ export default function AdminApp() {
   const { data: me } = useGetMe();
   const [location] = useLocation();
   if (!isLoaded) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"/></div>;
-  if (!isSignedIn) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><SignIn routing="virtual"/></div>;
+  if (!isSignedIn) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><SignIn/></div>;
   if (me && me.role !== 'SUPER_ADMIN') return <div className="flex h-screen items-center justify-center text-slate-500">Access denied. Super Admin required.</div>;
   return (
     <div className="flex min-h-screen bg-slate-50">

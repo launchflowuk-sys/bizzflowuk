@@ -36,6 +36,8 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   showBlog: boolean("show_blog").default(true),
   showBeforeAfter: boolean("show_before_after").default(true),
   trustBadges: jsonb("trust_badges").$type<string[]>().default([]),
+  adminNotificationEmail: text("admin_notification_email"),
+  customerEmail: text("customer_email"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

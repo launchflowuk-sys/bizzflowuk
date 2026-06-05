@@ -20,7 +20,7 @@ function PortalNav({ currentPath }: { currentPath: string }) {
             <Link key={n.path} href={n.path} className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${currentPath === n.path ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>{n.label}</Link>
           ))}
         </div>
-        <UserButton afterSignOutUrl="/" appearance={{ elements: { avatarBox: 'w-7 h-7' } }}/>
+        <UserButton appearance={{ elements: { avatarBox: 'w-7 h-7' } }}/>
       </div>
     </nav>
   );
@@ -176,7 +176,7 @@ export default function PortalApp() {
   const { isSignedIn, isLoaded } = useUser();
   const [location] = useLocation();
   if (!isLoaded) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"/></div>;
-  if (!isSignedIn) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><SignIn routing="virtual"/></div>;
+  if (!isSignedIn) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><SignIn/></div>;
   return (
     <div className="min-h-screen bg-slate-50">
       <PortalNav currentPath={location}/>
