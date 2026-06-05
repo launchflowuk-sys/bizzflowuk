@@ -1,12 +1,12 @@
-import { useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth } from '@clerk/react';
+import { useEffect, useRef, useState } from "react";
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useGetMe, setAuthTokenGetter } from "@workspace/api-client-react";
+import { useGetMe, setAuthTokenGetter, getGetMeQueryKey } from "@workspace/api-client-react";
 
 import NotFound from "@/pages/not-found";
 
@@ -41,7 +41,30 @@ const clerkAppearance = {
   theme: shadcn,
   cssLayerName: "clerk",
   variables: {
-    colorPrimary: "hsl(24 98% 50%)",
+    colorPrimary: "#1F8CFF",
+    colorBackground: "#0F1923",
+    colorInputBackground: "#1A2535",
+    colorInputText: "#ffffff",
+    colorText: "#ffffff",
+    colorTextSecondary: "#94a3b8",
+    colorNeutral: "#ffffff",
+    borderRadius: "0.75rem",
+  },
+  elements: {
+    card: "bg-[#0F1923] border border-white/10 shadow-2xl",
+    headerTitle: "text-white font-bold",
+    headerSubtitle: "text-slate-400",
+    formButtonPrimary: "bg-[#1F8CFF] hover:bg-[#1a7ae6] text-white font-semibold",
+    formFieldInput: "bg-[#1A2535] border-white/10 text-white placeholder:text-slate-500 focus:border-[#1F8CFF]",
+    formFieldLabel: "text-slate-300 font-medium",
+    dividerLine: "bg-white/10",
+    dividerText: "text-slate-500",
+    socialButtonsBlockButton: "bg-[#1A2535] border-white/10 text-white hover:bg-[#243048]",
+    socialButtonsBlockButtonText: "text-white",
+    footerActionText: "text-slate-400",
+    footerActionLink: "text-[#1F8CFF] hover:text-[#60afff]",
+    identityPreviewText: "text-white",
+    identityPreviewEditButton: "text-[#1F8CFF]",
   },
 };
 
@@ -69,26 +92,114 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function AuthLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="min-h-[100dvh] flex bg-[#0A121C]">
+      <div className="hidden lg:flex lg:w-[52%] flex-col justify-between p-12 bg-gradient-to-br from-[#0A121C] via-[#0d1a2e] to-[#0A121C] border-r border-white/5 relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#1F8CFF]/8 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#1F8CFF]/5 rounded-full blur-[100px] translate-x-1/4 translate-y-1/4" />
+        </div>
+        <div className="relative z-10">
+          <div className="flex items-center gap-3 mb-16">
+            <div className="w-9 h-9 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-sm">L</div>
+            <span className="text-white font-bold text-xl tracking-tight">LaunchFlow</span>
+          </div>
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 bg-[#1F8CFF]/10 border border-[#1F8CFF]/20 rounded-full px-4 py-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#1F8CFF]" />
+              <span className="text-[#1F8CFF] text-xs font-semibold tracking-wider uppercase">Home Improvement Platform</span>
+            </div>
+            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
+              The operating system for trades businesses
+            </h1>
+            <p className="text-slate-400 text-lg leading-relaxed max-w-md">
+              Websites, CRM, quoting, project management, and customer portals — everything under your brand.
+            </p>
+          </div>
+        </div>
+        <div className="relative z-10 space-y-4">
+          {[
+            { icon: "🌐", label: "Professional public website", desc: "Full marketing site with services, gallery & lead capture" },
+            { icon: "📋", label: "CRM & quote management", desc: "Convert leads to signed quotes in minutes" },
+            { icon: "👤", label: "Customer portal", desc: "Self-service portal for project tracking & communication" },
+          ].map((f) => (
+            <div key={f.label} className="flex items-start gap-4 p-4 rounded-xl bg-white/3 border border-white/5">
+              <span className="text-2xl mt-0.5">{f.icon}</span>
+              <div>
+                <div className="text-white font-semibold text-sm">{f.label}</div>
+                <div className="text-slate-500 text-xs mt-0.5">{f.desc}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 bg-[#0A121C]">
+        <div className="flex items-center gap-2 mb-8 lg:hidden">
+          <div className="w-8 h-8 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-xs">L</div>
+          <span className="text-white font-bold text-lg tracking-tight">LaunchFlow</span>
+        </div>
+        {children}
+        <p className="mt-8 text-center text-xs text-slate-600">
+          © {new Date().getFullYear()} LaunchFlow. All rights reserved.
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function SignInPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-muted/30 px-4">
+    <AuthLayout>
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
-    </div>
+    </AuthLayout>
   );
 }
 
 function SignUpPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-muted/30 px-4">
+    <AuthLayout>
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
-    </div>
+    </AuthLayout>
   );
 }
 
 function RoleRouter() {
-  const { data: user, isLoading } = useGetMe();
-  if (isLoading) return <div className="flex h-screen items-center justify-center text-muted-foreground text-sm">Loading...</div>;
-  if (!user) return <Redirect to="/" />;
+  const { user: clerkUser } = useUser();
+  const { getToken } = useAuth();
+  const qc = useQueryClient();
+  const { data: user, isLoading, isError } = useGetMe();
+  const [syncing, setSyncing] = useState(false);
+  const syncAttempted = useRef(false);
+
+  useEffect(() => {
+    if (!isError || syncing || syncAttempted.current || !clerkUser) return;
+    syncAttempted.current = true;
+    setSyncing(true);
+    (async () => {
+      try {
+        const token = await getToken();
+        await fetch("/api/auth/users/sync", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            clerkId: clerkUser.id,
+            email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
+            firstName: clerkUser.firstName ?? undefined,
+            lastName: clerkUser.lastName ?? undefined,
+          }),
+        });
+        await qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      } catch {
+        // sync failed silently
+      } finally {
+        setSyncing(false);
+      }
+    })();
+  }, [isError, syncing, clerkUser, getToken, qc]);
+
+  if (isLoading || syncing) return <div className="flex h-screen items-center justify-center text-muted-foreground text-sm">Setting up your account…</div>;
+  if (!user) return <Redirect to="/portal" />;
   if (user.role === 'SUPER_ADMIN') return <Redirect to="/admin" />;
   if (user.role === 'TENANT_ADMIN' || user.role === 'STAFF') return <Redirect to="/dashboard" />;
   return <Redirect to="/portal" />;

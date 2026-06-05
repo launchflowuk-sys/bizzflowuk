@@ -18,7 +18,7 @@ const router: IRouter = Router();
 
 router.use(healthRouter);
 router.use(storageRouter);
-router.use(authRouter);
+router.use("/auth", authRouter);
 router.use(tenantsRouter);
 router.use(leadsRouter);
 router.use(quotesRouter);
