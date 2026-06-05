@@ -1427,22 +1427,21 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
                   </div>
 
                   {/* Before/After */}
-                  <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white">
-                    <div className="grid grid-cols-2">
-                      <div className="relative bg-slate-100 h-52 flex items-center justify-center">
-                        <span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span>
-                        <svg className="w-10 h-10 text-slate-300" fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
-                      </div>
-                      <div className="relative h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "15" }}>
-                        <span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span>
-                        <svg className="w-10 h-10" style={{ color: BLUE + "60" }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75"/></svg>
+                  {c.heroImageUrl && (
+                    <div className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
+                      <img
+                        src={c.heroImageUrl}
+                        alt={`Before and after — ${c.title}`}
+                        className="w-full object-cover"
+                      />
+                      <div className="px-5 py-4 flex items-center gap-3" style={{ backgroundColor: LIGHT_BG }}>
+                        <span className="rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span>
+                        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
+                        <span className="rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span>
+                        <p className="text-xs ml-2" style={{ color: MUTED }}>The completed exterior gave the property a sharper, more modern appearance.</p>
                       </div>
                     </div>
-                    <div className="p-4">
-                      <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Finished Result</h3>
-                      <p className="text-xs mt-1" style={{ color: MUTED }}>The completed exterior gave the property a sharper, more modern appearance.</p>
-                    </div>
-                  </div>
+                  )}
 
                   <div className="rounded-2xl p-6" style={{ backgroundColor: BLUE + "10", border: `1px solid ${BLUE}30` }}>
                     <h2 className="text-xl font-bold mb-3" style={{ color: TEXT }}>Customer Outcome</h2>
