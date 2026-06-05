@@ -290,17 +290,17 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
         </div>
       </div>
 
-      {/* Main columns */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+      {/* Main columns — equal 4-col grid */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-8 grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
         {/* Brand */}
-        <div className="lg:col-span-2 space-y-4 pr-0 lg:pr-8">
+        <div className="col-span-2 lg:col-span-1 space-y-4">
           <img
             src={settings?.logoUrl || "/amo-logo.webp"}
             alt={tenant?.name || "AMO Rendering"}
-            className="h-10 w-auto object-contain brightness-0 invert"
+            className="h-10 w-auto object-contain"
           />
-          <p className="text-sm leading-relaxed text-slate-400 max-w-sm">
-            Premium rendering specialists based in Grays, Thurrock — serving Essex and London with silicone render, monocouche, K Rend, EWI and pebbledash removal.
+          <p className="text-sm leading-relaxed text-slate-400">
+            Rendering specialists based in Grays, Thurrock — serving Essex and London with silicone render, monocouche, K Rend, EWI and pebbledash removal.
           </p>
           <div className="space-y-1.5 text-sm text-slate-400">
             <p className="text-slate-300 font-medium">Grays, Thurrock, Essex</p>
@@ -326,24 +326,27 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
           ))}
         </div>
 
-        {/* Areas + Nav */}
+        {/* Areas */}
         <div className="space-y-2.5">
           <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Areas</p>
           {["Grays","Thurrock","Basildon","Romford","Chelmsford","Brentwood","London"].map(a => (
             <a key={a} href={`${siteBase}/areas/${a.toLowerCase()}`} className="block text-sm text-slate-400 hover:text-white transition-colors">{a}</a>
           ))}
-          <div className="pt-4 border-t border-slate-800 mt-4 space-y-2.5">
-            <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Company</p>
-            {[
-              { label: "Gallery", href: `${siteBase}/gallery` },
-              { label: "Case Studies", href: `${siteBase}/case-studies` },
-              { label: "Reviews", href: `${siteBase}/reviews` },
-              { label: "FAQs", href: `${siteBase}/faqs` },
-              { label: "Contact", href: `${siteBase}/contact` },
-            ].map(l => (
-              <a key={l.label} href={l.href} className="block text-sm text-slate-400 hover:text-white transition-colors">{l.label}</a>
-            ))}
-          </div>
+        </div>
+
+        {/* Company */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Company</p>
+          {[
+            { label: "Gallery", href: `${siteBase}/gallery` },
+            { label: "Case Studies", href: `${siteBase}/case-studies` },
+            { label: "Reviews", href: `${siteBase}/reviews` },
+            { label: "FAQs", href: `${siteBase}/faqs` },
+            { label: "Contact", href: `${siteBase}/contact` },
+            { label: "Get a Quote", href: `${siteBase}/quote` },
+          ].map(l => (
+            <a key={l.label} href={l.href} className="block text-sm text-slate-400 hover:text-white transition-colors">{l.label}</a>
+          ))}
         </div>
       </div>
 
