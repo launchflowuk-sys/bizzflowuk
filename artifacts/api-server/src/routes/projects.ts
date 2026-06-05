@@ -1,0 +1,61 @@
+import { Router } from "express";
+import { db } from "@workspace/db";
+import { projectsTable, projectUpdatesTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
+import { requireTenantAccess } from "../middlewares/auth";
+
+const router = Router();
+function tid(req: any) { return req.authUser?.tenantId!; }
+
+router.get("/projects", requireTenantAccess, async (req, res) => {
+  try {
+    const projects = await db.select().from(projectsTable).where(eq(projectsTable.tenantId, tid(req))).orderBy(sql`${projectsTable.createdAt} desc`);
+    res.json(projects);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/projects", requireTenantAccess, async (req, res) => {
+  try {
+    const p = await db.insert(projectsTable).values({ ...req.body, tenantId: tid(req) }).returning();
+    res.status(201).json(p[0]);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.get("/projects/:id", requireTenantAccess, async (req, res) => {
+  try {
+    const p = await db.select().from(projectsTable).where(and(eq(projectsTable.id, Number(req.params.id)), eq(projectsTable.tenantId, tid(req)))).limit(1);
+    if (!p.length) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(p[0]);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.patch("/projects/:id", requireTenantAccess, async (req, res) => {
+  try {
+    const p = await db.update(projectsTable).set(req.body).where(and(eq(projectsTable.id, Number(req.params.id)), eq(projectsTable.tenantId, tid(req)))).returning();
+    if (!p.length) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(p[0]);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/projects/:id", requireTenantAccess, async (req, res) => {
+  try {
+    await db.delete(projectsTable).where(and(eq(projectsTable.id, Number(req.params.id)), eq(projectsTable.tenantId, tid(req))));
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.get("/projects/:id/updates", requireTenantAccess, async (req, res) => {
+  try {
+    const updates = await db.select().from(projectUpdatesTable).where(eq(projectUpdatesTable.projectId, Number(req.params.id))).orderBy(sql`${projectUpdatesTable.createdAt} desc`);
+    res.json(updates);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/projects/:id/updates", requireTenantAccess, async (req, res) => {
+  try {
+    const u = await db.insert(projectUpdatesTable).values({ ...req.body, projectId: Number(req.params.id) }).returning();
+    res.status(201).json(u[0]);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+export default router;

@@ -1,0 +1,926 @@
+Build a complete production-ready multi-tenant SaaS platform for home improvement businesses.
+
+This is not a single website.
+
+This is a reusable SaaS operating system that LaunchFlow can sell to multiple home improvement companies.
+
+The first tenant must be AMO Rendering, but the application must NOT hardcode AMO Rendering anywhere in the core system.
+
+AMO Rendering should only exist as seed tenant data.
+
+The platform must support rendering companies, roofing companies, driveway companies, landscaping companies, window companies, plasterers, builders, and other local service businesses.
+
+The system must include:
+
+1. Public-facing website per tenant
+2. Tenant admin dashboard
+3. Customer portal
+4. LaunchFlow SaaS owner dashboard
+5. Lead management CRM
+6. Quote management
+7. Project management
+8. Case study engine
+9. Gallery engine
+10. Reviews engine
+11. Local SEO area page engine
+12. Service page engine
+13. Blog system
+14. Visualiser request system
+15. File upload system
+16. Role-based access control
+
+Do not build a prototype.
+
+Do not leave placeholders.
+
+Do not create dead buttons.
+
+Do not create fake forms.
+
+Do not create coming soon pages.
+
+Do not use lorem ipsum.
+
+Every form must submit.
+
+Every dashboard action must update real database records.
+
+Every tenant must have isolated data.
+
+Every public website must be generated dynamically from tenant settings and tenant content.
+
+Technology Stack
+
+Use:
+
+* Next.js
+* TypeScript
+* Tailwind CSS
+* PostgreSQL
+* Prisma ORM
+* NextAuth
+* Role-based authentication
+* File uploads
+* Mobile-first responsive design
+
+Multi-Tenant Requirements
+
+Each tenant represents one business.
+
+Each tenant must have:
+
+* Business name
+* Business type
+* Logo
+* Brand colours
+* Domain
+* Phone number
+* Main email
+* Admin notification email
+* Address
+* Service areas
+* Services
+* FAQs
+* Reviews
+* Gallery
+* Case studies
+* Blog posts
+* Quote forms
+* Customers
+* Leads
+* Quotes
+* Projects
+* Team members
+* Customer portal settings
+* SEO settings
+* Social media links
+
+Tenant data must be separated by tenantId on all relevant models.
+
+No tenant should be able to access another tenant's data.
+
+Roles
+
+Create these roles:
+
+1. SUPER_ADMIN
+
+For LaunchFlow.
+
+Can:
+
+* Create tenants
+* Edit tenants
+* Suspend tenants
+* Delete tenants
+* Manage all subscriptions
+* Manage global templates
+* View platform statistics
+* Access all tenant accounts when needed
+
+2. TENANT_ADMIN
+
+For business owners.
+
+Can:
+
+* Manage their business website
+* Manage leads
+* Manage quotes
+* Manage projects
+* Manage customers
+* Manage team members
+* Manage content
+* Manage settings
+
+3. STAFF
+
+For business staff.
+
+Can:
+
+* View assigned leads
+* View assigned projects
+* Add notes
+* Upload files
+* Update project status
+
+4. CUSTOMER
+
+For homeowners.
+
+Can:
+
+* Access their customer portal
+* View quote status
+* View project status
+* View documents
+* View photos
+* View updates
+
+Seed Tenant
+
+Create AMO Rendering as the first tenant.
+
+Business Name:
+AMO Rendering
+
+Website:
+amorendering.co.uk
+
+Primary Email:
+[info@amorendering.co.uk](mailto:info@amorendering.co.uk)
+
+Admin Notification Email:
+[mark@amorendering.co.uk](mailto:mark@amorendering.co.uk)
+
+Business Type:
+Rendering Company
+
+Headquarters:
+Grays, Thurrock
+
+Primary Target Areas:
+
+* Grays
+* Thurrock
+* Essex
+* London
+
+Additional Target Areas:
+
+* Basildon
+* Brentwood
+* Romford
+* Dagenham
+* Barking
+* Ilford
+* Upminster
+* Hornchurch
+* Rainham
+* Billericay
+* Chelmsford
+* Southend
+* Dartford
+* Gravesend
+* Chigwell
+* Epping
+
+Primary Services:
+
+* Silicone Rendering
+* Monocouche Rendering
+* K Rend
+* Coloured Rendering
+* External Wall Insulation
+* Pebbledash Removal
+* Render Repairs
+* Crack Repairs
+* Domestic Rendering
+* Commercial Rendering
+
+Public Website Structure
+
+Each tenant website must include these pages:
+
+1. Home
+2. About
+3. Services
+4. Dynamic service detail pages
+5. Areas Covered
+6. Dynamic area detail pages
+7. Gallery
+8. Before & After
+9. Case Studies
+10. Dynamic case study detail pages
+11. Reviews
+12. FAQs
+13. Blog
+14. Dynamic blog post pages
+15. Request a Quote
+16. Contact
+17. Privacy Policy
+18. Terms & Conditions
+19. Cookie Policy
+
+Homepage Requirements
+
+The homepage must be generated from tenant settings and content.
+
+Homepage sections:
+
+1. Premium hero section
+2. Main CTA: Request a Free Quote
+3. Secondary CTA: Upload Photos
+4. Phone CTA
+5. Trust badges
+6. Service cards
+7. Before and after showcase
+8. Recent case studies
+9. Customer reviews
+10. Process section
+11. Areas covered
+12. FAQ section
+13. Final CTA
+14. Sticky mobile call button
+15. Sticky mobile quote button
+
+For AMO Rendering, position the homepage as a premium rendering specialist for London and Essex.
+
+Do not mention Birmingham, Wolverhampton, Dudley, Solihull, Walsall, or West Midlands for AMO Rendering.
+
+Service Page System
+
+Create a dynamic service page CMS.
+
+Tenant admins must be able to:
+
+* Create service pages
+* Edit service pages
+* Delete service pages
+* Publish/unpublish service pages
+* Add featured image
+* Add SEO title
+* Add meta description
+* Add service benefits
+* Add process steps
+* Add FAQs
+* Link related case studies
+* Link related gallery images
+* Link related area pages
+
+Each service page must include:
+
+* Hero section
+* Trust section
+* Main content
+* Benefits
+* Process
+* Before and after examples
+* Related case studies
+* FAQs
+* CTA section
+* Schema markup
+
+Seed AMO Rendering service pages:
+
+1. Silicone Rendering
+2. Monocouche Rendering
+3. K Rend
+4. Coloured Rendering
+5. External Wall Insulation
+6. Pebbledash Removal
+7. Render Repairs
+8. Crack Repairs
+9. Domestic Rendering
+10. Commercial Rendering
+
+Area Page System
+
+Create a dynamic local SEO area page CMS.
+
+Tenant admins must be able to:
+
+* Create area pages
+* Edit area pages
+* Delete area pages
+* Publish/unpublish area pages
+
+Each area page must include:
+
+* Area name
+* Slug
+* SEO title
+* Meta description
+* Hero title
+* Intro content
+* Services available in that area
+* Local project examples
+* Related case studies
+* FAQs
+* CTA section
+* Map/embed field
+* Schema markup
+
+Seed AMO Rendering area pages:
+
+1. Rendering in Grays
+2. Rendering in Thurrock
+3. Rendering in Essex
+4. Rendering in London
+5. Rendering in Basildon
+6. Rendering in Brentwood
+7. Rendering in Romford
+8. Rendering in Dagenham
+9. Rendering in Barking
+10. Rendering in Ilford
+11. Rendering in Upminster
+12. Rendering in Hornchurch
+13. Rendering in Rainham
+14. Rendering in Chelmsford
+15. Rendering in Southend
+16. Rendering in Dartford
+17. Rendering in Gravesend
+18. Rendering in Chigwell
+19. Rendering in Epping
+
+Quote Request System
+
+Build a working quote request system.
+
+The quote form must collect:
+
+* Name
+* Phone
+* Email
+* Address
+* Postcode
+* Service required
+* Property type
+* Existing surface
+* Desired finish
+* Approximate project size
+* Budget range
+* Preferred timeframe
+* Notes
+* Photo uploads
+
+Every quote request must:
+
+* Save to the database
+* Create a lead
+* Attach uploaded files
+* Notify the tenant admin email
+* Appear in the tenant dashboard
+* Be linked to the correct tenant
+
+For AMO Rendering, admin notifications go to:
+
+[mark@amorendering.co.uk](mailto:mark@amorendering.co.uk)
+
+Customer-facing emails should use:
+
+[info@amorendering.co.uk](mailto:info@amorendering.co.uk)
+
+Lead CRM
+
+Build a full tenant lead CRM.
+
+Tenant admins must be able to:
+
+* View leads
+* Search leads
+* Filter leads
+* Create leads manually
+* Edit leads
+* Delete leads
+* Change lead status
+* Add internal notes
+* View uploaded files
+* Assign lead to staff
+* Convert lead to quote
+* Convert lead to project
+
+Lead statuses:
+
+* New
+* Contacted
+* Survey Booked
+* Quote Sent
+* Won
+* Lost
+
+Quote Management
+
+Build a working quote management system.
+
+Tenant admins must be able to:
+
+* Create quotes
+* Edit quotes
+* Add line items
+* Add notes
+* Attach files
+* Mark quote as draft
+* Mark quote as sent
+* Mark quote as accepted
+* Mark quote as rejected
+* Convert accepted quote into project
+
+Quote statuses:
+
+* Draft
+* Sent
+* Accepted
+* Rejected
+
+Project Management
+
+Build a working project management system.
+
+Tenant admins must be able to:
+
+* Create projects
+* Edit projects
+* Assign customer
+* Assign staff
+* Set project status
+* Upload project photos
+* Add progress updates
+* Add internal notes
+* Add customer-visible updates
+* Upload documents
+* Add warranty information
+
+Project statuses:
+
+* Enquiry
+* Survey Booked
+* Quote Approved
+* Scheduled
+* In Progress
+* Completed
+
+Customer Portal
+
+Build a complete customer portal.
+
+Customers must be able to:
+
+* Log in securely
+* View their quote requests
+* View quote status
+* View project status
+* View project timeline
+* View uploaded photos
+* View project updates
+* Download documents
+* View warranty information
+* Send messages or enquiries to the tenant
+
+Case Study Engine
+
+Build a complete case study CMS.
+
+Tenant admins must be able to:
+
+* Create case studies
+* Edit case studies
+* Delete case studies
+* Publish/unpublish case studies
+* Upload before photos
+* Upload after photos
+* Link case studies to services
+* Link case studies to areas
+
+Each case study must include:
+
+* Title
+* Slug
+* Location
+* Property type
+* Service
+* Problem
+* Solution
+* Render system or product used
+* Colour or finish
+* Time taken
+* Before photos
+* After photos
+* Customer review
+* CTA section
+* SEO title
+* Meta description
+
+Gallery Engine
+
+Build a complete gallery system.
+
+Tenant admins must be able to:
+
+* Upload gallery images
+* Add image titles
+* Add image descriptions
+* Add categories
+* Link gallery images to services
+* Link gallery images to areas
+* Mark images as featured
+* Delete images
+
+Frontend gallery must support filtering by:
+
+* Service
+* Area
+* Property type
+* Finish type
+
+Before & After System
+
+Build a before and after transformation system.
+
+Each transformation must include:
+
+* Project title
+* Location
+* Property type
+* Service
+* Before image
+* After image
+* Description
+* CTA
+
+Reviews Engine
+
+Build a review management system.
+
+Tenant admins must be able to:
+
+* Add reviews
+* Edit reviews
+* Delete reviews
+* Feature reviews
+* Link reviews to services
+* Link reviews to projects
+
+Reviews must display across:
+
+* Homepage
+* Service pages
+* Area pages
+* Case studies
+* Reviews page
+
+Blog System
+
+Build a blog CMS.
+
+Tenant admins must be able to:
+
+* Create posts
+* Edit posts
+* Delete posts
+* Publish/unpublish posts
+* Add categories
+* Add featured images
+* Add SEO title
+* Add meta description
+
+Blog must include:
+
+* Blog listing page
+* Blog detail page
+* Related posts
+* Search/filter by category
+
+FAQ System
+
+Build a dynamic FAQ CMS.
+
+Tenant admins must be able to:
+
+* Create FAQs
+* Edit FAQs
+* Delete FAQs
+* Assign FAQs to services
+* Assign FAQs to area pages
+* Mark FAQs as global
+
+Visualiser Request System
+
+Build a working Version 1 visualiser request feature.
+
+Visitors must be able to:
+
+* Upload property photos
+* Select service
+* Select finish
+* Select colour
+* Add notes
+* Submit their contact details
+
+The system must:
+
+* Save the request to database
+* Create a lead
+* Store uploaded photos
+* Show the request in tenant dashboard
+* Notify tenant admin email
+
+Do not attempt AI image editing yet.
+
+This version must be a working visualiser request intake system, not a placeholder.
+
+LaunchFlow SaaS Owner Dashboard
+
+Build a SUPER_ADMIN dashboard for LaunchFlow.
+
+SUPER_ADMIN must be able to:
+
+* View all tenants
+* Create tenant
+* Edit tenant
+* Suspend tenant
+* Delete tenant
+* View tenant users
+* Manage tenant plan
+* Manage tenant domain
+* View platform statistics
+* View number of leads per tenant
+* View storage usage per tenant
+* View active projects per tenant
+* Impersonate tenant admin for support
+
+Tenant Settings
+
+Tenant admins must be able to edit:
+
+* Business name
+* Logo
+* Brand colours
+* Phone number
+* Main email
+* Admin email
+* Address
+* Social media links
+* Opening hours
+* Service areas
+* Website SEO title
+* Website meta description
+* Footer content
+* Privacy policy content
+* Terms content
+* Cookie policy content
+
+SEO Requirements
+
+Every public page must include:
+
+* SEO title
+* Meta description
+* Open Graph data
+* Twitter Card data
+* Canonical URL
+
+Implement schema markup:
+
+* LocalBusiness
+* Service
+* FAQ
+* Review
+* Breadcrumb
+* Article
+* Organization
+
+Database Models
+
+Create Prisma models for:
+
+* Tenant
+* TenantSettings
+* SubscriptionPlan
+* User
+* Customer
+* Lead
+* LeadNote
+* Quote
+* QuoteItem
+* Project
+* ProjectImage
+* ProjectUpdate
+* CustomerPortalAccount
+* CustomerMessage
+* Service
+* AreaPage
+* GalleryImage
+* BeforeAfterTransformation
+* Review
+* CaseStudy
+* FAQ
+* BlogPost
+* BlogCategory
+* UploadedFile
+* ContactMessage
+* VisualiserRequest
+* TeamMember
+* Notification
+
+Design Direction
+
+The platform must look premium.
+
+Not like a basic contractor template.
+
+Design style:
+
+* Premium UK home improvement brand
+* Modern
+* Clean
+* Professional
+* High trust
+* Strong visual sections
+* Strong spacing
+* Mobile-first
+* Conversion-focused
+
+Use:
+
+* Large hero sections
+* Before and after visuals
+* Trust badges
+* Professional cards
+* Clear call-to-action sections
+* Strong service page layouts
+* Clean dashboard UI
+* Simple customer portal UI
+
+AMO Rendering Design Direction
+
+For the AMO Rendering seed tenant:
+
+* Premium rendering specialist
+* Targeting London and Essex
+* Based in Grays, Thurrock
+* Clean modern exterior transformation feel
+* Strong before and after focus
+* Trust-focused messaging
+* High-end home improvement style
+
+Seed Data Required
+
+Create realistic seed data for AMO Rendering.
+
+Seed:
+
+* 1 tenant
+* 1 super admin user
+* 1 AMO tenant admin user
+* 2 staff users
+* 5 sample customers
+* 10 sample leads
+* 5 sample quotes
+* 4 sample projects
+* 10 services
+* 19 area pages
+* 8 FAQs
+* 8 reviews
+* 6 case studies
+* 12 gallery images
+* 6 before and after transformations
+* 5 blog posts
+* 3 visualiser requests
+
+Do not use lorem ipsum.
+
+Use realistic UK rendering business content.
+
+Navigation Structure For AMO Rendering
+
+Frontend navigation:
+
+* Home
+* Services
+
+  * Silicone Rendering
+  * Monocouche Rendering
+  * K Rend
+  * External Wall Insulation
+  * Pebbledash Removal
+  * Render Repairs
+* Areas
+
+  * Essex
+  * London
+  * Grays
+  * Thurrock
+  * Romford
+  * Brentwood
+  * Chelmsford
+  * Basildon
+* Gallery
+* Before & After
+* Case Studies
+* Reviews
+* FAQs
+* Contact
+* Get Quote
+
+Dashboard Navigation
+
+Tenant dashboard navigation:
+
+* Dashboard
+* Leads
+* Quotes
+* Customers
+* Projects
+* Calendar
+* Gallery
+* Case Studies
+* Services
+* Area Pages
+* Reviews
+* FAQs
+* Blog
+* Visualiser Requests
+* Messages
+* Files
+* Team
+* Website Settings
+
+Customer portal navigation:
+
+* Dashboard
+* My Quote
+* My Project
+* Photos
+* Documents
+* Updates
+* Warranty
+* Messages
+
+SaaS owner navigation:
+
+* Dashboard
+* Tenants
+* Plans
+* Domains
+* Users
+* Usage
+* Support Access
+* Settings
+
+Important Build Rules
+
+* Do not hardcode AMO Rendering into app logic
+* Use tenantId everywhere
+* Use dynamic tenant settings for branding
+* Use reusable components
+* Use reusable page templates
+* Use clean folder structure
+* Use proper validation
+* Use error handling
+* Use loading states
+* Use empty states
+* Use secure authentication
+* Use protected routes
+* Use responsive design everywhere
+* Make all buttons functional
+* Make all forms submit
+* Make all dashboard actions persist to database
+
+Final Output Required
+
+When finished, provide:
+
+1. Full application source code
+2. Database schema
+3. Setup instructions
+4. Environment variables required
+5. Admin login details
+6. Tenant admin login details
+7. Customer portal login details
+8. Explanation of multi-tenant architecture
+9. Feature completion summary
+10. Any limitations or next steps
+
+The final product must be immediately usable as the foundation for LaunchFlow's multi-tenant home improvement SaaS platform, with AMO Rendering as the first live tenant.
