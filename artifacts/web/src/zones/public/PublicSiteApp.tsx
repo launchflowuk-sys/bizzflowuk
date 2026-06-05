@@ -1112,82 +1112,114 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
 // GALLERY / BEFORE & AFTER PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 
+const SHOWCASE_ITEMS = [
+  { src: "/ba-silicone.webp",    alt: "Silicone render before and after — Essex detached home",  title: "Silicone Render",      tag: "Silicone Rendering",   span: "md:col-span-2" },
+  { src: "/ba-krend.webp",       alt: "K Rend before and after — Essex detached home",           title: "K Rend System",        tag: "K Rend",               span: "" },
+  { src: "/ba-monocouche.webp",  alt: "Monocouche render before and after — Essex bungalow",     title: "Monocouche Render",    tag: "Monocouche",           span: "" },
+  { src: "/ba-pebbledash.webp",  alt: "Pebbledash removal before and after — Essex semi",        title: "Pebbledash Removal",   tag: "Pebbledash Removal",   span: "" },
+  { src: "/ba-ewi.webp",         alt: "EWI before and after — Essex semi-detached",              title: "EWI Systems",          tag: "EWI",                  span: "" },
+];
+
 function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: images, isLoading } = useBrowsePublicGallery(tenantSlug);
-  const { data: beforeAfter } = useListPublicBeforeAfter(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
-  const [filter, setFilter] = useState("All");
-  const filters = ["All","Silicone Rendering","K Rend","Pebbledash Removal","EWI"];
-  const baList = beforeAfter as any[] || [];
-  const filtered = filter === "All" ? baList : baList.filter((ba: any) => (ba.serviceName || "").toLowerCase().includes(filter.toLowerCase()));
 
   return (
     <div>
       <PageSEO title="Before & After Rendering Gallery | AMO Rendering" description="See real rendering transformations across Essex and London. Silicone render, monocouche and EWI before and after photos from AMO Rendering."/>
       <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Before & After Rendering Transformations" title="Before & After Rendering Transformations" subtitle="See how professional rendering can change tired exterior walls, dated pebbledash and failing render into clean modern finishes."/>
 
-      {/* Filters */}
-      <section className="bg-white border-b border-slate-200 py-4">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap gap-2">
-          {filters.map(f => (
-            <button key={f} onClick={() => setFilter(f)} className={`rounded-full px-4 py-2 text-sm font-semibold transition-colors ${filter === f ? 'text-white' : 'bg-slate-100 hover:bg-slate-200'}`} style={filter === f ? { backgroundColor: BLUE } : { color: TEXT }}>
-              {f}
-            </button>
-          ))}
+      {/* Dark hero header */}
+      <section style={{ backgroundColor: NAVY }} className="py-16 px-4 text-white">
+        <div className="max-w-7xl mx-auto">
+          <div className="flex items-center gap-2 text-xs text-slate-400 mb-4">
+            <span>AMO Rendering</span><span>/</span><span>Before &amp; After</span>
+          </div>
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+            <div className="space-y-3">
+              <h1 className="text-4xl font-bold">Before &amp; After Transformations</h1>
+              <p className="text-lg text-slate-300 max-w-2xl">Real properties across Essex and London — see exactly what professional rendering does to tired pebbledash and failing exterior walls.</p>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center shrink-0">
+              {[{ num: "100+", label: "Projects" },{ num: "5★", label: "Rated" },{ num: "15yr", label: "Guarantee" },{ num: "Free", label: "Quotes" }].map(s => (
+                <div key={s.label} className="rounded-xl py-3 px-4" style={{ backgroundColor: "#ffffff12" }}>
+                  <div className="text-xl font-bold" style={{ color: "#8EC8FF" }}>{s.num}</div>
+                  <div className="text-xs text-slate-400 mt-0.5">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* Before & After Cards */}
+      {/* Featured showcase — editorial grid */}
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          {baList.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {(filtered.length ? filtered : baList).map((ba: any) => (
-                <div key={ba.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
-                  <div className="grid grid-cols-2">
-                    <div className="relative"><img src={ba.beforeImageUrl} alt="Before" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span></div>
-                    <div className="relative"><img src={ba.afterImageUrl} alt="After" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span></div>
-                  </div>
-                  <div className="p-5">
-                    <div className="flex items-center gap-2 mb-2">
-                      {ba.location && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-slate-100" style={{ color: MUTED }}>{ba.location}</span>}
-                      {ba.serviceName && <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{ba.serviceName}</span>}
-                    </div>
-                    <h3 className="font-semibold text-sm" style={{ color: TEXT }}>{ba.title}</h3>
-                    {ba.description && <p className="text-xs mt-1" style={{ color: MUTED }}>{ba.description}</p>}
+          <div className="mb-10">
+            <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: BLUE }}>By Service Type</p>
+            <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Rendering Transformations</h2>
+          </div>
+
+          {/* Large featured + 2 right */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mb-5">
+            {/* Large silicone card */}
+            <div className="md:col-span-2 rounded-2xl overflow-hidden shadow-md border border-slate-200 group hover:shadow-xl transition-shadow duration-300">
+              <img src="/ba-silicone.webp" alt="Silicone render before and after" className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"/>
+              <div className="px-5 py-4 flex items-center justify-between bg-white">
+                <p className="font-bold" style={{ color: TEXT }}>Silicone Render</p>
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>Durable. Weather-Resistant.</span>
+              </div>
+            </div>
+            {/* K Rend + Monocouche stacked */}
+            <div className="flex flex-col gap-5">
+              {[
+                { src: "/ba-krend.webp", title: "K Rend System", tag: "Original Silicone Render" },
+                { src: "/ba-monocouche.webp", title: "Monocouche Render", tag: "Seamless. Low Maintenance." },
+              ].map(({ src, title, tag }) => (
+                <div key={src} className="rounded-2xl overflow-hidden shadow-md border border-slate-200 group hover:shadow-xl transition-shadow duration-300">
+                  <img src={src} alt={title} className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"/>
+                  <div className="px-4 py-3 flex items-center justify-between bg-white">
+                    <p className="font-semibold text-sm" style={{ color: TEXT }}>{title}</p>
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{tag}</span>
                   </div>
                 </div>
               ))}
             </div>
-          ) : <Spinner/>}
+          </div>
+
+          {/* Pebbledash + EWI side by side */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            {[
+              { src: "/ba-pebbledash.webp", title: "Pebbledash Removal", tag: "Complete Strip & Render" },
+              { src: "/ba-ewi.webp", title: "EWI Systems", tag: "Insulate & Transform" },
+            ].map(({ src, title, tag }) => (
+              <div key={src} className="rounded-2xl overflow-hidden shadow-md border border-slate-200 group hover:shadow-xl transition-shadow duration-300">
+                <img src={src} alt={title} className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"/>
+                <div className="px-5 py-4 flex items-center justify-between bg-white">
+                  <p className="font-bold" style={{ color: TEXT }}>{title}</p>
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{tag}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Stats */}
-      <section style={{ backgroundColor: NAVY }} className="py-12">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 grid grid-cols-2 md:grid-cols-4 gap-6 text-center text-white">
-          {[{ num: "100+", label: "Projects Completed" },{ num: "Essex", label: "& London Coverage" },{ num: "15yr", label: "Guarantee Available" },{ num: "Free", label: "Photo Quotes" }].map(s => (
-            <div key={s.label} className="space-y-1">
-              <div className="text-3xl font-bold" style={{ color: "#8EC8FF" }}>{s.num}</div>
-              <div className="text-sm text-slate-400">{s.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Gallery Grid */}
+      {/* Project gallery (photo grid) */}
       {isLoading ? <Spinner/> : (images as any[])?.length > 0 && (
         <section style={{ backgroundColor: LIGHT_BG }} className="py-16">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
-            <h2 className="text-2xl font-bold mb-8 text-center" style={{ color: TEXT }}>Project Gallery</h2>
+            <div className="mb-10">
+              <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: BLUE }}>Project Photos</p>
+              <h2 className="text-2xl font-bold" style={{ color: TEXT }}>From Our Portfolio</h2>
+            </div>
             <div className="columns-1 sm:columns-2 lg:columns-3 gap-4 space-y-4">
               {(images as any[]).map((img: any) => (
-                <div key={img.id} className="break-inside-avoid rounded-xl overflow-hidden border border-slate-100">
+                <div key={img.id} className="break-inside-avoid rounded-xl overflow-hidden border border-slate-100 shadow-sm">
                   <img src={img.imageUrl} alt={img.altText || img.caption || "Rendering project"} className="w-full object-cover"/>
-                  {img.caption && <p className="p-3 text-xs" style={{ color: MUTED }}>{img.caption}</p>}
+                  {img.caption && <p className="px-4 py-3 text-xs" style={{ color: MUTED }}>{img.caption}</p>}
                 </div>
               ))}
             </div>
