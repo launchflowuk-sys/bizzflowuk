@@ -1207,9 +1207,49 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      {/* Project gallery (photo grid) */}
-      {isLoading ? <Spinner/> : (images as any[])?.length > 0 && (
-        <section style={{ backgroundColor: LIGHT_BG }} className="py-16">
+      {/* Team trust section */}
+      <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            {/* Image */}
+            <div className="rounded-2xl overflow-hidden shadow-xl">
+              <img
+                src="/amo-team.webp"
+                alt="The AMO Rendering team — Essex rendering specialists"
+                className="w-full object-cover"
+              />
+            </div>
+            {/* Trust content */}
+            <div className="space-y-7">
+              <div>
+                <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Meet The Team</p>
+                <h2 className="text-3xl font-bold leading-snug" style={{ color: TEXT }}>Essex Rendering Specialists — Built On Trust</h2>
+                <p className="mt-4 leading-relaxed" style={{ color: MUTED }}>Every job is handled by our own trained, uniformed team — never subcontracted. We show up on time, work cleanly and don't leave until you're happy with the result.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { icon: "🛡️", title: "Up to 15-Year Guarantee", body: "Written guarantee on every job we complete." },
+                  { icon: "👷", title: "Our Own Team Only", body: "No subcontractors. The same crew start to finish." },
+                  { icon: "📍", title: "Based in Grays, Essex", body: "Local specialists — we know the area and its properties." },
+                  { icon: "📸", title: "Free Photo Quote", body: "Send us photos and we'll price your job, no obligation." },
+                ].map(({ icon, title, body }) => (
+                  <div key={title} className="rounded-xl bg-white border border-slate-200 p-4 space-y-1 shadow-sm">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{icon}</span>
+                      <p className="font-bold text-sm" style={{ color: TEXT }}>{title}</p>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: MUTED }}>{body}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Project gallery (photo grid — shown when real photos are uploaded) */}
+      {!isLoading && (images as any[])?.length > 0 && (
+        <section className="py-16 bg-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="mb-10">
               <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: BLUE }}>Project Photos</p>
