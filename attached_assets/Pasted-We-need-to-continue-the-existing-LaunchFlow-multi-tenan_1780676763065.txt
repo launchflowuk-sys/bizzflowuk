@@ -1,0 +1,275 @@
+We need to continue the existing LaunchFlow multi-tenant SaaS build.
+
+Do not rebuild from scratch.
+
+Do not change the architecture.
+
+Work with the existing React + Vite + Tailwind frontend, Express 5 API, PostgreSQL + Drizzle ORM, Clerk authentication, wouter routing, OpenAPI/Orval setup, and current folder structure.
+
+Priority is to make the AMO Rendering tenant demo-ready within 48 hours.
+
+Current issue:
+AMO Rendering has incorrect seed area data. It currently uses Manchester-area locations. Replace all AMO Rendering area seed data and related demo content with London and Essex targeting.
+
+AMO Rendering correct location data:
+
+Headquarters:
+Grays, Thurrock
+
+Primary target areas:
+
+* Grays
+* Thurrock
+* Essex
+* London
+
+Additional target areas:
+
+* Basildon
+* Brentwood
+* Romford
+* Barking
+* Dagenham
+* Ilford
+* Upminster
+* Hornchurch
+* Rainham
+* Chelmsford
+* Southend
+* Dartford
+* Gravesend
+* Chigwell
+* Epping
+
+Remove all references to:
+
+* Manchester
+* Salford
+* Bolton
+* Bury
+* Stockport
+* Oldham
+
+Main objective:
+Make the platform demo-ready for AMO Rendering as the first tenant.
+
+Focus only on launch-critical work.
+
+Do not add unnecessary new features.
+
+Tasks:
+
+1. Fix AMO Rendering Seed Data
+
+Update all seed data so AMO Rendering content is based around London and Essex.
+
+Update:
+
+* Area pages
+* Case studies
+* Reviews
+* Gallery metadata
+* Blog posts
+* Lead examples
+* Project examples
+* Quote examples
+* Homepage location copy
+* Footer location copy
+* SEO metadata
+* LocalBusiness schema
+
+The tenant must clearly appear as:
+AMO Rendering — premium rendering specialists based in Grays, Thurrock, serving London and Essex.
+
+2. Complete Image Upload Flow
+
+Replit object storage is already wired up but not used.
+
+Implement working upload UI and API integration for:
+
+* Quote request photos
+* Visualiser request photos
+* Gallery images
+* Case study before photos
+* Case study after photos
+* Project photos
+* Customer portal documents if already supported by schema
+
+Requirements:
+
+* Upload files successfully
+* Store file metadata in database
+* Associate files with correct tenantId
+* Associate files with correct lead/project/case study/gallery item
+* Show uploaded images in dashboard
+* Show public images where relevant
+* Validate file type and size
+* Display upload errors clearly
+
+3. Email Notifications
+
+Add working email notification support.
+
+Use environment variables for email provider configuration.
+
+Required notifications:
+
+When quote form is submitted:
+
+* Send admin notification to tenant.adminNotificationEmail
+* Send customer confirmation to submitted customer email
+
+When contact form is submitted:
+
+* Send admin notification to tenant.adminNotificationEmail
+* Send customer confirmation
+
+When visualiser request is submitted:
+
+* Send admin notification
+* Send customer confirmation
+
+For AMO Rendering:
+Admin notification email:
+mark@amorendering.co.uk
+
+Customer-facing email:
+info@amorendering.co.uk
+
+If no real email provider key is available, implement the email service cleanly with provider-ready structure and log the email output in development mode.
+
+4. Complete Dashboard Detail Views
+
+The dashboard shell exists. Now complete the most important detail views.
+
+Build:
+
+Lead Detail Page:
+
+* Contact details
+* Service requested
+* Address/postcode
+* Uploaded photos
+* Notes
+* Status update
+* Assigned staff
+* Convert to quote
+* Convert to project
+
+Quote Detail / Quote Builder:
+
+* Customer details
+* Linked lead
+* Line items
+* Total
+* Notes
+* Status update
+* Attachments
+* Convert accepted quote to project
+
+Project Detail Page:
+
+* Customer details
+* Project status
+* Timeline updates
+* Internal notes
+* Customer-visible updates
+* Uploaded photos
+* Documents
+* Warranty information
+
+Customer Detail Page:
+
+* Customer info
+* Linked leads
+* Linked quotes
+* Linked projects
+* Uploaded files
+* Notes
+
+5. Enforce RBAC On API Routes
+
+Clerk authentication already exists but RBAC is not fully enforced.
+
+Add proper role checks:
+
+SUPER_ADMIN:
+
+* Can access /admin and all tenant data
+
+TENANT_ADMIN:
+
+* Can access only their own tenant dashboard and tenant data
+
+STAFF:
+
+* Can access assigned tenant data only
+* Limited write permissions
+
+CUSTOMER:
+
+* Can access only their own customer portal data
+
+Every API response must be tenant-safe.
+
+No user should access data from another tenant.
+
+6. Polish AMO Public Website
+
+Do not redesign everything.
+
+Improve only what matters for demo quality:
+
+* Make homepage visually premium
+* Ensure mobile responsiveness
+* Improve service page layout
+* Improve area page layout
+* Improve case study pages
+* Improve quote page
+* Improve visualiser page
+* Add stronger CTAs
+* Add stronger trust messaging
+* Ensure no broken links
+* Ensure no empty sections
+* Ensure no incorrect locations
+
+7. Demo Readiness
+
+Create clear demo accounts or instructions for:
+
+* SUPER_ADMIN
+* AMO TENANT_ADMIN
+* STAFF
+* CUSTOMER
+
+Add a README section:
+
+Demo URLs:
+
+* LaunchFlow landing page
+* AMO public site
+* AMO dashboard
+* Customer portal
+* Super admin
+
+Include:
+
+* How to run locally
+* Required environment variables
+* How to seed database
+* Known limitations
+
+Rules:
+
+* Do not rebuild the app
+* Do not change stack
+* Do not introduce Stripe yet
+* Do not build tenant onboarding yet
+* Do not over-engineer
+* Do not add new features beyond the tasks above
+* Prioritise working, demo-ready functionality
+* Keep all AMO data tenant-scoped
+* Keep AMO Rendering as seed data only, not hardcoded into the platform
+
+Final output:
+Explain exactly what was changed, what now works, what still remains, and how to test each completed feature.

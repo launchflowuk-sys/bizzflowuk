@@ -344,7 +344,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <div className="bg-slate-900 text-white py-16 px-4 sm:px-6 text-center">
         <h1 className="text-4xl font-bold">Areas We Cover</h1>
-        <p className="text-slate-300 mt-3">Serving the North West of England</p>
+        <p className="text-slate-300 mt-3">{tenant?.description || 'Serving homes and businesses in your area'}</p>
       </div>
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
         {isLoading ? <div className="text-center py-12 text-slate-400">Loading...</div> : (
