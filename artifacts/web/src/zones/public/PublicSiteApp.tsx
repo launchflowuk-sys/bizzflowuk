@@ -1,6 +1,6 @@
 import { Switch, Route, useParams, Router as WouterRouter } from "wouter";
 import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl } from "@workspace/api-client-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 
 const BLUE = "#1F8CFF";
 const NAVY = "#0A121C";
@@ -15,11 +15,11 @@ const ALL_AREAS = [
 ];
 
 const STATIC_SERVICES = [
-  { slug: "silicone-rendering", name: "Silicone Rendering", desc: "Flexible, breathable and weather-resistant render finish ideal for long-lasting protection and a clean modern exterior.", icon: "🏠" },
-  { slug: "monocouche-rendering", name: "Monocouche Rendering", desc: "A coloured-through render system designed to create a durable, low-maintenance finish with a sharp modern look.", icon: "🎨" },
+  { slug: "silicone-render", name: "Silicone Rendering", desc: "Flexible, breathable and weather-resistant render finish ideal for long-lasting protection and a clean modern exterior.", icon: "🏠" },
+  { slug: "monocouche-render", name: "Monocouche Rendering", desc: "A coloured-through render system designed to create a durable, low-maintenance finish with a sharp modern look.", icon: "🎨" },
   { slug: "k-rend", name: "K Rend", desc: "A popular render system for UK homes, offering textured finishes, strong weather protection and a clean external appearance.", icon: "🧱" },
-  { slug: "external-wall-insulation", name: "External Wall Insulation", desc: "Improve the appearance and thermal performance of your property with an insulated render system.", icon: "🌡️" },
-  { slug: "pebbledash-removal", name: "Pebbledash Removal", desc: "Remove dated pebbledash and replace it with a smooth, modern rendered finish.", icon: "⛏️" },
+  { slug: "ewi-systems", name: "External Wall Insulation", desc: "Improve the appearance and thermal performance of your property with an insulated render system.", icon: "🌡️" },
+  { slug: "pebble-dash-removal", name: "Pebbledash Removal", desc: "Remove dated pebbledash and replace it with a smooth, modern rendered finish.", icon: "⛏️" },
   { slug: "render-repairs", name: "Render Repairs", desc: "Repair cracked, damaged or failing render before it becomes a bigger issue.", icon: "🔧" },
 ];
 
@@ -48,6 +48,22 @@ const TRUST_ITEMS = [
   "Free quote requests",
   "Photo upload available",
 ];
+
+function PageSEO({ title, description }: { title: string; description: string }) {
+  useEffect(() => {
+    const prev = document.title;
+    document.title = title;
+    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
+    const created = !meta;
+    if (!meta) { meta = document.createElement('meta'); meta.name = 'description'; document.head.appendChild(meta); }
+    meta.content = description;
+    return () => {
+      document.title = prev;
+      if (created) meta?.parentNode?.removeChild(meta);
+    };
+  }, [title, description]);
+  return null;
+}
 
 function Spinner() {
   return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: BLUE }}/></div>;
@@ -154,6 +170,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
     { label: "Areas", href: `/site/${tenantSlug}/areas` },
     { label: "Case Studies", href: `/site/${tenantSlug}/case-studies` },
     { label: "Reviews", href: `/site/${tenantSlug}/reviews` },
+    { label: "Blog", href: `/site/${tenantSlug}/blog` },
     { label: "Contact", href: `/site/${tenantSlug}/contact` },
   ];
   return (
@@ -258,6 +275,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
+      <PageSEO title="AMO Rendering | Silicone Render Specialists — Grays, Essex & London" description="AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Hero */}
@@ -570,6 +588,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
   const list = (services as any[])?.length ? (services as any[]) : STATIC_SERVICES;
   return (
     <div>
+      <PageSEO title="Rendering Services | AMO Rendering — Essex & London" description="Expert rendering services across Essex and London — silicone render, monocouche, K Rend, EWI, pebbledash removal and repair. Get a free quote."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <SectionHero title="Rendering Services" subtitle="Professional rendering solutions for homes and commercial properties across Essex and London"/>
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
@@ -609,6 +628,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
   return (
     <div>
+      <PageSEO title={`${s?.name || fallback.name} | AMO Rendering`} description={s?.description || fallback.desc || `Professional ${s?.name || fallback.name} service across Essex and London. AMO Rendering — request a free quote today.`}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       {isLoading ? <Spinner/> : (
         <>
@@ -657,6 +677,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant, settings } = (siteData as any) || {};
   return (
     <div>
+      <PageSEO title="Areas We Cover | AMO Rendering — Essex & London" description="AMO Rendering covers Grays, Thurrock, Essex, London, Basildon, Romford, Chelmsford, Brentwood and surrounding areas. Request a rendering quote for your location."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <SectionHero title="Areas We Cover" subtitle="Rendering services across Essex and London for domestic and commercial properties"/>
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
@@ -697,8 +718,10 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
   const { data: area, isLoading } = useGetPublicArea(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
   const a = area as any;
+  const areaName = a?.name || slug.split('-').map((w: string) => w[0].toUpperCase() + w.slice(1)).join(' ');
   return (
     <div>
+      <PageSEO title={`Rendering in ${areaName} | AMO Rendering`} description={a?.description || `Professional silicone rendering, monocouche, K Rend and pebbledash removal in ${areaName}. AMO Rendering — free quotes available.`}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       {isLoading ? <Spinner/> : a ? (
         <>
@@ -743,6 +766,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant, settings } = (siteData as any) || {};
   return (
     <div>
+      <PageSEO title="Before & After Gallery | AMO Rendering — Essex & London" description="See real rendering transformations across Essex and London. Silicone render, monocouche and EWI before and after photos from AMO Rendering projects."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <SectionHero title="Before & After Gallery" subtitle="Real rendering projects across Essex and London — see the transformation"/>
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
@@ -793,6 +817,7 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
   const avgRating = list?.length ? Math.round(list.reduce((s, r) => s + r.rating, 0) / list.length * 10) / 10 : 0;
   return (
     <div>
+      <PageSEO title="Customer Reviews | AMO Rendering — Essex & London" description="Read verified customer reviews from homeowners across Essex and London. AMO Rendering — trusted rendering specialists."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <div style={{ backgroundColor: NAVY }} className="py-16 px-4 text-center text-white">
         <h1 className="text-4xl font-bold">Trusted By Homeowners Across Essex And London</h1>
@@ -832,6 +857,7 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant, settings } = (siteData as any) || {};
   return (
     <div>
+      <PageSEO title="Rendering Case Studies | AMO Rendering — Essex & London" description="Detailed rendering project case studies from across Essex and London. See the challenge, solution and results from real AMO Rendering projects."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <SectionHero title="Case Studies" subtitle="Detailed rendering projects from across Essex and London"/>
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
@@ -869,6 +895,7 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
   const c = cs as any;
   return (
     <div>
+      <PageSEO title={c ? `${c.title} | AMO Rendering` : "Case Study | AMO Rendering"} description={c?.tagline || "Detailed rendering project case study from AMO Rendering — see the challenge, solution and results."}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       {isLoading ? <Spinner/> : c ? (
         <>
@@ -921,6 +948,7 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant, settings } = (siteData as any) || {};
   return (
     <div>
+      <PageSEO title="Rendering FAQs | AMO Rendering — Essex & London" description="Answers to common questions about rendering, including silicone render, monocouche, K Rend, pebbledash removal and EWI. AMO Rendering — Essex & London specialists."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <SectionHero title="Frequently Asked Questions" subtitle="Everything you need to know about rendering"/>
       <section className="py-16 max-w-3xl mx-auto px-4 sm:px-6 space-y-3">
@@ -946,6 +974,7 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant, settings } = (siteData as any) || {};
   return (
     <div>
+      <PageSEO title="Rendering Advice & News | AMO Rendering Blog" description="Guides, project showcases and rendering tips for homeowners across Essex and London from AMO Rendering."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <SectionHero title="Rendering Advice & News" subtitle="Guides, project showcases and tips for homeowners"/>
       <section className="py-16 max-w-7xl mx-auto px-4 sm:px-6">
@@ -979,6 +1008,7 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
   const p = post as any;
   return (
     <div>
+      <PageSEO title={p ? `${p.title} | AMO Rendering` : "Blog | AMO Rendering"} description={p?.excerpt || "Rendering advice and tips from AMO Rendering — specialists in silicone render, monocouche and EWI across Essex and London."}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       {isLoading ? <Spinner/> : p ? (
         <>
@@ -1035,6 +1065,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
+      <PageSEO title="Get a Free Rendering Quote | AMO Rendering — Essex & London" description="Request a free rendering quote from AMO Rendering. Upload photos of your property and we'll recommend the right render system. Serving Essex and London."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <div style={{ backgroundColor: NAVY }} className="py-16 px-4 text-center text-white">
         <h1 className="text-4xl font-bold">Request A Rendering Quote</h1>
@@ -1124,6 +1155,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
+      <PageSEO title="Contact AMO Rendering | Rendering Specialists — Essex & London" description="Get in touch with AMO Rendering to discuss your property and rendering options. Based in Grays, Thurrock — serving Essex and London."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <SectionHero title="Contact AMO Rendering" subtitle="Get in touch — we're happy to discuss your property and rendering options"/>
       <section className="py-16 max-w-4xl mx-auto px-4 sm:px-6">
@@ -1180,6 +1212,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
                 <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
                   {mutation.isPending ? 'Sending...' : 'Send Message'}
                 </button>
+                {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
               </form>
             )}
           </div>
@@ -1208,6 +1241,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
+      <PageSEO title="Render Visualiser | AMO Rendering — See Your Property Transformed" description="Upload a photo of your property and AMO Rendering will show you what new render could look like. Free visualisation service — Essex and London."/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <div style={{ backgroundColor: NAVY }} className="py-16 px-4 text-center text-white">
         <h1 className="text-4xl font-bold">Render Visualiser</h1>
@@ -1243,6 +1277,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
             <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
               {mutation.isPending ? 'Submitting...' : 'Submit Visualiser Request'}
             </button>
+            {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
           </form>
         )}
       </section>

@@ -59,6 +59,24 @@ router.post("/public/:tenantSlug/quote-request", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// Public visualiser submission — alias at /visualiser for generated API client
+router.post("/visualiser", async (req, res) => {
+  try {
+    const slug = req.body.tenantSlug;
+    if (!slug) { res.status(400).json({ error: "tenantSlug required" }); return; }
+    const ts = await getTenantWithSettings(slug);
+    if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
+    const { tenant, settings } = ts;
+    const { tenantSlug: _slug, ...rest } = req.body;
+    const r = await db.insert(visualiserRequestsTable).values({ ...rest, tenantId: tenant.id, status: "pending" }).returning();
+    const adminEmail = (settings as any)?.adminNotificationEmail || tenant.email;
+    if (adminEmail) {
+      sendEmail(buildVisualiserAdminEmail({ tenantName: tenant.name, adminEmail, name: req.body.firstName ? `${req.body.firstName} ${req.body.lastName || ''}`.trim() : req.body.name, email: req.body.email, phone: req.body.phone, renderColour: req.body.colourPreference || req.body.renderColour, notes: req.body.notes })).catch(e => req.log.error({ err: e }, "Failed to send visualiser admin email"));
+    }
+    res.status(201).json(r[0]);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // Public visualiser submission
 router.post("/public/:tenantSlug/visualiser", async (req, res) => {
   try {
