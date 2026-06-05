@@ -431,26 +431,49 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             ))}
           </div>
 
-          {/* DB-driven cards (shown when real project photos are available) */}
-          {featuredBeforeAfter?.length > 0 && (
-            <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-              {featuredBeforeAfter.slice(0, 4).map((ba: any) => (
-                <div key={ba.id} className="rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm">
-                  <div className="grid grid-cols-2">
-                    <div className="relative"><img src={ba.beforeImageUrl} alt="Before" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md bg-slate-900/75 px-2 py-1 text-xs text-white font-semibold">Before</span></div>
-                    <div className="relative"><img src={ba.afterImageUrl} alt="After" className="w-full h-52 object-cover"/><span className="absolute top-3 left-3 rounded-md px-2 py-1 text-xs text-white font-semibold" style={{ backgroundColor: BLUE }}>After</span></div>
-                  </div>
-                  <div className="p-5 flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-sm" style={{ color: TEXT }}>{ba.title}</h3>
-                      {ba.location && <p className="text-xs mt-0.5" style={{ color: MUTED }}>{ba.location}</p>}
-                    </div>
-                    {ba.serviceName && <span className="text-xs font-medium px-2 py-1 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{ba.serviceName}</span>}
-                  </div>
+          {/* More service before/afters — 2×2 grid */}
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                src: "/ba-monocouche.webp",
+                alt: "Monocouche render before and after — Essex bungalow transformation",
+                title: "Monocouche Render",
+                tag: "Seamless. Low Maintenance.",
+              },
+              {
+                src: "/ba-krend.webp",
+                alt: "K Rend silicone render before and after — Essex detached home",
+                title: "K Rend System",
+                tag: "Original Silicone Render",
+              },
+              {
+                src: "/ba-pebbledash.webp",
+                alt: "Pebbledash removal and render before and after — Essex semi",
+                title: "Pebbledash Removal",
+                tag: "Complete Strip & Render",
+              },
+              {
+                src: "/ba-ewi.webp",
+                alt: "EWI external wall insulation before and after — Essex semi",
+                title: "EWI Systems",
+                tag: "Insulate & Transform",
+              },
+            ].map(({ src, alt, title, tag }) => (
+              <div key={src} className="rounded-2xl overflow-hidden shadow-md border border-slate-200 bg-white group hover:shadow-xl transition-shadow duration-300">
+                <div className="overflow-hidden">
+                  <img
+                    src={src}
+                    alt={alt}
+                    className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"
+                  />
                 </div>
-              ))}
-            </div>
-          )}
+                <div className="px-5 py-4 flex items-center justify-between">
+                  <p className="font-semibold text-sm" style={{ color: TEXT }}>{title}</p>
+                  <span className="text-xs font-medium px-3 py-1 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{tag}</span>
+                </div>
+              </div>
+            ))}
+          </div>
 
           <div className="mt-10 text-center">
             <BlueBtn href={`${siteBase}/gallery`}>View All Transformations</BlueBtn>
