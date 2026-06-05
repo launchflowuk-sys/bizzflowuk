@@ -14,6 +14,7 @@ COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 # Copy all source packages that the API server depends on
 COPY lib/ lib/
 COPY artifacts/api-server/ artifacts/api-server/
+COPY scripts/ scripts/
 
 # Install all workspace dependencies
 RUN pnpm install --frozen-lockfile
@@ -48,9 +49,10 @@ COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 # ---- API server bundle ----
 COPY --from=builder /app/artifacts/api-server/dist ./dist
 
-# ---- Startup script ----
+# ---- Startup + migration scripts ----
 COPY artifacts/api-server/docker-entrypoint.sh ./docker-entrypoint.sh
-RUN chmod +x ./docker-entrypoint.sh
+COPY scripts/migrate.sh ./scripts/migrate.sh
+RUN chmod +x ./docker-entrypoint.sh ./scripts/migrate.sh
 
 ENV NODE_ENV=production
 ENV PORT=8080

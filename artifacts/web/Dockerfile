@@ -47,15 +47,21 @@ FROM nginx:1.27-alpine AS runtime
 # Remove default nginx config
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copy our SPA-aware nginx config
-COPY artifacts/web/nginx.conf /etc/nginx/conf.d/app.conf
+# Copy nginx config template (envsubst processes it at container start)
+COPY artifacts/web/nginx.conf /etc/nginx/templates/app.conf.template
 
 # Copy the Vite build output
 COPY --from=builder /app/artifacts/web/dist/public /usr/share/nginx/html
+
+# API_UPSTREAM: hostname:port of the API service.
+# Default matches the docker-compose service name.
+# Override when deploying API and web as separate services.
+ENV API_UPSTREAM=api:8080
 
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
   CMD wget -qO- http://localhost:80/ || exit 1
 
-CMD ["nginx", "-g", "daemon off;"]
+# envsubst processes only $API_UPSTREAM — nginx's own $variables are preserved.
+CMD ["/bin/sh", "-c", "envsubst '$API_UPSTREAM' < /etc/nginx/templates/app.conf.template > /etc/nginx/conf.d/app.conf && nginx -g 'daemon off;'"]
