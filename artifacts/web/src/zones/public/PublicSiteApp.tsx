@@ -185,8 +185,8 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
   return (
     <nav className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-6">
-        <a href={siteBase || '/'} className="font-bold text-xl flex-shrink-0" style={{ color: NAVY }}>
-          {tenant?.name || "AMO Rendering"}
+        <a href={siteBase || '/'} className="flex-shrink-0">
+          <img src={settings?.logoUrl || "/amo-logo.webp"} alt={tenant?.name || "AMO Rendering"} className="h-10 w-auto object-contain" />
         </a>
         <div className="hidden lg:flex items-center gap-6 text-sm font-medium flex-1">
           {links.map(l => (
@@ -245,7 +245,7 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
     <footer style={{ backgroundColor: NAVY }} className="text-slate-300 pt-16 pb-8 pb-20 md:pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="md:col-span-2 space-y-4">
-          <div className="font-bold text-xl text-white">{tenant?.name || "AMO Rendering"}</div>
+          <img src={settings?.logoUrl || "/amo-logo.webp"} alt={tenant?.name || "AMO Rendering"} className="h-12 w-auto object-contain brightness-0 invert" />
           <p className="text-sm leading-relaxed text-slate-400">Premium rendering specialists based in Grays, Thurrock, serving Essex and London. Focused on silicone rendering, K Rend, monocouche systems, EWI, pebbledash removal and render repairs.</p>
           <div className="space-y-1 text-sm text-slate-400">
             <p>Grays, Thurrock, Essex</p>
