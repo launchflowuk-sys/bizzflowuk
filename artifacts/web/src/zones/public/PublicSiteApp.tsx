@@ -255,15 +255,15 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
 function PageHero({ tenantSlug, crumb, title, subtitle }: { tenantSlug: string; crumb: string; title: string; subtitle: string }) {
   const siteBase = useSiteBase();
   return (
-    <section style={{ backgroundColor: NAVY }} className="py-16 px-4 text-white">
-      <div className="max-w-4xl mx-auto space-y-4">
+    <section style={{ backgroundColor: NAVY }} className="py-16 text-white">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
         <div className="flex items-center gap-2 text-xs text-slate-400">
           <a href={siteBase || '/'} className="hover:text-white transition-colors">AMO Rendering</a>
           <span>/</span>
           <span>{crumb}</span>
         </div>
-        <h1 className="text-4xl font-bold tracking-tight">{title}</h1>
-        <p className="text-lg text-slate-300 leading-relaxed max-w-2xl">{subtitle}</p>
+        <h1 className="text-4xl font-bold tracking-tight max-w-2xl">{title}</h1>
+        <p className="text-lg text-slate-300 leading-relaxed max-w-xl">{subtitle}</p>
         <div className="flex flex-wrap gap-3 pt-2">
           <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
           <OutlineBtn href={`${siteBase}/gallery`} dark>View Before &amp; After</OutlineBtn>
@@ -276,39 +276,84 @@ function PageHero({ tenantSlug, crumb, title, subtitle }: { tenantSlug: string; 
 function SiteFooter({ tenant, settings, tenantSlug }: any) {
   const siteBase = useSiteBase();
   return (
-    <footer style={{ backgroundColor: NAVY }} className="text-slate-300 pt-16 pb-8 pb-20 md:pb-8">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
-        <div className="md:col-span-2 space-y-4">
-          <img src={settings?.logoUrl || "/amo-logo.webp"} alt={tenant?.name || "AMO Rendering"} className="h-12 w-auto object-contain brightness-0 invert" />
-          <p className="text-sm leading-relaxed text-slate-400">Premium rendering specialists based in Grays, Thurrock, serving Essex and London. Focused on silicone rendering, K Rend, monocouche systems, EWI, pebbledash removal and render repairs.</p>
-          <div className="space-y-1 text-sm text-slate-400">
-            <p>Grays, Thurrock, Essex</p>
-            <p><a href="mailto:info@amorendering.co.uk" className="hover:text-white transition-colors">info@amorendering.co.uk</a></p>
-            <p><a href="mailto:mark@amorendering.co.uk" className="hover:text-white transition-colors">mark@amorendering.co.uk</a></p>
-            {settings?.phone && <p><a href={`tel:${settings.phone}`} className="hover:text-white transition-colors">{settings.phone}</a></p>}
+    <footer style={{ backgroundColor: NAVY }} className="text-slate-300 pb-20 md:pb-0">
+      {/* CTA strip */}
+      <div className="border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
+          <div>
+            <p className="text-white font-bold text-lg">Ready to transform your property?</p>
+            <p className="text-slate-400 text-sm mt-1">Get a free quote — send photos and AMO will advise on the best render system.</p>
           </div>
-        </div>
-        <div className="space-y-3">
-          <div className="text-sm font-bold text-white mb-3">Services</div>
-          {["Silicone Rendering","Monocouche Rendering","K Rend","External Wall Insulation","Pebbledash Removal","Render Repairs"].map(s => (
-            <a key={s} href={`${siteBase}/services`} className="block text-sm text-slate-400 hover:text-white transition-colors">{s}</a>
-          ))}
-        </div>
-        <div className="space-y-3">
-          <div className="text-sm font-bold text-white mb-3">Areas</div>
-          {["Grays","Thurrock","Essex","London","Basildon","Romford","Chelmsford","Brentwood"].map(a => (
-            <a key={a} href={`${siteBase}/areas`} className="block text-sm text-slate-400 hover:text-white transition-colors">{a}</a>
-          ))}
-          <div className="pt-2">
+          <div className="flex-shrink-0">
             <BlueBtn href={`${siteBase}/quote`}>Get a Free Quote</BlueBtn>
           </div>
         </div>
       </div>
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 mt-12 pt-8 border-t border-slate-800 flex flex-wrap gap-4 items-center justify-between text-xs text-slate-600">
+
+      {/* Main columns */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-8 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10">
+        {/* Brand */}
+        <div className="lg:col-span-2 space-y-4 pr-0 lg:pr-8">
+          <img
+            src={settings?.logoUrl || "/amo-logo.webp"}
+            alt={tenant?.name || "AMO Rendering"}
+            className="h-10 w-auto object-contain brightness-0 invert"
+          />
+          <p className="text-sm leading-relaxed text-slate-400 max-w-sm">
+            Premium rendering specialists based in Grays, Thurrock — serving Essex and London with silicone render, monocouche, K Rend, EWI and pebbledash removal.
+          </p>
+          <div className="space-y-1.5 text-sm text-slate-400">
+            <p className="text-slate-300 font-medium">Grays, Thurrock, Essex</p>
+            {settings?.phone && (
+              <p><a href={`tel:${settings.phone}`} className="hover:text-white transition-colors">{settings.phone}</a></p>
+            )}
+            <p><a href="mailto:info@amorendering.co.uk" className="hover:text-white transition-colors">info@amorendering.co.uk</a></p>
+          </div>
+        </div>
+
+        {/* Services */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Services</p>
+          {[
+            { label: "Silicone Rendering", slug: "silicone-render" },
+            { label: "Monocouche Rendering", slug: "monocouche-render" },
+            { label: "K Rend", slug: "k-rend" },
+            { label: "External Wall Insulation", slug: "ewi-systems" },
+            { label: "Pebbledash Removal", slug: "pebble-dash-removal" },
+            { label: "Render Repairs", slug: "render-repairs" },
+          ].map(s => (
+            <a key={s.slug} href={`${siteBase}/services/${s.slug}`} className="block text-sm text-slate-400 hover:text-white transition-colors">{s.label}</a>
+          ))}
+        </div>
+
+        {/* Areas + Nav */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Areas</p>
+          {["Grays","Thurrock","Basildon","Romford","Chelmsford","Brentwood","London"].map(a => (
+            <a key={a} href={`${siteBase}/areas/${a.toLowerCase()}`} className="block text-sm text-slate-400 hover:text-white transition-colors">{a}</a>
+          ))}
+          <div className="pt-4 border-t border-slate-800 mt-4 space-y-2.5">
+            <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Company</p>
+            {[
+              { label: "Gallery", href: `${siteBase}/gallery` },
+              { label: "Case Studies", href: `${siteBase}/case-studies` },
+              { label: "Reviews", href: `${siteBase}/reviews` },
+              { label: "FAQs", href: `${siteBase}/faqs` },
+              { label: "Contact", href: `${siteBase}/contact` },
+            ].map(l => (
+              <a key={l.label} href={l.href} className="block text-sm text-slate-400 hover:text-white transition-colors">{l.label}</a>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom bar */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-8 border-t border-slate-800 flex flex-wrap gap-3 items-center justify-between text-xs text-slate-600">
         <span>&copy; {new Date().getFullYear()} {tenant?.name || "AMO Rendering"}. All rights reserved.</span>
-        <div className="flex gap-4">
+        <div className="flex gap-5">
           <a href={`${siteBase}/faqs`} className="hover:text-slate-400 transition-colors">FAQs</a>
           <a href={`${siteBase}/contact`} className="hover:text-slate-400 transition-colors">Contact</a>
+          <a href={`${siteBase}/quote`} className="hover:text-slate-400 transition-colors">Get a Quote</a>
         </div>
       </div>
     </footer>
