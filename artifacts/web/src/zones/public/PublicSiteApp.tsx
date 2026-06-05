@@ -358,16 +358,14 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </div>
           </div>
           <div className="relative">
-            <div className="rounded-2xl overflow-hidden bg-slate-800 aspect-[4/3] flex items-center justify-center border border-slate-700">
-              <div className="text-center space-y-3 p-8">
-                <div className="w-16 h-16 rounded-full mx-auto flex items-center justify-center" style={{ backgroundColor: BLUE + "20" }}>
-                  <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
-                  </svg>
-                </div>
-                <p className="text-slate-400 text-sm font-medium">Clean · Modern · Durable</p>
-                <p className="text-slate-500 text-xs">Before &amp; after images on the gallery page</p>
-              </div>
+            <div className="rounded-2xl overflow-hidden shadow-2xl aspect-[12/8]">
+              <img
+                src="/hero-home.webp"
+                alt="AMO Rendering — beautifully rendered home exterior in Essex"
+                className="w-full h-full object-cover"
+                fetchPriority="high"
+                decoding="async"
+              />
             </div>
             <div className="absolute -bottom-4 -right-4 rounded-xl bg-[#1F8CFF] text-white px-4 py-3 text-xs font-semibold shadow-lg">
               Free Quote Available<br/><span className="opacity-80 font-normal">Photo upload accepted</span>
