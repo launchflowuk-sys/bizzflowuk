@@ -295,7 +295,7 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
         {/* Brand */}
         <div className="col-span-2 lg:col-span-1 space-y-4">
           <img
-            src={settings?.logoUrl || "/amo-logo.webp"}
+            src="/amo-logo-dark.webp"
             alt={tenant?.name || "AMO Rendering"}
             className="h-10 w-auto object-contain"
           />
