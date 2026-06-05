@@ -332,16 +332,28 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Hero */}
-      <section style={{ backgroundColor: NAVY }} className="overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-20 md:py-28 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-7">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#1F8CFF]/30 bg-[#1F8CFF]/10 px-4 py-1.5 text-xs font-semibold text-[#8EC8FF] tracking-wide uppercase">
+      <section className="relative overflow-hidden min-h-[580px] md:min-h-[680px] flex items-center">
+        {/* Background image */}
+        <img
+          src="/hero-home.webp"
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover object-center"
+          fetchPriority="high"
+          decoding="async"
+        />
+        {/* Subtle overlay — just enough to make text crisp */}
+        <div className="absolute inset-0" style={{ background: "linear-gradient(to right, rgba(10,22,40,0.72) 0%, rgba(10,22,40,0.45) 60%, rgba(10,22,40,0.25) 100%)" }}/>
+        {/* Content */}
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 py-24 md:py-32 w-full">
+          <div className="max-w-2xl space-y-7">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#1F8CFF]/40 bg-[#1F8CFF]/15 px-4 py-1.5 text-xs font-semibold text-[#8EC8FF] tracking-wide uppercase">
               Silicone Render Specialists · Grays, Thurrock
             </div>
-            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight">
+            <h1 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight drop-shadow-sm">
               Transform Tired Exterior Walls With Premium Silicone Rendering
             </h1>
-            <p className="text-lg text-slate-300 leading-relaxed max-w-xl">
+            <p className="text-lg text-slate-200 leading-relaxed">
               AMO Rendering provides silicone rendering, monocouche render, K Rend, external wall insulation and pebbledash removal for homes and properties across Grays, Thurrock, Essex and London.
             </p>
             <div className="flex flex-wrap gap-4">
@@ -350,25 +362,11 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
               {["Based in Grays, Thurrock","Serving Essex & London","Silicone Render Specialists","Photo Quotes Available"].map(t => (
-                <div key={t} className="flex items-center gap-2 text-sm text-slate-300">
+                <div key={t} className="flex items-center gap-2 text-sm text-slate-200">
                   <CheckIcon color="#8EC8FF"/>
                   {t}
                 </div>
               ))}
-            </div>
-          </div>
-          <div className="relative">
-            <div className="rounded-2xl overflow-hidden shadow-2xl aspect-[12/8]">
-              <img
-                src="/hero-home.webp"
-                alt="AMO Rendering — beautifully rendered home exterior in Essex"
-                className="w-full h-full object-cover"
-                fetchPriority="high"
-                decoding="async"
-              />
-            </div>
-            <div className="absolute -bottom-4 -right-4 rounded-xl bg-[#1F8CFF] text-white px-4 py-3 text-xs font-semibold shadow-lg">
-              Free Quote Available<br/><span className="opacity-80 font-normal">Photo upload accepted</span>
             </div>
           </div>
         </div>
