@@ -1,0 +1,534 @@
+Update the public-facing AMO Rendering website only.
+
+Do not rebuild the backend.
+
+Do not change the SaaS architecture.
+
+Do not change tenant logic.
+
+Do not change the CRM, dashboard, portal, API structure, database structure, authentication, or routing unless required to display the new frontend content properly.
+
+The task is to redesign and rewrite the public website for the AMO Rendering tenant so it looks and feels like a premium rendering business, not a SaaS product, not a software company, and not a generic contractor template.
+
+Core Business Focus
+
+AMO Rendering is a rendering company based in Grays, Thurrock, serving Essex and London.
+
+The main service focus is:
+
+* Silicone Rendering
+
+Also include:
+
+* Monocouche Rendering
+* K Rend
+* Coloured Rendering
+* External Wall Insulation
+* Pebbledash Removal
+* Render Repairs
+* Crack Repairs
+* Domestic Rendering
+* Commercial Rendering
+
+Main Positioning
+
+The website should sell professional rendering services by showing the transformation they create.
+
+The customer is not buying a house.
+
+The customer is buying a cleaner, sharper, more modern exterior finish through professional rendering.
+
+The emotional message should be:
+
+“My home looks tired now. AMO Rendering can make it look modern, clean, and valuable again.”
+
+Design Direction
+
+The website must feel:
+
+* Premium
+* Local
+* Trustworthy
+* Home-improvement focused
+* Rendering-specific
+* Visual
+* Clean
+* Professional
+* Conversion-focused
+
+The website must NOT feel like:
+
+* SaaS
+* Startup
+* Tech platform
+* Software dashboard
+* Generic builder website
+* Construction template
+* Cheap tradesman site
+
+Do not use:
+
+* Orange buttons
+* Builder yellow
+* Neon gradients
+* Glassmorphism
+* Abstract SaaS illustrations
+* Floating software widgets
+* Startup-style visuals
+
+Brand Colours
+
+Use the AMO logo direction.
+
+Primary blue:
+#1F8CFF
+
+Secondary blue:
+#8EC8FF
+
+Dark navy:
+#0A121C
+
+Light background:
+#F6F8FB
+
+Text:
+#26323F
+
+Muted text:
+#64717F
+
+White:
+#FFFFFF
+
+Buttons must use the blue brand palette, not orange.
+
+Hero Direction
+
+The hero must focus on rendering transformation.
+
+Preferred structure:
+
+Left side:
+
+* Strong headline
+* Short supporting text
+* Primary CTA
+* Secondary CTA
+* Trust indicators
+
+Right side:
+
+* Large exterior house/rendering visual
+* Or before/after rendering comparison
+
+The hero should not be dominated by a quote form.
+
+The quote form can appear lower on the page or as a smaller CTA.
+
+The property visual is important because it shows the result of rendering work.
+
+However, the copy must make it clear that AMO sells rendering services, not houses.
+
+Homepage Required Sections
+
+Build the AMO Rendering homepage with these sections:
+
+1. Header / Navigation
+
+Navigation:
+
+* Home
+* Services
+* Before & After
+* Areas
+* Case Studies
+* Reviews
+* Contact
+* Get Quote
+
+Header must include:
+
+* AMO logo
+* Phone CTA
+* Get Quote button
+
+2. Hero Section
+
+Headline:
+Transform Tired Exterior Walls With Premium Silicone Rendering
+
+Supporting text:
+AMO Rendering provides silicone rendering, monocouche render, K Rend, external wall insulation and pebbledash removal for homes and properties across Grays, Thurrock, Essex and London.
+
+Primary CTA:
+Request a Free Quote
+
+Secondary CTA:
+View Before & After Work
+
+Trust points:
+
+* Based in Grays, Thurrock
+* Serving Essex & London
+* Silicone Render Specialists
+* Photo Quotes Available
+
+3. Trust Bar
+
+Include:
+
+* Local rendering specialists
+* Premium render systems
+* Domestic and commercial work
+* Free quote requests
+* Photo upload available
+
+4. Before & After Showcase
+
+This must be one of the strongest sections.
+
+Headline:
+See What Professional Rendering Can Do
+
+Text:
+From cracked render and tired pebbledash to clean modern exterior finishes, our work helps homeowners improve kerb appeal and protect their property.
+
+Include:
+
+* Before/after comparison cards
+* Location
+* Service used
+* CTA to view transformations
+
+5. Services Section
+
+Headline:
+Rendering Services For Homes & Properties Across Essex And London
+
+Show service cards for:
+
+* Silicone Rendering
+* Monocouche Rendering
+* K Rend
+* External Wall Insulation
+* Pebbledash Removal
+* Render Repairs
+
+Each card must include:
+
+* Short service description
+* Benefits
+* CTA to service page
+
+Service descriptions:
+
+Silicone Rendering:
+Flexible, breathable and weather-resistant render finish ideal for long-lasting protection and a clean modern exterior.
+
+Monocouche Rendering:
+A coloured-through render system designed to create a durable, low-maintenance finish with a sharp modern look.
+
+K Rend:
+A popular render system for UK homes, offering textured finishes, strong weather protection and a clean external appearance.
+
+External Wall Insulation:
+Improve the appearance and thermal performance of your property with an insulated render system.
+
+Pebbledash Removal:
+Remove dated pebbledash and replace it with a smooth, modern rendered finish.
+
+Render Repairs:
+Repair cracked, damaged or failing render before it becomes a bigger issue.
+
+6. Why Choose AMO Rendering
+
+Headline:
+Why Homeowners Choose AMO Rendering
+
+Points:
+
+* Rendering specialists, not general builders
+* Based locally in Grays, Thurrock
+* Serving Essex and London
+* Clean modern finishes
+* Photo-based quote requests
+* Clear communication from enquiry to completion
+* Work focused on kerb appeal, protection and long-term finish
+
+7. Process Section
+
+Headline:
+A Simple Process From First Enquiry To Finished Exterior
+
+Steps:
+
+1. Send Photos Or Request A Visit
+    Upload property photos or send your details for a free quote request.
+2. Get Clear Advice
+    We assess your walls, existing surface and preferred finish.
+3. Choose Your Render System
+    Select from silicone render, monocouche, K Rend, EWI or repair options.
+4. Professional Preparation
+    Surfaces are prepared properly before rendering starts.
+5. Clean Modern Finish
+    Your property is finished with a sharp, durable exterior render.
+6. Featured Case Studies
+
+Show case study cards with:
+
+* Location
+* Service
+* Problem
+* Solution
+* Before/after image
+* CTA
+
+Use London and Essex locations only.
+
+Example case studies:
+
+* Silicone Rendering in Grays
+* Pebbledash Removal in Thurrock
+* K Rend Finish in Romford
+* External Wall Insulation in Chelmsford
+
+9. Areas Covered
+
+Headline:
+Rendering Services Across Essex And London
+
+Primary areas:
+
+* Grays
+* Thurrock
+* Essex
+* London
+
+Additional areas:
+
+* Basildon
+* Brentwood
+* Romford
+* Dagenham
+* Barking
+* Ilford
+* Upminster
+* Hornchurch
+* Rainham
+* Chelmsford
+* Southend
+* Dartford
+* Gravesend
+* Chigwell
+* Epping
+
+Do not mention:
+
+* Manchester
+* Salford
+* Bolton
+* Bury
+* Stockport
+* Oldham
+* Birmingham
+* Wolverhampton
+* Dudley
+* Solihull
+* Walsall
+* West Midlands
+
+10. Reviews Section
+
+Headline:
+Trusted By Homeowners Across Essex And London
+
+Review tone should sound realistic and local.
+
+Example review themes:
+
+* Great finish
+* Clean team
+* Good communication
+* House looks modern
+* Pebbledash removed
+* Silicone render looks excellent
+
+11. Quote CTA Section
+
+Headline:
+Ready To Modernise Your Property Exterior?
+
+Text:
+Send us your details and upload photos of your property. AMO Rendering will review your project and help you choose the right rendering solution.
+
+CTA:
+Request a Free Quote
+
+Secondary CTA:
+Upload Property Photos
+
+12. FAQ Section
+
+Include FAQs:
+
+* What is silicone rendering?
+* Is silicone render better than traditional render?
+* Do you cover London and Essex?
+* Can you remove pebbledash?
+* Can I upload photos for a quote?
+* Do you offer external wall insulation?
+* How long does rendering usually take?
+* What areas do you cover?
+
+13. Final CTA
+
+Headline:
+Transform Your Exterior With AMO Rendering
+
+CTA:
+Get My Free Quote
+
+Footer
+
+Footer must include:
+
+* AMO Rendering
+* Based in Grays, Thurrock
+* Serving Essex and London
+* info@amorendering.co.uk
+* mark@amorendering.co.uk
+* Services
+* Areas
+* Legal links
+
+Public Page Design Rules
+
+Apply the same design system across:
+
+* Homepage
+* Services listing
+* Service detail pages
+* Areas listing
+* Area detail pages
+* Gallery
+* Before & After
+* Case Studies
+* Reviews
+* Blog
+* FAQs
+* Quote page
+* Contact page
+
+Page Style Rules
+
+Each page must:
+
+* Feel like a rendering business
+* Use blue brand CTAs
+* Use real exterior/property/rendering imagery where available
+* Avoid SaaS design patterns
+* Avoid empty generic copy
+* Prioritise transformation and rendering services
+* Make the user want to request a quote
+
+Service Detail Page Template
+
+Each service page must follow this structure:
+
+1. Service hero
+2. What the service is
+3. Why homeowners choose it
+4. Benefits
+5. Before/after examples
+6. Suitable property types
+7. Process
+8. FAQs
+9. Related case studies
+10. Quote CTA
+
+Area Detail Page Template
+
+Each area page must follow this structure:
+
+1. Local area hero
+2. Rendering services in that area
+3. Services available
+4. Local project examples
+5. Why choose AMO in this area
+6. FAQs
+7. Quote CTA
+
+Case Study Page Template
+
+Each case study must follow this structure:
+
+1. Project hero
+2. Location
+3. Service used
+4. Existing problem
+5. Solution
+6. Before/after gallery
+7. Result
+8. Customer comment
+9. CTA
+
+Quote Page
+
+The quote page must feel simple and action-focused.
+
+Headline:
+Request A Rendering Quote
+
+Text:
+Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system.
+
+Fields:
+
+* Name
+* Phone
+* Email
+* Postcode
+* Property type
+* Service required
+* Existing surface
+* Desired finish
+* Timeframe
+* Notes
+* Photo uploads
+
+CTA:
+Submit Quote Request
+
+Important Content Rules
+
+Do not make fake claims such as:
+
+* 25 years experience
+* hundreds of projects
+* certified installer
+* award-winning
+* guaranteed cheapest
+* fully accredited
+
+Only use general trust wording unless exact proof is provided.
+
+Safe trust wording:
+
+* Rendering specialists
+* Local Essex and London service
+* Premium render systems
+* Clean modern finishes
+* Photo quote available
+* Domestic and commercial rendering
+* Clear communication
+
+Final Requirement
+
+After completing the update, provide:
+
+1. List of public website pages updated
+2. List of AMO location data corrected
+3. Confirmation that orange buttons were removed
+4. Confirmation that SaaS-style visual elements were removed
+5. Confirmation that AMO website now focuses on rendering services and exterior transformation
