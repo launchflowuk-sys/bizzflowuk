@@ -6,6 +6,7 @@ import {
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
+import { maskSecrets } from "../lib/settingsHelpers";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -54,11 +55,6 @@ crud(reviewsTable, "reviews");
 crud(caseStudiesTable, "case-studies");
 crud(faqsTable, "faqs");
 crud(teamMembersTable, "team");
-
-function maskSecrets(row: any) {
-  const { smtpPass: _sp, twilioAuthToken: _tat, ...safe } = row;
-  return safe;
-}
 
 // Settings — single record per tenant
 router.get("/settings", requireTenantAccess, async (req, res) => {

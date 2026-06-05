@@ -5,7 +5,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { sendEmail, buildQuoteRequestAdminEmail, buildQuoteRequestCustomerEmail, buildContactAdminEmail, buildContactCustomerEmail, buildVisualiserAdminEmail } from "../lib/email";
 import { sendSms } from "../lib/sms";
-import { buildSmtpConfig, buildSmsCreds } from "./settings";
+import { buildSmtpConfig, buildSmsCreds } from "../lib/settingsHelpers";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }

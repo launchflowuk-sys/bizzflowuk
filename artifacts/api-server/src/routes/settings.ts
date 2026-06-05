@@ -5,37 +5,15 @@ import { eq } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { sendEmail } from "../lib/email";
 import { sendSms } from "../lib/sms";
-import type { SmtpConfig } from "../lib/email";
-import type { SmsCreds } from "../lib/sms";
+import { buildSmtpConfig, buildSmsCreds } from "../lib/settingsHelpers";
 
 const router = Router();
-
-function buildSmtpConfig(settings: any): SmtpConfig | null {
-  if (!settings?.smtpHost || !settings?.smtpUser || !settings?.smtpPass) return null;
-  return {
-    host: settings.smtpHost,
-    port: settings.smtpPort ?? 587,
-    secure: settings.smtpSecure ?? false,
-    user: settings.smtpUser,
-    pass: settings.smtpPass,
-    from: settings.smtpFrom || settings.smtpUser,
-  };
-}
-
-function buildSmsCreds(settings: any): SmsCreds | null {
-  if (!settings?.twilioAccountSid || !settings?.twilioAuthToken || !settings?.twilioFromNumber) return null;
-  return {
-    accountSid: settings.twilioAccountSid,
-    authToken: settings.twilioAuthToken,
-    fromNumber: settings.twilioFromNumber,
-  };
-}
 
 router.post("/settings/test-email", requireTenantAccess, async (req, res) => {
   try {
     const tenantId = (req as any).authUser?.tenantId;
     const rows = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
-    const settings = rows[0];
+    const settings = rows[0] as Record<string, unknown> | undefined;
     const smtp = buildSmtpConfig(settings);
 
     if (!smtp) {
@@ -43,7 +21,7 @@ router.post("/settings/test-email", requireTenantAccess, async (req, res) => {
       return;
     }
 
-    const to = settings?.adminNotificationEmail || settings?.email;
+    const to = (settings?.adminNotificationEmail || settings?.email) as string | undefined;
     if (!to) {
       res.json({ ok: false, error: "No admin notification email address configured to send the test to." });
       return;
@@ -70,7 +48,7 @@ router.post("/settings/test-sms", requireTenantAccess, async (req, res) => {
   try {
     const tenantId = (req as any).authUser?.tenantId;
     const rows = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
-    const settings = rows[0];
+    const settings = rows[0] as Record<string, unknown> | undefined;
     const creds = buildSmsCreds(settings);
 
     if (!creds) {
@@ -78,7 +56,7 @@ router.post("/settings/test-sms", requireTenantAccess, async (req, res) => {
       return;
     }
 
-    const to = settings?.adminNotificationPhone;
+    const to = settings?.adminNotificationPhone as string | undefined;
     if (!to) {
       res.json({ ok: false, error: "No admin notification phone number configured to send the test SMS to." });
       return;
@@ -93,5 +71,4 @@ router.post("/settings/test-sms", requireTenantAccess, async (req, res) => {
   }
 });
 
-export { buildSmtpConfig, buildSmsCreds };
 export default router;
