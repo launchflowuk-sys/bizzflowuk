@@ -213,26 +213,26 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
   ];
   return (
     <nav className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between lg:grid lg:grid-cols-3">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between xl:grid xl:grid-cols-3">
         {/* Left — logo */}
         <a href={siteBase || '/'} className="flex-shrink-0">
           <img src={settings?.logoUrl || "/amo-logo.webp"} alt={tenant?.name || "AMO Rendering"} className="h-14 sm:h-16 w-auto object-contain" />
         </a>
-        {/* Centre — nav links */}
-        <div className="hidden lg:flex items-center justify-center gap-6 text-sm font-medium">
+        {/* Centre — nav links (desktop 1280px+) */}
+        <div className="hidden xl:flex items-center justify-center gap-6 text-sm font-medium">
           {links.map(l => (
             <WouterLink key={l.href} href={l.href} className="transition-colors hover:text-[#1F8CFF] whitespace-nowrap" style={{ color: TEXT }}>{l.label}</WouterLink>
           ))}
         </div>
-        {/* Right — phone + CTA + mobile burger */}
+        {/* Right — phone + CTA + burger */}
         <div className="flex items-center justify-end gap-3">
-          <div className="hidden lg:flex items-center gap-3">
+          <div className="hidden xl:flex items-center gap-3">
             {settings?.phone && (
               <a href={`tel:${settings.phone}`} className="text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{settings.phone}</a>
             )}
             <BlueBtn href={`${siteBase}/quote`}>Get Quote</BlueBtn>
           </div>
-          <button className="lg:hidden p-2 rounded-md hover:bg-slate-100" onClick={() => setOpen(!open)}>
+          <button className="xl:hidden p-2 rounded-md hover:bg-slate-100" onClick={() => setOpen(!open)}>
             <svg className="w-6 h-6" style={{ color: TEXT }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}/>
             </svg>
@@ -240,7 +240,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
         </div>
       </div>
       {open && (
-        <div className="lg:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-1">
+        <div className="xl:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-1">
           {links.map(l => (
             <WouterLink key={l.href} href={l.href} className="block py-2 text-sm font-medium hover:text-[#1F8CFF]" style={{ color: TEXT }} onClick={() => setOpen(false)}>{l.label}</WouterLink>
           ))}
