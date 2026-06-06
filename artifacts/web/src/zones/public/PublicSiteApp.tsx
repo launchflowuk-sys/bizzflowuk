@@ -1410,7 +1410,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Dark hero header */}
-      <section style={{ backgroundColor: NAVY }} className="py-16 px-4 text-white">
+      <section style={{ backgroundColor: NAVY }} className="-mt-20 pt-28 pb-16 px-4 text-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-2 text-xs text-slate-400 mb-4">
             <span>AMO Rendering</span><span>/</span><span>Before &amp; After</span>
@@ -1615,7 +1615,7 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Hero with aggregate */}
-      <section style={{ backgroundColor: NAVY }} className="py-16 text-white">
+      <section style={{ backgroundColor: NAVY }} className="-mt-20 pt-28 pb-16 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
           <div className="flex items-center gap-2 text-xs text-slate-400">
             <a href={siteBase || '/'} className="hover:text-white">AMO Rendering</a>
@@ -1781,11 +1781,11 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
 
       {isLoading ? <Spinner/> : c ? (
         <>
-          <section style={{ backgroundColor: NAVY }} className="text-white">
+          <section style={{ backgroundColor: NAVY }} className="-mt-20 text-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
                 {/* Left — project info */}
-                <div className="py-14 pr-0 lg:pr-12 flex flex-col justify-center space-y-5">
+                <div className="pt-24 pb-14 pr-0 lg:pr-12 flex flex-col justify-center space-y-5">
                   <div className="flex items-center gap-2 text-xs text-slate-400">
                     <a href={`${siteBase}/case-studies`} className="hover:text-white transition-colors">Case Studies</a>
                     <span>/</span>
@@ -2044,7 +2044,7 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
     <div>
       <PageSEO title={p ? `${p.title} | AMO Rendering` : "Blog | AMO Rendering"} description={p?.excerpt || "Rendering advice and tips from AMO Rendering — specialists in silicone render, monocouche and EWI across Essex and London."}/>
       <TopBar/>
-      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} alwaysOpaque/>
 
       {isLoading ? <Spinner/> : p ? (
         <>
