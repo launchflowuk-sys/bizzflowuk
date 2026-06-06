@@ -267,7 +267,16 @@ const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
 const PublicSiteApp = lazy(() => import("@/zones/public/PublicSiteApp"));
 
 function ZoneLoader() {
-  return <div className="flex h-screen items-center justify-center text-muted-foreground text-sm">Loading...</div>;
+  return (
+    <div className="flex h-screen items-center justify-center bg-white">
+      <div className="relative w-24 h-24 flex items-center justify-center">
+        <img src="/amo-logo-icon.png" alt="Loading" className="w-16 h-16 object-contain" />
+        <svg className="absolute inset-0 w-24 h-24 animate-spin" viewBox="0 0 96 96" fill="none">
+          <circle cx="48" cy="48" r="44" stroke="#1F8CFF" strokeWidth="4" strokeLinecap="round" strokeDasharray="69 207"/>
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 function DomainRouteGuard({ children }: { children: React.ReactNode }) {

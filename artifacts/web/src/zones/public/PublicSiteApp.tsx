@@ -101,6 +101,33 @@ function Spinner() {
   );
 }
 
+function TenantNotFoundPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
+  const { data, isLoading } = useGetPublicSite(tenantSlug);
+  if (isLoading) return <Spinner />;
+  const { tenant, settings } = (data as any) ?? {};
+  return (
+    <div className="min-h-screen flex flex-col">
+      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} />
+      <main className="flex-1 flex flex-col items-center justify-center px-6 text-center py-24">
+        <p className="text-8xl font-black text-slate-100 select-none">404</p>
+        <h1 className="mt-4 text-2xl font-bold text-slate-900">Page not found</h1>
+        <p className="mt-3 text-slate-500 max-w-sm">
+          Sorry, we couldn't find that page. It may have been moved or no longer exists.
+        </p>
+        <a
+          href={siteBase || '/'}
+          className="mt-8 inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+          style={{ backgroundColor: BLUE }}
+        >
+          Back to homepage
+        </a>
+      </main>
+      <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug} />
+    </div>
+  );
+}
+
 function CheckIcon({ color = BLUE }: { color?: string }) {
   return (
     <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke={color} strokeWidth={2.5} viewBox="0 0 24 24">
@@ -2487,7 +2514,7 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
         <Route path="/quote" component={() => <QuotePage tenantSlug={tenantSlug}/>}/>
         <Route path="/contact" component={() => <ContactPage tenantSlug={tenantSlug}/>}/>
         <Route path="/visualiser" component={() => <VisualiserPage tenantSlug={tenantSlug}/>}/>
-        <Route component={() => <HomePage tenantSlug={tenantSlug}/>}/>
+        <Route component={() => <TenantNotFoundPage tenantSlug={tenantSlug}/>}/>
       </Switch>
     </WouterRouter>
     </SiteBaseCtx.Provider>
