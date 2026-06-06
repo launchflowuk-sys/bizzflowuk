@@ -1,0 +1,275 @@
+2026-Jun-06 01:06:22.786995 Docker 29.5.1 with BuildKit and Buildx detected on deployment server (localhost).
+2026-Jun-06 01:06:22.790949 Starting deployment of BizFlow Production to localhost.
+2026-Jun-06 01:06:22.931086 Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.14
+2026-Jun-06 01:06:23.024494 [DEBUG] [CMD]: docker stop --time=30 j14p47sogpq2027oeqbvl5y5
+2026-Jun-06 01:06:23.024494 [DEBUG] Flag --time has been deprecated, use --timeout instead
+2026-Jun-06 01:06:23.028760 [DEBUG] Error response from daemon: No such container: j14p47sogpq2027oeqbvl5y5
+2026-Jun-06 01:06:23.166094 [DEBUG] [CMD]: docker run -d --network 'coolify' --name j14p47sogpq2027oeqbvl5y5  --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/coollabsio/coolify-helper:1.0.14
+2026-Jun-06 01:06:23.166094 [DEBUG] f31d1db6db88da576878a9c1c5ffff3dfe1b424a7a2f086b9277c90e26cc208e
+2026-Jun-06 01:06:24.751145 [DEBUG] [CMD]: docker exec j14p47sogpq2027oeqbvl5y5 bash -c 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git ls-remote https://x-access-token:<REDACTED>@github.com/launchflowuk-sys/BizFlow.git refs/heads/main'
+2026-Jun-06 01:06:24.751145 [DEBUG] 72fab76c6a4565ed009b4ea29c13f7e066687733	refs/heads/main
+2026-Jun-06 01:06:25.150769 ----------------------------------------
+2026-Jun-06 01:06:25.159340 Importing launchflowuk-sys/BizFlow:main (commit sha 72fab76c6a4565ed009b4ea29c13f7e066687733) to /artifacts/j14p47sogpq2027oeqbvl5y5.
+2026-Jun-06 01:06:25.350709 [DEBUG] [CMD]: docker exec j14p47sogpq2027oeqbvl5y5 bash -c 'git clone --depth=1 --recurse-submodules --shallow-submodules -b '\''main'\'' '\''https://x-access-token:<REDACTED>@github.com/launchflowuk-sys/BizFlow.git'\'' '\''/artifacts/j14p47sogpq2027oeqbvl5y5'\'' && cd '\''/artifacts/j14p47sogpq2027oeqbvl5y5'\'' && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git fetch --depth=1 origin '\''72fab76c6a4565ed009b4ea29c13f7e066687733'\'' && git -c advice.detachedHead=false checkout '\''72fab76c6a4565ed009b4ea29c13f7e066687733'\'' >/dev/null 2>&1 && cd '\''/artifacts/j14p47sogpq2027oeqbvl5y5'\'' && if [ -f .gitmodules ]; then git submodule sync && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git submodule update --init --recursive --depth=1; fi && cd '\''/artifacts/j14p47sogpq2027oeqbvl5y5'\'' && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git lfs pull'
+2026-Jun-06 01:06:25.350709 [DEBUG] Cloning into '/artifacts/j14p47sogpq2027oeqbvl5y5'...
+2026-Jun-06 01:06:29.275804 [DEBUG] From https://github.com/launchflowuk-sys/BizFlow
+2026-Jun-06 01:<REDACTED>@latest --activate
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Copy workspace manifests first — maximises layer cache reuse
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Copy all source packages that the API server depends on
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY lib/ lib/
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY artifacts/api-server/ artifacts/api-server/
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY scripts/ scripts/
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Install all workspace dependencies
+2026-Jun-06 01:06:34.724438 [DEBUG] RUN pnpm install --frozen-lockfile
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Build composite TypeScript libs (generates .d.ts declarations)
+2026-Jun-06 01:06:34.724438 [DEBUG] RUN pnpm run typecheck:libs
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Bundle the API server with esbuild
+2026-Jun-06 01:06:34.724438 [DEBUG] RUN pnpm --filter @workspace/api-server run build
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # =============================================================================
+2026-Jun-06 01:06:34.724438 [DEBUG] # Stage 2: Runtime
+2026-Jun-06 01:06:34.724438 [DEBUG] # Slim image — only what the server and migrations need at runtime
+2026-Jun-06 01:06:34.724438 [DEBUG] # =============================================================================
+2026-Jun-06 01:06:34.724438 [DEBUG] FROM node:24-alpine AS runtime
+2026-Jun-06 01:06:34.724438 [DEBUG] WORKDIR /app
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Install pnpm (needed to run drizzle-kit for migrations)
+2026-Jun-06 01:06:34.724438 [DEBUG] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # ---- Migration tooling ----
+2026-Jun-06 01:06:34.724438 [DEBUG] # Copy the full hoisted node_modules (includes drizzle-kit, drizzle-orm, pg)
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY --from=builder /app/node_modules ./node_modules
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Copy lib/db TypeScript source + config (drizzle-kit reads schema at startup)
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY --from=builder /app/lib/db ./lib/db
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # Workspace root manifests (pnpm needs these to resolve workspaces)
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY --from=builder /app/package.json ./package.json
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # ---- API server bundle ----
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY --from=builder /app/artifacts/api-server/dist ./dist
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] # ---- Startup + migration scripts ----
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY artifacts/api-server/docker-entrypoint.sh ./docker-entrypoint.sh
+2026-Jun-06 01:06:34.724438 [DEBUG] COPY scripts/migrate.sh ./scripts/migrate.sh
+2026-Jun-06 01:06:34.724438 [DEBUG] RUN chmod +x ./docker-entrypoint.sh ./scripts/migrate.sh
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] ENV NODE_ENV=production
+2026-Jun-06 01:06:34.724438 [DEBUG] ENV PORT=8080
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] EXPOSE 8080
+2026-Jun-06 01:06:34.724438 [DEBUG] 
+2026-Jun-06 01:06:34.724438 [DEBUG] HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+2026-Jun-06 01:06:34.724438 [DEBUG] CMD wget -qO- http://localhost:<REDACTED>@latest --activate
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # Copy workspace manifests
+2026-Jun-06 01:06:35.284089 [DEBUG] COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # Copy all source packages the web app depends on
+2026-Jun-06 01:06:35.284089 [DEBUG] COPY lib/ lib/
+2026-Jun-06 01:06:35.284089 [DEBUG] COPY artifacts/web/ artifacts/web/
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # Install all workspace dependencies
+2026-Jun-06 01:06:35.284089 [DEBUG] RUN pnpm install --frozen-lockfile
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # Build TypeScript libs
+2026-Jun-06 01:06:35.284089 [DEBUG] RUN pnpm run typecheck:libs
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # ---------------------------------------------------------------------------
+2026-Jun-06 01:06:35.284089 [DEBUG] # Vite build-time environment variables
+2026-Jun-06 01:06:35.284089 [DEBUG] # VITE_* vars are baked into the JS bundle at build time by Vite.
+2026-Jun-06 01:06:35.284089 [DEBUG] # Pass them as Docker build args from Coolify / CI.
+2026-Jun-06 01:06:35.284089 [DEBUG] # PORT and BASE_PATH are required by vite.config.ts at config-parse time.
+2026-Jun-06 01:06:35.284089 [DEBUG] # ---------------------------------------------------------------------------
+2026-Jun-06 01:06:35.284089 [DEBUG] ARG PORT=3000
+2026-Jun-06 01:06:35.284089 [DEBUG] ARG BASE_PATH=/
+2026-Jun-06 01:06:35.284089 [DEBUG] ARG VITE_CLERK_PUBLISHABLE_KEY
+2026-Jun-06 01:06:35.284089 [DEBUG] ARG VITE_CLERK_PROXY_URL
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] ENV PORT=$PORT
+2026-Jun-06 01:06:35.284089 [DEBUG] ENV BASE_PATH=$BASE_PATH
+2026-Jun-06 01:06:35.284089 [DEBUG] ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
+2026-Jun-06 01:06:35.284089 [DEBUG] ENV VITE_CLERK_PROXY_URL=$VITE_CLERK_PROXY_URL
+2026-Jun-06 01:06:35.284089 [DEBUG] ENV NODE_ENV=production
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] RUN pnpm --filter @workspace/web run build
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # =============================================================================
+2026-Jun-06 01:06:35.284089 [DEBUG] # Stage 2: Runtime — nginx serving static files
+2026-Jun-06 01:06:35.284089 [DEBUG] # =============================================================================
+2026-Jun-06 01:06:35.284089 [DEBUG] FROM nginx:1.27-alpine AS runtime
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # Remove default nginx config
+2026-Jun-06 01:06:35.284089 [DEBUG] RUN rm /etc/nginx/conf.d/default.conf
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # Copy nginx config template (envsubst processes it at container start)
+2026-Jun-06 01:06:35.284089 [DEBUG] COPY artifacts/web/nginx.conf /etc/nginx/templates/app.conf.template
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # Copy the Vite build output
+2026-Jun-06 01:06:35.284089 [DEBUG] COPY --from=builder /app/artifacts/web/dist/public /usr/share/nginx/html
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] # API_UPSTREAM: hostname:port of the API service.
+2026-Jun-06 01:06:35.284089 [DEBUG] # Default matches the docker-compose service name.
+2026-Jun-06 01:06:35.284089 [DEBUG] # Override when deploying API and web as separate services.
+2026-Jun-06 01:06:35.284089 [DEBUG] ENV API_UPSTREAM=api:8080
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] EXPOSE 80
+2026-Jun-06 01:06:35.284089 [DEBUG] 
+2026-Jun-06 01:06:35.284089 [DEBUG] HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+2026-Jun-06 01:06:35.284089 [DEBUG] CMD wget -qO- http://localhost:<REDACTED>@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14
+2026-Jun-06 01:06:36.483410 [DEBUG] #7 resolve docker.io/library/node:24-alpine@sha256:2bdb65ed1dab192432bc31c95f94155ca5ad7fc1392fb7eb7526ab682fa5bf14 0.0s done
+2026-Jun-06 01:06:36.483410 [DEBUG] #7 DONE 0.0s
+2026-Jun-06 01:06:36.483410 [DEBUG] 
+2026-Jun-06 01:06:36.483410 [DEBUG] #8 [web runtime 1/4] FROM docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+2026-Jun-06 01:06:36.483410 [DEBUG] #8 resolve docker.io/library/nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10 0.0s done
+2026-Jun-06 01:06:36.483410 [DEBUG] #8 DONE 0.0s
+2026-Jun-06 01:06:36.483410 [DEBUG] 
+2026-Jun-06 01:06:36.483410 [DEBUG] #9 [web builder  2/10] WORKDIR /app
+2026-Jun-06 01:06:36.483410 [DEBUG] #9 CACHED
+2026-Jun-06 01:06:36.483410 [DEBUG] 
+2026-Jun-06 01:06:36.483410 [DEBUG] #10 [web builder  3/10] RUN corepack enable && corepack prepare pnpm@latest --activate
+2026-Jun-06 01:06:36.483410 [DEBUG] #10 CACHED
+2026-Jun-06 01:06:36.483410 [DEBUG] 
+2026-Jun-06 01:06:36.483410 [DEBUG] #11 [api internal] load build context
+2026-Jun-06 01:06:36.483410 [DEBUG] #11 transferring context: 957.20kB 0.0s done
+2026-Jun-06 01:06:36.589386 [DEBUG] #11 DONE 0.1s
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #12 [api builder  4/10] COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+2026-Jun-06 01:06:36.589386 [DEBUG] #12 CACHED
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #13 [web builder  5/10] COPY lib/ lib/
+2026-Jun-06 01:06:36.589386 [DEBUG] #13 CACHED
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #14 [web internal] load build context
+2026-Jun-06 01:06:36.589386 [DEBUG] #14 transferring context: 6.62MB 0.1s done
+2026-Jun-06 01:06:36.589386 [DEBUG] #14 DONE 0.1s
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #15 [web runtime 2/4] RUN rm /etc/nginx/conf.d/default.conf
+2026-Jun-06 01:06:36.589386 [DEBUG] #15 CACHED
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #16 [web builder 4/9] COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
+2026-Jun-06 01:06:36.589386 [DEBUG] #16 CACHED
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #17 [web builder 5/9] COPY lib/ lib/
+2026-Jun-06 01:06:36.589386 [DEBUG] #17 CACHED
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #18 [web runtime 3/4] COPY artifacts/web/nginx.conf /etc/nginx/templates/app.conf.template
+2026-Jun-06 01:06:36.589386 [DEBUG] #18 CACHED
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #19 [web builder 6/9] COPY artifacts/web/ artifacts/web/
+2026-Jun-06 01:06:36.589386 [DEBUG] #19 CACHED
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #20 [api builder  6/10] COPY artifacts/api-server/ artifacts/api-server/
+2026-Jun-06 01:06:36.589386 [DEBUG] #20 DONE 0.1s
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #21 [api builder  7/10] COPY scripts/ scripts/
+2026-Jun-06 01:06:36.589386 [DEBUG] #21 DONE 0.0s
+2026-Jun-06 01:06:36.589386 [DEBUG] 
+2026-Jun-06 01:06:36.589386 [DEBUG] #22 [web builder 7/9] RUN pnpm install --frozen-lockfile
+2026-Jun-06 01:06:37.433993 [DEBUG] #22 0.776 Scope: all 6 workspace projects
+2026-Jun-06 01:06:37.433993 [DEBUG] #22 0.922 ? Verifying lockfile against supply-chain policies (580 entries)...
+2026-Jun-06 01:06:40.828686 [DEBUG] #22 4.316 ✓ Lockfile passes supply-chain policies (580 entries in 3.3s)
+2026-Jun-06 01:06:41.050454 [DEBUG] #22 4.326 Lockfile is up to date, resolution step is skipped
+2026-Jun-06 01:06:41.050454 [DEBUG] #22 4.350 Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-Jun-06 01:06:41.050454 [DEBUG] #22 4.385 Packages: +384
+2026-Jun-06 01:06:41.050454 [DEBUG] #22 4.385 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2026-Jun-06 01:06:41.861611 [DEBUG] #22 5.350 Progress: resolved 384, reused 0, downloaded 136, added 108
+2026-Jun-06 01:06:42.863204 [DEBUG] #22 6.351 Progress: resolved 384, reused 0, downloaded 190, added 133
+2026-Jun-06 01:06:43.733438 [DEBUG] #22 ...
+2026-Jun-06 01:06:43.733438 [DEBUG] 
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 [api builder  8/10] RUN pnpm install --frozen-lockfile
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 0.690 Scope: all 7 workspace projects
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 0.788 ? Verifying lockfile against supply-chain policies (580 entries)...
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 4.063 ✓ Lockfile passes supply-chain policies (580 entries in 3.2s)
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 4.067 Lockfile is up to date, resolution step is skipped
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 4.087 Progress: resolved 1, reused 0, downloaded 0, added 0
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 4.103 Packages: +354
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 4.103 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 5.088 Progress: resolved 354, reused 0, downloaded 175, added 106
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.087 Progress: resolved 354, reused 0, downloaded 354, added 354, done
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.313
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.313 devDependencies:
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.313 + prettier 3.8.3
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.313 + typescript 5.9.3
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.313
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.329 . preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.347 . preinstall: Done
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.434 [ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.3
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.434
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 6.434 Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+2026-Jun-06 01:06:43.733438 [DEBUG] #23 ERROR: process "/bin/sh -c pnpm install --frozen-lockfile" did not complete successfully: exit code: 1
+2026-Jun-06 01:06:43.884963 [DEBUG] #22 [web builder 7/9] RUN pnpm install --frozen-lockfile
+2026-Jun-06 01:06:43.997673 [DEBUG] #22 CANCELED
+2026-Jun-06 01:06:44.012357 [DEBUG] ------
+2026-Jun-06 01:06:44.012357 [DEBUG] > [api builder  8/10] RUN pnpm install --frozen-lockfile:
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.313
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.313 devDependencies:
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.313 + prettier 3.8.3
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.313 + typescript 5.9.3
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.313
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.329 . preinstall$ sh -c 'rm -f package-lock.json yarn.lock; case "$npm_config_user_agent" in pnpm/*) ;; *) echo "Use pnpm instead" >&2; exit 1 ;; esac'
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.347 . preinstall: Done
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.434 [ERR_PNPM_IGNORED_BUILDS] Ignored build scripts: esbuild@0.27.3
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.434
+2026-Jun-06 01:06:44.012357 [DEBUG] 6.434 Run "pnpm approve-builds" to pick which dependencies should be allowed to run scripts.
+2026-Jun-06 01:06:44.012357 [DEBUG] ------
+2026-Jun-06 01:06:44.017829 [DEBUG] Dockerfile:26
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] --------------------
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] 24 |
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] 25 |     # Install all workspace dependencies
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] 26 | >>> RUN pnpm install --frozen-lockfile
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] 27 |
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] 28 |     # Build composite TypeScript libs (generates .d.ts declarations)
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] --------------------
+2026-Jun-06 01:06:44.017829 [DEBUG] 
+2026-Jun-06 01:06:44.017829 [DEBUG] target api: failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile" did not complete successfully: exit code: 1
+2026-Jun-06 01:06:44.023529 [DEBUG] exit status 1
+2026-Jun-06 01:06:44.063121 ========================================
+2026-Jun-06 01:06:44.070903 Deployment failed: Command execution failed (exit code 1): docker exec j14p47sogpq2027oeqbvl5y5 bash -c 'DOCKER_BUILDKIT=1 COOLIFY_BRANCH=main COOLIFY_RESOURCE_UUID=jfyz2n9cm05t8sjv221l3nn5  docker compose --env-file /artifacts/build-time.env --project-name jfyz2n9cm05t8sjv221l3nn5 --project-directory /artifacts/j14p47sogpq2027oeqbvl5y5 -f /artifacts/j14p47sogpq2027oeqbvl5y5/docker-compose.yml build --pull --build-arg COOLIFY_FQDN --build-arg VITE_CLERK_PROXY_URL --build-arg POSTGRES_PASSWORD --build-arg CLERK_SECRET_KEY --build-arg SESSION_SECRET --build-arg VITE_CLERK_PUBLISHABLE_KEY --build-arg COOLIFY_BUILD_SECRETS_HASH=87639814dd9b8d117094aeaa982d2e0f11c03ae224a3a20295b04f27016d8ddd'
+2026-Jun-06 01:06:44.070903 Error: Dockerfile:26
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 --------------------
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 24 |
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 25 |     # Install all workspace dependencies
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 26 | >>> RUN pnpm install --frozen-lockfile
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 27 |
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 28 |     # Build composite TypeScript libs (generates .d.ts declarations)
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 --------------------
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 target api: failed to solve: process "/bin/sh -c pnpm install --frozen-lockfile" did not complete successfully: exit code: 1
+2026-Jun-06 01:06:44.070903 
+2026-Jun-06 01:06:44.070903 exit status 1
+2026-Jun-06 01:06:44.078307 [DEBUG] Error type: App\Exceptions\DeploymentException
+2026-Jun-06 01:06:44.087441 [DEBUG] Error code: 0
+2026-Jun-06 01:06:44.096561 [DEBUG] Location: /var/www/html/app/Traits/ExecuteRemoteCommand.php:242
+2026-Jun-06 01:06:44.105571 [DEBUG] Stack trace (first 5 lines):
+2026-Jun-06 01:06:44.115018 [DEBUG] #0 /var/www/html/app/Traits/ExecuteRemoteCommand.php(106): App\Jobs\ApplicationDeploymentJob->executeCommandWithProcess()
+2026-Jun-06 01:06:44.124266 [DEBUG] #1 /var/www/html/vendor/laravel/framework/src/Illuminate/Collections/Traits/EnumeratesValues.php(275): App\Jobs\ApplicationDeploymentJob->{closure:App\Traits\ExecuteRemoteCommand::execute_remote_command():72}()
+2026-Jun-06 01:06:44.133845 [DEBUG] #2 /var/www/html/app/Traits/ExecuteRemoteCommand.php(72): Illuminate\Support\Collection->each()
+2026-Jun-06 01:06:44.145214 [DEBUG] #3 /var/www/html/app/Jobs/ApplicationDeploymentJob.php(772): App\Jobs\ApplicationDeploymentJob->execute_remote_command()
+2026-Jun-06 01:06:44.155190 [DEBUG] #4 /var/www/html/app/Jobs/ApplicationDeploymentJob.php(496): App\Jobs\ApplicationDeploymentJob->deploy_docker_compose_buildpack()
+2026-Jun-06 01:06:44.164985 ========================================
+2026-Jun-06 01:06:44.490510 Gracefully shutting down build container: j14p47sogpq2027oeqbvl5y5
+2026-Jun-06 01:06:44.588432 [DEBUG] [CMD]: docker stop --time=30 j14p47sogpq2027oeqbvl5y5
+2026-Jun-06 01:06:44.588432 [DEBUG] Flag --time has been deprecated, use --timeout instead
+2026-Jun-06 01:06:44.786769 [DEBUG] j14p47sogpq2027oeqbvl5y5

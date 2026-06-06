@@ -5,6 +5,7 @@
 FROM node:24-alpine AS builder
 WORKDIR /app
 
+# cache-bust: 2026-06-06
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
 # Copy workspace manifests
