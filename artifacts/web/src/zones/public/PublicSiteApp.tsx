@@ -114,17 +114,17 @@ function StarRating({ rating }: { rating: number }) {
 
 function BlueBtn({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) {
   return (
-    <WouterLink href={href} style={{ backgroundColor: BLUE }} className={`inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity ${className}`}>
+    <a href={href} style={{ backgroundColor: BLUE }} className={`inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity ${className}`}>
       {children}
-    </WouterLink>
+    </a>
   );
 }
 
 function OutlineBtn({ href, children, dark = false }: { href: string; children: React.ReactNode; dark?: boolean }) {
   return (
-    <WouterLink href={href} className={`inline-flex items-center justify-center rounded-md border px-6 py-3 text-sm font-semibold transition-colors ${dark ? 'border-white/40 text-white hover:bg-white/10' : 'border-slate-300 text-[#26323F] hover:border-[#1F8CFF] hover:text-[#1F8CFF]'}`}>
+    <a href={href} className={`inline-flex items-center justify-center rounded-md border px-6 py-3 text-sm font-semibold transition-colors ${dark ? 'border-white/40 text-white hover:bg-white/10' : 'border-slate-300 text-[#26323F] hover:border-[#1F8CFF] hover:text-[#1F8CFF]'}`}>
       {children}
-    </WouterLink>
+    </a>
   );
 }
 
