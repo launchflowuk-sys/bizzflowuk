@@ -89,7 +89,16 @@ function PageSEO({ title, description }: { title: string; description: string })
 }
 
 function Spinner() {
-  return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2" style={{ borderColor: BLUE }}/></div>;
+  return (
+    <div className="flex min-h-[300px] items-center justify-center">
+      <div className="relative w-24 h-24 flex items-center justify-center">
+        <img src="/amo-logo-icon.png" alt="Loading" className="w-16 h-16 object-contain" />
+        <svg className="absolute inset-0 w-24 h-24 animate-spin" viewBox="0 0 96 96" fill="none">
+          <circle cx="48" cy="48" r="44" stroke="#1F8CFF" strokeWidth="4" strokeLinecap="round" strokeDasharray="69 207"/>
+        </svg>
+      </div>
+    </div>
+  );
 }
 
 function CheckIcon({ color = BLUE }: { color?: string }) {
@@ -221,7 +230,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
         {/* Centre — nav links (desktop 1280px+) */}
         <div className="hidden xl:flex items-center justify-center gap-6 text-sm font-medium">
           {links.map(l => (
-            <WouterLink key={l.href} href={l.href} className="transition-colors hover:text-[#1F8CFF] whitespace-nowrap" style={{ color: TEXT }}>{l.label}</WouterLink>
+            <a key={l.href} href={`${siteBase}${l.href}`} className="transition-colors hover:text-[#1F8CFF] whitespace-nowrap" style={{ color: TEXT }}>{l.label}</a>
           ))}
         </div>
         {/* Right — phone + CTA + burger */}
