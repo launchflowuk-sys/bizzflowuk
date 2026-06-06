@@ -5,7 +5,7 @@
 FROM node:24-slim AS builder
 WORKDIR /app
 
-# cache-bust: 2026-06-06-v3
+# cache-bust: 2026-06-06-v4
 # Install pnpm via corepack
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
@@ -30,17 +30,20 @@ RUN pnpm --filter @workspace/api-server run build
 FROM node:24-slim AS runtime
 WORKDIR /app
 
-# Install pnpm (needed to run drizzle-kit for migrations)
-RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
-
 # ---- Migration tooling ----
-# Copy the full hoisted node_modules (includes drizzle-kit, drizzle-orm, pg)
+# Install drizzle-kit globally via npm so the binary is at /usr/local/bin/drizzle-kit.
+# We do NOT rely on pnpm workspace symlinks here — they are baked with the
+# builder's absolute paths (/home/runner/workspace/...) and break in Docker.
+RUN npm install -g drizzle-kit@0.31.10
+
+# ---- Runtime dependencies ----
+# Copy node_modules from builder for the API server bundle (drizzle-orm, pg, express, etc.)
 COPY --from=builder /app/node_modules ./node_modules
 
 # Copy lib/db TypeScript source + config (drizzle-kit reads schema at startup)
 COPY --from=builder /app/lib/db ./lib/db
 
-# Workspace root manifests (pnpm needs these to resolve workspaces)
+# Workspace root manifests
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
@@ -57,7 +60,7 @@ ENV PORT=8080
 
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
   CMD node -e "require('http').get('http://localhost:8080/api/healthz',(r)=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))"
 
 ENTRYPOINT ["./docker-entrypoint.sh"]

@@ -1,0 +1,18 @@
+2026-Jun-06 02:27:55.677061 Docker 29.5.1 with BuildKit and Buildx detected on deployment server (localhost).
+2026-Jun-06 02:27:55.683695 Starting deployment of BizFlow Production to localhost.
+2026-Jun-06 02:27:55.847295 Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.14
+2026-Jun-06 02:27:55.957879 [DEBUG] [CMD]: docker stop --time=30 gijla4wi6q1885noizg82auh
+2026-Jun-06 02:27:55.957879 [DEBUG] Flag --time has been deprecated, use --timeout instead
+2026-Jun-06 02:27:55.960511 [DEBUG] Error response from daemon: No such container: gijla4wi6q1885noizg82auh
+2026-Jun-06 02:27:56.150062 [DEBUG] [CMD]: docker run -d --network 'coolify' --name gijla4wi6q1885noizg82auh  --rm -v /var/run/docker.sock:/var/run/docker.sock ghcr.io/coollabsio/coolify-helper:1.0.14
+2026-Jun-06 02:27:56.150062 [DEBUG] 898a502593f57a3c27c6ee586135f8010b325e8023a510dc662e1d2adf053e3e
+2026-Jun-06 02:27:57.718867 [DEBUG] [CMD]: docker exec gijla4wi6q1885noizg82auh bash -c 'GIT_SSH_COMMAND="ssh -o ConnectTimeout=30 -p 22 -o Port=22 -o LogLevel=ERROR -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git ls-remote https://x-access-token:<REDACTED>@github.com/launchflowuk-sys/BizFlow.git refs/heads/main'
+2026-Jun-06 02:27:57.718867 [DEBUG] 568b997976d39cc1f80ab0fb19fd5b02ca2cb057	refs/heads/main
+2026-Jun-06 02:27:57.962341 ----------------------------------------
+2026-Jun-06 02:27:57.974609 Importing launchflowuk-sys/BizFlow:main (commit sha 568b997976d39cc1f80ab0fb19fd5b02ca2cb057) to /artifacts/gijla4wi6q1885noizg82auh.
+2026-Jun-06 02:27:58.112633 [DEBUG] [CMD]: docker exec gijla4wi6q1885noizg82auh bash -c 'git clone --depth=1 --recurse-submodules --shallow-submodules -b '\''main'\'' '\''https://x-access-token:<REDACTED>@github.com/launchflowuk-sys/BizFlow.git'\'' '\''/artifacts/gijla4wi6q1885noizg82auh'\'' && cd '\''/artifacts/gijla4wi6q1885noizg82auh'\'' && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git fetch --depth=1 origin '\''568b997976d39cc1f80ab0fb19fd5b02ca2cb057'\'' && git -c advice.detachedHead=false checkout '\''568b997976d39cc1f80ab0fb19fd5b02ca2cb057'\'' >/dev/null 2>&1 && cd '\''/artifacts/gijla4wi6q1885noizg82auh'\'' && if [ -f .gitmodules ]; then git submodule sync && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git submodule update --init --recursive --depth=1; fi && cd '\''/artifacts/gijla4wi6q1885noizg82auh'\'' && GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" git lfs pull'
+2026-Jun-06 02:27:58.112633 [DEBUG] Cloning into '/artifacts/gijla4wi6q1885noizg82auh'...
+2026-Jun-06 02:28:02.078504 [DEBUG] From https://github.com/launchflowuk-sys/BizFlow
+2026-Jun-06 02:28:02.078504 [DEBUG] * branch            568b997976d39cc1f80ab0fb19fd5b02ca2cb057 -> FETCH_HEAD
+2026-Jun-06 02:28:02.735456 [DEBUG] [CMD]: docker exec gijla4wi6q1885noizg82auh bash -c 'cd /artifacts/gijla4wi6q1885noizg82auh && git log -1 '\''568b997976d39cc1f80ab0fb19fd5b02ca2cb057'\'' --pretty=%B'
+2026-Jun-06 02:28:02.735456 [DEBUG] fix: nginx deferred DNS resolution + web waits for api healthy

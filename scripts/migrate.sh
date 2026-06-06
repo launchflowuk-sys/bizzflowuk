@@ -5,11 +5,11 @@
 # Runs drizzle-kit push to apply the current schema to the target database.
 # Safe to run multiple times — drizzle-kit push is idempotent.
 #
-# Usage (from repo root inside a running container or with local deps):
-#   DATABASE_URL=postgres://... ./scripts/migrate.sh
+# drizzle-kit is installed globally via npm in Dockerfile.server runtime stage
+# (/usr/local/bin/drizzle-kit) so this script does not reference node_modules.
 #
-# Or via docker-compose one-off:
-#   docker compose run --rm api ./scripts/migrate.sh
+# Usage (from repo root inside a running container):
+#   DATABASE_URL=postgres://... ./scripts/migrate.sh
 # =============================================================================
 set -e
 
@@ -24,5 +24,4 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 echo "==> LaunchFlow database migration"
 echo "    Schema: $REPO_ROOT/lib/db/src/schema"
 
-exec "$REPO_ROOT/node_modules/.bin/drizzle-kit" push \
-  --config "$REPO_ROOT/lib/db/drizzle.config.ts"
+exec drizzle-kit push --config "$REPO_ROOT/lib/db/drizzle.config.ts"
