@@ -20,9 +20,6 @@ COPY scripts/ scripts/
 # Install all workspace dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build composite TypeScript libs (generates .d.ts declarations)
-RUN pnpm run typecheck:libs
-
 # Bundle the API server with esbuild
 RUN pnpm --filter @workspace/api-server run build
 

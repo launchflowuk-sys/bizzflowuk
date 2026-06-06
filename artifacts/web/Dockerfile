@@ -18,9 +18,6 @@ COPY artifacts/web/ artifacts/web/
 # Install all workspace dependencies
 RUN pnpm install --frozen-lockfile
 
-# Build TypeScript libs
-RUN pnpm run typecheck:libs
-
 # ---------------------------------------------------------------------------
 # Vite build-time environment variables
 # VITE_* vars are baked into the JS bundle at build time by Vite.
