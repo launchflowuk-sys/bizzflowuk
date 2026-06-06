@@ -225,7 +225,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between xl:grid xl:grid-cols-3">
         {/* Left — logo */}
         <a href={siteBase || '/'} className="flex-shrink-0">
-          <img src={settings?.logoUrl || "/amo-logo.webp"} alt={tenant?.name || "AMO Rendering"} className="h-14 sm:h-16 w-auto object-contain" />
+          <img src={settings?.logoUrl || "/amo-logo-dark.png"} alt={tenant?.name || "AMO Rendering"} className="h-14 sm:h-16 w-auto object-contain" />
         </a>
         {/* Centre — nav links (desktop 1280px+) */}
         <div className="hidden xl:flex items-center justify-center gap-6 text-sm font-medium">
