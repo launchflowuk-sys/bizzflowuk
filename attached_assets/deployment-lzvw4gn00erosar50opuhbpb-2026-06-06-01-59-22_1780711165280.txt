@@ -1,0 +1,32 @@
+2026-Jun-06 01:58:27.073909 Docker 29.5.1 with BuildKit and Buildx detected on deployment server (localhost).
+2026-Jun-06 01:58:27.082197 Starting deployment of BizFlow Production to localhost.
+2026-Jun-06 01:58:27.245435 Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.14
+2026-Jun-06 01:58:29.420228 ----------------------------------------
+2026-Jun-06 01:58:29.430357 Importing launchflowuk-sys/BizFlow:main (commit sha 75e3203037fa44a6023a58d6382b8734bfa7c2dd) to /artifacts/lzvw4gn00erosar50opuhbpb.
+2026-Jun-06 01:58:39.434678 Added 12 ARG declarations to Dockerfile for service api (multi-stage build, added to 2 stages).
+2026-Jun-06 01:58:39.884363 Added 12 ARG declarations to Dockerfile for service web (multi-stage build, added to 2 stages).
+2026-Jun-06 01:58:39.889424 Pulling & building required images.
+2026-Jun-06 01:58:40.043705 Adding build arguments to Docker Compose build command.
+2026-Jun-06 01:58:49.544318 ========================================
+2026-Jun-06 01:58:49.550584 Deployment failed: Command execution failed (exit code 1): docker exec lzvw4gn00erosar50opuhbpb bash -c 'DOCKER_BUILDKIT=1 COOLIFY_BRANCH=main COOLIFY_RESOURCE_UUID=rezjlq13rjuptwy8ydgaatjj docker compose --env-file /artifacts/build-time.env --project-name rezjlq13rjuptwy8ydgaatjj --project-directory /artifacts/lzvw4gn00erosar50opuhbpb -f /artifacts/lzvw4gn00erosar50opuhbpb/docker-compose.yml build --pull --build-arg COOLIFY_FQDN --build-arg VITE_CLERK_PROXY_URL --build-arg CLERK_SECRET_KEY --build-arg SESSION_SECRET --build-arg VITE_CLERK_PUBLISHABLE_KEY --build-arg POSTGRES_PASSWORD --build-arg COOLIFY_BUILD_SECRETS_HASH=502379a23f62444212b8f633cdbae48fe1fcbbae19da01b411ec006a0fba01f9'
+2026-Jun-06 01:58:49.550584 Error: Dockerfile.web:44
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 --------------------
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 42 | ENV NODE_ENV=production
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 43 |
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 44 | >>> RUN pnpm --filter @workspace/web run build
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 45 |
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 46 | # =============================================================================
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 --------------------
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 target web: failed to solve: process "/bin/sh -c pnpm --filter @workspace/web run build" did not complete successfully: exit code: 1
+2026-Jun-06 01:58:49.550584
+2026-Jun-06 01:58:49.550584 exit status 1
+2026-Jun-06 01:58:49.607763 ========================================
+2026-Jun-06 01:58:49.883057 Gracefully shutting down build container: lzvw4gn00erosar50opuhbpb
