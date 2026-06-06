@@ -2,7 +2,7 @@
 # Stage 1: Builder
 # Full monorepo install + esbuild bundle
 # =============================================================================
-FROM node:24-alpine AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 
 # cache-bust: 2026-06-06
@@ -27,7 +27,7 @@ RUN pnpm --filter @workspace/api-server run build
 # Stage 2: Runtime
 # Slim image — only what the server and migrations need at runtime
 # =============================================================================
-FROM node:24-alpine AS runtime
+FROM node:24-slim AS runtime
 WORKDIR /app
 
 # Install pnpm (needed to run drizzle-kit for migrations)

@@ -2,7 +2,7 @@
 # Stage 1: Builder
 # Full monorepo install + Vite production build
 # =============================================================================
-FROM node:24-alpine AS builder
+FROM node:24-slim AS builder
 WORKDIR /app
 
 # cache-bust: 2026-06-06
