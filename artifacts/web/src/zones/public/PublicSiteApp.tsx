@@ -2123,6 +2123,10 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
     photoUrls: [] as string[],
   });
   const [submitted, setSubmitted] = useState(false);
+  const quoteSuccessRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (submitted) quoteSuccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [submitted]);
   const f = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [field]: e.target.value });
   const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F8CFF] focus:border-[#1F8CFF] transition";
   const labelCls = "block text-xs font-semibold uppercase tracking-wide mb-1";
@@ -2176,7 +2180,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
             {/* Form */}
             <div className="lg:col-span-3">
               {submitted ? (
-                <div className="text-center space-y-5 py-16">
+                <div ref={quoteSuccessRef} className="text-center space-y-5 py-16">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
                     <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
                   </div>
@@ -2269,6 +2273,10 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
   const mutation = useSubmitContact();
   const [form, setForm] = useState({ senderName: '', senderEmail: '', senderPhone: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
+  const contactSuccessRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (submitted) contactSuccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [submitted]);
   const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F8CFF] transition";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2340,7 +2348,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
             {/* Form */}
             <div>
               {submitted ? (
-                <div className="text-center space-y-4 py-12">
+                <div ref={contactSuccessRef} className="text-center space-y-4 py-12">
                   <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
                     <svg className="w-6 h-6" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
                   </div>
@@ -2390,6 +2398,10 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
   const mutation = useCreateVisualiserRequest();
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', colourPreference: '', notes: '', photoUrls: [] as string[] });
   const [submitted, setSubmitted] = useState(false);
+  const visualiserSuccessRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (submitted) visualiserSuccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [submitted]);
   const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F8CFF] transition";
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -2463,7 +2475,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
             {/* Form */}
             <div>
               {submitted ? (
-                <div className="text-center space-y-5 py-12">
+                <div ref={visualiserSuccessRef} className="text-center space-y-5 py-12">
                   <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
                     <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
                   </div>
