@@ -797,21 +797,25 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
                     className="group rounded-2xl overflow-hidden border border-slate-200 bg-white hover:shadow-xl hover:border-[#1F8CFF] transition-all flex flex-col"
                   >
                     {/* Photo */}
-                    <div className="relative overflow-hidden" style={{ height: 220 }}>
+                    <div className="relative overflow-hidden" style={{ height: 240 }}>
                       {img ? (
                         <img
                           src={img}
                           alt={s.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          className="w-full h-full object-cover object-top group-hover:scale-105 transition-transform duration-500"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-white" style={{ backgroundColor: NAVY }}>
                           {(s.name || '?')[0]}
                         </div>
                       )}
+                      {/* Bottom gradient + service name — always readable regardless of crop */}
+                      <div className="absolute bottom-0 left-0 right-0 px-4 pb-3 pt-10 bg-gradient-to-t from-black/75 via-black/40 to-transparent">
+                        <span className="text-white text-sm font-bold leading-tight">{s.name}</span>
+                      </div>
                       {/* Tagline pill */}
                       {s.tagline && (
-                        <div className="absolute top-3 left-3">
+                        <div className="absolute top-3 left-3 right-3">
                           <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: BLUE }}>
                             {s.tagline}
                           </span>
