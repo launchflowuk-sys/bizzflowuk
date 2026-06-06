@@ -1,4 +1,4 @@
-import { Switch, Route, useParams, Router as WouterRouter } from "wouter";
+import { Switch, Route, useParams, Router as WouterRouter, Link as WouterLink } from "wouter";
 import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 const SiteBaseCtx = createContext('');
@@ -114,17 +114,17 @@ function StarRating({ rating }: { rating: number }) {
 
 function BlueBtn({ href, children, className = "" }: { href: string; children: React.ReactNode; className?: string }) {
   return (
-    <a href={href} style={{ backgroundColor: BLUE }} className={`inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity ${className}`}>
+    <WouterLink href={href} style={{ backgroundColor: BLUE }} className={`inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity ${className}`}>
       {children}
-    </a>
+    </WouterLink>
   );
 }
 
 function OutlineBtn({ href, children, dark = false }: { href: string; children: React.ReactNode; dark?: boolean }) {
   return (
-    <a href={href} className={`inline-flex items-center justify-center rounded-md border px-6 py-3 text-sm font-semibold transition-colors ${dark ? 'border-white/40 text-white hover:bg-white/10' : 'border-slate-300 text-[#26323F] hover:border-[#1F8CFF] hover:text-[#1F8CFF]'}`}>
+    <WouterLink href={href} className={`inline-flex items-center justify-center rounded-md border px-6 py-3 text-sm font-semibold transition-colors ${dark ? 'border-white/40 text-white hover:bg-white/10' : 'border-slate-300 text-[#26323F] hover:border-[#1F8CFF] hover:text-[#1F8CFF]'}`}>
       {children}
-    </a>
+    </WouterLink>
   );
 }
 
@@ -204,12 +204,12 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
   const siteBase = useSiteBase();
   const [open, setOpen] = useState(false);
   const links = [
-    { label: "Services", href: `${siteBase}/services` },
-    { label: "Before & After", href: `${siteBase}/gallery` },
-    { label: "Areas", href: `${siteBase}/areas` },
-    { label: "Case Studies", href: `${siteBase}/case-studies` },
-    { label: "Reviews", href: `${siteBase}/reviews` },
-    { label: "Contact", href: `${siteBase}/contact` },
+    { label: "Services", href: "/services" },
+    { label: "Before & After", href: "/gallery" },
+    { label: "Areas", href: "/areas" },
+    { label: "Case Studies", href: "/case-studies" },
+    { label: "Reviews", href: "/reviews" },
+    { label: "Contact", href: "/contact" },
   ];
   return (
     <nav className="sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm">
@@ -221,7 +221,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
         {/* Centre — nav links */}
         <div className="hidden lg:flex items-center justify-center gap-6 text-sm font-medium">
           {links.map(l => (
-            <a key={l.href} href={l.href} className="transition-colors hover:text-[#1F8CFF] whitespace-nowrap" style={{ color: TEXT }}>{l.label}</a>
+            <WouterLink key={l.href} href={l.href} className="transition-colors hover:text-[#1F8CFF] whitespace-nowrap" style={{ color: TEXT }}>{l.label}</WouterLink>
           ))}
         </div>
         {/* Right — phone + CTA + mobile burger */}
@@ -242,7 +242,7 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
       {open && (
         <div className="lg:hidden bg-white border-t border-slate-100 px-4 py-4 space-y-1">
           {links.map(l => (
-            <a key={l.href} href={l.href} className="block py-2 text-sm font-medium hover:text-[#1F8CFF]" style={{ color: TEXT }}>{l.label}</a>
+            <WouterLink key={l.href} href={l.href} className="block py-2 text-sm font-medium hover:text-[#1F8CFF]" style={{ color: TEXT }} onClick={() => setOpen(false)}>{l.label}</WouterLink>
           ))}
           {settings?.phone && <a href={`tel:${settings.phone}`} className="block py-2 text-sm font-semibold" style={{ color: BLUE }}>{settings.phone}</a>}
           <div className="pt-2"><BlueBtn href={`${siteBase}/quote`} className="w-full">Get a Free Quote</BlueBtn></div>
