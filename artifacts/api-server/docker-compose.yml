@@ -20,7 +20,7 @@ services:
   api:
     build:
       context: ../..
-      dockerfile: artifacts/api-server/Dockerfile
+      dockerfile: artifacts/api-server/Dockerfile.server
     restart: unless-stopped
     environment:
       NODE_ENV: production
@@ -37,7 +37,7 @@ services:
   web:
     build:
       context: ../..
-      dockerfile: artifacts/web/Dockerfile
+      dockerfile: artifacts/web/Dockerfile.web
       args:
         PORT: 3000
         BASE_PATH: /
