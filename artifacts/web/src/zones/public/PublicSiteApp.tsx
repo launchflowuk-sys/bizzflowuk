@@ -108,7 +108,7 @@ function TenantNotFoundPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant, settings } = (data as any) ?? {};
   return (
     <div className="min-h-screen flex flex-col">
-      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} />
+      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} alwaysOpaque />
       <main className="flex-1 flex flex-col items-center justify-center px-6 text-center py-24">
         <p className="text-8xl font-black text-slate-100 select-none">404</p>
         <h1 className="mt-4 text-2xl font-bold text-slate-900">Page not found</h1>
@@ -236,7 +236,7 @@ function MobileBar({ tenantSlug, phone }: { tenantSlug: string; phone?: string }
   );
 }
 
-function SiteNav({ tenant, settings, tenantSlug }: any) {
+function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
   const siteBase = useSiteBase();
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -257,19 +257,26 @@ function SiteNav({ tenant, settings, tenantSlug }: any) {
     { label: "Contact", href: "/contact" },
   ];
 
-  const navClass = scrolled
+  const isOpaque = alwaysOpaque || scrolled;
+  const navClass = isOpaque
     ? "sticky top-0 z-40 bg-white border-b border-slate-200 shadow-sm transition-all duration-300"
     : "sticky top-0 z-40 bg-transparent border-b border-transparent shadow-none transition-all duration-300";
-  const linkColor = scrolled ? TEXT : "#ffffff";
-  const burgerColor = scrolled ? TEXT : "#ffffff";
-  const burgerHover = scrolled ? "hover:bg-slate-100" : "hover:bg-white/10";
+  const linkColor = isOpaque ? TEXT : "#ffffff";
+  const burgerColor = isOpaque ? TEXT : "#ffffff";
+  const burgerHover = isOpaque ? "hover:bg-slate-100" : "hover:bg-white/10";
+  const logoFilter = isOpaque ? undefined : "brightness(0) invert(1)";
 
   return (
     <nav className={navClass}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between xl:grid xl:grid-cols-3">
         {/* Left — logo */}
         <a href={siteBase || '/'} className="flex-shrink-0">
-          <img src={settings?.logoUrl || "/amo-logo-dark.png"} alt={tenant?.name || "AMO Rendering"} className="h-14 sm:h-16 w-auto object-contain" />
+          <img
+            src={settings?.logoUrl || "/amo-logo-dark.png"}
+            alt={tenant?.name || "AMO Rendering"}
+            className="h-14 sm:h-16 w-auto object-contain transition-all duration-300"
+            style={logoFilter ? { filter: logoFilter } : undefined}
+          />
         </a>
         {/* Centre — nav links (desktop 1280px+) */}
         <div className="hidden xl:flex items-center justify-center gap-6 text-sm font-medium">
