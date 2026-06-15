@@ -1,0 +1,19 @@
+==> LaunchFlow API — startup diagnostics
+    NODE_ENV:           production
+    PORT:               8080
+    DATABASE_URL set:   YES
+    drizzle-kit path:   /usr/local/bin/drizzle-kit
+    node version:       v24.16.0
+==> Running database migrations...
+==> LaunchFlow database migration
+    Schema: /app/lib/db/src/schema
+Reading config file '/app/lib/db/drizzle.config.ts'
+Error please install required packages: 'drizzle-orm'
+==> WARN: Migration exited with code 1 — see output above
+==> Continuing startup (server will fail if schema is missing)
+==> Starting API server on port 8080...
+{"level":30,"time":1781536863287,"pid":1,"hostname":"c16f89269b30","port":8080,"msg":"Server listening"}
+{"level":30,"time":1781536867837,"pid":1,"hostname":"c16f89269b30","req":{"id":1,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+{"level":30,"time":1781536874085,"pid":1,"hostname":"c16f89269b30","req":{"id":2,"method":"GET","url":"/"},"res":{"statusCode":404},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781536897952,"pid":1,"hostname":"c16f89269b30","req":{"id":3,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781536928066,"pid":1,"hostname":"c16f89269b30","req":{"id":4,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
