@@ -8,7 +8,8 @@ import { requireAuth, signAuthToken } from "../middlewares/auth";
 const router = Router();
 
 router.get("/me", requireAuth, async (req, res) => {
-  res.json(req.authUser);
+  const { id, email, role, firstName, lastName, tenantId, clerkId } = req.authUser as any;
+  res.json({ id, email, role, firstName, lastName, tenantId, clerkId });
 });
 
 router.post("/login", async (req, res) => {
