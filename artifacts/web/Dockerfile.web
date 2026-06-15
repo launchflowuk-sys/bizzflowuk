@@ -27,13 +27,9 @@ RUN pnpm install --frozen-lockfile
 # ---------------------------------------------------------------------------
 ARG PORT=3000
 ARG BASE_PATH=/
-ARG VITE_CLERK_PUBLISHABLE_KEY
-ARG VITE_CLERK_PROXY_URL
 
 ENV PORT=$PORT
 ENV BASE_PATH=$BASE_PATH
-ENV VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY
-ENV VITE_CLERK_PROXY_URL=$VITE_CLERK_PROXY_URL
 ENV NODE_ENV=production
 
 RUN pnpm --filter @workspace/web run build
