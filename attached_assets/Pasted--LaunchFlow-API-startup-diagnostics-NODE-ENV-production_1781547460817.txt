@@ -1,0 +1,26 @@
+==> LaunchFlow API â€” startup diagnostics
+    NODE_ENV:           production
+    PORT:               8080
+    DATABASE_URL set:   YES
+    node version:       v24.16.0
+==> Running database migrations...
+==> LaunchFlow database migration
+    Migrations folder: /app/lib/db/migrations
+==> WARN: Migration exited with code 1 â€” see output above
+==> Continuing startup (server will fail if schema is missing)
+==> Starting API server on port 8080...
+{"level":30,"time":1781547097430,"pid":1,"hostname":"5e9f4d1b5e5f","port":8080,"msg":"Server listening"}
+{"level":30,"time":1781547101494,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":1,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":4,"msg":"request completed"}
+{"level":30,"time":1781547131620,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":2,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781547161711,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":3,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781547191799,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":4,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+{"level":30,"time":1781547221904,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":5,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781547252036,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":6,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781547282161,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":7,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781547312268,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":8,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781547342396,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":9,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781547372484,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":10,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+{"level":30,"time":1781547402569,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":11,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781547432698,"pid":1,"hostname":"5e9f4d1b5e5f","req":{"id":12,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+==> Migration failed: Failed query: CREATE TYPE "public"."user_role" AS ENUM('SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER');
+params: 
