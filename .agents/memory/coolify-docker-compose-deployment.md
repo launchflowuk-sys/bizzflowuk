@@ -5,13 +5,13 @@ description: Hard-won lessons deploying a pnpm monorepo to Coolify via Docker Co
 
 # Coolify + Docker Compose + pnpm monorepo — Deployment Rules
 
-**Why:** We lost ~8 hours fighting Coolify's layer cache, Alpine musl, missing tsconfig, port conflicts, and Traefik routing. This file documents exactly what to do next time.
+**Why:** We lost significant time fighting Coolify's layer cache, Alpine musl, missing tsconfig, port conflicts, Traefik routing, and drizzle-kit module resolution. This file documents exactly what to do next time.
 
 ## 1. Base Image — NEVER use Alpine for build stages
 
 **Rule:** Builder stages that run Vite, Rollup, Tailwind, or lightningcss MUST use `node:24-slim` (Debian glibc), never `node:24-alpine` (musl).
 
-**Why:** `pnpm-workspace.yaml` overrides exclude musl native binaries (`@rollup/rollup-linux-x64-musl`, `lightningcss-linux-x64-musl`, `@tailwindcss/oxide-linux-x64-musl`) to keep local installs lean. Alpine needs those musl binaries. Debian slim uses glibc — the binaries already in the lockfile.
+**Why:** `pnpm-workspace.yaml` overrides exclude musl native binaries to keep local installs lean. Alpine needs those musl binaries. Debian slim uses glibc — the binaries already in the lockfile.
 
 ```dockerfile
 FROM node:24-slim AS builder   # ✓ glibc — works
@@ -40,89 +40,93 @@ COPY lib/ lib/
 COPY artifacts/web/ artifacts/web/
 ```
 
-**Why it fails:** lib packages have `"extends": "../../tsconfig.base.json"`. Without `tsconfig.base.json` in the Docker build context, Vite silently fails to parse tsconfigs and the build aborts.
-
 ## 4. vite.config.ts — never throw for missing PORT/BASE_PATH
 
 **Rule:** Build-time env vars may not be set during Docker builds. Always provide defaults.
 
 ```typescript
-// ✓ correct
 const rawPort = process.env.PORT ?? "3000";
 const basePath = process.env.BASE_PATH ?? "/";
-
-// ✗ wrong — throws in Docker build, kills the build
-if (!process.env.PORT) throw new Error("PORT is required");
 ```
 
 ## 5. docker-compose.yml — NEVER bind to host port 80/443
 
-**Rule:** Coolify runs Traefik on port 80 and 443. Binding a container to these ports kills the deployment with "port already allocated".
+**Rule:** Coolify runs Traefik on port 80 and 443. Use `expose`, not `ports`.
+
+## 6. Traefik routing — ALWAYS add explicit labels
+
+`SERVICE_FQDN_WEB_80:` alone is NOT reliable. Always add explicit labels:
 
 ```yaml
-# ✗ WRONG
-ports:
-  - "80:80"
-
-# ✓ CORRECT — expose internal port, use Traefik labels
-expose:
-  - "80"
-networks:
-  - internal
-  - coolify          # Coolify's Traefik network
-labels:
-  - "traefik.enable=true"
-  - "traefik.http.routers.myapp.rule=Host(`${COOLIFY_FQDN:-localhost}`)"
-  - "traefik.http.routers.myapp.entrypoints=https"
-  - "traefik.http.routers.myapp.tls=true"
-  - "traefik.http.routers.myapp.tls.certresolver=letsencrypt"
-  - "traefik.http.services.myapp.loadbalancer.server.port=80"
-  - "traefik.docker.network=coolify"
+web:
+  expose:
+    - "80"
+  labels:
+    - traefik.enable=true
+    - traefik.docker.network=coolify          # CRITICAL — see below
+    - "traefik.http.routers.launchflow-web.rule=PathPrefix(`/`)"
+    - "traefik.http.routers.launchflow-web.entrypoints=http"
+    - "traefik.http.routers.launchflow-web.priority=1"
+    - "traefik.http.routers.launchflow-web.service=launchflow-web"  # explicit link required
+    - "traefik.http.services.launchflow-web.loadbalancer.server.port=80"
+  networks:
+    - internal
+    - coolify
 ```
 
-```yaml
-networks:
-  internal:
-    driver: bridge
-  coolify:
-    external: true   # Coolify creates this network on install
+**`traefik.docker.network=coolify` is mandatory** when a container is on multiple networks. Without it, Traefik picks an arbitrary network IP — often `internal`, which it cannot reach. This causes a 404 "page not found" from Traefik even though all containers are running perfectly.
+
+**Explicit router-to-service link** (`routers.X.service=X`) — Traefik can silently discard a router if the service link is ambiguous.
+
+**Entrypoint name:** Coolify's Traefik uses `http` (port 80) and `https` (port 443).
+
+## 7. drizzle-kit at runtime — eliminate it entirely
+
+`drizzle-kit push` at container startup is unreliable because module resolution for `drizzle-orm` fails depending on where drizzle-kit is installed. Solution:
+
+**Generate SQL migration files at Docker BUILD time, apply with drizzle-orm migrator at startup:**
+
+```dockerfile
+# In builder stage (after pnpm install):
+RUN pnpm --filter @workspace/db run generate
+
+# In runtime stage:
+COPY --from=builder /app/lib/db/migrations ./lib/db/migrations
 ```
 
-## 6. pnpm lockfile must match the target platform
+Startup: `node /app/scripts/run-migrations.mjs` using `drizzle-orm/node-postgres/migrator`.
 
-**Rule:** Run `pnpm install` locally before pushing when changing `pnpm-workspace.yaml` overrides. The lockfile encodes platform-specific optional package choices.
+This needs `out: path.join(__dirname, "./migrations")` in drizzle.config.ts and a `generate` script in lib/db/package.json.
 
-If overrides change, regenerate: `pnpm install` → commit both `pnpm-workspace.yaml` and `pnpm-lock.yaml`.
+## 8. Migration idempotency — existing schema detection
 
-## 7. Coolify layer cache — how to bust it
+If DB already has schema from a prior `drizzle-kit push` but no `drizzle.__drizzle_migrations` table, the migrator re-runs all SQL and fails with "already exists" errors.
 
-Coolify adds its own ARG declarations and can hit Docker layer cache from previous builds. To force a full rebuild:
-- **First try:** Change a cache-busting comment in the Dockerfile (e.g. `# cache-bust: 2026-06-06-v2`)
-- **Nuclear:** In Coolify UI → Advanced → tick "No Cache" on next deploy
+Fix in `run-migrations.mjs`: check if `tenants` table exists but `drizzle.__drizzle_migrations` does not → create tracking table and stamp all journal entries as applied before running the migrator.
 
-## 8. Coolify does NOT capture full Docker BuildKit output by default
+## 9. drizzle.config.ts — allow missing DATABASE_URL for generate
 
-The Coolify log download shows Coolify-level events but often drops the actual Docker build stdout. If you see a one-line "build failed" with no detail:
-- The real error is inside the Docker build output
-- Test locally: `NODE_ENV=production pnpm --filter @workspace/web run build`
-- Simulate Docker exactly: copy only the files the Dockerfile copies into a temp dir and run the build there
+`drizzle-kit generate` needs no DB connection but config must not throw on missing URL:
 
-## 9. GitHub push from Replit — git commit is blocked
-
-The main Replit agent cannot run `git commit` (platform restriction). Use the GitHub Contents API via Python:
-
-```python
-import base64, json, urllib.request, os
-
-token = os.environ["GITHUB_ACCESS_TOKEN"]
-# GET the file's sha, then PUT with new content + sha
+```ts
+dbCredentials: {
+  url: process.env.DATABASE_URL ?? "postgres://placeholder:placeholder@localhost/placeholder",
+}
 ```
 
-Or ask the agent to push via curl with `$GITHUB_ACCESS_TOKEN`.
+## 10. pnpm + Docker — node-linker=hoisted
 
-## 10. Required Coolify environment variables for this app
+`.npmrc` must have `node-linker=hoisted`. Without it, pnpm uses absolute-path symlinks from the build machine that break inside Docker. Copy `.npmrc` alongside the other manifests in the builder stage before `pnpm install`.
 
-Set these in Coolify → Environment Variables before deploying:
+## 11. Coolify config change workflow
+
+When docker-compose.yml changes on GitHub, Coolify shows a banner: "N unapplied configuration changes detected." User must click "View changes" → apply → redeploy. Git changes are detected but NOT auto-applied — Coolify stores compose content in its own database.
+
+## 12. GitHub push from Replit
+
+Use the GitHub Contents API via curl with `$GITHUB_ACCESS_TOKEN`. The `git commit` command is blocked by the platform.
+
+## 13. Required Coolify environment variables for this app
 
 | Variable | Required | Notes |
 |---|---|---|
@@ -132,46 +136,17 @@ Set these in Coolify → Environment Variables before deploying:
 | `VITE_CLERK_PUBLISHABLE_KEY` | ✓ | From Clerk dashboard (pk_live_...) |
 | `VITE_CLERK_PROXY_URL` | optional | Leave blank unless using Clerk proxy |
 
-## 11. Runtime CLI tools must be in `dependencies`, not `devDependencies`
-
-**Rule:** pnpm does NOT hoist devDep binaries from workspace sub-packages to root `node_modules/.bin`. Any CLI called at runtime (drizzle-kit, etc.) must live in `dependencies`.
-
-```json
-// ✗ wrong — binary never appears in /app/node_modules/.bin
-"devDependencies": { "drizzle-kit": "^0.31.10" }
-
-// ✓ correct — binary hoisted and available at runtime
-"dependencies": { "drizzle-kit": "^0.31.10" }
-```
-
-After changing, run `pnpm install` and commit updated `pnpm-lock.yaml`.
-
-## 12. Traefik labels — both http AND https routers required
-
-Declaring only `entrypoints=https` causes Traefik to return 404 for all HTTP traffic. Always add both:
-
-```yaml
-labels:
-  - "traefik.http.routers.myapp-http.entrypoints=http"
-  - "traefik.http.routers.myapp-http.middlewares=myapp-https-redirect"
-  - "traefik.http.middlewares.myapp-https-redirect.redirectscheme.scheme=https"
-  - "traefik.http.routers.myapp-https.entrypoints=https"
-  - "traefik.http.routers.myapp-https.tls=true"
-```
-
-## 13. Full pre-deploy checklist
-
-Before deploying ANY pnpm monorepo to Coolify with Docker Compose:
+## 14. Pre-deploy checklist
 
 - [ ] Builder stage: `node:24-slim` not alpine
-- [ ] Runtime Node stage: `node:24-slim` not alpine  
+- [ ] Runtime Node stage: `node:24-slim` not alpine
 - [ ] Healthcheck: uses `node -e ...` not `wget`/`curl`
 - [ ] Web Dockerfile copies: `tsconfig.base.json tsconfig.json`
 - [ ] `vite.config.ts`: PORT and BASE_PATH have `?? "default"` fallbacks
 - [ ] `docker-compose.yml`: no `ports: - "80:80"` on web service
-- [ ] `docker-compose.yml`: web service has BOTH http and https Traefik routers
+- [ ] `docker-compose.yml`: web service has explicit Traefik labels including `traefik.docker.network=coolify`
 - [ ] `docker-compose.yml`: `networks.coolify.external: true`
-- [ ] Any runtime CLI binary is in `dependencies` (not devDependencies)
-- [ ] Coolify env vars: all 4 required vars set
-- [ ] `pnpm-lock.yaml` is up to date (run `pnpm install` after any package.json changes)
-- [ ] Local build test: `NODE_ENV=production pnpm --filter @workspace/web run build`
+- [ ] drizzle-kit NOT called at runtime — SQL generated at build time
+- [ ] Migration runner handles existing-schema case (stamps journal before migrating)
+- [ ] Coolify env vars: all required vars set
+- [ ] `pnpm-lock.yaml` is up to date
