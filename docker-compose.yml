@@ -32,7 +32,6 @@ services:
       NODE_ENV: production
       PORT: 8080
       DATABASE_URL: postgres://launchflow:${POSTGRES_PASSWORD}@db:5432/launchflow
-      CLERK_SECRET_KEY: ${CLERK_SECRET_KEY:?CLERK_SECRET_KEY is required}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
     depends_on:
       db:
@@ -50,8 +49,6 @@ services:
       args:
         PORT: 3000
         BASE_PATH: /
-        VITE_CLERK_PUBLISHABLE_KEY: ${VITE_CLERK_PUBLISHABLE_KEY:?VITE_CLERK_PUBLISHABLE_KEY is required}
-        VITE_CLERK_PROXY_URL: ${VITE_CLERK_PROXY_URL:-}
     restart: unless-stopped
     ports:
       - "${WEB_PORT:-80}:80"
