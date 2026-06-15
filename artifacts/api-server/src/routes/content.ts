@@ -13,33 +13,33 @@ function tid(req: any) { return req.authUser?.tenantId!; }
 
 // Helper: generic CRUD factory
 function crud<T>(table: any, routePrefix: string, extraInsert?: (req: any) => object) {
-  router.get(`/api/${routePrefix}`, requireTenantAccess, async (req, res) => {
+  router.get(`/${routePrefix}`, requireTenantAccess, async (req, res) => {
     try {
       const rows = await db.select().from(table).where(eq(table.tenantId, tid(req)));
       res.json(rows);
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
-  router.post(`/api/${routePrefix}`, requireTenantAccess, async (req, res) => {
+  router.post(`/${routePrefix}`, requireTenantAccess, async (req, res) => {
     try {
       const row = await db.insert(table).values({ ...req.body, tenantId: tid(req), ...(extraInsert ? extraInsert(req) : {}) }).returning() as any[];
       res.status(201).json(row[0]);
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
-  router.get(`/api/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
+  router.get(`/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
     try {
       const row = await db.select().from(table).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req)))).limit(1);
       if (!row.length) { res.status(404).json({ error: "Not found" }); return; }
       res.json(row[0]);
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
-  router.patch(`/api/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
+  router.patch(`/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
     try {
       const row = await db.update(table).set(req.body).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req)))).returning();
       if (!row.length) { res.status(404).json({ error: "Not found" }); return; }
       res.json(row[0]);
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
-  router.delete(`/api/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
+  router.delete(`/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
     try {
       await db.delete(table).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req))));
       res.status(204).send();

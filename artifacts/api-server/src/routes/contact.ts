@@ -137,14 +137,14 @@ router.post("/public/:tenantSlug/visualiser", async (req, res) => {
 });
 
 // Admin: list contact messages
-router.get("/contact-messages", requireTenantAccess, async (req, res) => {
+router.get("/contact/messages", requireTenantAccess, async (req, res) => {
   try {
     const msgs = await db.select().from(contactMessagesTable).where(eq(contactMessagesTable.tenantId, tid(req))).orderBy(sql`${contactMessagesTable.createdAt} desc`);
     res.json(msgs);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.get("/contact-messages/:id", requireTenantAccess, async (req, res) => {
+router.get("/contact/messages/:id", requireTenantAccess, async (req, res) => {
   try {
     const msg = await db.select().from(contactMessagesTable).where(and(eq(contactMessagesTable.id, Number(req.params.id)), eq(contactMessagesTable.tenantId, tid(req)))).limit(1);
     if (!msg.length) { res.status(404).json({ error: "Not found" }); return; }
@@ -152,7 +152,7 @@ router.get("/contact-messages/:id", requireTenantAccess, async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.delete("/contact-messages/:id", requireTenantAccess, async (req, res) => {
+router.delete("/contact/messages/:id", requireTenantAccess, async (req, res) => {
   try {
     await db.delete(contactMessagesTable).where(and(eq(contactMessagesTable.id, Number(req.params.id)), eq(contactMessagesTable.tenantId, tid(req))));
     res.status(204).send();
