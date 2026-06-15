@@ -1,7 +1,16 @@
-import { useUser, SignIn, UserButton } from "@clerk/react";
+import { useAuthCtx } from "@/lib/auth";
 import { useGetPortalMe, useListPortalMessages, useCreatePortalMessage } from "@workspace/api-client-react";
 import { useState } from "react";
-import { Switch, Route, Link, useLocation } from "wouter";
+import { Switch, Route, Link, useLocation, Redirect } from "wouter";
+
+function SignOutButton() {
+  const { signOut } = useAuthCtx();
+  return (
+    <button onClick={signOut} className="px-3 py-1.5 rounded text-xs font-medium text-slate-400 hover:text-white hover:bg-slate-800 transition-colors">
+      Sign out
+    </button>
+  );
+}
 
 function PortalNav({ currentPath }: { currentPath: string }) {
   const nav = [
@@ -20,7 +29,7 @@ function PortalNav({ currentPath }: { currentPath: string }) {
             <Link key={n.path} href={n.path} className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${currentPath === n.path ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>{n.label}</Link>
           ))}
         </div>
-        <UserButton appearance={{ elements: { avatarBox: 'w-7 h-7' } }}/>
+        <SignOutButton />
       </div>
     </nav>
   );
@@ -173,10 +182,9 @@ function PortalWarranty() {
 }
 
 export default function PortalApp() {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn } = useAuthCtx();
   const [location] = useLocation();
-  if (!isLoaded) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"/></div>;
-  if (!isSignedIn) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><SignIn/></div>;
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
   return (
     <div className="min-h-screen bg-slate-50">
       <PortalNav currentPath={location}/>

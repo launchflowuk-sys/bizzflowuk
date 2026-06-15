@@ -1,98 +1,54 @@
-import { useEffect, useRef, useState } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk, useAuth, useUser } from '@clerk/react';
-import { publishableKeyFromHost } from '@clerk/react/internal';
-import { shadcn } from '@clerk/themes';
+import { lazy, Suspense, useState } from "react";
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
-import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useGetMe, setAuthTokenGetter, getGetMeQueryKey, useResolveTenantDomain } from "@workspace/api-client-react";
+import { useGetMe, setAuthTokenGetter, useResolveTenantDomain } from "@workspace/api-client-react";
+import { AuthProvider, useAuthCtx, getStoredToken } from "@/lib/auth";
 
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      retry: 1,
-      staleTime: 30_000,
-    },
-  },
+  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
 });
 
-const clerkPubKey = publishableKeyFromHost(
-  window.location.hostname,
-  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
-);
-
-const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL || undefined;
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
-function stripBase(path: string): string {
-  return basePath && path.startsWith(basePath)
-    ? path.slice(basePath.length) || "/"
-    : path;
-}
+// Wire the API client to read our JWT on every request
+setAuthTokenGetter(() => Promise.resolve(getStoredToken()));
 
-if (!clerkPubKey) {
-  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY');
-}
+// ---------------------------------------------------------------------------
+// Login form
+// ---------------------------------------------------------------------------
+export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+  const { signIn } = useAuthCtx();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [, setLocation] = useLocation();
 
-const clerkAppearance = {
-  theme: shadcn,
-  cssLayerName: "clerk",
-  variables: {
-    colorPrimary: "#1F8CFF",
-    colorBackground: "#0F1923",
-    colorInputBackground: "#1A2535",
-    colorInputText: "#ffffff",
-    colorText: "#ffffff",
-    colorTextSecondary: "#94a3b8",
-    colorNeutral: "#ffffff",
-    borderRadius: "0.75rem",
-  },
-  elements: {
-    card: "bg-[#0F1923] border border-white/10 shadow-2xl",
-    headerTitle: "text-white font-bold",
-    headerSubtitle: "text-slate-400",
-    formButtonPrimary: "bg-[#1F8CFF] hover:bg-[#1a7ae6] text-white font-semibold",
-    formFieldInput: "bg-[#1A2535] border-white/10 text-white placeholder:text-slate-500 focus:border-[#1F8CFF]",
-    formFieldLabel: "text-slate-300 font-medium",
-    dividerLine: "bg-white/10",
-    dividerText: "text-slate-500",
-    socialButtonsBlockButton: "bg-[#1A2535] border-white/10 text-white hover:bg-[#243048]",
-    socialButtonsBlockButtonText: "text-white",
-    footerActionText: "text-slate-400",
-    footerActionLink: "text-[#1F8CFF] hover:text-[#60afff]",
-    identityPreviewText: "text-white",
-    identityPreviewEditButton: "text-[#1F8CFF]",
-  },
-};
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Login failed"); return; }
+      signIn(data.token);
+      setLocation(redirectTo || "/");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  }
 
-function AuthTokenSetup() {
-  const { getToken } = useAuth();
-  useEffect(() => {
-    setAuthTokenGetter(() => getToken());
-    return () => setAuthTokenGetter(null);
-  }, [getToken]);
-  return null;
-}
-
-function ClerkQueryClientCacheInvalidator() {
-  const { addListener } = useClerk();
-  const qc = useQueryClient();
-  const prevRef = useRef<string | null | undefined>(undefined);
-  useEffect(() => {
-    const unsub = addListener(({ user }) => {
-      const uid = user?.id ?? null;
-      if (prevRef.current !== undefined && prevRef.current !== uid) qc.clear();
-      prevRef.current = uid;
-    });
-    return unsub;
-  }, [addListener, qc]);
-  return null;
-}
-
-function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] flex bg-[#0A121C]">
       <div className="hidden lg:flex lg:w-[52%] flex-col justify-between p-12 bg-gradient-to-br from-[#0A121C] via-[#0d1a2e] to-[#0A121C] border-r border-white/5 relative overflow-hidden">
@@ -139,128 +95,46 @@ function AuthLayout({ children }: { children: React.ReactNode }) {
           <div className="w-8 h-8 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-xs">L</div>
           <span className="text-white font-bold text-lg tracking-tight">LaunchFlow</span>
         </div>
-        {children}
-        <p className="mt-8 text-center text-xs text-slate-600">
-          © {new Date().getFullYear()} LaunchFlow. All rights reserved.
-        </p>
+        <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5">
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-bold text-white">Sign in</h2>
+            <p className="text-slate-400 text-sm mt-1">Enter your credentials to continue</p>
+          </div>
+          {error && (
+            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-red-400 text-sm">{error}</div>
+          )}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-300">Email address</label>
+            <input
+              type="email" value={email} onChange={e => setEmail(e.target.value)}
+              required autoComplete="email" placeholder="you@example.com"
+              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-[#1F8CFF] focus:ring-1 focus:ring-[#1F8CFF] transition"
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-slate-300">Password</label>
+            <input
+              type="password" value={password} onChange={e => setPassword(e.target.value)}
+              required autoComplete="current-password" placeholder="••••••••"
+              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-[#1F8CFF] focus:ring-1 focus:ring-[#1F8CFF] transition"
+            />
+          </div>
+          <button
+            type="submit" disabled={loading}
+            className="w-full rounded-xl bg-[#1F8CFF] hover:bg-[#1a7ae6] disabled:opacity-60 px-4 py-3 text-white font-semibold text-sm transition"
+          >
+            {loading ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+        <p className="mt-8 text-center text-xs text-slate-600">© {new Date().getFullYear()} LaunchFlow. All rights reserved.</p>
       </div>
     </div>
   );
 }
 
-function SignInPage() {
-  return (
-    <AuthLayout>
-      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
-    </AuthLayout>
-  );
-}
-
-function SignUpPage() {
-  return (
-    <AuthLayout>
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
-    </AuthLayout>
-  );
-}
-
-function RoleRouter() {
-  const { user: clerkUser } = useUser();
-  const { getToken } = useAuth();
-  const qc = useQueryClient();
-  const { data: user, isLoading, isError } = useGetMe();
-  const [syncing, setSyncing] = useState(false);
-  const syncAttempted = useRef(false);
-
-  useEffect(() => {
-    if (!isError || syncing || syncAttempted.current || !clerkUser) return;
-    syncAttempted.current = true;
-    setSyncing(true);
-    (async () => {
-      try {
-        const token = await getToken();
-        await fetch("/api/auth/users/sync", {
-          method: "POST",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({
-            clerkId: clerkUser.id,
-            email: clerkUser.primaryEmailAddress?.emailAddress ?? "",
-            firstName: clerkUser.firstName ?? undefined,
-            lastName: clerkUser.lastName ?? undefined,
-          }),
-        });
-        await qc.invalidateQueries({ queryKey: getGetMeQueryKey() });
-      } catch {
-        // sync failed silently
-      } finally {
-        setSyncing(false);
-      }
-    })();
-  }, [isError, syncing, clerkUser, getToken, qc]);
-
-  if (isLoading || syncing) return <div className="flex h-screen items-center justify-center text-muted-foreground text-sm">Setting up your account…</div>;
-  if (!user) return <Redirect to="/portal" />;
-  if (user.role === 'SUPER_ADMIN') return <Redirect to="/admin" />;
-  if (user.role === 'TENANT_ADMIN' || user.role === 'STAFF') return <Redirect to="/dashboard" />;
-  return <Redirect to="/portal" />;
-}
-
-function HomeRedirect() {
-  return (
-    <>
-      <Show when="signed-in"><RoleRouter /></Show>
-      <Show when="signed-out"><LandingPage /></Show>
-    </>
-  );
-}
-
-function LandingPage() {
-  return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <nav className="border-b border-slate-800 px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
-        <div className="font-bold text-xl tracking-tight">LaunchFlow</div>
-        <div className="flex items-center gap-3">
-          <a href={`${basePath}/sign-in`} className="text-sm text-slate-400 hover:text-white transition-colors">Sign in</a>
-          <a href={`${basePath}/sign-up`} className="inline-flex h-9 items-center justify-center rounded-md bg-orange-500 px-4 text-sm font-medium text-white shadow hover:bg-orange-400 transition-colors">Get started</a>
-        </div>
-      </nav>
-      <div className="max-w-7xl mx-auto px-6 py-24 text-center space-y-8">
-        <div className="inline-flex items-center rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs text-orange-400 font-medium">
-          Built for home improvement professionals
-        </div>
-        <h1 className="text-5xl sm:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
-          The operating system<br />for home improvement<br />businesses
-        </h1>
-        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-          Websites, CRM, quotes, projects, customer portal — everything a modern trades business needs, white-labelled and ready to go.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-          <a href={`${basePath}/sign-up`} className="inline-flex h-12 items-center justify-center rounded-md bg-orange-500 px-8 text-sm font-semibold text-white shadow-lg hover:bg-orange-400 transition-colors">
-            Start free trial
-          </a>
-          <a href={`${basePath}/site/amo-rendering`} className="inline-flex h-12 items-center justify-center rounded-md border border-slate-700 bg-transparent px-8 text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors">
-            View demo site
-          </a>
-        </div>
-        <div className="pt-16 grid grid-cols-1 sm:grid-cols-3 gap-8 text-left">
-          {[
-            { title: "Public Website", desc: "Professional tenant websites with services, gallery, blog, and lead capture — all managed from your dashboard." },
-            { title: "CRM & Operations", desc: "Leads, quotes, projects, and customers in one place. Convert enquiries to invoices in seconds." },
-            { title: "Customer Portal", desc: "Give your customers a self-service portal to track their project, view quotes, and send messages." },
-          ].map(f => (
-            <div key={f.title} className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-3">
-              <h3 className="font-semibold text-white">{f.title}</h3>
-              <p className="text-sm text-slate-400 leading-relaxed">{f.desc}</p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Lazy-loaded zone components
-import { lazy, Suspense } from "react";
+// ---------------------------------------------------------------------------
+// Zone lazy imports
+// ---------------------------------------------------------------------------
 const DashboardApp = lazy(() => import("@/zones/dashboard/DashboardApp"));
 const PortalApp = lazy(() => import("@/zones/portal/PortalApp"));
 const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
@@ -279,14 +153,29 @@ function ZoneLoader() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// Role router — redirect after sign-in
+// ---------------------------------------------------------------------------
+function RoleRouter() {
+  const { data: user, isLoading } = useGetMe();
+  if (isLoading) return <div className="flex h-screen items-center justify-center text-slate-400 text-sm">Loading…</div>;
+  if (!user) return <Redirect to="/sign-in" />;
+  if (user.role === "SUPER_ADMIN") return <Redirect to="/admin" />;
+  if (user.role === "TENANT_ADMIN" || user.role === "STAFF") return <Redirect to="/dashboard" />;
+  return <Redirect to="/portal" />;
+}
+
+// ---------------------------------------------------------------------------
+// Domain-based tenant routing
+// ---------------------------------------------------------------------------
 function DomainRouteGuard({ children }: { children: React.ReactNode }) {
   const hostname = window.location.hostname;
   const isKnownHost =
-    hostname === 'localhost' ||
-    hostname === '127.0.0.1' ||
-    hostname.includes('.repl') ||
-    hostname.includes('.replit') ||
-    /^\d+\.\d+\.\d+\.\d+$/.test(hostname); // bare IP — never a tenant domain
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.includes(".repl") ||
+    hostname.includes(".replit") ||
+    /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 
   const { data, isLoading, isError } = useResolveTenantDomain(
     { host: hostname },
@@ -294,7 +183,6 @@ function DomainRouteGuard({ children }: { children: React.ReactNode }) {
   );
 
   if (!isKnownHost && isLoading) return <ZoneLoader />;
-
   const slug = (data as any)?.slug;
   if (!isKnownHost && !isError && slug) {
     return (
@@ -303,50 +191,72 @@ function DomainRouteGuard({ children }: { children: React.ReactNode }) {
       </Suspense>
     );
   }
-
   return <>{children}</>;
 }
 
-function ClerkProviderWithRoutes() {
-  const [, setLocation] = useLocation();
+// ---------------------------------------------------------------------------
+// Landing page
+// ---------------------------------------------------------------------------
+function LandingPage() {
+  const { isSignedIn } = useAuthCtx();
+  if (isSignedIn) return <RoleRouter />;
   return (
-    <ClerkProvider
-      publishableKey={clerkPubKey}
-      proxyUrl={clerkProxyUrl}
-      appearance={clerkAppearance}
-      signInUrl={`${basePath}/sign-in`}
-      signUpUrl={`${basePath}/sign-up`}
-      routerPush={(to) => setLocation(stripBase(to))}
-      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
-    >
-      <QueryClientProvider client={queryClient}>
-        <AuthTokenSetup />
-        <ClerkQueryClientCacheInvalidator />
-        <TooltipProvider>
-          <DomainRouteGuard>
-            <Suspense fallback={<ZoneLoader />}>
-              <Switch>
-                <Route path="/" component={HomeRedirect} />
-                <Route path="/sign-in/*?" component={SignInPage} />
-                <Route path="/sign-up/*?" component={SignUpPage} />
-                <Route path="/dashboard/*?" component={DashboardApp} />
-                <Route path="/portal/*?" component={PortalApp} />
-                <Route path="/admin/*?" component={AdminApp} />
-                <Route path="/site/:tenantSlug/*?" component={(_p: any) => <PublicSiteApp />} />
-                <Route component={NotFound} />
-              </Switch>
-            </Suspense>
-          </DomainRouteGuard>
-        </TooltipProvider>
-      </QueryClientProvider>
-    </ClerkProvider>
+    <div className="min-h-screen bg-slate-950 text-white">
+      <nav className="border-b border-slate-800 px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
+        <div className="font-bold text-xl tracking-tight">LaunchFlow</div>
+        <a href={`${basePath}/sign-in`} className="text-sm text-slate-400 hover:text-white transition-colors">Sign in</a>
+      </nav>
+      <div className="max-w-7xl mx-auto px-6 py-24 text-center space-y-8">
+        <div className="inline-flex items-center rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs text-orange-400 font-medium">
+          Built for home improvement professionals
+        </div>
+        <h1 className="text-5xl sm:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
+          The operating system<br />for home improvement<br />businesses
+        </h1>
+        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
+          Websites, CRM, quotes, projects, customer portal — everything a modern trades business needs.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+          <a href={`${basePath}/sign-in`} className="inline-flex h-12 items-center justify-center rounded-md bg-orange-500 px-8 text-sm font-semibold text-white shadow-lg hover:bg-orange-400 transition-colors">Sign in</a>
+          <a href={`${basePath}/site/amo-rendering`} className="inline-flex h-12 items-center justify-center rounded-md border border-slate-700 bg-transparent px-8 text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors">View demo site</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Root
+// ---------------------------------------------------------------------------
+function AppRoutes() {
+  const { isSignedIn } = useAuthCtx();
+  return (
+    <DomainRouteGuard>
+      <Suspense fallback={<ZoneLoader />}>
+        <Switch>
+          <Route path="/" component={LandingPage} />
+          <Route path="/sign-in" component={() => isSignedIn ? <RoleRouter /> : <LoginForm />} />
+          <Route path="/dashboard/*?" component={DashboardApp} />
+          <Route path="/portal/*?" component={PortalApp} />
+          <Route path="/admin/*?" component={AdminApp} />
+          <Route path="/site/:tenantSlug/*?" component={(_p: any) => <PublicSiteApp />} />
+          <Route component={NotFound} />
+        </Switch>
+      </Suspense>
+    </DomainRouteGuard>
   );
 }
 
 function App() {
   return (
     <WouterRouter base={basePath}>
-      <ClerkProviderWithRoutes />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <AppRoutes />
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
       <Toaster />
     </WouterRouter>
   );

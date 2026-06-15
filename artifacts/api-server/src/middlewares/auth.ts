@@ -1,12 +1,12 @@
 import { Request, Response, NextFunction } from "express";
-import { verifyToken } from "@clerk/backend";
+import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq, SQL } from "drizzle-orm";
 
 export interface AuthUser {
   id: number;
-  clerkId: string;
+  clerkId: string | null;
   email: string;
   role: string;
   tenantId: number | null;
@@ -20,6 +20,12 @@ declare global {
   }
 }
 
+const JWT_SECRET = process.env.SESSION_SECRET!;
+
+export function signAuthToken(userId: number): string {
+  return jwt.sign({ userId }, JWT_SECRET, { expiresIn: "30d" });
+}
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   try {
     const authHeader = req.headers.authorization;
@@ -28,12 +34,10 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return;
     }
     const token = authHeader.slice(7);
-    const payload = await verifyToken(token, { secretKey: process.env.CLERK_SECRET_KEY! });
-    const clerkId = payload.sub;
-
-    const users = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkId)).limit(1);
+    const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
+    const users = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId)).limit(1);
     if (!users.length) {
-      res.status(401).json({ error: "User not found. Please sync your account." });
+      res.status(401).json({ error: "User not found" });
       return;
     }
     req.authUser = users[0];
@@ -63,11 +67,6 @@ export function requireTenantAccess(req: Request, res: Response, next: NextFunct
   return requireRole("SUPER_ADMIN", "TENANT_ADMIN", "STAFF")(req, res, next);
 }
 
-/**
- * Returns a Drizzle where condition that filters by tenantId for regular users,
- * or undefined (no filter = all tenants) for SUPER_ADMIN.
- * Use: .where(tenantFilter(req, table.tenantId))
- */
 export function tenantFilter(req: Request, column: any): SQL | undefined {
   if (req.authUser?.role === "SUPER_ADMIN") return undefined;
   return eq(column, req.authUser?.tenantId ?? -1);

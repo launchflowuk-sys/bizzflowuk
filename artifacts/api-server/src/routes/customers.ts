@@ -53,6 +53,7 @@ router.delete("/customers/:id", requireTenantAccess, async (req, res) => {
 router.get("/portal/me", requireAuth, async (req, res) => {
   try {
     const clerkId = req.authUser!.clerkId;
+    if (!clerkId) { res.status(404).json({ error: "Customer not found" }); return; }
     const customer = await db.select().from(customersTable).where(eq(customersTable.clerkId, clerkId)).limit(1);
     if (!customer.length) { res.status(404).json({ error: "Customer not found" }); return; }
     const projects = await db.select().from(projectsTable).where(eq(projectsTable.customerId, customer[0].id));
@@ -64,6 +65,7 @@ router.get("/portal/me", requireAuth, async (req, res) => {
 router.get("/portal/messages", requireAuth, async (req, res) => {
   try {
     const clerkId = req.authUser!.clerkId;
+    if (!clerkId) { res.json([]); return; }
     const customer = await db.select().from(customersTable).where(eq(customersTable.clerkId, clerkId)).limit(1);
     if (!customer.length) { res.json([]); return; }
     const msgs = await db.select().from(portalMessagesTable)
@@ -76,6 +78,7 @@ router.get("/portal/messages", requireAuth, async (req, res) => {
 router.post("/portal/messages", requireAuth, async (req, res) => {
   try {
     const clerkId = req.authUser!.clerkId;
+    if (!clerkId) { res.status(404).json({ error: "Customer not found" }); return; }
     const customer = await db.select().from(customersTable).where(eq(customersTable.clerkId, clerkId)).limit(1);
     if (!customer.length) { res.status(404).json({ error: "Customer not found" }); return; }
     const msg = await db.insert(portalMessagesTable).values({

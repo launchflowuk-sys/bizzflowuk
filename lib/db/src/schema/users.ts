@@ -7,8 +7,9 @@ export const userRoleEnum = pgEnum("user_role", ["SUPER_ADMIN", "TENANT_ADMIN", 
 
 export const usersTable = pgTable("users", {
   id: serial("id").primaryKey(),
-  clerkId: text("clerk_id").notNull().unique(),
-  email: text("email").notNull(),
+  clerkId: text("clerk_id").unique(),
+  email: text("email").notNull().unique(),
+  passwordHash: text("password_hash"),
   firstName: text("first_name"),
   lastName: text("last_name"),
   role: userRoleEnum("role").notNull().default("CUSTOMER"),

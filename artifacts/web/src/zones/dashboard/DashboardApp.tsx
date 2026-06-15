@@ -1,5 +1,6 @@
-import { Switch, Route, useLocation, Link, useLocation as useWouterLocation } from "wouter";
-import { useUser, SignIn, UserButton } from "@clerk/react";
+import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
+import { useAuthCtx } from "@/lib/auth";
+
 import {
   useGetMe, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
   useListLeads, useGetLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
@@ -14,6 +15,15 @@ import {
 import { getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListQuoteItemsQueryKey, getListProjectUpdatesQueryKey } from "@workspace/api-client-react";
 import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+
+function SignOutButton() {
+  const { signOut } = useAuthCtx();
+  return (
+    <button onClick={signOut} className="w-full text-left px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+      Sign out
+    </button>
+  );
+}
 
 function Badge({ status }: { status: string }) {
   const colors: Record<string, string> = {
@@ -69,7 +79,7 @@ function Sidebar({ currentPath }: { currentPath: string }) {
         )}
       </nav>
       <div className="p-4 border-t border-slate-800">
-        <UserButton appearance={{ elements: { avatarBox: "w-7 h-7" } }} />
+        <SignOutButton />
       </div>
     </aside>
   );
@@ -895,10 +905,9 @@ function SettingsPage() {
 }
 
 export default function DashboardApp() {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn } = useAuthCtx();
   const [location] = useLocation();
-  if (!isLoaded) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
-  if (!isSignedIn) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><SignIn /></div>;
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
   return (
     <div className="flex min-h-screen bg-slate-50">
       <Sidebar currentPath={location} />

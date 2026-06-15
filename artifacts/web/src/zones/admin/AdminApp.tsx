@@ -1,9 +1,19 @@
-import { useUser, SignIn, UserButton } from "@clerk/react";
+import { useAuthCtx } from "@/lib/auth";
 import { useGetMe, useGetPlatformStats, useListTenants, useCreateTenant, useGetTenant, useUpdateTenant, useDeleteTenant, useSuspendTenant, useGetTenantStats, useListUsers, useUpdateUser } from "@workspace/api-client-react";
 import { useState } from "react";
-import { Switch, Route, Link, useLocation } from "wouter";
+import { Switch, Route, Link, useLocation, Redirect } from "wouter";
+
 import { useQueryClient } from "@tanstack/react-query";
 import { getListTenantsQueryKey, getListUsersQueryKey } from "@workspace/api-client-react";
+
+function SignOutButton() {
+  const { signOut } = useAuthCtx();
+  return (
+    <button onClick={signOut} className="w-full text-left px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+      Sign out
+    </button>
+  );
+}
 
 const ROLES = ["SUPER_ADMIN", "TENANT_ADMIN", "STAFF", "CUSTOMER"] as const;
 
@@ -26,7 +36,7 @@ function AdminSidebar({ currentPath }: { currentPath: string }) {
         ))}
       </nav>
       <div className="p-4 border-t border-slate-800">
-        <UserButton appearance={{ elements: { avatarBox: 'w-7 h-7' } }}/>
+        <SignOutButton />
       </div>
     </aside>
   );
@@ -359,11 +369,10 @@ function UserRow({ user, tenants, saving, onSave }: { user: any; tenants: any[];
 }
 
 export default function AdminApp() {
-  const { isSignedIn, isLoaded } = useUser();
+  const { isSignedIn } = useAuthCtx();
   const { data: me } = useGetMe();
   const [location] = useLocation();
-  if (!isLoaded) return <div className="flex h-screen items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"/></div>;
-  if (!isSignedIn) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><SignIn/></div>;
+  if (!isSignedIn) return <Redirect to="/sign-in" />;
   if (me && me.role !== 'SUPER_ADMIN') return <div className="flex h-screen items-center justify-center text-slate-500">Access denied. Super Admin required.</div>;
   return (
     <div className="flex min-h-screen bg-slate-50">
