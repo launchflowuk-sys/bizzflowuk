@@ -1,0 +1,13 @@
+
+PostgreSQL Database directory appears to contain a database; Skipping initialization
+
+2026-06-15 17:30:12.600 UTC [1] LOG:  starting PostgreSQL 16.14 on x86_64-pc-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+2026-06-15 17:30:12.600 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+2026-06-15 17:30:12.600 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+2026-06-15 17:30:12.602 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+2026-06-15 17:30:12.606 UTC [29] LOG:  database system was shut down at 2026-06-15 17:30:11 UTC
+2026-06-15 17:30:12.613 UTC [1] LOG:  database system is ready to accept connections
+2026-06-15 17:30:23.747 UTC [40] ERROR:  type "user_role" already exists
+2026-06-15 17:30:23.747 UTC [40] STATEMENT:  CREATE TYPE "public"."user_role" AS ENUM('SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER');
+2026-06-15 17:35:12.675 UTC [27] LOG:  checkpoint starting: time
+2026-06-15 17:35:12.682 UTC [27] LOG:  checkpoint complete: wrote 3 buffers (0.0%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.002 s, sync=0.001 s, total=0.007 s; sync files=2, longest=0.001 s, average=0.001 s; distance=0 kB, estimate=0 kB; lsn=0/1AC9440, redo lsn=0/1AC9408

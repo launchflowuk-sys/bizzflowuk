@@ -1,0 +1,52 @@
+==> LaunchFlow API — startup diagnostics
+    NODE_ENV:           production
+    PORT:               8080
+    DATABASE_URL set:   YES
+    node version:       v24.16.0
+==> Running database migrations...
+==> LaunchFlow database migration
+    Migrations folder: /app/lib/db/migrations
+==> WARN: Migration exited with code 1 — see output above
+==> Continuing startup (server will fail if schema is missing)
+==> Starting API server on port 8080...
+{"level":30,"time":1781544624160,"pid":1,"hostname":"5b4c13f93c61","port":8080,"msg":"Server listening"}
+{"level":30,"time":1781544628318,"pid":1,"hostname":"5b4c13f93c61","req":{"id":1,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":3,"msg":"request completed"}
+{"level":30,"time":1781544658418,"pid":1,"hostname":"5b4c13f93c61","req":{"id":2,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781544688546,"pid":1,"hostname":"5b4c13f93c61","req":{"id":3,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781544718668,"pid":1,"hostname":"5b4c13f93c61","req":{"id":4,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781544748773,"pid":1,"hostname":"5b4c13f93c61","req":{"id":5,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781544778884,"pid":1,"hostname":"5b4c13f93c61","req":{"id":6,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781544808983,"pid":1,"hostname":"5b4c13f93c61","req":{"id":7,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781544839113,"pid":1,"hostname":"5b4c13f93c61","req":{"id":8,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781544869223,"pid":1,"hostname":"5b4c13f93c61","req":{"id":9,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781544899326,"pid":1,"hostname":"5b4c13f93c61","req":{"id":10,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781544929448,"pid":1,"hostname":"5b4c13f93c61","req":{"id":11,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781544959573,"pid":1,"hostname":"5b4c13f93c61","req":{"id":12,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781544989678,"pid":1,"hostname":"5b4c13f93c61","req":{"id":13,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545019787,"pid":1,"hostname":"5b4c13f93c61","req":{"id":14,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545049925,"pid":1,"hostname":"5b4c13f93c61","req":{"id":15,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545080053,"pid":1,"hostname":"5b4c13f93c61","req":{"id":16,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545110172,"pid":1,"hostname":"5b4c13f93c61","req":{"id":17,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545140294,"pid":1,"hostname":"5b4c13f93c61","req":{"id":18,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545170403,"pid":1,"hostname":"5b4c13f93c61","req":{"id":19,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545200512,"pid":1,"hostname":"5b4c13f93c61","req":{"id":20,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545230590,"pid":1,"hostname":"5b4c13f93c61","req":{"id":21,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545260683,"pid":1,"hostname":"5b4c13f93c61","req":{"id":22,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545290754,"pid":1,"hostname":"5b4c13f93c61","req":{"id":23,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545320878,"pid":1,"hostname":"5b4c13f93c61","req":{"id":24,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+{"level":30,"time":1781545351000,"pid":1,"hostname":"5b4c13f93c61","req":{"id":25,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545381108,"pid":1,"hostname":"5b4c13f93c61","req":{"id":26,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545411235,"pid":1,"hostname":"5b4c13f93c61","req":{"id":27,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545441350,"pid":1,"hostname":"5b4c13f93c61","req":{"id":28,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545471457,"pid":1,"hostname":"5b4c13f93c61","req":{"id":29,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545501557,"pid":1,"hostname":"5b4c13f93c61","req":{"id":30,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545531675,"pid":1,"hostname":"5b4c13f93c61","req":{"id":31,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545561782,"pid":1,"hostname":"5b4c13f93c61","req":{"id":32,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545591904,"pid":1,"hostname":"5b4c13f93c61","req":{"id":33,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545622012,"pid":1,"hostname":"5b4c13f93c61","req":{"id":34,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781545652138,"pid":1,"hostname":"5b4c13f93c61","req":{"id":35,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545682266,"pid":1,"hostname":"5b4c13f93c61","req":{"id":36,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545712360,"pid":1,"hostname":"5b4c13f93c61","req":{"id":37,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781545742448,"pid":1,"hostname":"5b4c13f93c61","req":{"id":38,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+==> Migration failed: Failed query: CREATE TYPE "public"."user_role" AS ENUM('SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER');
+params: 
