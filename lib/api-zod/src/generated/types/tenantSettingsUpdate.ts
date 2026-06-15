@@ -45,4 +45,5 @@ export interface TenantSettingsUpdate {
   twilioAuthToken?: string;
   twilioFromNumber?: string;
   adminNotificationPhone?: string;
+  customDomain?: string;
 }

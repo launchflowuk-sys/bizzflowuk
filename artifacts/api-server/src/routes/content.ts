@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   servicesTable, areasTable, galleryImagesTable, beforeAfterTable,
-  reviewsTable, caseStudiesTable, faqsTable, teamMembersTable, tenantSettingsTable
+  reviewsTable, caseStudiesTable, faqsTable, teamMembersTable, tenantSettingsTable, tenantsTable
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
@@ -56,16 +56,19 @@ crud(caseStudiesTable, "case-studies");
 crud(faqsTable, "faqs");
 crud(teamMembersTable, "team");
 
-// Settings — single record per tenant
+// Settings — single record per tenant (also reads/writes customDomain from tenants table)
 router.get("/settings", requireTenantAccess, async (req, res) => {
   try {
-    const settings = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid(req))).limit(1);
-    if (!settings.length) {
+    const [tenantRows, settingsRows] = await Promise.all([
+      db.select({ customDomain: tenantsTable.customDomain }).from(tenantsTable).where(eq(tenantsTable.id, tid(req))).limit(1),
+      db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid(req))).limit(1),
+    ]);
+    let settings = settingsRows[0];
+    if (!settings) {
       const newSettings = await db.insert(tenantSettingsTable).values({ tenantId: tid(req) }).returning();
-      res.json(maskSecretsForAuth(newSettings[0]));
-      return;
+      settings = newSettings[0];
     }
-    res.json(maskSecretsForAuth(settings[0]));
+    res.json({ ...maskSecretsForAuth(settings), customDomain: tenantRows[0]?.customDomain ?? null });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -76,14 +79,21 @@ router.patch("/settings", requireTenantAccess, async (req, res) => {
     if (!body.smtpPass) delete body.smtpPass;
     if (!body.twilioAuthToken) delete body.twilioAuthToken;
 
-    const existing = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid(req))).limit(1);
-    if (!existing.length) {
-      const newSettings = await db.insert(tenantSettingsTable).values({ ...body, tenantId: tid(req) }).returning();
-      res.json(maskSecretsForAuth(newSettings[0]));
-      return;
+    // customDomain lives on tenantsTable — split it out
+    const { customDomain, ...settingsBody } = body;
+    if (customDomain !== undefined) {
+      await db.update(tenantsTable).set({ customDomain: customDomain || null }).where(eq(tenantsTable.id, tid(req)));
     }
-    const updated = await db.update(tenantSettingsTable).set(body).where(eq(tenantSettingsTable.tenantId, tid(req))).returning();
-    res.json(maskSecretsForAuth(updated[0]));
+
+    const existing = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid(req))).limit(1);
+    let updated;
+    if (!existing.length) {
+      updated = (await db.insert(tenantSettingsTable).values({ ...settingsBody, tenantId: tid(req) }).returning())[0];
+    } else {
+      updated = (await db.update(tenantSettingsTable).set(settingsBody).where(eq(tenantSettingsTable.tenantId, tid(req))).returning())[0];
+    }
+    const tenantRows = await db.select({ customDomain: tenantsTable.customDomain }).from(tenantsTable).where(eq(tenantsTable.id, tid(req))).limit(1);
+    res.json({ ...maskSecretsForAuth(updated), customDomain: tenantRows[0]?.customDomain ?? null });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

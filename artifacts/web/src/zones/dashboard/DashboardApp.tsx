@@ -787,6 +787,10 @@ function SettingsPage() {
       <h1 className="text-2xl font-bold text-slate-900 mb-6">Settings</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
+          <h2 className="font-semibold text-slate-900">Custom Domain</h2>
+          {field("customDomain", "Your Domain", "text", "e.g. www.amorendering.co.uk — point a CNAME DNS record on this domain to your BizFlow server, then save here.")}
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-4">
           <h2 className="font-semibold text-slate-900">Branding</h2>
           {field("primaryColor", "Primary Colour", "color")}
           {field("logoUrl", "Logo URL")}

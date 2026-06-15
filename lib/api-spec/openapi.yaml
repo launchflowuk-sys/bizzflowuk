@@ -2798,6 +2798,8 @@ components:
           type: ["string", "null"]
         adminNotificationPhone:
           type: ["string", "null"]
+        customDomain:
+          type: ["string", "null"]
 
     TenantSettingsUpdate:
       type: object
@@ -2877,6 +2879,8 @@ components:
         twilioFromNumber:
           type: string
         adminNotificationPhone:
+          type: string
+        customDomain:
           type: string
 
     NotificationTestResult:

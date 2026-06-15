@@ -81,4 +81,6 @@ export interface TenantSettings {
   twilioFromNumber?: string | null;
   /** @nullable */
   adminNotificationPhone?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
 }

@@ -338,7 +338,8 @@ export const GetPublicSiteResponse = zod.object({
   "smtpFrom": zod.string().nullish(),
   "twilioAccountSid": zod.string().nullish(),
   "twilioFromNumber": zod.string().nullish(),
-  "adminNotificationPhone": zod.string().nullish()
+  "adminNotificationPhone": zod.string().nullish(),
+  "customDomain": zod.string().nullish()
 }).optional(),
   "featuredServices": zod.array(zod.object({
   "id": zod.number(),
@@ -2766,7 +2767,8 @@ export const GetSettingsResponse = zod.object({
   "smtpFrom": zod.string().nullish(),
   "twilioAccountSid": zod.string().nullish(),
   "twilioFromNumber": zod.string().nullish(),
-  "adminNotificationPhone": zod.string().nullish()
+  "adminNotificationPhone": zod.string().nullish(),
+  "customDomain": zod.string().nullish()
 })
 
 
@@ -2811,7 +2813,8 @@ export const UpdateSettingsBody = zod.object({
   "twilioAccountSid": zod.string().optional(),
   "twilioAuthToken": zod.string().optional(),
   "twilioFromNumber": zod.string().optional(),
-  "adminNotificationPhone": zod.string().optional()
+  "adminNotificationPhone": zod.string().optional(),
+  "customDomain": zod.string().optional()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -2852,7 +2855,8 @@ export const UpdateSettingsResponse = zod.object({
   "smtpFrom": zod.string().nullish(),
   "twilioAccountSid": zod.string().nullish(),
   "twilioFromNumber": zod.string().nullish(),
-  "adminNotificationPhone": zod.string().nullish()
+  "adminNotificationPhone": zod.string().nullish(),
+  "customDomain": zod.string().nullish()
 })
 
 

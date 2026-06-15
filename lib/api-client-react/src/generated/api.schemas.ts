@@ -240,6 +240,8 @@ export interface TenantSettings {
   twilioFromNumber?: string | null;
   /** @nullable */
   adminNotificationPhone?: string | null;
+  /** @nullable */
+  customDomain?: string | null;
 }
 
 export interface Service {
@@ -403,6 +405,7 @@ export interface TenantSettingsUpdate {
   twilioAuthToken?: string;
   twilioFromNumber?: string;
   adminNotificationPhone?: string;
+  customDomain?: string;
 }
 
 export interface NotificationTestResult {
