@@ -1,0 +1,32 @@
+==> LaunchFlow API — startup diagnostics
+    NODE_ENV:           production
+    PORT:               8080
+    DATABASE_URL set:   YES
+    drizzle-kit path:   /usr/local/bin/drizzle-kit
+    node version:       v24.16.0
+==> Running database migrations...
+==> LaunchFlow database migration
+    Schema: /app/lib/db/src/schema
+Reading config file '/app/lib/db/drizzle.config.ts'
+Error please install required packages: 'drizzle-orm'
+==> WARN: Migration exited with code 1 — see output above
+==> Continuing startup (server will fail if schema is missing)
+==> Starting API server on port 8080...
+{"level":30,"time":1781537088566,"pid":1,"hostname":"75e1a88e2d95","port":8080,"msg":"Server listening"}
+{"level":30,"time":1781537093085,"pid":1,"hostname":"75e1a88e2d95","req":{"id":1,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":5,"msg":"request completed"}
+{"level":30,"time":1781537123214,"pid":1,"hostname":"75e1a88e2d95","req":{"id":2,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537153319,"pid":1,"hostname":"75e1a88e2d95","req":{"id":3,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537183443,"pid":1,"hostname":"75e1a88e2d95","req":{"id":4,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781537213522,"pid":1,"hostname":"75e1a88e2d95","req":{"id":5,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537243613,"pid":1,"hostname":"75e1a88e2d95","req":{"id":6,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537273714,"pid":1,"hostname":"75e1a88e2d95","req":{"id":7,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":2,"msg":"request completed"}
+{"level":30,"time":1781537303827,"pid":1,"hostname":"75e1a88e2d95","req":{"id":8,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537333914,"pid":1,"hostname":"75e1a88e2d95","req":{"id":9,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537364040,"pid":1,"hostname":"75e1a88e2d95","req":{"id":10,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537394178,"pid":1,"hostname":"75e1a88e2d95","req":{"id":11,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537424287,"pid":1,"hostname":"75e1a88e2d95","req":{"id":12,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537454374,"pid":1,"hostname":"75e1a88e2d95","req":{"id":13,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
+{"level":30,"time":1781537458711,"pid":1,"hostname":"75e1a88e2d95","req":{"id":14,"method":"GET","url":"/"},"res":{"statusCode":404},"responseTime":2,"msg":"request completed"}
+{"level":30,"time":1781537484497,"pid":1,"hostname":"75e1a88e2d95","req":{"id":15,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537514593,"pid":1,"hostname":"75e1a88e2d95","req":{"id":16,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":1,"msg":"request completed"}
+{"level":30,"time":1781537544700,"pid":1,"hostname":"75e1a88e2d95","req":{"id":17,"method":"GET","url":"/api/healthz"},"res":{"statusCode":200},"responseTime":0,"msg":"request completed"}
