@@ -1298,7 +1298,7 @@ function SettingsPage() {
                 {[
                   { emailKey: "notifyLeadNewEmail", smsKey: "notifyLeadNewSms", label: "New lead submitted", recipient: "Admin alert + customer acknowledgement" },
                   { emailKey: "notifySurveyBookedEmail", smsKey: "notifySurveyBookedSms", label: "Survey booked", recipient: "Customer" },
-                  { emailKey: "notifyQuoteSentEmail", smsKey: "notifyQuoteSentSms", label: "Quote sent", recipient: "Customer + admin alert" },
+                  { emailKey: "notifyQuoteSentEmail", smsKey: "notifyQuoteSentSms", label: "Quote sent", recipient: "Customer" },
                   { emailKey: "notifyQuoteAcceptedEmail", smsKey: "notifyQuoteAcceptedSms", label: "Quote accepted", recipient: "Admin alert" },
                   { emailKey: "notifyLeadWonEmail", smsKey: "notifyLeadWonSms", label: "Lead won / project confirmed", recipient: "Customer" },
                   { emailKey: "notifyProjectInProgressEmail", smsKey: "notifyProjectInProgressSms", label: "Project started (In Progress)", recipient: "Customer" },
