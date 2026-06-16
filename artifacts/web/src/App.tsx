@@ -170,11 +170,13 @@ function RoleRouter() {
 // ---------------------------------------------------------------------------
 function DomainRouteGuard({ children }: { children: React.ReactNode }) {
   const hostname = window.location.hostname;
+  const platformDomain = import.meta.env.VITE_PLATFORM_DOMAIN || "";
   const isKnownHost =
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
     hostname.includes(".repl") ||
     hostname.includes(".replit") ||
+    (platformDomain !== "" && hostname === platformDomain) ||
     /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 
   const { data, isLoading, isError } = useResolveTenantDomain(
