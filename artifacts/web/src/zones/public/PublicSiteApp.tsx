@@ -264,7 +264,9 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
   const linkColor = isOpaque ? TEXT : "#ffffff";
   const burgerColor = isOpaque ? TEXT : "#ffffff";
   const burgerHover = isOpaque ? "hover:bg-slate-100" : "hover:bg-white/10";
-  const logoFilter = isOpaque ? undefined : "brightness(0) invert(1)";
+  const logoSrc = isOpaque
+    ? (settings?.logoUrl || "/amo-logo-dark.png")
+    : "/amo-logo-icon.png";
 
   return (
     <nav className={navClass}>
@@ -272,10 +274,9 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
         {/* Left — logo */}
         <a href={siteBase || '/'} className="flex-shrink-0">
           <img
-            src={settings?.logoUrl || "/amo-logo-dark.png"}
+            src={logoSrc}
             alt={tenant?.name || "AMO Rendering"}
             className="h-14 sm:h-16 w-auto object-contain transition-all duration-300"
-            style={logoFilter ? { filter: logoFilter } : undefined}
           />
         </a>
         {/* Centre — nav links (desktop 1280px+) */}
