@@ -1280,6 +1280,49 @@ function SettingsPage() {
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Notification Preferences</h2>
+            <p className="text-xs text-slate-500 mt-1">Choose which events trigger email and SMS alerts.</p>
+          </div>
+          {[
+            { key: "notifyLeadNew", label: "New lead submitted" },
+            { key: "notifyLeadStatusChange", label: "Lead status changes" },
+            { key: "notifyQuoteStatusChange", label: "Quote status changes" },
+            { key: "notifyProjectStatusChange", label: "Project status changes" },
+            { key: "notifyProjectComplete", label: "Project marked as completed" },
+          ].map(({ key, label }) => (
+            <div key={key} className="flex items-center gap-3">
+              <input type="checkbox" id={key} className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={form[key] !== false} onChange={e => setForm({ ...form, [key]: e.target.checked })} />
+              <label htmlFor={key} className="text-sm text-slate-700">{label}</label>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Review Request Automation</h2>
+            <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review when their project is completed.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <input type="checkbox" id="reviewRequestEnabled" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
+            <label htmlFor="reviewRequestEnabled" className="text-sm font-medium text-slate-700">Enable automatic review requests</label>
+          </div>
+          {form.reviewRequestEnabled && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Send review request after (days)</label>
+                <input type="number" min={0} max={30} className="w-32 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.reviewRequestDelayDays ?? 3} onChange={e => setForm({ ...form, reviewRequestDelayDays: Number(e.target.value) })} />
+                <p className="text-xs text-slate-400 mt-1">Days after project completion to send the message</p>
+              </div>
+              {field("reviewPlatformUrl", "Review Platform Link", "url", "e.g. your Google Business Profile review link or Trustpilot page")}
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Custom Message (optional)</label>
+                <textarea rows={5} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Leave blank to use the default message. Use {customerName}, {reviewLink} as placeholders." value={form.reviewRequestTemplate || ""} onChange={e => setForm({ ...form, reviewRequestTemplate: e.target.value })} />
+                <p className="text-xs text-slate-400 mt-1">If blank, a professional default message is used.</p>
+              </div>
+            </>
+          )}
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-slate-900">Social Media</h2>
           {field("facebookUrl", "Facebook URL")}
           {field("instagramUrl", "Instagram URL")}

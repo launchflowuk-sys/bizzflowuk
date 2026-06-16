@@ -50,6 +50,17 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   twilioAuthToken: text("twilio_auth_token"),
   twilioFromNumber: text("twilio_from_number"),
   adminNotificationPhone: text("admin_notification_phone"),
+  // Notification preferences
+  notifyLeadNew: boolean("notify_lead_new").default(true),
+  notifyLeadStatusChange: boolean("notify_lead_status_change").default(true),
+  notifyQuoteStatusChange: boolean("notify_quote_status_change").default(true),
+  notifyProjectStatusChange: boolean("notify_project_status_change").default(true),
+  notifyProjectComplete: boolean("notify_project_complete").default(true),
+  // Review request settings
+  reviewRequestEnabled: boolean("review_request_enabled").default(false),
+  reviewRequestDelayDays: integer("review_request_delay_days").default(3),
+  reviewRequestTemplate: text("review_request_template"),
+  reviewPlatformUrl: text("review_platform_url"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

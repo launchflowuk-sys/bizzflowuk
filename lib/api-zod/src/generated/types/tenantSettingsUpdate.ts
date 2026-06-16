@@ -46,4 +46,13 @@ export interface TenantSettingsUpdate {
   twilioFromNumber?: string;
   adminNotificationPhone?: string;
   customDomain?: string;
+  notifyLeadNew?: boolean;
+  notifyLeadStatusChange?: boolean;
+  notifyQuoteStatusChange?: boolean;
+  notifyProjectStatusChange?: boolean;
+  notifyProjectComplete?: boolean;
+  reviewRequestEnabled?: boolean;
+  reviewRequestDelayDays?: number;
+  reviewRequestTemplate?: string;
+  reviewPlatformUrl?: string;
 }

@@ -339,7 +339,16 @@ export const GetPublicSiteResponse = zod.object({
   "twilioAccountSid": zod.string().nullish(),
   "twilioFromNumber": zod.string().nullish(),
   "adminNotificationPhone": zod.string().nullish(),
-  "customDomain": zod.string().nullish()
+  "customDomain": zod.string().nullish(),
+  "notifyLeadNew": zod.boolean().nullish(),
+  "notifyLeadStatusChange": zod.boolean().nullish(),
+  "notifyQuoteStatusChange": zod.boolean().nullish(),
+  "notifyProjectStatusChange": zod.boolean().nullish(),
+  "notifyProjectComplete": zod.boolean().nullish(),
+  "reviewRequestEnabled": zod.boolean().nullish(),
+  "reviewRequestDelayDays": zod.number().nullish(),
+  "reviewRequestTemplate": zod.string().nullish(),
+  "reviewPlatformUrl": zod.string().nullish()
 }).optional(),
   "featuredServices": zod.array(zod.object({
   "id": zod.number(),
@@ -2768,7 +2777,16 @@ export const GetSettingsResponse = zod.object({
   "twilioAccountSid": zod.string().nullish(),
   "twilioFromNumber": zod.string().nullish(),
   "adminNotificationPhone": zod.string().nullish(),
-  "customDomain": zod.string().nullish()
+  "customDomain": zod.string().nullish(),
+  "notifyLeadNew": zod.boolean().nullish(),
+  "notifyLeadStatusChange": zod.boolean().nullish(),
+  "notifyQuoteStatusChange": zod.boolean().nullish(),
+  "notifyProjectStatusChange": zod.boolean().nullish(),
+  "notifyProjectComplete": zod.boolean().nullish(),
+  "reviewRequestEnabled": zod.boolean().nullish(),
+  "reviewRequestDelayDays": zod.number().nullish(),
+  "reviewRequestTemplate": zod.string().nullish(),
+  "reviewPlatformUrl": zod.string().nullish()
 })
 
 
@@ -2814,7 +2832,16 @@ export const UpdateSettingsBody = zod.object({
   "twilioAuthToken": zod.string().optional(),
   "twilioFromNumber": zod.string().optional(),
   "adminNotificationPhone": zod.string().optional(),
-  "customDomain": zod.string().optional()
+  "customDomain": zod.string().optional(),
+  "notifyLeadNew": zod.boolean().optional(),
+  "notifyLeadStatusChange": zod.boolean().optional(),
+  "notifyQuoteStatusChange": zod.boolean().optional(),
+  "notifyProjectStatusChange": zod.boolean().optional(),
+  "notifyProjectComplete": zod.boolean().optional(),
+  "reviewRequestEnabled": zod.boolean().optional(),
+  "reviewRequestDelayDays": zod.number().optional(),
+  "reviewRequestTemplate": zod.string().optional(),
+  "reviewPlatformUrl": zod.string().optional()
 })
 
 export const UpdateSettingsResponse = zod.object({
@@ -2856,7 +2883,16 @@ export const UpdateSettingsResponse = zod.object({
   "twilioAccountSid": zod.string().nullish(),
   "twilioFromNumber": zod.string().nullish(),
   "adminNotificationPhone": zod.string().nullish(),
-  "customDomain": zod.string().nullish()
+  "customDomain": zod.string().nullish(),
+  "notifyLeadNew": zod.boolean().nullish(),
+  "notifyLeadStatusChange": zod.boolean().nullish(),
+  "notifyQuoteStatusChange": zod.boolean().nullish(),
+  "notifyProjectStatusChange": zod.boolean().nullish(),
+  "notifyProjectComplete": zod.boolean().nullish(),
+  "reviewRequestEnabled": zod.boolean().nullish(),
+  "reviewRequestDelayDays": zod.number().nullish(),
+  "reviewRequestTemplate": zod.string().nullish(),
+  "reviewPlatformUrl": zod.string().nullish()
 })
 
 

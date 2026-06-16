@@ -83,4 +83,22 @@ export interface TenantSettings {
   adminNotificationPhone?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  /** @nullable */
+  notifyLeadNew?: boolean | null;
+  /** @nullable */
+  notifyLeadStatusChange?: boolean | null;
+  /** @nullable */
+  notifyQuoteStatusChange?: boolean | null;
+  /** @nullable */
+  notifyProjectStatusChange?: boolean | null;
+  /** @nullable */
+  notifyProjectComplete?: boolean | null;
+  /** @nullable */
+  reviewRequestEnabled?: boolean | null;
+  /** @nullable */
+  reviewRequestDelayDays?: number | null;
+  /** @nullable */
+  reviewRequestTemplate?: string | null;
+  /** @nullable */
+  reviewPlatformUrl?: string | null;
 }

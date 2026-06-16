@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { leadsTable, leadNotesTable, quotesTable, projectsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
+import { fireNotification } from "../lib/notifications";
 
 const router = Router();
 
@@ -23,6 +24,13 @@ router.post("/leads", requireTenantAccess, async (req, res) => {
   try {
     const lead = await db.insert(leadsTable).values({ ...req.body, tenantId: resolvedTenantId(req) }).returning();
     res.status(201).json(lead[0]);
+    fireNotification({
+      tenantId: lead[0].tenantId,
+      event: "lead_new",
+      leadName: `${lead[0].firstName ?? ""} ${lead[0].lastName ?? ""}`.trim(),
+      customerEmail: lead[0].email ?? undefined,
+      customerPhone: lead[0].phone ?? undefined,
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -38,11 +46,25 @@ router.get("/leads/:id", requireTenantAccess, async (req, res) => {
 
 router.patch("/leads/:id", requireTenantAccess, async (req, res) => {
   try {
+    const before = await db.select().from(leadsTable)
+      .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
+      .limit(1);
     const l = await db.update(leadsTable).set(req.body)
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .returning();
     if (!l.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(l[0]);
+    if (req.body.status && before[0]?.status !== req.body.status) {
+      fireNotification({
+        tenantId: l[0].tenantId,
+        event: "lead_status_change",
+        leadName: `${l[0].firstName ?? ""} ${l[0].lastName ?? ""}`.trim(),
+        customerEmail: l[0].email ?? undefined,
+        customerPhone: l[0].phone ?? undefined,
+        oldStatus: before[0]?.status ?? undefined,
+        newStatus: req.body.status,
+      });
+    }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -76,7 +98,6 @@ router.post("/leads/:id/notes", requireTenantAccess, async (req, res) => {
 
 router.post("/leads/:id/convert-to-quote", requireTenantAccess, async (req, res) => {
   try {
-    const tid = resolvedTenantId(req);
     const lead = await db.select().from(leadsTable)
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .limit(1);
@@ -85,6 +106,15 @@ router.post("/leads/:id/convert-to-quote", requireTenantAccess, async (req, res)
     const quote = await db.insert(quotesTable).values({ tenantId: lead[0].tenantId, reference: ref, leadId: lead[0].id }).returning();
     await db.update(leadsTable).set({ status: "Quote Sent" }).where(eq(leadsTable.id, lead[0].id));
     res.status(201).json(quote[0]);
+    fireNotification({
+      tenantId: lead[0].tenantId,
+      event: "lead_status_change",
+      leadName: `${lead[0].firstName ?? ""} ${lead[0].lastName ?? ""}`.trim(),
+      customerEmail: lead[0].email ?? undefined,
+      customerPhone: lead[0].phone ?? undefined,
+      oldStatus: lead[0].status ?? undefined,
+      newStatus: "Quote Sent",
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -102,6 +132,15 @@ router.post("/leads/:id/convert-to-project", requireTenantAccess, async (req, re
     }).returning();
     await db.update(leadsTable).set({ status: "Won" }).where(eq(leadsTable.id, lead[0].id));
     res.status(201).json(project[0]);
+    fireNotification({
+      tenantId: lead[0].tenantId,
+      event: "lead_status_change",
+      leadName: `${lead[0].firstName ?? ""} ${lead[0].lastName ?? ""}`.trim(),
+      customerEmail: lead[0].email ?? undefined,
+      customerPhone: lead[0].phone ?? undefined,
+      oldStatus: lead[0].status ?? undefined,
+      newStatus: "Won",
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

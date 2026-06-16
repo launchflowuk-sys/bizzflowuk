@@ -2800,6 +2800,24 @@ components:
           type: ["string", "null"]
         customDomain:
           type: ["string", "null"]
+        notifyLeadNew:
+          type: ["boolean", "null"]
+        notifyLeadStatusChange:
+          type: ["boolean", "null"]
+        notifyQuoteStatusChange:
+          type: ["boolean", "null"]
+        notifyProjectStatusChange:
+          type: ["boolean", "null"]
+        notifyProjectComplete:
+          type: ["boolean", "null"]
+        reviewRequestEnabled:
+          type: ["boolean", "null"]
+        reviewRequestDelayDays:
+          type: ["integer", "null"]
+        reviewRequestTemplate:
+          type: ["string", "null"]
+        reviewPlatformUrl:
+          type: ["string", "null"]
 
     TenantSettingsUpdate:
       type: object
@@ -2881,6 +2899,24 @@ components:
         adminNotificationPhone:
           type: string
         customDomain:
+          type: string
+        notifyLeadNew:
+          type: boolean
+        notifyLeadStatusChange:
+          type: boolean
+        notifyQuoteStatusChange:
+          type: boolean
+        notifyProjectStatusChange:
+          type: boolean
+        notifyProjectComplete:
+          type: boolean
+        reviewRequestEnabled:
+          type: boolean
+        reviewRequestDelayDays:
+          type: integer
+        reviewRequestTemplate:
+          type: string
+        reviewPlatformUrl:
           type: string
 
     NotificationTestResult:

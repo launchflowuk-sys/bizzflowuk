@@ -242,6 +242,24 @@ export interface TenantSettings {
   adminNotificationPhone?: string | null;
   /** @nullable */
   customDomain?: string | null;
+  /** @nullable */
+  notifyLeadNew?: boolean | null;
+  /** @nullable */
+  notifyLeadStatusChange?: boolean | null;
+  /** @nullable */
+  notifyQuoteStatusChange?: boolean | null;
+  /** @nullable */
+  notifyProjectStatusChange?: boolean | null;
+  /** @nullable */
+  notifyProjectComplete?: boolean | null;
+  /** @nullable */
+  reviewRequestEnabled?: boolean | null;
+  /** @nullable */
+  reviewRequestDelayDays?: number | null;
+  /** @nullable */
+  reviewRequestTemplate?: string | null;
+  /** @nullable */
+  reviewPlatformUrl?: string | null;
 }
 
 export interface Service {
@@ -406,6 +424,15 @@ export interface TenantSettingsUpdate {
   twilioFromNumber?: string;
   adminNotificationPhone?: string;
   customDomain?: string;
+  notifyLeadNew?: boolean;
+  notifyLeadStatusChange?: boolean;
+  notifyQuoteStatusChange?: boolean;
+  notifyProjectStatusChange?: boolean;
+  notifyProjectComplete?: boolean;
+  reviewRequestEnabled?: boolean;
+  reviewRequestDelayDays?: number;
+  reviewRequestTemplate?: string;
+  reviewPlatformUrl?: string;
 }
 
 export interface NotificationTestResult {

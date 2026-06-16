@@ -23,6 +23,7 @@ export const projectsTable = pgTable("projects", {
   completedAt: timestamp("completed_at", { withTimezone: true }),
   photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
   warrantyInfo: text("warranty_info"),
+  reviewRequestSentAt: timestamp("review_request_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });

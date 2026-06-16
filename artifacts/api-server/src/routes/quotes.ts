@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { quotesTable, quoteItemsTable, projectsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
+import { fireNotification } from "../lib/notifications";
 
 const router = Router();
 
@@ -35,11 +36,23 @@ router.get("/quotes/:id", requireTenantAccess, async (req, res) => {
 
 router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
   try {
+    const before = await db.select().from(quotesTable)
+      .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
+      .limit(1);
     const q = await db.update(quotesTable).set(req.body)
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
       .returning();
     if (!q.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(q[0]);
+    if (req.body.status && before[0]?.status !== req.body.status) {
+      fireNotification({
+        tenantId: q[0].tenantId,
+        event: "quote_status_change",
+        reference: q[0].reference,
+        oldStatus: before[0]?.status ?? undefined,
+        newStatus: req.body.status,
+      });
+    }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -65,6 +78,13 @@ router.post("/quotes/:id/convert-to-project", requireTenantAccess, async (req, r
     }).returning();
     await db.update(quotesTable).set({ status: "Accepted" }).where(eq(quotesTable.id, q[0].id));
     res.status(201).json(project[0]);
+    fireNotification({
+      tenantId: q[0].tenantId,
+      event: "quote_status_change",
+      reference: q[0].reference,
+      oldStatus: q[0].status ?? undefined,
+      newStatus: "Accepted",
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
