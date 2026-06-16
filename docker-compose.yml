@@ -1,10 +1,5 @@
 services:
 
-  # ---------------------------------------------------------------------------
-  # API server (Express + Drizzle)
-  # DATABASE_URL is injected by Coolify — use the EXTERNAL (public) DB URL,
-  # not the internal hostname, since managed DBs run on a separate network.
-  # ---------------------------------------------------------------------------
   api:
     build:
       context: .
@@ -18,19 +13,9 @@ services:
       DEFAULT_OBJECT_STORAGE_BUCKET_ID: ${DEFAULT_OBJECT_STORAGE_BUCKET_ID:-}
       PRIVATE_OBJECT_DIR: ${PRIVATE_OBJECT_DIR:-}
       PUBLIC_OBJECT_SEARCH_PATHS: ${PUBLIC_OBJECT_SEARCH_PATHS:-}
-    healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:8080/api/healthz',(r)=>r.statusCode===200?process.exit(0):process.exit(1)).on('error',()=>process.exit(1))"]
-      interval: 30s
-      timeout: 5s
-      start_period: 60s
-      retries: 5
     networks:
       - app-net
 
-  # ---------------------------------------------------------------------------
-  # Web frontend (Vite static build served by nginx)
-  # SERVICE_FQDN_WEB_80 is a Coolify magic variable that assigns the domain.
-  # ---------------------------------------------------------------------------
   web:
     build:
       context: .
@@ -43,8 +28,7 @@ services:
       API_UPSTREAM: api:8080
       SERVICE_FQDN_WEB_80:
     depends_on:
-      api:
-        condition: service_healthy
+      - api
     networks:
       - app-net
 
