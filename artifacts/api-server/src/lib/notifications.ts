@@ -148,7 +148,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
         break;
       }
 
-      // ── quote_sent: customer notification + admin alert ───────────────────
+      // ── quote_sent: customer-only notification ────────────────────────────
       case "quote_sent": {
         if (doCustomerEmail) {
           sendEmail(buildQuoteSentCustomerEmail({
@@ -163,18 +163,6 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
         if (doCustomerSms) {
           sendSms(ctx.customerPhone!, `Hi ${firstName}, your quote${ctx.reference ? ` (${ctx.reference})` : ""} from ${tenant.name} is ready. Call ${tenantPhone} for questions.`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] quote_sent customer SMS failed"));
-        }
-        if (doAdminEmail) {
-          sendEmail({
-            to: adminEmail!,
-            subject: `Quote Sent — ${ctx.reference || fullName}`,
-            html: `<h2>Quote Sent</h2><p>A quote${ctx.reference ? ` (<strong>${ctx.reference}</strong>)` : ""} has been sent to ${fullName}.</p>`,
-            text: `Quote${ctx.reference ? ` ${ctx.reference}` : ""} sent to ${fullName}.`,
-          }, smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent admin email failed"));
-        }
-        if (doAdminSms) {
-          sendSms(adminPhone!, `Quote${ctx.reference ? ` ${ctx.reference}` : ""} sent to ${fullName}`, smsCreds!)
-            .catch(e => logger.error({ err: e }, "[notify] quote_sent admin SMS failed"));
         }
         break;
       }

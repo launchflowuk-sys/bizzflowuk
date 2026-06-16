@@ -64,20 +64,25 @@ async function runReviewRequests() {
       const smtp = buildSmtpConfig(settings as any);
       const smsCreds = buildSmsCreds(settings as any);
 
-      let sent = false;
+      let sentEmail = false;
+      let sentSms = false;
 
       if ((channel === "email" || channel === "both") && customerEmail && smtp) {
-        await sendEmail(
-          buildReviewRequestEmail({
-            tenantName: tenant.name,
-            firstName: customerFirstName,
-            reviewUrl,
-            customTemplate: settings.reviewRequestTemplate ?? undefined,
-            to: customerEmail,
-          }),
-          smtp
-        ).catch(e => logger.error({ err: e, projectId: project.id }, "[review-scheduler] email send failed"));
-        sent = true;
+        try {
+          await sendEmail(
+            buildReviewRequestEmail({
+              tenantName: tenant.name,
+              firstName: customerFirstName,
+              reviewUrl,
+              customTemplate: settings.reviewRequestTemplate ?? undefined,
+              to: customerEmail,
+            }),
+            smtp
+          );
+          sentEmail = true;
+        } catch (e) {
+          logger.error({ err: e, projectId: project.id }, "[review-scheduler] email send failed");
+        }
       }
 
       if ((channel === "sms" || channel === "both") && customerPhone && smsCreds) {
@@ -88,12 +93,22 @@ async function runReviewRequests() {
               .replace(/\{reviewUrl\}/g, reviewUrl)
               .substring(0, 160)
           : `Hi ${name}, we'd love your feedback on your recent project with ${tenant.name}. Leave a review: ${reviewUrl}`;
-        await sendSms(customerPhone, smsBody, smsCreds)
-          .catch(e => logger.error({ err: e, projectId: project.id }, "[review-scheduler] SMS send failed"));
-        sent = true;
+        try {
+          await sendSms(customerPhone, smsBody, smsCreds);
+          sentSms = true;
+        } catch (e) {
+          logger.error({ err: e, projectId: project.id }, "[review-scheduler] SMS send failed");
+        }
       }
 
-      if (sent) {
+      // Only stamp reviewRequestSentAt if at least one channel delivered successfully
+      const wantEmail = channel === "email" || channel === "both";
+      const wantSms = channel === "sms" || channel === "both";
+      const emailOk = !wantEmail || !customerEmail || !smtp || sentEmail;
+      const smsOk = !wantSms || !customerPhone || !smsCreds || sentSms;
+      const allDelivered = emailOk && smsOk && (sentEmail || sentSms);
+
+      if (allDelivered) {
         await db.update(projectsTable)
           .set({ reviewRequestSentAt: now })
           .where(eq(projectsTable.id, project.id));
