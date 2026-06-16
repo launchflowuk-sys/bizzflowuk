@@ -1064,7 +1064,10 @@ function VisualiserPage() {
   const rows = data as any[] || [];
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Visualiser Requests</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Visualiser Requests</h1>
+        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+      </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
           {!rows.length ? <div className="p-8 text-center text-slate-400">No visualiser requests yet</div> : (
@@ -1078,8 +1081,12 @@ function VisualiserPage() {
                       {item.status && <Badge status={item.status} />}
                     </div>
                   </div>
-                  <div className="text-xs text-slate-400 flex-shrink-0">
+                  <div className="text-xs text-slate-400 flex-shrink-0 mr-1">
                     {item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-GB") : ""}
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <CmsStubBtn label="Edit" onClick={comingSoon} />
+                    <CmsStubBtn label="Delete" onClick={comingSoon} />
                   </div>
                 </div>
               ))}
@@ -1115,6 +1122,7 @@ function TeamPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <CmsStubBtn label="Edit" onClick={comingSoon} />
+                    <CmsStubBtn label="Delete" onClick={comingSoon} />
                   </div>
                 </div>
               ))}
