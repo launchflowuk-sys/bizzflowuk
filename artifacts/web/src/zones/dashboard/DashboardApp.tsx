@@ -1282,25 +1282,47 @@ function SettingsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <div>
             <h2 className="font-semibold text-slate-900">Notification Preferences</h2>
-            <p className="text-xs text-slate-500 mt-1">Choose which events trigger email and SMS alerts.</p>
+            <p className="text-xs text-slate-500 mt-1">Choose which events send Email and/or SMS alerts. Recipients depend on the event — admin alerts go to your notification email/phone, customer notifications go to the lead or customer contact.</p>
           </div>
-          {[
-            { key: "notifyLeadNew", label: "New lead submitted" },
-            { key: "notifyLeadStatusChange", label: "Lead status changes" },
-            { key: "notifyQuoteStatusChange", label: "Quote status changes" },
-            { key: "notifyProjectStatusChange", label: "Project status changes" },
-            { key: "notifyProjectComplete", label: "Project marked as completed" },
-          ].map(({ key, label }) => (
-            <div key={key} className="flex items-center gap-3">
-              <input type="checkbox" id={key} className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={form[key] !== false} onChange={e => setForm({ ...form, [key]: e.target.checked })} />
-              <label htmlFor={key} className="text-sm text-slate-700">{label}</label>
-            </div>
-          ))}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-slate-100">
+                  <th className="text-left font-medium text-slate-600 pb-2 pr-4">Event</th>
+                  <th className="text-center font-medium text-slate-600 pb-2 px-3 w-20">Email</th>
+                  <th className="text-center font-medium text-slate-600 pb-2 px-3 w-20">SMS</th>
+                  <th className="text-left font-medium text-slate-400 pb-2 pl-4 text-xs">Who receives it</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-50">
+                {[
+                  { emailKey: "notifyLeadNewEmail", smsKey: "notifyLeadNewSms", label: "New lead submitted", recipient: "Admin alert + customer acknowledgement" },
+                  { emailKey: "notifySurveyBookedEmail", smsKey: "notifySurveyBookedSms", label: "Survey booked", recipient: "Customer" },
+                  { emailKey: "notifyQuoteSentEmail", smsKey: "notifyQuoteSentSms", label: "Quote sent", recipient: "Customer + admin alert" },
+                  { emailKey: "notifyQuoteAcceptedEmail", smsKey: "notifyQuoteAcceptedSms", label: "Quote accepted", recipient: "Admin alert" },
+                  { emailKey: "notifyLeadWonEmail", smsKey: "notifyLeadWonSms", label: "Lead won / project confirmed", recipient: "Customer" },
+                  { emailKey: "notifyProjectInProgressEmail", smsKey: "notifyProjectInProgressSms", label: "Project started (In Progress)", recipient: "Customer" },
+                  { emailKey: "notifyProjectCompleteEmail", smsKey: "notifyProjectCompleteSms", label: "Project completed", recipient: "Customer" },
+                ].map(({ emailKey, smsKey, label, recipient }) => (
+                  <tr key={emailKey} className="py-1">
+                    <td className="py-2.5 pr-4 text-slate-700">{label}</td>
+                    <td className="py-2.5 px-3 text-center">
+                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={form[emailKey] !== false} onChange={e => setForm({ ...form, [emailKey]: e.target.checked })} />
+                    </td>
+                    <td className="py-2.5 px-3 text-center">
+                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={form[smsKey] !== false} onChange={e => setForm({ ...form, [smsKey]: e.target.checked })} />
+                    </td>
+                    <td className="py-2.5 pl-4 text-slate-400 text-xs">{recipient}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <div>
             <h2 className="font-semibold text-slate-900">Review Request Automation</h2>
-            <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review when their project is completed.</p>
+            <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review after their project is completed.</p>
           </div>
           <div className="flex items-center gap-3">
             <input type="checkbox" id="reviewRequestEnabled" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
@@ -1308,15 +1330,25 @@ function SettingsPage() {
           </div>
           {form.reviewRequestEnabled && (
             <>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Send review request after (days)</label>
-                <input type="number" min={0} max={30} className="w-32 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.reviewRequestDelayDays ?? 3} onChange={e => setForm({ ...form, reviewRequestDelayDays: Number(e.target.value) })} />
-                <p className="text-xs text-slate-400 mt-1">Days after project completion to send the message</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Send after (hours)</label>
+                  <input type="number" min={1} max={720} className="w-32 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.reviewRequestDelayHours ?? 24} onChange={e => setForm({ ...form, reviewRequestDelayHours: Number(e.target.value) })} />
+                  <p className="text-xs text-slate-400 mt-1">Hours after project completion (default: 24)</p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Send via</label>
+                  <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.reviewRequestChannel ?? "email"} onChange={e => setForm({ ...form, reviewRequestChannel: e.target.value })}>
+                    <option value="email">Email only</option>
+                    <option value="sms">SMS only</option>
+                    <option value="both">Email &amp; SMS</option>
+                  </select>
+                </div>
               </div>
-              {field("reviewPlatformUrl", "Review Platform Link", "url", "e.g. your Google Business Profile review link or Trustpilot page")}
+              {field("reviewPlatformUrl", "Review Platform Link", "url", "e.g. your Google Business Profile or Trustpilot link — if blank, links to your public site reviews section")}
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Custom Message (optional)</label>
-                <textarea rows={5} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Leave blank to use the default message. Use {customerName}, {reviewLink} as placeholders." value={form.reviewRequestTemplate || ""} onChange={e => setForm({ ...form, reviewRequestTemplate: e.target.value })} />
+                <textarea rows={5} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Leave blank to use the default message. Use {name} for the customer's first name and {reviewUrl} for the review link." value={form.reviewRequestTemplate || ""} onChange={e => setForm({ ...form, reviewRequestTemplate: e.target.value })} />
                 <p className="text-xs text-slate-400 mt-1">If blank, a professional default message is used.</p>
               </div>
             </>

@@ -1,32 +1,40 @@
 import { db } from "@workspace/db";
 import { tenantSettingsTable, tenantsTable, customersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
-import { sendEmail } from "./email";
+import {
+  sendEmail,
+  buildLeadNewAdminEmail,
+  buildLeadNewCustomerEmail,
+  buildSurveyBookedCustomerEmail,
+  buildQuoteSentCustomerEmail,
+  buildQuoteAcceptedAdminEmail,
+  buildLeadWonCustomerEmail,
+  buildProjectInProgressCustomerEmail,
+  buildProjectCompleteCustomerEmail,
+} from "./email";
 import { sendSms } from "./sms";
 import { buildSmtpConfig, buildSmsCreds } from "./settingsHelpers";
 import { logger } from "./logger";
 
 export type NotificationEvent =
   | "lead_new"
-  | "lead_status_change"
-  | "quote_status_change"
-  | "project_status_change"
-  | "project_completed"
-  | "review_request";
+  | "survey_booked"
+  | "quote_sent"
+  | "quote_accepted"
+  | "lead_won"
+  | "project_in_progress"
+  | "project_completed";
 
 export interface NotificationContext {
   tenantId: number;
   event: NotificationEvent;
+  firstName?: string;
+  lastName?: string;
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
-  leadName?: string;
-  oldStatus?: string;
-  newStatus?: string;
   reference?: string;
   projectTitle?: string;
-  reviewPlatformUrl?: string;
-  reviewRequestTemplate?: string;
 }
 
 async function getTenantAndSettings(tenantId: number) {
@@ -36,105 +44,35 @@ async function getTenantAndSettings(tenantId: number) {
   return { tenant: tenants[0], settings: settings[0] ?? null };
 }
 
-function shouldNotify(settings: Record<string, unknown> | null, event: NotificationEvent): boolean {
-  if (!settings) return false;
+type Settings = typeof tenantSettingsTable.$inferSelect;
+
+function emailEnabled(s: Settings | null, event: NotificationEvent): boolean {
+  if (!s) return false;
   switch (event) {
-    case "lead_new": return settings.notifyLeadNew !== false;
-    case "lead_status_change": return settings.notifyLeadStatusChange !== false;
-    case "quote_status_change": return settings.notifyQuoteStatusChange !== false;
-    case "project_status_change": return settings.notifyProjectStatusChange !== false;
-    case "project_completed": return settings.notifyProjectComplete !== false;
-    case "review_request": return settings.reviewRequestEnabled === true;
+    case "lead_new":           return s.notifyLeadNewEmail !== false;
+    case "survey_booked":      return s.notifySurveyBookedEmail !== false;
+    case "quote_sent":         return s.notifyQuoteSentEmail !== false;
+    case "quote_accepted":     return s.notifyQuoteAcceptedEmail !== false;
+    case "lead_won":           return s.notifyLeadWonEmail !== false;
+    case "project_in_progress":return s.notifyProjectInProgressEmail !== false;
+    case "project_completed":  return s.notifyProjectCompleteEmail !== false;
     default: return false;
   }
 }
 
-function buildAdminEmailPayload(event: NotificationEvent, ctx: NotificationContext, tenantName: string) {
+function smsEnabled(s: Settings | null, event: NotificationEvent): boolean {
+  if (!s) return false;
   switch (event) {
-    case "lead_new":
-      return {
-        subject: `New Lead — ${ctx.leadName || ctx.customerName || "Unknown"}`,
-        html: `<h2>New Lead Received</h2><p>A new lead has been added to your ${tenantName} CRM.</p><p><strong>Name:</strong> ${ctx.leadName || ctx.customerName || "—"}</p>${ctx.customerEmail ? `<p><strong>Email:</strong> ${ctx.customerEmail}</p>` : ""}${ctx.customerPhone ? `<p><strong>Phone:</strong> ${ctx.customerPhone}</p>` : ""}`,
-        text: `New lead: ${ctx.leadName || ctx.customerName}. Email: ${ctx.customerEmail}. Phone: ${ctx.customerPhone}.`,
-      };
-    case "lead_status_change":
-      return {
-        subject: `Lead Status Updated — ${ctx.leadName || ctx.customerName}`,
-        html: `<h2>Lead Status Changed</h2><p>The lead <strong>${ctx.leadName || ctx.customerName}</strong> has moved from <strong>${ctx.oldStatus}</strong> to <strong>${ctx.newStatus}</strong>.</p>`,
-        text: `Lead ${ctx.leadName || ctx.customerName}: ${ctx.oldStatus} → ${ctx.newStatus}`,
-      };
-    case "quote_status_change":
-      return {
-        subject: `Quote Status Updated — ${ctx.reference}`,
-        html: `<h2>Quote Status Changed</h2><p>Quote <strong>${ctx.reference}</strong> has moved from <strong>${ctx.oldStatus}</strong> to <strong>${ctx.newStatus}</strong>.</p>`,
-        text: `Quote ${ctx.reference}: ${ctx.oldStatus} → ${ctx.newStatus}`,
-      };
-    case "project_status_change":
-      return {
-        subject: `Project Status Updated — ${ctx.projectTitle}`,
-        html: `<h2>Project Status Changed</h2><p>Project <strong>${ctx.projectTitle}</strong> has moved from <strong>${ctx.oldStatus}</strong> to <strong>${ctx.newStatus}</strong>.</p>`,
-        text: `Project ${ctx.projectTitle}: ${ctx.oldStatus} → ${ctx.newStatus}`,
-      };
-    case "project_completed":
-      return {
-        subject: `Project Completed — ${ctx.projectTitle}`,
-        html: `<h2>Project Completed</h2><p>Project <strong>${ctx.projectTitle}</strong> has been marked as completed. Consider sending a review request to the customer.</p>`,
-        text: `Project ${ctx.projectTitle} has been marked as completed.`,
-      };
-    default:
-      return null;
+    case "lead_new":           return s.notifyLeadNewSms !== false;
+    case "survey_booked":      return s.notifySurveyBookedSms !== false;
+    case "quote_sent":         return s.notifyQuoteSentSms !== false;
+    case "quote_accepted":     return s.notifyQuoteAcceptedSms !== false;
+    case "lead_won":           return s.notifyLeadWonSms !== false;
+    case "project_in_progress":return s.notifyProjectInProgressSms !== false;
+    case "project_completed":  return s.notifyProjectCompleteSms !== false;
+    default: return false;
   }
 }
-
-function buildCustomerEmailPayload(event: NotificationEvent, ctx: NotificationContext, tenantName: string, tenantPhone: string) {
-  switch (event) {
-    case "project_status_change":
-      return {
-        subject: `Your project update — ${tenantName}`,
-        html: `<h2>Project Update</h2><p>Hi ${ctx.customerName || "there"},</p><p>Your project <strong>${ctx.projectTitle}</strong> has moved to <strong>${ctx.newStatus}</strong>.</p><p>If you have any questions please don't hesitate to get in touch.</p><p>— The ${tenantName} Team</p>`,
-        text: `Hi ${ctx.customerName}, your project "${ctx.projectTitle}" is now ${ctx.newStatus}. Contact us on ${tenantPhone} if you have questions.`,
-      };
-    case "project_completed":
-      return {
-        subject: `Your project is complete — ${tenantName}`,
-        html: `<h2>Great news, ${ctx.customerName || "there"}!</h2><p>Your project <strong>${ctx.projectTitle}</strong> is now complete. Thank you for choosing ${tenantName}.</p><p>We hope you're delighted with the result. If you have any questions or concerns please get in touch on <a href="tel:${tenantPhone}">${tenantPhone}</a>.</p><p>— The ${tenantName} Team</p>`,
-        text: `Hi ${ctx.customerName}, your project "${ctx.projectTitle}" is now complete. Thank you for choosing ${tenantName}!`,
-      };
-    case "review_request": {
-      const template = ctx.reviewRequestTemplate || `Hi ${ctx.customerName || "there"},\n\nWe hope you're enjoying the results of your recent project with ${tenantName}!\n\nIf you have a moment, we'd really appreciate it if you could leave us a review — it only takes a minute and helps other homeowners find us.\n\n${ctx.reviewPlatformUrl ? `Leave a review here: ${ctx.reviewPlatformUrl}` : ""}\n\nThank you so much!\n— The ${tenantName} Team`;
-      return {
-        subject: `We'd love your feedback — ${tenantName}`,
-        html: `<p>${template.replace(/\n/g, "<br>")}</p>`,
-        text: template,
-      };
-    }
-    default:
-      return null;
-  }
-}
-
-function buildAdminSmsBody(event: NotificationEvent, ctx: NotificationContext): string {
-  switch (event) {
-    case "lead_new": return `New lead: ${ctx.leadName || ctx.customerName}${ctx.customerPhone ? ` — ${ctx.customerPhone}` : ""}`;
-    case "lead_status_change": return `Lead ${ctx.leadName || ctx.customerName}: ${ctx.oldStatus} → ${ctx.newStatus}`;
-    case "quote_status_change": return `Quote ${ctx.reference}: ${ctx.oldStatus} → ${ctx.newStatus}`;
-    case "project_status_change": return `Project "${ctx.projectTitle}": ${ctx.oldStatus} → ${ctx.newStatus}`;
-    case "project_completed": return `Project "${ctx.projectTitle}" marked as completed.`;
-    default: return "";
-  }
-}
-
-function buildCustomerSmsBody(event: NotificationEvent, ctx: NotificationContext, tenantName: string): string {
-  switch (event) {
-    case "project_status_change": return `Hi ${ctx.customerName || "there"}, your project "${ctx.projectTitle}" is now ${ctx.newStatus}. — ${tenantName}`;
-    case "project_completed": return `Hi ${ctx.customerName || "there"}, your project "${ctx.projectTitle}" is complete! Thank you for choosing ${tenantName}.`;
-    case "review_request": return `Hi ${ctx.customerName || "there"}, we'd love your feedback on your recent project. ${ctx.reviewPlatformUrl ? `Leave a review: ${ctx.reviewPlatformUrl}` : ""} — ${tenantName}`;
-    default: return "";
-  }
-}
-
-const CUSTOMER_EVENTS: NotificationEvent[] = ["project_status_change", "project_completed", "review_request"];
-const ADMIN_EVENTS: NotificationEvent[] = ["lead_new", "lead_status_change", "quote_status_change", "project_status_change", "project_completed"];
 
 export async function fireNotification(ctx: NotificationContext): Promise<void> {
   try {
@@ -142,38 +80,173 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
     if (!ts) return;
     const { tenant, settings } = ts;
 
-    if (!shouldNotify(settings as any, ctx.event)) return;
-
     const smtp = buildSmtpConfig(settings as any);
     const smsCreds = buildSmsCreds(settings as any);
-    const adminEmail = (settings as any)?.adminNotificationEmail || tenant.email;
-    const adminPhone = (settings as any)?.adminNotificationPhone;
+    const adminEmail = settings?.adminNotificationEmail || tenant.email || null;
+    const adminPhone = settings?.adminNotificationPhone || null;
+    const tenantPhone = settings?.phone || tenant.phone || "";
+    const tenantEmail = settings?.email || tenant.email || "";
 
-    if (ADMIN_EVENTS.includes(ctx.event)) {
-      const payload = buildAdminEmailPayload(ctx.event, ctx, tenant.name);
-      if (payload && adminEmail && smtp) {
-        sendEmail({ ...payload, to: adminEmail }, smtp)
-          .catch(e => logger.error({ err: e }, `[notify] admin email failed for ${ctx.event}`));
-      }
-      const smsBody = buildAdminSmsBody(ctx.event, ctx);
-      if (smsBody && adminPhone && smsCreds) {
-        sendSms(adminPhone, smsBody, smsCreds)
-          .catch(e => logger.error({ err: e }, `[notify] admin SMS failed for ${ctx.event}`));
-      }
-    }
+    const doAdminEmail  = emailEnabled(settings, ctx.event) && !!adminEmail && !!smtp;
+    const doAdminSms    = smsEnabled(settings, ctx.event) && !!adminPhone && !!smsCreds;
+    const doCustomerEmail = emailEnabled(settings, ctx.event) && !!ctx.customerEmail && !!smtp;
+    const doCustomerSms   = smsEnabled(settings, ctx.event) && !!ctx.customerPhone && !!smsCreds;
 
-    if (CUSTOMER_EVENTS.includes(ctx.event) && ctx.customerEmail) {
-      const payload = buildCustomerEmailPayload(ctx.event, ctx, tenant.name, tenant.phone || "");
-      if (payload && smtp) {
-        sendEmail({ ...payload, to: ctx.customerEmail }, smtp)
-          .catch(e => logger.error({ err: e }, `[notify] customer email failed for ${ctx.event}`));
-      }
-      if (ctx.customerPhone && smsCreds) {
-        const smsBody = buildCustomerSmsBody(ctx.event, ctx, tenant.name);
-        if (smsBody) {
-          sendSms(ctx.customerPhone, smsBody, smsCreds)
-            .catch(e => logger.error({ err: e }, `[notify] customer SMS failed for ${ctx.event}`));
+    const firstName = ctx.firstName || ctx.customerName || "there";
+    const fullName = ctx.firstName && ctx.lastName
+      ? `${ctx.firstName} ${ctx.lastName}`.trim()
+      : ctx.customerName || "Unknown";
+
+    switch (ctx.event) {
+      // ── lead_new: admin alert + customer acknowledgement ──────────────────
+      case "lead_new": {
+        if (doAdminEmail) {
+          sendEmail(buildLeadNewAdminEmail({
+            tenantName: tenant.name,
+            adminEmail: adminEmail!,
+            firstName: ctx.firstName || "",
+            lastName: ctx.lastName || "",
+            email: ctx.customerEmail,
+            phone: ctx.customerPhone,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new admin email failed"));
         }
+        if (doAdminSms) {
+          sendSms(adminPhone!, `New lead: ${fullName}${ctx.customerPhone ? ` — ${ctx.customerPhone}` : ""}`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] lead_new admin SMS failed"));
+        }
+        if (doCustomerEmail) {
+          sendEmail(buildLeadNewCustomerEmail({
+            tenantName: tenant.name,
+            tenantPhone,
+            tenantEmail,
+            firstName,
+            serviceInterest: undefined,
+            to: ctx.customerEmail!,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new customer email failed"));
+        }
+        if (doCustomerSms) {
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, thanks for contacting ${tenant.name}! We'll be in touch within 24 hours. — ${tenant.name}`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] lead_new customer SMS failed"));
+        }
+        break;
+      }
+
+      // ── survey_booked: customer notification ─────────────────────────────
+      case "survey_booked": {
+        if (doCustomerEmail) {
+          sendEmail(buildSurveyBookedCustomerEmail({
+            tenantName: tenant.name,
+            tenantPhone,
+            firstName,
+            to: ctx.customerEmail!,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] survey_booked customer email failed"));
+        }
+        if (doCustomerSms) {
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, your survey has been booked with ${tenant.name}! We'll confirm date/time shortly.`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] survey_booked customer SMS failed"));
+        }
+        break;
+      }
+
+      // ── quote_sent: customer notification + admin alert ───────────────────
+      case "quote_sent": {
+        if (doCustomerEmail) {
+          sendEmail(buildQuoteSentCustomerEmail({
+            tenantName: tenant.name,
+            tenantPhone,
+            tenantEmail,
+            firstName,
+            reference: ctx.reference,
+            to: ctx.customerEmail!,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent customer email failed"));
+        }
+        if (doCustomerSms) {
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, your quote${ctx.reference ? ` (${ctx.reference})` : ""} from ${tenant.name} is ready. Call ${tenantPhone} for questions.`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] quote_sent customer SMS failed"));
+        }
+        if (doAdminEmail) {
+          sendEmail({
+            to: adminEmail!,
+            subject: `Quote Sent — ${ctx.reference || fullName}`,
+            html: `<h2>Quote Sent</h2><p>A quote${ctx.reference ? ` (<strong>${ctx.reference}</strong>)` : ""} has been sent to ${fullName}.</p>`,
+            text: `Quote${ctx.reference ? ` ${ctx.reference}` : ""} sent to ${fullName}.`,
+          }, smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent admin email failed"));
+        }
+        if (doAdminSms) {
+          sendSms(adminPhone!, `Quote${ctx.reference ? ` ${ctx.reference}` : ""} sent to ${fullName}`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] quote_sent admin SMS failed"));
+        }
+        break;
+      }
+
+      // ── quote_accepted: admin alert only ─────────────────────────────────
+      case "quote_accepted": {
+        if (doAdminEmail) {
+          sendEmail(buildQuoteAcceptedAdminEmail({
+            tenantName: tenant.name,
+            adminEmail: adminEmail!,
+            reference: ctx.reference || "—",
+            customerName: fullName !== "Unknown" ? fullName : undefined,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_accepted admin email failed"));
+        }
+        if (doAdminSms) {
+          sendSms(adminPhone!, `Quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""} accepted!`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] quote_accepted admin SMS failed"));
+        }
+        break;
+      }
+
+      // ── lead_won: customer notification ───────────────────────────────────
+      case "lead_won": {
+        if (doCustomerEmail) {
+          sendEmail(buildLeadWonCustomerEmail({
+            tenantName: tenant.name,
+            tenantPhone,
+            firstName,
+            to: ctx.customerEmail!,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_won customer email failed"));
+        }
+        if (doCustomerSms) {
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, great news! Your project with ${tenant.name} is confirmed. We'll be in touch to schedule the work.`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] lead_won customer SMS failed"));
+        }
+        break;
+      }
+
+      // ── project_in_progress: customer notification ────────────────────────
+      case "project_in_progress": {
+        if (doCustomerEmail) {
+          sendEmail(buildProjectInProgressCustomerEmail({
+            tenantName: tenant.name,
+            tenantPhone,
+            firstName,
+            projectTitle: ctx.projectTitle || "your project",
+            to: ctx.customerEmail!,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] project_in_progress customer email failed"));
+        }
+        if (doCustomerSms) {
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, work has started on "${ctx.projectTitle || "your project"}" with ${tenant.name}. Questions? Call ${tenantPhone}.`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] project_in_progress customer SMS failed"));
+        }
+        break;
+      }
+
+      // ── project_completed: customer notification ──────────────────────────
+      case "project_completed": {
+        if (doCustomerEmail) {
+          sendEmail(buildProjectCompleteCustomerEmail({
+            tenantName: tenant.name,
+            tenantPhone,
+            firstName,
+            projectTitle: ctx.projectTitle || "your project",
+            to: ctx.customerEmail!,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] project_completed customer email failed"));
+        }
+        if (doCustomerSms) {
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, your project "${ctx.projectTitle || "your project"}" with ${tenant.name} is complete! Thank you for choosing us.`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] project_completed customer SMS failed"));
+        }
+        break;
       }
     }
   } catch (err) {

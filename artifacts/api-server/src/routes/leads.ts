@@ -27,7 +27,8 @@ router.post("/leads", requireTenantAccess, async (req, res) => {
     fireNotification({
       tenantId: lead[0].tenantId,
       event: "lead_new",
-      leadName: `${lead[0].firstName ?? ""} ${lead[0].lastName ?? ""}`.trim(),
+      firstName: lead[0].firstName ?? undefined,
+      lastName: lead[0].lastName ?? undefined,
       customerEmail: lead[0].email ?? undefined,
       customerPhone: lead[0].phone ?? undefined,
     });
@@ -54,16 +55,22 @@ router.patch("/leads/:id", requireTenantAccess, async (req, res) => {
       .returning();
     if (!l.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(l[0]);
-    if (req.body.status && before[0]?.status !== req.body.status) {
-      fireNotification({
+    const newStatus = req.body.status;
+    if (newStatus && before[0]?.status !== newStatus) {
+      const ctx = {
         tenantId: l[0].tenantId,
-        event: "lead_status_change",
-        leadName: `${l[0].firstName ?? ""} ${l[0].lastName ?? ""}`.trim(),
+        firstName: l[0].firstName ?? undefined,
+        lastName: l[0].lastName ?? undefined,
         customerEmail: l[0].email ?? undefined,
         customerPhone: l[0].phone ?? undefined,
-        oldStatus: before[0]?.status ?? undefined,
-        newStatus: req.body.status,
-      });
+      };
+      if (newStatus === "Survey Booked") {
+        fireNotification({ ...ctx, event: "survey_booked" });
+      } else if (newStatus === "Quote Sent") {
+        fireNotification({ ...ctx, event: "quote_sent" });
+      } else if (newStatus === "Won") {
+        fireNotification({ ...ctx, event: "lead_won" });
+      }
     }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -108,12 +115,12 @@ router.post("/leads/:id/convert-to-quote", requireTenantAccess, async (req, res)
     res.status(201).json(quote[0]);
     fireNotification({
       tenantId: lead[0].tenantId,
-      event: "lead_status_change",
-      leadName: `${lead[0].firstName ?? ""} ${lead[0].lastName ?? ""}`.trim(),
+      event: "quote_sent",
+      firstName: lead[0].firstName ?? undefined,
+      lastName: lead[0].lastName ?? undefined,
       customerEmail: lead[0].email ?? undefined,
       customerPhone: lead[0].phone ?? undefined,
-      oldStatus: lead[0].status ?? undefined,
-      newStatus: "Quote Sent",
+      reference: ref,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -134,12 +141,11 @@ router.post("/leads/:id/convert-to-project", requireTenantAccess, async (req, re
     res.status(201).json(project[0]);
     fireNotification({
       tenantId: lead[0].tenantId,
-      event: "lead_status_change",
-      leadName: `${lead[0].firstName ?? ""} ${lead[0].lastName ?? ""}`.trim(),
+      event: "lead_won",
+      firstName: lead[0].firstName ?? undefined,
+      lastName: lead[0].lastName ?? undefined,
       customerEmail: lead[0].email ?? undefined,
       customerPhone: lead[0].phone ?? undefined,
-      oldStatus: lead[0].status ?? undefined,
-      newStatus: "Won",
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

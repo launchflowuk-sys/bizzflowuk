@@ -2800,20 +2800,40 @@ components:
           type: ["string", "null"]
         customDomain:
           type: ["string", "null"]
-        notifyLeadNew:
+        notifyLeadNewEmail:
           type: ["boolean", "null"]
-        notifyLeadStatusChange:
+        notifyLeadNewSms:
           type: ["boolean", "null"]
-        notifyQuoteStatusChange:
+        notifySurveyBookedEmail:
           type: ["boolean", "null"]
-        notifyProjectStatusChange:
+        notifySurveyBookedSms:
           type: ["boolean", "null"]
-        notifyProjectComplete:
+        notifyQuoteSentEmail:
+          type: ["boolean", "null"]
+        notifyQuoteSentSms:
+          type: ["boolean", "null"]
+        notifyQuoteAcceptedEmail:
+          type: ["boolean", "null"]
+        notifyQuoteAcceptedSms:
+          type: ["boolean", "null"]
+        notifyLeadWonEmail:
+          type: ["boolean", "null"]
+        notifyLeadWonSms:
+          type: ["boolean", "null"]
+        notifyProjectInProgressEmail:
+          type: ["boolean", "null"]
+        notifyProjectInProgressSms:
+          type: ["boolean", "null"]
+        notifyProjectCompleteEmail:
+          type: ["boolean", "null"]
+        notifyProjectCompleteSms:
           type: ["boolean", "null"]
         reviewRequestEnabled:
           type: ["boolean", "null"]
-        reviewRequestDelayDays:
+        reviewRequestDelayHours:
           type: ["integer", "null"]
+        reviewRequestChannel:
+          type: ["string", "null"]
         reviewRequestTemplate:
           type: ["string", "null"]
         reviewPlatformUrl:
@@ -2900,20 +2920,40 @@ components:
           type: string
         customDomain:
           type: string
-        notifyLeadNew:
+        notifyLeadNewEmail:
           type: boolean
-        notifyLeadStatusChange:
+        notifyLeadNewSms:
           type: boolean
-        notifyQuoteStatusChange:
+        notifySurveyBookedEmail:
           type: boolean
-        notifyProjectStatusChange:
+        notifySurveyBookedSms:
           type: boolean
-        notifyProjectComplete:
+        notifyQuoteSentEmail:
+          type: boolean
+        notifyQuoteSentSms:
+          type: boolean
+        notifyQuoteAcceptedEmail:
+          type: boolean
+        notifyQuoteAcceptedSms:
+          type: boolean
+        notifyLeadWonEmail:
+          type: boolean
+        notifyLeadWonSms:
+          type: boolean
+        notifyProjectInProgressEmail:
+          type: boolean
+        notifyProjectInProgressSms:
+          type: boolean
+        notifyProjectCompleteEmail:
+          type: boolean
+        notifyProjectCompleteSms:
           type: boolean
         reviewRequestEnabled:
           type: boolean
-        reviewRequestDelayDays:
+        reviewRequestDelayHours:
           type: integer
+        reviewRequestChannel:
+          type: string
         reviewRequestTemplate:
           type: string
         reviewPlatformUrl:

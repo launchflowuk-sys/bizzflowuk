@@ -47,23 +47,34 @@ router.patch("/projects/:id", requireTenantAccess, async (req, res) => {
       .returning();
     if (!p.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(p[0]);
-    if (req.body.status && before[0]?.status !== req.body.status) {
-      let customer: { email?: string | null; phone?: string | null; firstName?: string; lastName?: string } | undefined;
+
+    const newStatus = req.body.status;
+    if (newStatus && before[0]?.status !== newStatus) {
+      let firstName: string | undefined;
+      let lastName: string | undefined;
+      let customerEmail: string | undefined;
+      let customerPhone: string | undefined;
+
       if (p[0].customerId) {
         const rows = await db.select().from(customersTable).where(eq(customersTable.id, p[0].customerId)).limit(1);
-        customer = rows[0];
+        const c = rows[0];
+        if (c) { firstName = c.firstName; lastName = c.lastName; customerEmail = c.email ?? undefined; customerPhone = c.phone ?? undefined; }
       }
-      const isCompleted = req.body.status === "Completed";
-      fireNotification({
+
+      const ctx = {
         tenantId: p[0].tenantId,
-        event: isCompleted ? "project_completed" : "project_status_change",
+        firstName,
+        lastName,
+        customerEmail,
+        customerPhone,
         projectTitle: p[0].title,
-        oldStatus: before[0]?.status ?? undefined,
-        newStatus: req.body.status,
-        customerName: customer ? `${customer.firstName ?? ""} ${customer.lastName ?? ""}`.trim() : undefined,
-        customerEmail: customer?.email ?? undefined,
-        customerPhone: customer?.phone ?? undefined,
-      });
+      };
+
+      if (newStatus === "In Progress") {
+        fireNotification({ ...ctx, event: "project_in_progress" });
+      } else if (newStatus === "Completed") {
+        fireNotification({ ...ctx, event: "project_completed" });
+      }
     }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

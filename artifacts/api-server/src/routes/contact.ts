@@ -3,9 +3,10 @@ import { db } from "@workspace/db";
 import { contactMessagesTable, tenantsTable, tenantSettingsTable, leadsTable, visualiserRequestsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
-import { sendEmail, buildQuoteRequestAdminEmail, buildQuoteRequestCustomerEmail, buildContactAdminEmail, buildContactCustomerEmail, buildVisualiserAdminEmail } from "../lib/email";
+import { sendEmail, buildContactAdminEmail, buildContactCustomerEmail, buildVisualiserAdminEmail } from "../lib/email";
 import { sendSms } from "../lib/sms";
 import { buildSmtpConfig, buildSmsCreds } from "../lib/settingsHelpers";
+import { fireNotification } from "../lib/notifications";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -17,7 +18,7 @@ async function getTenantWithSettings(slug: string) {
   return { tenant: tenants[0], settings: settings[0] };
 }
 
-// Public contact form submission
+// Public contact form submission — send admin+customer emails directly (no toggle needed for generic contact)
 router.post("/public/:tenantSlug/contact", async (req, res) => {
   try {
     const ts = await getTenantWithSettings(req.params.tenantSlug);
@@ -27,16 +28,16 @@ router.post("/public/:tenantSlug/contact", async (req, res) => {
 
     const adminEmail = settings?.adminNotificationEmail || tenant.email;
     const customerEmail = req.body.email;
-    const smtp = buildSmtpConfig(settings);
-    const smsCreds = buildSmsCreds(settings);
+    const smtp = buildSmtpConfig(settings as any);
+    const smsCreds = buildSmsCreds(settings as any);
     const adminPhone = settings?.adminNotificationPhone;
 
     if (adminEmail) {
-      sendEmail({ ...buildContactAdminEmail({ tenantName: tenant.name, name: req.body.name, email: adminEmail, phone: req.body.phone, message: req.body.message }), to: adminEmail }, smtp)
+      sendEmail(buildContactAdminEmail({ tenantName: tenant.name, name: req.body.name, email: adminEmail, phone: req.body.phone, message: req.body.message }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send contact admin email"));
     }
     if (customerEmail) {
-      sendEmail({ ...buildContactCustomerEmail({ tenantName: tenant.name, name: req.body.senderName || req.body.name || '', tenantPhone: tenant.phone || '', tenantEmail: adminEmail || tenant.email || '' }), to: customerEmail }, smtp)
+      sendEmail(buildContactCustomerEmail({ tenantName: tenant.name, name: req.body.senderName || req.body.name || "", tenantPhone: settings?.phone || tenant.phone || "", tenantEmail: adminEmail || tenant.email || "", to: customerEmail }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send contact customer email"));
     }
     if (adminPhone && smsCreds) {
@@ -48,35 +49,24 @@ router.post("/public/:tenantSlug/contact", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-// Public quote request
+// Public quote request — creates a lead then fires lead_new through the unified notification helper
 router.post("/public/:tenantSlug/quote-request", async (req, res) => {
   try {
     const ts = await getTenantWithSettings(req.params.tenantSlug);
     if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
-    const { tenant, settings } = ts;
+    const { tenant } = ts;
     const lead = await db.insert(leadsTable).values({ ...req.body, tenantId: tenant.id, status: "New", source: "Website" }).returning();
-
-    const adminEmail = settings?.adminNotificationEmail || tenant.email;
-    const customerEmail = req.body.email;
-    const smtp = buildSmtpConfig(settings);
-    const smsCreds = buildSmsCreds(settings);
-    const adminPhone = settings?.adminNotificationPhone;
-
-    if (adminEmail) {
-      sendEmail({ ...buildQuoteRequestAdminEmail({ tenantName: tenant.name, firstName: req.body.firstName, lastName: req.body.lastName, email: adminEmail, phone: req.body.phone, serviceInterest: req.body.serviceInterest, address: req.body.address, postcode: req.body.postcode, budget: req.body.budget, notes: req.body.notes }), to: adminEmail }, smtp)
-        .catch(e => req.log.error({ err: e }, "Failed to send quote admin email"));
-    }
-    if (customerEmail) {
-      sendEmail({ ...buildQuoteRequestCustomerEmail({ tenantName: tenant.name, tenantPhone: tenant.phone || '', tenantEmail: adminEmail || tenant.email || '', firstName: req.body.firstName, serviceInterest: req.body.serviceInterest }), to: customerEmail }, smtp)
-        .catch(e => req.log.error({ err: e }, "Failed to send quote customer email"));
-    }
-    if (adminPhone && smsCreds) {
-      const name = `${req.body.firstName || ""} ${req.body.lastName || ""}`.trim() || "someone";
-      sendSms(adminPhone, `New quote from ${name}${req.body.phone ? ` — ${req.body.phone}` : ""}`, smsCreds)
-        .catch(e => req.log.error({ err: e }, "Failed to send quote admin SMS"));
-    }
-
     res.status(201).json(lead[0]);
+
+    // Fire through unified helper — respects per-channel toggles and sends admin alert + customer ack
+    fireNotification({
+      tenantId: tenant.id,
+      event: "lead_new",
+      firstName: lead[0].firstName ?? undefined,
+      lastName: lead[0].lastName ?? undefined,
+      customerEmail: lead[0].email ?? undefined,
+      customerPhone: lead[0].phone ?? undefined,
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -92,16 +82,16 @@ router.post("/visualiser", async (req, res) => {
     const r = await db.insert(visualiserRequestsTable).values({ ...rest, tenantId: tenant.id, status: "pending" }).returning();
 
     const adminEmail = settings?.adminNotificationEmail || tenant.email;
-    const smtp = buildSmtpConfig(settings);
-    const smsCreds = buildSmsCreds(settings);
+    const smtp = buildSmtpConfig(settings as any);
+    const smsCreds = buildSmsCreds(settings as any);
     const adminPhone = settings?.adminNotificationPhone;
 
     if (adminEmail) {
-      sendEmail(buildVisualiserAdminEmail({ tenantName: tenant.name, adminEmail, name: req.body.firstName ? `${req.body.firstName} ${req.body.lastName || ''}`.trim() : req.body.name, email: req.body.email, phone: req.body.phone, renderColour: req.body.colourPreference || req.body.renderColour, notes: req.body.notes }), smtp)
+      sendEmail(buildVisualiserAdminEmail({ tenantName: tenant.name, adminEmail, name: req.body.firstName ? `${req.body.firstName} ${req.body.lastName || ""}`.trim() : req.body.name, email: req.body.email, phone: req.body.phone, renderColour: req.body.colourPreference || req.body.renderColour, notes: req.body.notes }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send visualiser admin email"));
     }
     if (adminPhone && smsCreds) {
-      const name = req.body.firstName ? `${req.body.firstName} ${req.body.lastName || ''}`.trim() : req.body.name || "someone";
+      const name = req.body.firstName ? `${req.body.firstName} ${req.body.lastName || ""}`.trim() : req.body.name || "someone";
       sendSms(adminPhone, `New visualiser request from ${name}`, smsCreds)
         .catch(e => req.log.error({ err: e }, "Failed to send visualiser admin SMS"));
     }
@@ -119,8 +109,8 @@ router.post("/public/:tenantSlug/visualiser", async (req, res) => {
     const r = await db.insert(visualiserRequestsTable).values({ ...req.body, tenantId: tenant.id, status: "pending" }).returning();
 
     const adminEmail = settings?.adminNotificationEmail || tenant.email;
-    const smtp = buildSmtpConfig(settings);
-    const smsCreds = buildSmsCreds(settings);
+    const smtp = buildSmtpConfig(settings as any);
+    const smsCreds = buildSmsCreds(settings as any);
     const adminPhone = settings?.adminNotificationPhone;
 
     if (adminEmail) {

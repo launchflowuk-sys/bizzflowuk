@@ -243,19 +243,39 @@ export interface TenantSettings {
   /** @nullable */
   customDomain?: string | null;
   /** @nullable */
-  notifyLeadNew?: boolean | null;
+  notifyLeadNewEmail?: boolean | null;
   /** @nullable */
-  notifyLeadStatusChange?: boolean | null;
+  notifyLeadNewSms?: boolean | null;
   /** @nullable */
-  notifyQuoteStatusChange?: boolean | null;
+  notifySurveyBookedEmail?: boolean | null;
   /** @nullable */
-  notifyProjectStatusChange?: boolean | null;
+  notifySurveyBookedSms?: boolean | null;
   /** @nullable */
-  notifyProjectComplete?: boolean | null;
+  notifyQuoteSentEmail?: boolean | null;
+  /** @nullable */
+  notifyQuoteSentSms?: boolean | null;
+  /** @nullable */
+  notifyQuoteAcceptedEmail?: boolean | null;
+  /** @nullable */
+  notifyQuoteAcceptedSms?: boolean | null;
+  /** @nullable */
+  notifyLeadWonEmail?: boolean | null;
+  /** @nullable */
+  notifyLeadWonSms?: boolean | null;
+  /** @nullable */
+  notifyProjectInProgressEmail?: boolean | null;
+  /** @nullable */
+  notifyProjectInProgressSms?: boolean | null;
+  /** @nullable */
+  notifyProjectCompleteEmail?: boolean | null;
+  /** @nullable */
+  notifyProjectCompleteSms?: boolean | null;
   /** @nullable */
   reviewRequestEnabled?: boolean | null;
   /** @nullable */
-  reviewRequestDelayDays?: number | null;
+  reviewRequestDelayHours?: number | null;
+  /** @nullable */
+  reviewRequestChannel?: string | null;
   /** @nullable */
   reviewRequestTemplate?: string | null;
   /** @nullable */
@@ -424,13 +444,23 @@ export interface TenantSettingsUpdate {
   twilioFromNumber?: string;
   adminNotificationPhone?: string;
   customDomain?: string;
-  notifyLeadNew?: boolean;
-  notifyLeadStatusChange?: boolean;
-  notifyQuoteStatusChange?: boolean;
-  notifyProjectStatusChange?: boolean;
-  notifyProjectComplete?: boolean;
+  notifyLeadNewEmail?: boolean;
+  notifyLeadNewSms?: boolean;
+  notifySurveyBookedEmail?: boolean;
+  notifySurveyBookedSms?: boolean;
+  notifyQuoteSentEmail?: boolean;
+  notifyQuoteSentSms?: boolean;
+  notifyQuoteAcceptedEmail?: boolean;
+  notifyQuoteAcceptedSms?: boolean;
+  notifyLeadWonEmail?: boolean;
+  notifyLeadWonSms?: boolean;
+  notifyProjectInProgressEmail?: boolean;
+  notifyProjectInProgressSms?: boolean;
+  notifyProjectCompleteEmail?: boolean;
+  notifyProjectCompleteSms?: boolean;
   reviewRequestEnabled?: boolean;
-  reviewRequestDelayDays?: number;
+  reviewRequestDelayHours?: number;
+  reviewRequestChannel?: string;
   reviewRequestTemplate?: string;
   reviewPlatformUrl?: string;
 }

@@ -1,12 +1,22 @@
 import { db } from "@workspace/db";
 import { projectsTable, tenantSettingsTable, tenantsTable, customersTable } from "@workspace/db";
-import { eq, isNull, lte, and, sql } from "drizzle-orm";
-import { sendEmail } from "./email";
+import { eq, isNull, and } from "drizzle-orm";
+import { sendEmail, buildReviewRequestEmail } from "./email";
 import { sendSms } from "./sms";
 import { buildSmtpConfig, buildSmsCreds } from "./settingsHelpers";
 import { logger } from "./logger";
 
 const INTERVAL_MS = 15 * 60 * 1000;
+
+function deriveReviewUrl(opts: {
+  customDomain?: string | null;
+  reviewPlatformUrl?: string | null;
+  tenantSlug: string;
+}): string {
+  if (opts.reviewPlatformUrl) return opts.reviewPlatformUrl;
+  if (opts.customDomain) return `https://${opts.customDomain}#reviews`;
+  return `/site/${opts.tenantSlug}#reviews`;
+}
 
 async function runReviewRequests() {
   try {
@@ -34,44 +44,61 @@ async function runReviewRequests() {
     for (const row of rows) {
       const { project, settings, tenant, customer } = row;
 
-      if (!project.completedAt) continue;
-
-      const delayDays = settings.reviewRequestDelayDays ?? 3;
-      const sendAfter = new Date(project.completedAt.getTime() + delayDays * 24 * 60 * 60 * 1000);
+      // Use completedAt; fall back to updatedAt if not stamped
+      const completionTime = project.completedAt ?? project.updatedAt;
+      const delayHours = settings.reviewRequestDelayHours ?? 24;
+      const sendAfter = new Date(completionTime.getTime() + delayHours * 60 * 60 * 1000);
       if (now < sendAfter) continue;
 
-      const customerEmail = customer?.email;
-      const customerPhone = customer?.phone;
-      const customerName = customer ? `${customer.firstName} ${customer.lastName}`.trim() : undefined;
-      const reviewPlatformUrl = settings.reviewPlatformUrl ?? undefined;
-      const reviewTemplate = settings.reviewRequestTemplate ?? undefined;
+      const customerEmail = customer?.email ?? null;
+      const customerPhone = customer?.phone ?? null;
+      const customerFirstName = customer?.firstName ?? undefined;
+      const channel = settings.reviewRequestChannel ?? "email";
 
-      const resolvedTemplate = reviewTemplate
-        || `Hi ${customerName || "there"},\n\nWe hope you're enjoying the results of your recent project with ${tenant.name}!\n\nIf you have a moment, we'd love it if you could leave us a review — it only takes a minute and helps other homeowners find us.\n\n${reviewPlatformUrl ? `Leave a review: ${reviewPlatformUrl}` : ""}\n\nThank you so much!\n— The ${tenant.name} Team`;
+      const reviewUrl = deriveReviewUrl({
+        customDomain: tenant.customDomain,
+        reviewPlatformUrl: settings.reviewPlatformUrl,
+        tenantSlug: tenant.slug,
+      });
 
       const smtp = buildSmtpConfig(settings as any);
       const smsCreds = buildSmsCreds(settings as any);
 
-      if (customerEmail && smtp) {
-        await sendEmail({
-          to: customerEmail,
-          subject: `We'd love your feedback — ${tenant.name}`,
-          html: `<p>${resolvedTemplate.replace(/\n/g, "<br>")}</p>`,
-          text: resolvedTemplate,
-        }, smtp).catch(e => logger.error({ err: e, projectId: project.id }, "[review-scheduler] email send failed"));
+      let sent = false;
+
+      if ((channel === "email" || channel === "both") && customerEmail && smtp) {
+        await sendEmail(
+          buildReviewRequestEmail({
+            tenantName: tenant.name,
+            firstName: customerFirstName,
+            reviewUrl,
+            customTemplate: settings.reviewRequestTemplate ?? undefined,
+            to: customerEmail,
+          }),
+          smtp
+        ).catch(e => logger.error({ err: e, projectId: project.id }, "[review-scheduler] email send failed"));
+        sent = true;
       }
 
-      if (customerPhone && smsCreds) {
-        const smsBody = `Hi ${customerName || "there"}, we'd love your feedback on your recent project with ${tenant.name}.${reviewPlatformUrl ? ` Leave a review: ${reviewPlatformUrl}` : ""}`;
+      if ((channel === "sms" || channel === "both") && customerPhone && smsCreds) {
+        const name = customerFirstName || "there";
+        const smsBody = settings.reviewRequestTemplate
+          ? settings.reviewRequestTemplate
+              .replace(/\{name\}/g, name)
+              .replace(/\{reviewUrl\}/g, reviewUrl)
+              .substring(0, 160)
+          : `Hi ${name}, we'd love your feedback on your recent project with ${tenant.name}. Leave a review: ${reviewUrl}`;
         await sendSms(customerPhone, smsBody, smsCreds)
           .catch(e => logger.error({ err: e, projectId: project.id }, "[review-scheduler] SMS send failed"));
+        sent = true;
       }
 
-      await db.update(projectsTable)
-        .set({ reviewRequestSentAt: now })
-        .where(eq(projectsTable.id, project.id));
-
-      logger.info({ projectId: project.id, customerEmail, customerPhone }, "[review-scheduler] review request sent");
+      if (sent) {
+        await db.update(projectsTable)
+          .set({ reviewRequestSentAt: now })
+          .where(eq(projectsTable.id, project.id));
+        logger.info({ projectId: project.id, customerEmail, customerPhone, channel }, "[review-scheduler] review request sent");
+      }
     }
   } catch (err) {
     logger.error({ err }, "[review-scheduler] run failed");

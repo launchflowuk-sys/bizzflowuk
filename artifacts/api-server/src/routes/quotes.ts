@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { quotesTable, quoteItemsTable, projectsTable } from "@workspace/db";
+import { quotesTable, quoteItemsTable, projectsTable, leadsTable, customersTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
@@ -44,14 +44,30 @@ router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
       .returning();
     if (!q.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(q[0]);
-    if (req.body.status && before[0]?.status !== req.body.status) {
-      fireNotification({
-        tenantId: q[0].tenantId,
-        event: "quote_status_change",
-        reference: q[0].reference,
-        oldStatus: before[0]?.status ?? undefined,
-        newStatus: req.body.status,
-      });
+
+    const newStatus = req.body.status;
+    if (newStatus && before[0]?.status !== newStatus) {
+      // Resolve customer/lead details for recipient routing
+      let firstName: string | undefined;
+      let lastName: string | undefined;
+      let customerEmail: string | undefined;
+      let customerPhone: string | undefined;
+
+      if (q[0].customerId) {
+        const rows = await db.select().from(customersTable).where(eq(customersTable.id, q[0].customerId)).limit(1);
+        const c = rows[0];
+        if (c) { firstName = c.firstName; lastName = c.lastName; customerEmail = c.email ?? undefined; customerPhone = c.phone ?? undefined; }
+      } else if (q[0].leadId) {
+        const rows = await db.select().from(leadsTable).where(eq(leadsTable.id, q[0].leadId)).limit(1);
+        const l = rows[0];
+        if (l) { firstName = l.firstName ?? undefined; lastName = l.lastName ?? undefined; customerEmail = l.email ?? undefined; customerPhone = l.phone ?? undefined; }
+      }
+
+      if (newStatus === "Sent") {
+        fireNotification({ tenantId: q[0].tenantId, event: "quote_sent", firstName, lastName, customerEmail, customerPhone, reference: q[0].reference });
+      } else if (newStatus === "Accepted") {
+        fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", firstName, lastName, customerEmail, customerPhone, reference: q[0].reference });
+      }
     }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -78,13 +94,24 @@ router.post("/quotes/:id/convert-to-project", requireTenantAccess, async (req, r
     }).returning();
     await db.update(quotesTable).set({ status: "Accepted" }).where(eq(quotesTable.id, q[0].id));
     res.status(201).json(project[0]);
-    fireNotification({
-      tenantId: q[0].tenantId,
-      event: "quote_status_change",
-      reference: q[0].reference,
-      oldStatus: q[0].status ?? undefined,
-      newStatus: "Accepted",
-    });
+
+    // Resolve customer details for admin notification
+    let firstName: string | undefined;
+    let lastName: string | undefined;
+    let customerEmail: string | undefined;
+    let customerPhone: string | undefined;
+
+    if (q[0].customerId) {
+      const rows = await db.select().from(customersTable).where(eq(customersTable.id, q[0].customerId)).limit(1);
+      const c = rows[0];
+      if (c) { firstName = c.firstName; lastName = c.lastName; customerEmail = c.email ?? undefined; customerPhone = c.phone ?? undefined; }
+    } else if (q[0].leadId) {
+      const rows = await db.select().from(leadsTable).where(eq(leadsTable.id, q[0].leadId)).limit(1);
+      const l = rows[0];
+      if (l) { firstName = l.firstName ?? undefined; lastName = l.lastName ?? undefined; customerEmail = l.email ?? undefined; customerPhone = l.phone ?? undefined; }
+    }
+
+    fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", firstName, lastName, customerEmail, customerPhone, reference: q[0].reference });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
