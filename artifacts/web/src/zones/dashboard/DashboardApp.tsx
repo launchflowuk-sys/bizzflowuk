@@ -1,5 +1,6 @@
 import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
 import { useAuthCtx } from "@/lib/auth";
+import { createContext, useContext, useEffect, useState } from "react";
 
 import {
   useGetMe, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
@@ -8,22 +9,117 @@ import {
   useListQuotes, useGetQuote, useUpdateQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
   useListProjects, useGetProject, useUpdateProject, useListProjectUpdates, useCreateProjectUpdate,
   useListCustomers, useGetCustomer,
-  useListGalleryImages, useListReviews, useListCaseStudies, useListServices, useListAreas, useListFaqs, useListBlogPosts,
-  useListVisualiserRequests, useListContactMessages, useListTeamMembers,
+  useListGalleryImages, useCreateGalleryImage, useUpdateGalleryImage, useDeleteGalleryImage,
+  useListReviews, useCreateReview, useUpdateReview, useDeleteReview,
+  useListCaseStudies, useCreateCaseStudy, useUpdateCaseStudy, useDeleteCaseStudy,
+  useListServices, useCreateService, useUpdateService, useDeleteService,
+  useListAreas, useCreateArea, useUpdateArea, useDeleteArea,
+  useListFaqs, useCreateFaq, useUpdateFaq, useDeleteFaq,
+  useListBlogPosts, useCreateBlogPost, useUpdateBlogPost, useDeleteBlogPost,
+  useListVisualiserRequests, useDeleteVisualiserRequest,
+  useListContactMessages,
+  useListTeamMembers, useCreateTeamMember, useUpdateTeamMember, useDeleteTeamMember,
   useGetSettings, useUpdateSettings, useTestEmailSettings, useTestSmsSettings,
 } from "@workspace/api-client-react";
-import { getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListQuoteItemsQueryKey, getListProjectUpdatesQueryKey } from "@workspace/api-client-react";
-import { useState } from "react";
+import {
+  getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey,
+  getListQuoteItemsQueryKey, getListProjectUpdatesQueryKey,
+  getListGalleryImagesQueryKey, getListReviewsQueryKey, getListCaseStudiesQueryKey,
+  getListServicesQueryKey, getListAreasQueryKey, getListFaqsQueryKey,
+  getListBlogPostsQueryKey, getListTeamMembersQueryKey,
+} from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
-function comingSoon() { alert("Coming soon — full CMS editing is on the roadmap."); }
+// ─── Toast system ─────────────────────────────────────────────────────────────
+type ToastMsg = { id: number; text: string; type: "success" | "error" };
+type ToastFn = (text: string, type?: "success" | "error") => void;
+const ToastCtx = createContext<ToastFn>(() => {});
+function useToast() { return useContext(ToastCtx); }
 
-function SignOutButton() {
-  const { signOut } = useAuthCtx();
+function ToastContainer({ toasts, remove }: { toasts: ToastMsg[]; remove: (id: number) => void }) {
   return (
-    <button onClick={signOut} className="w-full text-left px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
-      Sign out
-    </button>
+    <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div key={t.id} className={`flex items-center gap-2 rounded-lg px-4 py-3 shadow-lg text-sm font-medium pointer-events-auto animate-in fade-in slide-in-from-bottom-2 ${t.type === "error" ? "bg-red-600 text-white" : "bg-slate-900 text-white"}`}>
+          <span>{t.type === "success" ? "✓" : "✕"}</span>
+          <span>{t.text}</span>
+          <button onClick={() => remove(t.id)} className="ml-2 opacity-60 hover:opacity-100">✕</button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Generic Modal ─────────────────────────────────────────────────────────────
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
+      <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 sticky top-0 bg-white rounded-t-xl">
+          <h3 className="font-semibold text-slate-900">{title}</h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 p-1 rounded transition-colors">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          </button>
+        </div>
+        <div className="p-5">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Delete Confirm inside modal ────────────────────────────────────────────────
+function DeleteConfirm({ label, onConfirm, onCancel, isPending }: { label: string; onConfirm: () => void; onCancel: () => void; isPending: boolean }) {
+  return (
+    <div className="space-y-4">
+      <p className="text-sm text-slate-700">Are you sure you want to delete <strong>{label}</strong>? This cannot be undone.</p>
+      <div className="flex gap-2">
+        <button onClick={onConfirm} disabled={isPending} className="inline-flex h-9 items-center rounded-md bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50">
+          {isPending ? "Deleting..." : "Yes, Delete"}
+        </button>
+        <button onClick={onCancel} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+      </div>
+    </div>
+  );
+}
+
+// ─── Shared helpers ─────────────────────────────────────────────────────────────
+const inputCls = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500";
+const labelCls = "block text-sm font-medium text-slate-700 mb-1";
+
+function FField({ label, value, onChange, type = "text", hint }: { label: string; value: string | number; onChange: (v: string) => void; type?: string; hint?: string }) {
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <input type={type} className={inputCls} value={value ?? ""} onChange={e => onChange(e.target.value)} />
+      {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
+    </div>
+  );
+}
+function FTextarea({ label, value, onChange, rows = 3 }: { label: string; value: string; onChange: (v: string) => void; rows?: number }) {
+  return (
+    <div>
+      <label className={labelCls}>{label}</label>
+      <textarea rows={rows} className={inputCls} value={value ?? ""} onChange={e => onChange(e.target.value)} />
+    </div>
+  );
+}
+function FCheck({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <label className="flex items-center gap-2 cursor-pointer select-none">
+      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!checked} onChange={e => onChange(e.target.checked)} />
+      <span className="text-sm text-slate-700">{label}</span>
+    </label>
+  );
+}
+function SaveCancelBar({ onCancel, isPending, label = "Save" }: { onCancel: () => void; isPending: boolean; label?: string }) {
+  return (
+    <div className="flex gap-2 pt-2">
+      <button type="submit" disabled={isPending} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-400 disabled:opacity-50">
+        {isPending ? "Saving..." : label}
+      </button>
+      <button type="button" onClick={onCancel} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+    </div>
   );
 }
 
@@ -39,6 +135,15 @@ function Badge({ status }: { status: string }) {
     "Quote Approved": "bg-teal-100 text-teal-700",
   };
   return <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] || "bg-slate-100 text-slate-700"}`}>{status}</span>;
+}
+
+function SignOutButton() {
+  const { signOut } = useAuthCtx();
+  return (
+    <button onClick={signOut} className="w-full text-left px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+      Sign out
+    </button>
+  );
 }
 
 const NAV_ITEMS = [
@@ -67,7 +172,7 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
   return (
     <>
       <div className="p-4 border-b border-slate-800 flex-shrink-0">
-        <div className="font-bold text-white text-sm">LaunchFlow</div>
+        <div className="font-bold text-white text-sm">BizzFlow</div>
         <div className="text-xs text-slate-400 mt-0.5 truncate">{(me as any)?.email}</div>
         <div className="text-xs text-orange-400 font-medium mt-0.5">{(me as any)?.role?.replace("_", " ")}</div>
       </div>
@@ -99,6 +204,7 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
   );
 }
 
+// ─── Dashboard Home ────────────────────────────────────────────────────────────
 function DashboardHome() {
   const { data: stats } = useGetDashboardStats();
   const { data: activity } = useGetRecentActivity();
@@ -167,12 +273,27 @@ function DashboardHome() {
   );
 }
 
+// ─── Leads ─────────────────────────────────────────────────────────────────────
 function LeadsPage() {
   const { data: leads, isLoading } = useListLeads();
   const qc = useQueryClient();
   const deleteMutation = useDeleteLead();
+  const showToast = useToast();
   const [statusFilter, setStatusFilter] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
   const filtered = (leads as any[])?.filter((l: any) => !statusFilter || l.status === statusFilter);
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteMutation.mutateAsync({ id } as any);
+      qc.invalidateQueries({ queryKey: getListLeadsQueryKey() });
+      showToast("Lead deleted");
+      setDeleteId(null);
+    } catch (err: any) {
+      showToast(err?.message || "Delete failed", "error");
+    }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
@@ -186,7 +307,6 @@ function LeadsPage() {
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
-          {/* Mobile card list */}
           <div className="md:hidden space-y-2">
             {filtered?.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No leads found</div> : filtered?.map((l: any) => (
               <Link key={l.id} href={`/dashboard/leads/${l.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
@@ -202,7 +322,6 @@ function LeadsPage() {
               </Link>
             ))}
           </div>
-          {/* Desktop table */}
           <div className="hidden md:block rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -218,7 +337,16 @@ function LeadsPage() {
                       <td className="px-4 py-3"><Badge status={l.status} /></td>
                       <td className="px-4 py-3 text-slate-500">{l.source || "-"}</td>
                       <td className="px-4 py-3 text-slate-500">{l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-GB") : "-"}</td>
-                      <td className="px-4 py-3 text-right"><button onClick={async () => { if (confirm("Delete this lead?")) { await deleteMutation.mutateAsync({ id: l.id }); qc.invalidateQueries({ queryKey: getListLeadsQueryKey() }); } }} className="text-xs text-red-500 hover:text-red-700">Delete</button></td>
+                      <td className="px-4 py-3 text-right">
+                        {deleteId === l.id ? (
+                          <span className="flex items-center gap-1 justify-end">
+                            <button onClick={() => handleDelete(l.id)} className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded">Confirm</button>
+                            <button onClick={() => setDeleteId(null)} className="text-xs text-slate-500 hover:text-slate-700 px-1">Cancel</button>
+                          </span>
+                        ) : (
+                          <button onClick={() => setDeleteId(l.id)} className="text-xs text-red-500 hover:text-red-700">Delete</button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -240,33 +368,55 @@ function LeadDetailPage({ id }: { id: number }) {
   const convertToQuote = useConvertLeadToQuote();
   const convertToProject = useConvertLeadToProject();
   const qc = useQueryClient();
+  const showToast = useToast();
   const [noteContent, setNoteContent] = useState("");
+  const [confirmQuote, setConfirmQuote] = useState(false);
+  const [confirmProject, setConfirmProject] = useState(false);
   const l = lead as any;
+
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
   if (!l) return <div className="p-8 text-center text-slate-500">Lead not found</div>;
+
   const handleStatusChange = async (status: string) => {
-    await updateMutation.mutateAsync({ id, data: { status } } as any);
-    qc.invalidateQueries({ queryKey: getListLeadsQueryKey() });
+    try {
+      await updateMutation.mutateAsync({ id, data: { status } } as any);
+      qc.invalidateQueries({ queryKey: getListLeadsQueryKey() });
+    } catch (err: any) {
+      showToast(err?.message || "Update failed", "error");
+    }
   };
   const handleNoteSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!noteContent.trim()) return;
-    await noteMutation.mutateAsync({ id, data: { content: noteContent } } as any);
-    setNoteContent("");
-    qc.invalidateQueries();
+    try {
+      await noteMutation.mutateAsync({ id, data: { content: noteContent } } as any);
+      setNoteContent("");
+      qc.invalidateQueries();
+    } catch (err: any) {
+      showToast(err?.message || "Failed to add note", "error");
+    }
   };
   const handleConvertToQuote = async () => {
-    if (!confirm("Convert this lead to a quote?")) return;
-    const result = await convertToQuote.mutateAsync({ id } as any) as any;
-    qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
-    navigate(`/dashboard/quotes/${result.id}`);
+    try {
+      const result = await convertToQuote.mutateAsync({ id } as any) as any;
+      qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+      showToast("Lead converted to quote");
+      navigate(`/dashboard/quotes/${result.id}`);
+    } catch (err: any) {
+      showToast(err?.message || "Conversion failed", "error");
+    }
   };
   const handleConvertToProject = async () => {
-    if (!confirm("Convert this lead directly to a project?")) return;
-    const result = await convertToProject.mutateAsync({ id } as any) as any;
-    qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-    navigate(`/dashboard/projects/${result.id}`);
+    try {
+      const result = await convertToProject.mutateAsync({ id } as any) as any;
+      qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+      showToast("Lead converted to project");
+      navigate(`/dashboard/projects/${result.id}`);
+    } catch (err: any) {
+      showToast(err?.message || "Conversion failed", "error");
+    }
   };
+
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
@@ -317,12 +467,36 @@ function LeadDetailPage({ id }: { id: number }) {
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <h2 className="font-semibold text-slate-900">Actions</h2>
-            <button onClick={handleConvertToQuote} disabled={convertToQuote.isPending} className="w-full rounded-md border border-orange-500 text-orange-600 px-3 py-2.5 text-sm font-medium hover:bg-orange-50 disabled:opacity-50">
-              {convertToQuote.isPending ? "Converting..." : "→ Convert to Quote"}
-            </button>
-            <button onClick={handleConvertToProject} disabled={convertToProject.isPending} className="w-full rounded-md border border-slate-300 text-slate-700 px-3 py-2.5 text-sm font-medium hover:bg-slate-50 disabled:opacity-50">
-              {convertToProject.isPending ? "Converting..." : "→ Convert to Project"}
-            </button>
+            {!confirmQuote ? (
+              <button onClick={() => setConfirmQuote(true)} className="w-full rounded-md border border-orange-500 text-orange-600 px-3 py-2.5 text-sm font-medium hover:bg-orange-50">
+                → Convert to Quote
+              </button>
+            ) : (
+              <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
+                <p className="text-xs text-slate-700 font-medium">Convert this lead to a quote?</p>
+                <div className="flex gap-2">
+                  <button onClick={handleConvertToQuote} disabled={convertToQuote.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">
+                    {convertToQuote.isPending ? "Converting..." : "Yes, Convert"}
+                  </button>
+                  <button onClick={() => setConfirmQuote(false)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Cancel</button>
+                </div>
+              </div>
+            )}
+            {!confirmProject ? (
+              <button onClick={() => setConfirmProject(true)} className="w-full rounded-md border border-slate-300 text-slate-700 px-3 py-2.5 text-sm font-medium hover:bg-slate-50">
+                → Convert to Project
+              </button>
+            ) : (
+              <div className="rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
+                <p className="text-xs text-slate-700 font-medium">Convert directly to a project?</p>
+                <div className="flex gap-2">
+                  <button onClick={handleConvertToProject} disabled={convertToProject.isPending} className="flex-1 rounded bg-slate-700 text-white py-1.5 text-xs font-medium hover:bg-slate-600 disabled:opacity-50">
+                    {convertToProject.isPending ? "Converting..." : "Yes, Convert"}
+                  </button>
+                  <button onClick={() => setConfirmProject(false)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Cancel</button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -330,6 +504,7 @@ function LeadDetailPage({ id }: { id: number }) {
   );
 }
 
+// ─── Quotes ────────────────────────────────────────────────────────────────────
 function QuotesPage() {
   const { data: quotes, isLoading } = useListQuotes();
   return (
@@ -337,7 +512,6 @@ function QuotesPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Quotes</h1>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
-          {/* Mobile card list */}
           <div className="md:hidden space-y-2">
             {!(quotes as any[])?.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No quotes yet</div> : (quotes as any[]).map((q: any) => (
               <Link key={q.id} href={`/dashboard/quotes/${q.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
@@ -353,7 +527,6 @@ function QuotesPage() {
               </Link>
             ))}
           </div>
-          {/* Desktop table */}
           <div className="hidden md:block rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -387,13 +560,15 @@ function QuoteDetailPage({ id }: { id: number }) {
   const { data: items } = useListQuoteItems(id);
   const updateMutation = useUpdateQuote();
   const createItem = useCreateQuoteItem();
-  const updateItem = useUpdateQuoteItem();
   const deleteItem = useDeleteQuoteItem();
   const convertToProject = useConvertQuoteToProject();
   const qc = useQueryClient();
+  const showToast = useToast();
   const [newItem, setNewItem] = useState({ description: "", quantity: 1, unitPrice: "" });
+  const [confirmProject, setConfirmProject] = useState(false);
   const q = quote as any;
   const lineItems = items as any[] || [];
+
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
   if (!q) return <div className="p-8 text-center text-slate-500">Quote not found</div>;
 
@@ -406,22 +581,32 @@ function QuoteDetailPage({ id }: { id: number }) {
     if (!newItem.description || !newItem.unitPrice) return;
     const qty = Number(newItem.quantity);
     const price = Number(newItem.unitPrice);
-    await createItem.mutateAsync({ id, data: { description: newItem.description, quantity: qty, unitPrice: price, total: qty * price, sortOrder: lineItems.length } } as any);
-    setNewItem({ description: "", quantity: 1, unitPrice: "" });
-    qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) });
+    try {
+      await createItem.mutateAsync({ id, data: { description: newItem.description, quantity: qty, unitPrice: price, total: qty * price, sortOrder: lineItems.length } } as any);
+      setNewItem({ description: "", quantity: 1, unitPrice: "" });
+      qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) });
+    } catch (err: any) {
+      showToast(err?.message || "Failed to add item", "error");
+    }
   };
   const handleStatusChange = async (status: string) => {
-    await updateMutation.mutateAsync({ id, data: { status, total, subtotal, vatAmount: vat } } as any);
-    qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+    try {
+      await updateMutation.mutateAsync({ id, data: { status, total, subtotal, vatAmount: vat } } as any);
+      qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+    } catch (err: any) {
+      showToast(err?.message || "Update failed", "error");
+    }
   };
   const handleConvertToProject = async () => {
-    if (!confirm("Convert this quote to a project?")) return;
-    const result = await convertToProject.mutateAsync({ id } as any) as any;
-    qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-    navigate(`/dashboard/projects/${result.id}`);
+    try {
+      const result = await convertToProject.mutateAsync({ id } as any) as any;
+      qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+      showToast("Quote converted to project");
+      navigate(`/dashboard/projects/${result.id}`);
+    } catch (err: any) {
+      showToast(err?.message || "Conversion failed", "error");
+    }
   };
-
-  void updateItem;
 
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
@@ -446,7 +631,7 @@ function QuoteDetailPage({ id }: { id: number }) {
                       <td className="py-2 text-right text-slate-600">{item.quantity}</td>
                       <td className="py-2 text-right text-slate-600">£{Number(item.unitPrice).toFixed(2)}</td>
                       <td className="py-2 text-right font-medium text-slate-800">£{Number(item.total).toFixed(2)}</td>
-                      <td className="py-2 text-right"><button onClick={async () => { await deleteItem.mutateAsync({ id, itemId: item.id } as any); qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) }); }} className="text-red-400 hover:text-red-600 text-xs">✕</button></td>
+                      <td className="py-2 text-right"><button onClick={async () => { try { await deleteItem.mutateAsync({ id, itemId: item.id } as any); qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) }); } catch { showToast("Delete failed", "error"); } }} className="text-red-400 hover:text-red-600 text-xs">✕</button></td>
                     </tr>
                   ))}
                   {!lineItems.length && <tr><td colSpan={5} className="py-4 text-center text-slate-400 text-xs">No line items yet</td></tr>}
@@ -465,12 +650,7 @@ function QuoteDetailPage({ id }: { id: number }) {
               <div className="text-base font-bold text-slate-900">Total: £{total.toFixed(2)}</div>
             </div>
           </div>
-          {q.notes && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <h2 className="font-semibold text-slate-900 mb-2">Notes</h2>
-              <p className="text-sm text-slate-600">{q.notes}</p>
-            </div>
-          )}
+          {q.notes && <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"><h2 className="font-semibold text-slate-900 mb-2">Notes</h2><p className="text-sm text-slate-600">{q.notes}</p></div>}
         </div>
         <div className="space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
@@ -482,9 +662,19 @@ function QuoteDetailPage({ id }: { id: number }) {
           {q.status === "Accepted" && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
               <h2 className="font-semibold text-slate-900 mb-3">Actions</h2>
-              <button onClick={handleConvertToProject} disabled={convertToProject.isPending} className="w-full rounded-md bg-orange-500 text-white px-3 py-2.5 text-sm font-medium hover:bg-orange-400 disabled:opacity-50">
-                {convertToProject.isPending ? "Converting..." : "→ Convert to Project"}
-              </button>
+              {!confirmProject ? (
+                <button onClick={() => setConfirmProject(true)} className="w-full rounded-md bg-orange-500 text-white px-3 py-2.5 text-sm font-medium hover:bg-orange-400">→ Convert to Project</button>
+              ) : (
+                <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
+                  <p className="text-xs font-medium text-slate-700">Convert this quote to a project?</p>
+                  <div className="flex gap-2">
+                    <button onClick={handleConvertToProject} disabled={convertToProject.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">
+                      {convertToProject.isPending ? "Converting..." : "Yes, Convert"}
+                    </button>
+                    <button onClick={() => setConfirmProject(false)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium">Cancel</button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 text-sm space-y-2">
@@ -499,6 +689,7 @@ function QuoteDetailPage({ id }: { id: number }) {
   );
 }
 
+// ─── Projects ─────────────────────────────────────────────────────────────────
 function ProjectsPage() {
   const { data: projects, isLoading } = useListProjects();
   const [statusFilter, setStatusFilter] = useState("");
@@ -513,14 +704,10 @@ function ProjectsPage() {
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
-          {/* Mobile card list */}
           <div className="md:hidden space-y-2">
             {!filtered?.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No projects found</div> : filtered.map((p: any) => (
               <Link key={p.id} href={`/dashboard/projects/${p.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
-                <div className="flex items-start justify-between gap-2 mb-1.5">
-                  <div className="font-medium text-slate-900">{p.title}</div>
-                  <Badge status={p.status} />
-                </div>
+                <div className="flex items-start justify-between gap-2 mb-1.5"><div className="font-medium text-slate-900">{p.title}</div><Badge status={p.status} /></div>
                 <div className="text-xs text-slate-500 space-y-0.5">
                   {[p.city, p.postcode].filter(Boolean).join(", ") && <div>{[p.city, p.postcode].filter(Boolean).join(", ")}</div>}
                   {p.scheduledStart && <div>Starts {new Date(p.scheduledStart).toLocaleDateString("en-GB")}</div>}
@@ -528,7 +715,6 @@ function ProjectsPage() {
               </Link>
             ))}
           </div>
-          {/* Desktop table */}
           <div className="hidden md:block rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -561,21 +747,30 @@ function ProjectDetailPage({ id }: { id: number }) {
   const updateMutation = useUpdateProject();
   const createUpdate = useCreateProjectUpdate();
   const qc = useQueryClient();
+  const showToast = useToast();
   const [updateForm, setUpdateForm] = useState({ title: "", content: "", visibleToCustomer: true });
   const p = project as any;
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
   if (!p) return <div className="p-8 text-center text-slate-500">Project not found</div>;
 
   const handleStatusChange = async (status: string) => {
-    await updateMutation.mutateAsync({ id, data: { status } } as any);
-    qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+    try {
+      await updateMutation.mutateAsync({ id, data: { status } } as any);
+      qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+    } catch (err: any) {
+      showToast(err?.message || "Update failed", "error");
+    }
   };
   const handleAddUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!updateForm.content.trim()) return;
-    await createUpdate.mutateAsync({ id, data: updateForm } as any);
-    setUpdateForm({ title: "", content: "", visibleToCustomer: true });
-    qc.invalidateQueries({ queryKey: getListProjectUpdatesQueryKey(id) });
+    try {
+      await createUpdate.mutateAsync({ id, data: updateForm } as any);
+      setUpdateForm({ title: "", content: "", visibleToCustomer: true });
+      qc.invalidateQueries({ queryKey: getListProjectUpdatesQueryKey(id) });
+    } catch (err: any) {
+      showToast(err?.message || "Failed to add update", "error");
+    }
   };
 
   return (
@@ -639,6 +834,7 @@ function ProjectDetailPage({ id }: { id: number }) {
   );
 }
 
+// ─── Customers ─────────────────────────────────────────────────────────────────
 function CustomersPage() {
   const { data: customers, isLoading } = useListCustomers();
   return (
@@ -646,23 +842,14 @@ function CustomersPage() {
       <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Customers</h1>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
-          {/* Mobile card list */}
           <div className="md:hidden space-y-2">
             {!(customers as any[])?.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No customers yet</div> : (customers as any[]).map((c: any) => (
               <Link key={c.id} href={`/dashboard/customers/${c.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
-                <div className="flex items-start justify-between gap-2 mb-1">
-                  <div className="font-medium text-slate-900">{c.firstName} {c.lastName}</div>
-                  {c.portalEnabled && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Portal</span>}
-                </div>
-                <div className="text-xs text-slate-500 space-y-0.5">
-                  {c.email && <div>{c.email}</div>}
-                  {c.phone && <div>{c.phone}</div>}
-                  {c.city && <div>{c.city}</div>}
-                </div>
+                <div className="flex items-start justify-between gap-2 mb-1"><div className="font-medium text-slate-900">{c.firstName} {c.lastName}</div>{c.portalEnabled && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Portal</span>}</div>
+                <div className="text-xs text-slate-500 space-y-0.5">{c.email && <div>{c.email}</div>}{c.phone && <div>{c.phone}</div>}{c.city && <div>{c.city}</div>}</div>
               </Link>
             ))}
           </div>
-          {/* Desktop table */}
           <div className="hidden md:block rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
@@ -676,7 +863,7 @@ function CustomersPage() {
                       <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{c.city || "-"}</td>
-                      <td className="px-4 py-3">{c.portalEnabled ? <span className="text-xs text-green-600 font-medium">Active</span> : <span className="text-xs text-slate-400">Inactive</span>}</td>
+                      <td className="px-4 py-3">{c.portalEnabled ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Active</span> : <span className="text-xs text-slate-400">-</span>}</td>
                       <td className="px-4 py-3 text-right"><Link href={`/dashboard/customers/${c.id}`} className="text-xs text-orange-500">View</Link></td>
                     </tr>
                   ))}
@@ -692,104 +879,70 @@ function CustomersPage() {
 
 function CustomerDetailPage({ id }: { id: number }) {
   const { data: customer, isLoading } = useGetCustomer(id);
-  const { data: allLeads } = useListLeads();
-  const { data: allQuotes } = useListQuotes();
-  const { data: allProjects } = useListProjects();
   const c = customer as any;
-  const leads = (allLeads as any[])?.filter((l: any) => l.email === c?.email) || [];
-  const quotes = (allQuotes as any[])?.filter((q: any) => q.customerId === id) || [];
-  const projects = (allProjects as any[])?.filter((p: any) => p.customerId === id) || [];
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
   if (!c) return <div className="p-8 text-center text-slate-500">Customer not found</div>;
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
+    <div className="p-4 sm:p-6 space-y-5 max-w-3xl">
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/dashboard/customers" className="text-sm text-slate-500 hover:text-orange-500">&larr; Customers</Link>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{c.firstName} {c.lastName}</h1>
         {c.portalEnabled && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Portal Active</span>}
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 space-y-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
-            <h2 className="font-semibold text-slate-900">Customer Info</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div><span className="text-slate-500">Email: </span><a href={`mailto:${c.email}`} className="text-orange-600 hover:underline break-all">{c.email || "-"}</a></div>
-              <div><span className="text-slate-500">Phone: </span><a href={`tel:${c.phone}`} className="text-orange-600 hover:underline">{c.phone || "-"}</a></div>
-              <div className="sm:col-span-2"><span className="text-slate-500">Address: </span><span className="text-slate-900">{[c.address, c.city, c.postcode].filter(Boolean).join(", ") || "-"}</span></div>
-              {c.notes && <div className="sm:col-span-2"><span className="text-slate-500">Notes: </span><span className="text-slate-900">{c.notes}</span></div>}
-            </div>
-          </div>
-          {leads.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <h2 className="font-semibold text-slate-900 mb-3">Linked Leads ({leads.length})</h2>
-              <div className="space-y-2">
-                {leads.map((l: any) => (
-                  <div key={l.id} className="flex items-center justify-between text-sm bg-slate-50 rounded-lg px-3 py-2 gap-2">
-                    <span className="text-slate-700 truncate">{l.serviceInterest || "Lead"} — {l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-GB") : ""}</span>
-                    <div className="flex items-center gap-2 flex-shrink-0"><Badge status={l.status} /><Link href={`/dashboard/leads/${l.id}`} className="text-xs text-orange-500">View</Link></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {quotes.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <h2 className="font-semibold text-slate-900 mb-3">Quotes ({quotes.length})</h2>
-              <div className="space-y-2">
-                {quotes.map((q: any) => (
-                  <div key={q.id} className="flex items-center justify-between text-sm bg-slate-50 rounded-lg px-3 py-2 gap-2">
-                    <span className="text-slate-700 truncate">{q.reference} — £{Number(q.total || 0).toFixed(2)}</span>
-                    <div className="flex items-center gap-2 flex-shrink-0"><Badge status={q.status} /><Link href={`/dashboard/quotes/${q.id}`} className="text-xs text-orange-500">View</Link></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {projects.length > 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-              <h2 className="font-semibold text-slate-900 mb-3">Projects ({projects.length})</h2>
-              <div className="space-y-2">
-                {projects.map((p: any) => (
-                  <div key={p.id} className="flex items-center justify-between text-sm bg-slate-50 rounded-lg px-3 py-2 gap-2">
-                    <span className="text-slate-700 truncate">{p.title}</span>
-                    <div className="flex items-center gap-2 flex-shrink-0"><Badge status={p.status} /><Link href={`/dashboard/projects/${p.id}`} className="text-xs text-orange-500">View</Link></div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {leads.length === 0 && quotes.length === 0 && projects.length === 0 && (
-            <div className="rounded-xl border border-slate-200 bg-white p-5 text-center text-slate-400 text-sm">No linked leads, quotes or projects yet</div>
-          )}
-        </div>
-        <div className="space-y-4">
-          <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 text-sm space-y-2">
-            <h2 className="font-semibold text-slate-900">Summary</h2>
-            <div className="text-slate-600">Leads: <span className="font-medium text-slate-800">{leads.length}</span></div>
-            <div className="text-slate-600">Quotes: <span className="font-medium text-slate-800">{quotes.length}</span></div>
-            <div className="text-slate-600">Projects: <span className="font-medium text-slate-800">{projects.length}</span></div>
-            <div className="text-slate-600">Member since: <span className="font-medium text-slate-800">{c.createdAt ? new Date(c.createdAt).toLocaleDateString("en-GB") : "-"}</span></div>
-          </div>
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+        <h2 className="font-semibold text-slate-900">Contact Details</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div><span className="text-slate-500">Email: </span><a href={`mailto:${c.email}`} className="text-orange-600 hover:underline break-all">{c.email || "-"}</a></div>
+          <div><span className="text-slate-500">Phone: </span><a href={`tel:${c.phone}`} className="text-orange-600 hover:underline">{c.phone || "-"}</a></div>
+          <div><span className="text-slate-500">City: </span><span className="text-slate-900">{c.city || "-"}</span></div>
+          <div><span className="text-slate-500">Postcode: </span><span className="text-slate-900">{c.postcode || "-"}</span></div>
+          {c.address && <div className="sm:col-span-2"><span className="text-slate-500">Address: </span><span className="text-slate-900">{c.address}</span></div>}
         </div>
       </div>
     </div>
   );
 }
 
-function CmsStubBtn({ label, onClick }: { label: string; onClick: () => void }) {
-  return (
-    <button onClick={onClick} className="text-xs text-slate-500 hover:text-orange-600 transition-colors px-2 py-1 rounded hover:bg-orange-50">{label}</button>
-  );
-}
-
+// ─── CMS: Gallery ──────────────────────────────────────────────────────────────
 function GalleryPage() {
   const { data, isLoading } = useListGalleryImages();
+  const createMutation = useCreateGalleryImage();
+  const updateMutation = useUpdateGalleryImage();
+  const deleteMutation = useDeleteGalleryImage();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ featured: false, sortOrder: 0 }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListGalleryImagesQueryKey() });
+      showToast(modal?.mode === "add" ? "Image added" : "Image updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListGalleryImagesQueryKey() });
+      showToast("Image deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gallery</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add Image</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add Image</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -800,11 +953,11 @@ function GalleryPage() {
                   {item.imageUrl && <img src={item.imageUrl} alt={item.altText || ""} className="w-12 h-12 object-cover rounded-lg flex-shrink-0 bg-slate-100" onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />}
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{item.caption || "Untitled"}</p>
-                    <p className="text-xs text-slate-400">{item.featured ? "Featured" : ""}</p>
+                    <p className="text-xs text-slate-400">{item.featured ? "Featured · " : ""}{item.category || ""}</p>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -812,18 +965,67 @@ function GalleryPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete Image" : modal.mode === "add" ? "Add Image" : "Edit Image"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.caption || "this image"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Image URL *" value={form.imageUrl || ""} onChange={v => setForm({ ...form, imageUrl: v })} />
+              <FField label="Caption" value={form.caption || ""} onChange={v => setForm({ ...form, caption: v })} />
+              <FField label="Alt Text" value={form.altText || ""} onChange={v => setForm({ ...form, altText: v })} />
+              <FField label="Category" value={form.category || ""} onChange={v => setForm({ ...form, category: v })} />
+              <FField label="Sort Order" type="number" value={form.sortOrder ?? 0} onChange={v => setForm({ ...form, sortOrder: Number(v) })} />
+              <FCheck label="Featured" checked={!!form.featured} onChange={v => setForm({ ...form, featured: v })} />
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── CMS: Reviews ──────────────────────────────────────────────────────────────
 function ReviewsPage() {
   const { data, isLoading } = useListReviews();
+  const createMutation = useCreateReview();
+  const updateMutation = useUpdateReview();
+  const deleteMutation = useDeleteReview();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ rating: 5, featured: false, published: true }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListReviewsQueryKey() });
+      showToast(modal?.mode === "add" ? "Review added" : "Review updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListReviewsQueryKey() });
+      showToast("Review deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Reviews</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -835,13 +1037,14 @@ function ReviewsPage() {
                     <p className="text-sm font-medium text-slate-800 truncate">{item.reviewerName}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       <span className="text-xs text-amber-500">{"★".repeat(item.rating || 5)}</span>
+                      {item.platform && <span className="text-xs text-slate-400">{item.platform}</span>}
                       {item.featured && <span className="text-xs text-green-600 font-medium">Featured</span>}
                       {!item.published && <span className="text-xs text-slate-400">Draft</span>}
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -849,18 +1052,75 @@ function ReviewsPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete Review" : modal.mode === "add" ? "Add Review" : "Edit Review"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.reviewerName || "this review"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Reviewer Name *" value={form.reviewerName || ""} onChange={v => setForm({ ...form, reviewerName: v })} />
+              <FTextarea label="Review Text *" value={form.reviewText || ""} onChange={v => setForm({ ...form, reviewText: v })} />
+              <div>
+                <label className={labelCls}>Rating</label>
+                <select className={inputCls} value={form.rating ?? 5} onChange={e => setForm({ ...form, rating: Number(e.target.value) })}>
+                  {[5,4,3,2,1].map(r => <option key={r} value={r}>{r} star{r !== 1 ? "s" : ""}</option>)}
+                </select>
+              </div>
+              <FField label="Platform (e.g. Google, Trustpilot)" value={form.platform || ""} onChange={v => setForm({ ...form, platform: v })} />
+              <FField label="Review Date" type="date" value={form.reviewDate || ""} onChange={v => setForm({ ...form, reviewDate: v })} />
+              <div className="flex gap-4">
+                <FCheck label="Featured" checked={!!form.featured} onChange={v => setForm({ ...form, featured: v })} />
+                <FCheck label="Published" checked={form.published !== false} onChange={v => setForm({ ...form, published: v })} />
+              </div>
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── CMS: Case Studies ─────────────────────────────────────────────────────────
 function CaseStudiesPage() {
   const { data, isLoading } = useListCaseStudies();
+  const createMutation = useCreateCaseStudy();
+  const updateMutation = useUpdateCaseStudy();
+  const deleteMutation = useDeleteCaseStudy();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ featured: false, published: true }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListCaseStudiesQueryKey() });
+      showToast(modal?.mode === "add" ? "Case study added" : "Case study updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListCaseStudiesQueryKey() });
+      showToast("Case study deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Case Studies</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -872,13 +1132,14 @@ function CaseStudiesPage() {
                     <p className="text-sm font-medium text-slate-800 truncate">{item.title}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {item.location && <span className="text-xs text-slate-400">{item.location}</span>}
+                      {item.projectType && <span className="text-xs text-slate-400">{item.projectType}</span>}
                       {item.featured && <span className="text-xs text-green-600 font-medium">Featured</span>}
-                      {!item.published && <span className="text-xs text-slate-400">Draft</span>}
+                      {!item.published && <span className="text-xs text-amber-600 font-medium">Draft</span>}
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -886,18 +1147,72 @@ function CaseStudiesPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete Case Study" : modal.mode === "add" ? "Add Case Study" : "Edit Case Study"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.title || "this case study"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Title *" value={form.title || ""} onChange={v => setForm({ ...form, title: v })} />
+              <FField label="Slug" value={form.slug || ""} onChange={v => setForm({ ...form, slug: v })} hint="URL-friendly identifier (auto-generated if blank)" />
+              <FField label="Project Type" value={form.projectType || ""} onChange={v => setForm({ ...form, projectType: v })} />
+              <FField label="Location" value={form.location || ""} onChange={v => setForm({ ...form, location: v })} />
+              <FField label="Completion Date" value={form.completionDate || ""} onChange={v => setForm({ ...form, completionDate: v })} />
+              <FTextarea label="Description" value={form.description || ""} onChange={v => setForm({ ...form, description: v })} rows={4} />
+              <FField label="Cover Image URL" value={form.coverImageUrl || ""} onChange={v => setForm({ ...form, coverImageUrl: v })} />
+              <div className="flex gap-4">
+                <FCheck label="Featured" checked={!!form.featured} onChange={v => setForm({ ...form, featured: v })} />
+                <FCheck label="Published" checked={form.published !== false} onChange={v => setForm({ ...form, published: v })} />
+              </div>
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── CMS: Services ─────────────────────────────────────────────────────────────
 function ServicesPage() {
   const { data, isLoading } = useListServices();
+  const createMutation = useCreateService();
+  const updateMutation = useUpdateService();
+  const deleteMutation = useDeleteService();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ featured: false, published: true, sortOrder: 0 }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListServicesQueryKey() });
+      showToast(modal?.mode === "add" ? "Service added" : "Service updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListServicesQueryKey() });
+      showToast("Service deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Services</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -909,12 +1224,13 @@ function ServicesPage() {
                     <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {item.featured && <span className="text-xs text-green-600 font-medium">Featured</span>}
-                      {!item.published && <span className="text-xs text-slate-400">Draft</span>}
+                      {!item.published && <span className="text-xs text-amber-600 font-medium">Draft</span>}
+                      {item.shortDescription && <span className="text-xs text-slate-400 truncate">{item.shortDescription}</span>}
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -922,18 +1238,72 @@ function ServicesPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete Service" : modal.mode === "add" ? "Add Service" : "Edit Service"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.name || "this service"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Service Name *" value={form.name || ""} onChange={v => setForm({ ...form, name: v })} />
+              <FField label="Slug" value={form.slug || ""} onChange={v => setForm({ ...form, slug: v })} hint="URL-friendly identifier" />
+              <FField label="Short Description" value={form.shortDescription || ""} onChange={v => setForm({ ...form, shortDescription: v })} />
+              <FTextarea label="Full Description" value={form.description || ""} onChange={v => setForm({ ...form, description: v })} rows={4} />
+              <FField label="Icon (emoji or icon name)" value={form.icon || ""} onChange={v => setForm({ ...form, icon: v })} />
+              <FField label="Hero Image URL" value={form.heroImageUrl || ""} onChange={v => setForm({ ...form, heroImageUrl: v })} />
+              <FField label="Sort Order" type="number" value={form.sortOrder ?? 0} onChange={v => setForm({ ...form, sortOrder: Number(v) })} />
+              <div className="flex gap-4">
+                <FCheck label="Featured" checked={!!form.featured} onChange={v => setForm({ ...form, featured: v })} />
+                <FCheck label="Published" checked={form.published !== false} onChange={v => setForm({ ...form, published: v })} />
+              </div>
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── CMS: Areas ────────────────────────────────────────────────────────────────
 function AreasPage() {
   const { data, isLoading } = useListAreas();
+  const createMutation = useCreateArea();
+  const updateMutation = useUpdateArea();
+  const deleteMutation = useDeleteArea();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ published: true }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListAreasQueryKey() });
+      showToast(modal?.mode === "add" ? "Area added" : "Area updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListAreasQueryKey() });
+      showToast("Area deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Areas</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -945,12 +1315,12 @@ function AreasPage() {
                     <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
                     <div className="flex items-center gap-2 mt-0.5">
                       {item.county && <span className="text-xs text-slate-400">{item.county}</span>}
-                      {!item.published && <span className="text-xs text-slate-400">Draft</span>}
+                      {!item.published && <span className="text-xs text-amber-600 font-medium">Draft</span>}
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -958,18 +1328,67 @@ function AreasPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete Area" : modal.mode === "add" ? "Add Area" : "Edit Area"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.name || "this area"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Area Name *" value={form.name || ""} onChange={v => setForm({ ...form, name: v })} />
+              <FField label="Slug" value={form.slug || ""} onChange={v => setForm({ ...form, slug: v })} hint="URL-friendly identifier" />
+              <FField label="County" value={form.county || ""} onChange={v => setForm({ ...form, county: v })} />
+              <FField label="Postcode Prefix (e.g. SW1)" value={form.postcodePrefix || ""} onChange={v => setForm({ ...form, postcodePrefix: v })} />
+              <FTextarea label="Description" value={form.description || ""} onChange={v => setForm({ ...form, description: v })} />
+              <FCheck label="Published" checked={form.published !== false} onChange={v => setForm({ ...form, published: v })} />
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── CMS: FAQs ─────────────────────────────────────────────────────────────────
 function FaqsPage() {
   const { data, isLoading } = useListFaqs();
+  const createMutation = useCreateFaq();
+  const updateMutation = useUpdateFaq();
+  const deleteMutation = useDeleteFaq();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ sortOrder: 0 }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListFaqsQueryKey() });
+      showToast(modal?.mode === "add" ? "FAQ added" : "FAQ updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListFaqsQueryKey() });
+      showToast("FAQ deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">FAQs</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -980,10 +1399,11 @@ function FaqsPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800">{item.question}</p>
                     {item.answer && <p className="text-xs text-slate-400 mt-0.5 line-clamp-1">{item.answer}</p>}
+                    {item.category && <span className="text-xs text-slate-400">{item.category}</span>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0 mt-0.5">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -991,18 +1411,65 @@ function FaqsPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete FAQ" : modal.mode === "add" ? "Add FAQ" : "Edit FAQ"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label="this FAQ" onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Question *" value={form.question || ""} onChange={v => setForm({ ...form, question: v })} />
+              <FTextarea label="Answer *" value={form.answer || ""} onChange={v => setForm({ ...form, answer: v })} rows={4} />
+              <FField label="Category" value={form.category || ""} onChange={v => setForm({ ...form, category: v })} />
+              <FField label="Sort Order" type="number" value={form.sortOrder ?? 0} onChange={v => setForm({ ...form, sortOrder: Number(v) })} />
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── CMS: Blog ─────────────────────────────────────────────────────────────────
 function BlogPage() {
   const { data, isLoading } = useListBlogPosts();
+  const createMutation = useCreateBlogPost();
+  const updateMutation = useUpdateBlogPost();
+  const deleteMutation = useDeleteBlogPost();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ published: false }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListBlogPostsQueryKey() });
+      showToast(modal?.mode === "add" ? "Post created" : "Post updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListBlogPostsQueryKey() });
+      showToast("Post deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Blog</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New Post</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New Post</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -1019,8 +1486,8 @@ function BlogPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -1028,10 +1495,29 @@ function BlogPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete Post" : modal.mode === "add" ? "New Blog Post" : "Edit Blog Post"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.title || "this post"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Title *" value={form.title || ""} onChange={v => setForm({ ...form, title: v })} />
+              <FField label="Slug" value={form.slug || ""} onChange={v => setForm({ ...form, slug: v })} hint="URL-friendly identifier" />
+              <FField label="Author Name" value={form.authorName || ""} onChange={v => setForm({ ...form, authorName: v })} />
+              <FField label="Cover Image URL" value={form.coverImageUrl || ""} onChange={v => setForm({ ...form, coverImageUrl: v })} />
+              <FTextarea label="Excerpt" value={form.excerpt || ""} onChange={v => setForm({ ...form, excerpt: v })} rows={2} />
+              <FTextarea label="Content" value={form.content || ""} onChange={v => setForm({ ...form, content: v })} rows={6} />
+              <FCheck label="Published" checked={!!form.published} onChange={v => setForm({ ...form, published: v })} />
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── Messages ──────────────────────────────────────────────────────────────────
 function MessagesPage() {
   const { data: messages, isLoading } = useListContactMessages();
   return (
@@ -1059,15 +1545,27 @@ function MessagesPage() {
   );
 }
 
+// ─── Visualiser ────────────────────────────────────────────────────────────────
 function VisualiserPage() {
   const { data, isLoading } = useListVisualiserRequests();
+  const deleteMutation = useDeleteVisualiserRequest();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteMutation.mutateAsync({ id } as any);
+      qc.invalidateQueries();
+      showToast("Request deleted");
+      setDeleteId(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Visualiser Requests</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
-      </div>
+      <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Visualiser Requests</h1>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
           {!rows.length ? <div className="p-8 text-center text-slate-400">No visualiser requests yet</div> : (
@@ -1081,12 +1579,16 @@ function VisualiserPage() {
                       {item.status && <Badge status={item.status} />}
                     </div>
                   </div>
-                  <div className="text-xs text-slate-400 flex-shrink-0 mr-1">
-                    {item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-GB") : ""}
-                  </div>
+                  <div className="text-xs text-slate-400 flex-shrink-0 mr-1">{item.createdAt ? new Date(item.createdAt).toLocaleDateString("en-GB") : ""}</div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    {deleteId === item.id ? (
+                      <>
+                        <button onClick={() => handleDelete(item.id)} className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-1 rounded">Confirm</button>
+                        <button onClick={() => setDeleteId(null)} className="text-xs text-slate-500 hover:text-slate-700 px-1">Cancel</button>
+                      </>
+                    ) : (
+                      <button onClick={() => setDeleteId(item.id)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -1098,14 +1600,46 @@ function VisualiserPage() {
   );
 }
 
+// ─── CMS: Team ─────────────────────────────────────────────────────────────────
 function TeamPage() {
   const { data, isLoading } = useListTeamMembers();
+  const createMutation = useCreateTeamMember();
+  const updateMutation = useUpdateTeamMember();
+  const deleteMutation = useDeleteTeamMember();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const rows = data as any[] || [];
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ sortOrder: 0 }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: form } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: form } as any);
+      qc.invalidateQueries({ queryKey: getListTeamMembersQueryKey() });
+      showToast(modal?.mode === "add" ? "Team member added" : "Team member updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListTeamMembersQueryKey() });
+      showToast("Team member removed");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Team</h1>
-        <button onClick={comingSoon} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add Member</button>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add Member</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -1114,15 +1648,15 @@ function TeamPage() {
               {rows.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-3 px-4 py-3">
                   <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    <span className="text-sm font-bold text-orange-600">{(item.name || "?")[0].toUpperCase()}</span>
+                    {item.photoUrl ? <img src={item.photoUrl} className="w-9 h-9 rounded-full object-cover" alt="" onError={e => { (e.target as HTMLImageElement).style.display="none"; }} /> : <span className="text-sm font-bold text-orange-600">{(item.name || "?")[0].toUpperCase()}</span>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
                     <p className="text-xs text-slate-400 truncate">{item.role || ""}{item.email ? ` · ${item.email}` : ""}</p>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <CmsStubBtn label="Edit" onClick={comingSoon} />
-                    <CmsStubBtn label="Delete" onClick={comingSoon} />
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
               ))}
@@ -1130,17 +1664,35 @@ function TeamPage() {
           )}
         </div>
       )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Remove Team Member" : modal.mode === "add" ? "Add Team Member" : "Edit Team Member"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.name || "this member"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Full Name *" value={form.name || ""} onChange={v => setForm({ ...form, name: v })} />
+              <FField label="Job Title / Role" value={form.role || ""} onChange={v => setForm({ ...form, role: v })} />
+              <FField label="Email" type="email" value={form.email || ""} onChange={v => setForm({ ...form, email: v })} />
+              <FField label="Photo URL" value={form.photoUrl || ""} onChange={v => setForm({ ...form, photoUrl: v })} />
+              <FTextarea label="Bio" value={form.bio || ""} onChange={v => setForm({ ...form, bio: v })} rows={3} />
+              <FField label="Sort Order" type="number" value={form.sortOrder ?? 0} onChange={v => setForm({ ...form, sortOrder: Number(v) })} />
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
     </div>
   );
 }
 
+// ─── Settings ─────────────────────────────────────────────────────────────────
 function SettingsPage() {
   const { data: settings, isLoading } = useGetSettings();
   const updateMutation = useUpdateSettings();
   const testEmailMutation = useTestEmailSettings();
   const testSmsMutation = useTestSmsSettings();
+  const showToast = useToast();
   const [form, setForm] = useState<any>(null);
-  const [saved, setSaved] = useState(false);
   const [smtpPass, setSmtpPass] = useState("");
   const [twilioAuthToken, setTwilioAuthToken] = useState("");
   const [emailTestResult, setEmailTestResult] = useState<{ ok: boolean; error?: string | null } | null>(null);
@@ -1156,32 +1708,44 @@ function SettingsPage() {
     else delete payload.smtpPass;
     if (twilioAuthToken) payload.twilioAuthToken = twilioAuthToken;
     else delete payload.twilioAuthToken;
-    await updateMutation.mutateAsync({ data: payload } as any);
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+    try {
+      await updateMutation.mutateAsync({ data: payload } as any);
+      showToast("Settings saved");
+      setSmtpPass("");
+      setTwilioAuthToken("");
+    } catch (err: any) {
+      showToast(err?.message || "Save failed — please check your inputs and try again", "error");
+    }
   };
 
   const handleTestEmail = async () => {
     setEmailTestResult(null);
-    const result = await testEmailMutation.mutateAsync();
-    setEmailTestResult(result);
-    setTimeout(() => setEmailTestResult(null), 8000);
+    try {
+      const result = await testEmailMutation.mutateAsync();
+      setEmailTestResult(result as any);
+      setTimeout(() => setEmailTestResult(null), 8000);
+    } catch (err: any) {
+      showToast(err?.message || "Test failed", "error");
+    }
   };
-
   const handleTestSms = async () => {
     setSmsTestResult(null);
-    const result = await testSmsMutation.mutateAsync();
-    setSmsTestResult(result);
-    setTimeout(() => setSmsTestResult(null), 8000);
+    try {
+      const result = await testSmsMutation.mutateAsync();
+      setSmsTestResult(result as any);
+      setTimeout(() => setSmsTestResult(null), 8000);
+    } catch (err: any) {
+      showToast(err?.message || "Test failed", "error");
+    }
   };
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
   if (!form) return null;
 
-  const field = (key: string, label: string, type = "text", hint?: string) => (
+  const field = (key: string, lbl: string, type = "text", hint?: string) => (
     <div key={key}>
-      <label className="block text-sm font-medium text-slate-700 mb-1">{label}</label>
-      <input type={type} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form[key] ?? ""} onChange={e => setForm({ ...form, [key]: e.target.value })} />
+      <label className={labelCls}>{lbl}</label>
+      <input type={type} className={inputCls} value={form[key] ?? ""} onChange={e => setForm({ ...form, [key]: e.target.value })} />
       {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
     </div>
   );
@@ -1203,8 +1767,8 @@ function SettingsPage() {
           <h2 className="font-semibold text-slate-900">Hero Section</h2>
           {field("heroHeadline", "Hero Headline")}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">Hero Subheadline</label>
-            <textarea rows={3} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.heroSubheadline || ""} onChange={e => setForm({ ...form, heroSubheadline: e.target.value })} />
+            <label className={labelCls}>Hero Subheadline</label>
+            <textarea rows={3} className={inputCls} value={form.heroSubheadline || ""} onChange={e => setForm({ ...form, heroSubheadline: e.target.value })} />
           </div>
           {field("ctaText", "CTA Button Text")}
         </div>
@@ -1226,12 +1790,10 @@ function SettingsPage() {
             <p className="text-xs text-slate-500 mt-1">Connect your own mail server so notifications send from your domain.</p>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="col-span-1 sm:col-span-2">
-              {field("smtpHost", "Mail Server Host", "text", "e.g. mail.yourdomain.com or smtp.office365.com")}
-            </div>
+            <div className="col-span-1 sm:col-span-2">{field("smtpHost", "Mail Server Host", "text", "e.g. mail.yourdomain.com or smtp.office365.com")}</div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Port</label>
-              <input type="number" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.smtpPort ?? 587} onChange={e => setForm({ ...form, smtpPort: Number(e.target.value) })} />
+              <label className={labelCls}>Port</label>
+              <input type="number" className={inputCls} value={form.smtpPort ?? 587} onChange={e => setForm({ ...form, smtpPort: Number(e.target.value) })} />
               <p className="text-xs text-slate-400 mt-1">Usually 587 (STARTTLS) or 465 (SSL)</p>
             </div>
             <div className="flex items-center gap-3 sm:pt-6">
@@ -1240,60 +1802,55 @@ function SettingsPage() {
             </div>
             <div>{field("smtpUser", "Username / Email", "email", "Usually your full email address")}</div>
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Password</label>
-              <input type="password" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Leave blank to keep existing" value={smtpPass} onChange={e => setSmtpPass(e.target.value)} autoComplete="new-password" />
+              <label className={labelCls}>Password</label>
+              <input type="password" className={inputCls} placeholder="Leave blank to keep existing" value={smtpPass} onChange={e => setSmtpPass(e.target.value)} autoComplete="new-password" />
               <p className="text-xs text-slate-400 mt-1">Leave blank to keep existing password</p>
             </div>
-            <div className="col-span-1 sm:col-span-2">
-              {field("smtpFrom", "From Address", "text", `e.g. AMO Rendering <info@amorendering.co.uk>`)}
-            </div>
+            <div className="col-span-1 sm:col-span-2">{field("smtpFrom", "From Address", "text", `e.g. AMO Rendering <info@amorendering.co.uk>`)}</div>
           </div>
-          <div className="flex items-center gap-3 pt-2 border-t border-slate-100 flex-wrap">
-            <button type="button" onClick={handleTestEmail} disabled={testEmailMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {testEmailMutation.isPending ? "Sending…" : "Send test email"}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button type="button" onClick={handleTestEmail} disabled={testEmailMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+              {testEmailMutation.isPending ? "Sending..." : "Send Test Email"}
             </button>
-            {emailTestResult?.ok && <span className="text-sm text-green-600 font-medium">✓ Test email sent</span>}
-            {emailTestResult && !emailTestResult.ok && <span className="text-sm text-red-600">{emailTestResult.error || "Failed to send"}</span>}
+            {emailTestResult && (
+              <span className={`text-sm font-medium ${emailTestResult.ok ? "text-green-600" : "text-red-600"}`}>
+                {emailTestResult.ok ? "✓ Test email sent!" : `✕ ${emailTestResult.error}`}
+              </span>
+            )}
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <div>
             <h2 className="font-semibold text-slate-900">SMS Notifications (Twilio)</h2>
-            <p className="text-xs text-slate-500 mt-1">Get a text when a new lead, quote or contact comes in.</p>
+            <p className="text-xs text-slate-500 mt-1">Optional — connect Twilio to send SMS notifications.</p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>{field("twilioAccountSid", "Account SID", "text", "Starts with AC — find it in your Twilio console")}</div>
-            <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Auth Token</label>
-              <input type="password" className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Leave blank to keep existing" value={twilioAuthToken} onChange={e => setTwilioAuthToken(e.target.value)} autoComplete="new-password" />
-              <p className="text-xs text-slate-400 mt-1">Leave blank to keep existing token</p>
-            </div>
-            <div>{field("twilioFromNumber", "Twilio From Number", "text", "Your Twilio number e.g. +447700900000")}</div>
-            <div>{field("adminNotificationPhone", "Your Mobile Number", "text", "Where SMS alerts are sent e.g. +447700900123")}</div>
+          {field("twilioAccountSid", "Account SID")}
+          <div>
+            <label className={labelCls}>Auth Token</label>
+            <input type="password" className={inputCls} placeholder="Leave blank to keep existing" value={twilioAuthToken} onChange={e => setTwilioAuthToken(e.target.value)} autoComplete="new-password" />
+            <p className="text-xs text-slate-400 mt-1">Leave blank to keep existing token</p>
           </div>
-          <div className="flex items-center gap-3 pt-2 border-t border-slate-100 flex-wrap">
-            <button type="button" onClick={handleTestSms} disabled={testSmsMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 bg-white px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {testSmsMutation.isPending ? "Sending…" : "Send test SMS"}
+          {field("twilioFromNumber", "From Number", "text", "e.g. +447700000000")}
+          {field("adminNotificationPhone", "Admin Notification Phone", "text", "Receives SMS when a lead/quote is submitted")}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button type="button" onClick={handleTestSms} disabled={testSmsMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+              {testSmsMutation.isPending ? "Sending..." : "Send Test SMS"}
             </button>
-            {smsTestResult?.ok && <span className="text-sm text-green-600 font-medium">✓ Test SMS sent</span>}
-            {smsTestResult && !smsTestResult.ok && <span className="text-sm text-red-600">{smsTestResult.error || "Failed to send"}</span>}
+            {smsTestResult && (
+              <span className={`text-sm font-medium ${smsTestResult.ok ? "text-green-600" : "text-red-600"}`}>
+                {smsTestResult.ok ? "✓ Test SMS sent!" : `✕ ${smsTestResult.error}`}
+              </span>
+            )}
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Notification Preferences</h2>
-            <p className="text-xs text-slate-500 mt-1">Choose which events send Email and/or SMS alerts. Recipients depend on the event — admin alerts go to your notification email/phone, customer notifications go to the lead or customer contact.</p>
-          </div>
+          <h2 className="font-semibold text-slate-900">Notification Events</h2>
+          <p className="text-xs text-slate-500">Choose which events trigger email and/or SMS notifications.</p>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-slate-100">
-                  <th className="text-left font-medium text-slate-600 pb-2 pr-4">Event</th>
-                  <th className="text-center font-medium text-slate-600 pb-2 px-3 w-20">Email</th>
-                  <th className="text-center font-medium text-slate-600 pb-2 px-3 w-20">SMS</th>
-                  <th className="text-left font-medium text-slate-400 pb-2 pl-4 text-xs">Who receives it</th>
-                </tr>
-              </thead>
+              <thead><tr className="border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
+                <th className="text-left py-2 pr-4">Event</th><th className="text-center py-2 px-3">Email</th><th className="text-center py-2 px-3">SMS</th><th className="text-left py-2 pl-3">Recipient</th>
+              </tr></thead>
               <tbody className="divide-y divide-slate-50">
                 {[
                   { emailKey: "notifyLeadNewEmail", smsKey: "notifyLeadNewSms", label: "New lead submitted", recipient: "Admin alert + customer acknowledgement" },
@@ -1303,16 +1860,12 @@ function SettingsPage() {
                   { emailKey: "notifyLeadWonEmail", smsKey: "notifyLeadWonSms", label: "Lead won / project confirmed", recipient: "Customer" },
                   { emailKey: "notifyProjectInProgressEmail", smsKey: "notifyProjectInProgressSms", label: "Project started (In Progress)", recipient: "Customer" },
                   { emailKey: "notifyProjectCompleteEmail", smsKey: "notifyProjectCompleteSms", label: "Project completed", recipient: "Customer" },
-                ].map(({ emailKey, smsKey, label, recipient }) => (
-                  <tr key={emailKey} className="py-1">
-                    <td className="py-2.5 pr-4 text-slate-700">{label}</td>
-                    <td className="py-2.5 px-3 text-center">
-                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={form[emailKey] !== false} onChange={e => setForm({ ...form, [emailKey]: e.target.checked })} />
-                    </td>
-                    <td className="py-2.5 px-3 text-center">
-                      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={form[smsKey] !== false} onChange={e => setForm({ ...form, [smsKey]: e.target.checked })} />
-                    </td>
-                    <td className="py-2.5 pl-4 text-slate-400 text-xs">{recipient}</td>
+                ].map(row => (
+                  <tr key={row.emailKey} className="text-sm">
+                    <td className="py-2.5 pr-4 text-slate-700">{row.label}</td>
+                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form[row.emailKey]} onChange={e => setForm({ ...form, [row.emailKey]: e.target.checked })} /></td>
+                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form[row.smsKey]} onChange={e => setForm({ ...form, [row.smsKey]: e.target.checked })} /></td>
+                    <td className="py-2.5 pl-3 text-slate-500 text-xs">{row.recipient}</td>
                   </tr>
                 ))}
               </tbody>
@@ -1321,34 +1874,33 @@ function SettingsPage() {
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <div>
-            <h2 className="font-semibold text-slate-900">Review Request Automation</h2>
-            <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review after their project is completed.</p>
+            <h2 className="font-semibold text-slate-900">Review Requests</h2>
+            <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review after a project completes.</p>
           </div>
           <div className="flex items-center gap-3">
-            <input type="checkbox" id="reviewRequestEnabled" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
-            <label htmlFor="reviewRequestEnabled" className="text-sm font-medium text-slate-700">Enable automatic review requests</label>
+            <input type="checkbox" id="reviewEnabled" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
+            <label htmlFor="reviewEnabled" className="text-sm font-medium text-slate-700">Enable automatic review requests</label>
           </div>
           {form.reviewRequestEnabled && (
             <>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Send after (hours)</label>
-                  <input type="number" min={1} max={720} className="w-32 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.reviewRequestDelayHours ?? 24} onChange={e => setForm({ ...form, reviewRequestDelayHours: Number(e.target.value) })} />
-                  <p className="text-xs text-slate-400 mt-1">Hours after project completion (default: 24)</p>
+                  <label className={labelCls}>Delay (hours after completion)</label>
+                  <input type="number" min={1} className={inputCls} value={form.reviewRequestDelayHours ?? 24} onChange={e => setForm({ ...form, reviewRequestDelayHours: Number(e.target.value) })} />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">Send via</label>
-                  <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.reviewRequestChannel ?? "email"} onChange={e => setForm({ ...form, reviewRequestChannel: e.target.value })}>
+                  <label className={labelCls}>Send via</label>
+                  <select className={inputCls} value={form.reviewRequestChannel || "both"} onChange={e => setForm({ ...form, reviewRequestChannel: e.target.value })}>
                     <option value="email">Email only</option>
                     <option value="sms">SMS only</option>
-                    <option value="both">Email &amp; SMS</option>
+                    <option value="both">Email + SMS</option>
                   </select>
                 </div>
               </div>
-              {field("reviewPlatformUrl", "Review Platform Link", "url", "e.g. your Google Business Profile or Trustpilot link — if blank, links to your public site reviews section")}
+              {field("reviewPlatformUrl", "Review Platform URL", "text", "e.g. https://g.page/r/your-business/review — where customers go to leave a review")}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Custom Message (optional)</label>
-                <textarea rows={5} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" placeholder="Leave blank to use the default message. Use {name} for the customer's first name and {reviewUrl} for the review link." value={form.reviewRequestTemplate || ""} onChange={e => setForm({ ...form, reviewRequestTemplate: e.target.value })} />
+                <label className={labelCls}>Custom Message (optional)</label>
+                <textarea rows={5} className={inputCls} placeholder="Leave blank to use the default message. Use {name} for the customer's first name and {reviewUrl} for the review link." value={form.reviewRequestTemplate || ""} onChange={e => setForm({ ...form, reviewRequestTemplate: e.target.value })} />
                 <p className="text-xs text-slate-400 mt-1">If blank, a professional default message is used.</p>
               </div>
             </>
@@ -1364,8 +1916,8 @@ function SettingsPage() {
           <h2 className="font-semibold text-slate-900">SEO</h2>
           {field("seoTitle", "SEO Title")}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">SEO Description</label>
-            <textarea rows={3} className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" value={form.seoDescription || ""} onChange={e => setForm({ ...form, seoDescription: e.target.value })} />
+            <label className={labelCls}>SEO Description</label>
+            <textarea rows={3} className={inputCls} value={form.seoDescription || ""} onChange={e => setForm({ ...form, seoDescription: e.target.value })} />
           </div>
           {field("googleAnalyticsId", "Google Analytics ID")}
         </div>
@@ -1373,81 +1925,90 @@ function SettingsPage() {
           <button type="submit" disabled={updateMutation.isPending} className="inline-flex h-10 items-center rounded-md bg-orange-500 px-6 text-sm font-semibold text-white hover:bg-orange-400 disabled:opacity-50">
             {updateMutation.isPending ? "Saving..." : "Save Settings"}
           </button>
-          {saved && <span className="text-sm text-green-600 font-medium">✓ Saved</span>}
         </div>
       </form>
     </div>
   );
 }
 
+// ─── Root ──────────────────────────────────────────────────────────────────────
 export default function DashboardApp() {
   const { isSignedIn } = useAuthCtx();
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  let nextId = 0;
+
+  const showToast: ToastFn = (text, type = "success") => {
+    const id = ++nextId;
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
+  };
+  const removeToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
 
   if (!isSignedIn) return <Redirect to="/sign-in" />;
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {/* Desktop sidebar */}
-      <aside className="hidden md:flex w-56 flex-shrink-0 bg-slate-900 min-h-screen flex-col">
-        <SidebarContent currentPath={location} />
-      </aside>
+    <ToastCtx.Provider value={showToast}>
+      <div className="flex min-h-screen bg-slate-50">
+        <aside className="hidden md:flex w-56 flex-shrink-0 bg-slate-900 min-h-screen flex-col">
+          <SidebarContent currentPath={location} />
+        </aside>
 
-      {/* Mobile sidebar overlay */}
-      {sidebarOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-          <aside className="absolute left-0 top-0 bottom-0 w-64 bg-slate-900 flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between px-4 pt-4 pb-0 border-b border-slate-800">
-              <span className="text-white font-bold text-sm">Menu</span>
-              <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-white p-2 -mr-2">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <SidebarContent currentPath={location} onNavClick={() => setSidebarOpen(false)} />
-          </aside>
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-40 md:hidden">
+            <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
+            <aside className="absolute left-0 top-0 bottom-0 w-64 bg-slate-900 flex flex-col shadow-2xl">
+              <div className="flex items-center justify-between px-4 pt-4 pb-0 border-b border-slate-800">
+                <span className="text-white font-bold text-sm">Menu</span>
+                <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-white p-2 -mr-2">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              </div>
+              <SidebarContent currentPath={location} onNavClick={() => setSidebarOpen(false)} />
+            </aside>
+          </div>
+        )}
+
+        <div className="flex-1 min-w-0 flex flex-col">
+          <header className="md:hidden sticky top-0 z-30 flex items-center gap-3 bg-white border-b border-slate-200 px-4 h-14 flex-shrink-0">
+            <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100 transition-colors">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
+            </button>
+            <span className="font-semibold text-slate-800 text-sm">
+              {NAV_ITEMS.find(n => n && (location === n.path || (location.startsWith(n.path + "/") && n.path !== "/dashboard")))?.label || "Dashboard"}
+            </span>
+          </header>
+
+          <main className="flex-1 overflow-auto">
+            <Switch>
+              <Route path="/dashboard" component={DashboardHome} />
+              <Route path="/dashboard/leads" component={LeadsPage} />
+              <Route path="/dashboard/leads/:id" component={({ params: p }) => <LeadDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/quotes" component={QuotesPage} />
+              <Route path="/dashboard/quotes/:id" component={({ params: p }) => <QuoteDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/projects" component={ProjectsPage} />
+              <Route path="/dashboard/projects/:id" component={({ params: p }) => <ProjectDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/customers" component={CustomersPage} />
+              <Route path="/dashboard/customers/:id" component={({ params: p }) => <CustomerDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/gallery" component={GalleryPage} />
+              <Route path="/dashboard/reviews" component={ReviewsPage} />
+              <Route path="/dashboard/case-studies" component={CaseStudiesPage} />
+              <Route path="/dashboard/services" component={ServicesPage} />
+              <Route path="/dashboard/areas" component={AreasPage} />
+              <Route path="/dashboard/faqs" component={FaqsPage} />
+              <Route path="/dashboard/blog" component={BlogPage} />
+              <Route path="/dashboard/messages" component={MessagesPage} />
+              <Route path="/dashboard/visualiser" component={VisualiserPage} />
+              <Route path="/dashboard/team" component={TeamPage} />
+              <Route path="/dashboard/settings" component={SettingsPage} />
+              <Route component={() => <div className="p-8 text-slate-400">Page not found</div>} />
+            </Switch>
+          </main>
         </div>
-      )}
 
-      {/* Main content */}
-      <div className="flex-1 min-w-0 flex flex-col">
-        {/* Mobile top bar */}
-        <header className="md:hidden sticky top-0 z-30 flex items-center gap-3 bg-white border-b border-slate-200 px-4 h-14 flex-shrink-0">
-          <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100 transition-colors">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-          </button>
-          <span className="font-semibold text-slate-800 text-sm">
-            {NAV_ITEMS.find(n => n && (location === n.path || (location.startsWith(n.path + "/") && n.path !== "/dashboard")))?.label || "Dashboard"}
-          </span>
-        </header>
-
-        <main className="flex-1 overflow-auto">
-          <Switch>
-            <Route path="/dashboard" component={DashboardHome} />
-            <Route path="/dashboard/leads" component={LeadsPage} />
-            <Route path="/dashboard/leads/:id" component={({ params: p }) => <LeadDetailPage id={Number(p.id)} />} />
-            <Route path="/dashboard/quotes" component={QuotesPage} />
-            <Route path="/dashboard/quotes/:id" component={({ params: p }) => <QuoteDetailPage id={Number(p.id)} />} />
-            <Route path="/dashboard/projects" component={ProjectsPage} />
-            <Route path="/dashboard/projects/:id" component={({ params: p }) => <ProjectDetailPage id={Number(p.id)} />} />
-            <Route path="/dashboard/customers" component={CustomersPage} />
-            <Route path="/dashboard/customers/:id" component={({ params: p }) => <CustomerDetailPage id={Number(p.id)} />} />
-            <Route path="/dashboard/gallery" component={GalleryPage} />
-            <Route path="/dashboard/reviews" component={ReviewsPage} />
-            <Route path="/dashboard/case-studies" component={CaseStudiesPage} />
-            <Route path="/dashboard/services" component={ServicesPage} />
-            <Route path="/dashboard/areas" component={AreasPage} />
-            <Route path="/dashboard/faqs" component={FaqsPage} />
-            <Route path="/dashboard/blog" component={BlogPage} />
-            <Route path="/dashboard/messages" component={MessagesPage} />
-            <Route path="/dashboard/visualiser" component={VisualiserPage} />
-            <Route path="/dashboard/team" component={TeamPage} />
-            <Route path="/dashboard/settings" component={SettingsPage} />
-            <Route component={() => <div className="p-8 text-slate-400">Page not found</div>} />
-          </Switch>
-        </main>
+        <ToastContainer toasts={toasts} remove={removeToast} />
       </div>
-    </div>
+    </ToastCtx.Provider>
   );
 }

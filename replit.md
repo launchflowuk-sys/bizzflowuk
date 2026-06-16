@@ -1,4 +1,4 @@
-# LaunchFlow — SaaS Platform for Home Improvement Businesses
+# BizzFlow — SaaS Platform for Home Improvement Businesses
 
 A multi-tenant SaaS platform that gives home improvement businesses (rendering, roofing, landscaping, etc.) a public website, CRM dashboard, customer portal, and AI-powered tools — all white-labelled under their own brand.
 

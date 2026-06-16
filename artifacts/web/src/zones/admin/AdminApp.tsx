@@ -27,7 +27,7 @@ function AdminSidebar({ currentPath }: { currentPath: string }) {
   return (
     <aside className="w-48 flex-shrink-0 bg-slate-900 min-h-screen flex flex-col">
       <div className="p-4 border-b border-slate-800">
-        <div className="font-bold text-white text-sm">LaunchFlow</div>
+        <div className="font-bold text-white text-sm">BizzFlow</div>
         <div className="text-xs text-orange-400 font-medium mt-0.5">Super Admin</div>
       </div>
       <nav className="flex-1 p-3">

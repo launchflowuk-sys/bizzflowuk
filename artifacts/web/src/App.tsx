@@ -59,7 +59,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
             <div className="w-9 h-9 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-sm">L</div>
-            <span className="text-white font-bold text-xl tracking-tight">LaunchFlow</span>
+            <span className="text-white font-bold text-xl tracking-tight">BizzFlow</span>
           </div>
           <div className="space-y-6">
             <div className="inline-flex items-center gap-2 bg-[#1F8CFF]/10 border border-[#1F8CFF]/20 rounded-full px-4 py-1.5">
@@ -93,7 +93,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 bg-[#0A121C]">
         <div className="flex items-center gap-2 mb-8 lg:hidden">
           <div className="w-8 h-8 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-xs">L</div>
-          <span className="text-white font-bold text-lg tracking-tight">LaunchFlow</span>
+          <span className="text-white font-bold text-lg tracking-tight">BizzFlow</span>
         </div>
         <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5">
           <div className="text-center mb-8">
@@ -126,7 +126,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
-        <p className="mt-8 text-center text-xs text-slate-600">© {new Date().getFullYear()} LaunchFlow. All rights reserved.</p>
+        <p className="mt-8 text-center text-xs text-slate-600">© {new Date().getFullYear()} BizzFlow. All rights reserved.</p>
       </div>
     </div>
   );
@@ -205,7 +205,7 @@ function LandingPage() {
   return (
     <div className="min-h-screen bg-slate-950 text-white">
       <nav className="border-b border-slate-800 px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
-        <div className="font-bold text-xl tracking-tight">LaunchFlow</div>
+        <div className="font-bold text-xl tracking-tight">BizzFlow</div>
         <a href={`${basePath}/sign-in`} className="text-sm text-slate-400 hover:text-white transition-colors">Sign in</a>
       </nav>
       <div className="max-w-7xl mx-auto px-6 py-24 text-center space-y-8">
