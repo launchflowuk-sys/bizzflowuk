@@ -2,7 +2,8 @@ services:
 
   # ---------------------------------------------------------------------------
   # API server (Express + Drizzle)
-  # DATABASE_URL is injected by Coolify when the managed Postgres is linked.
+  # DATABASE_URL is injected by Coolify — use the EXTERNAL (public) DB URL,
+  # not the internal hostname, since managed DBs run on a separate network.
   # ---------------------------------------------------------------------------
   api:
     build:
@@ -25,7 +26,6 @@ services:
       retries: 5
     networks:
       - app-net
-      - coolify
 
   # ---------------------------------------------------------------------------
   # Web frontend (Vite static build served by nginx)
@@ -47,10 +47,7 @@ services:
         condition: service_healthy
     networks:
       - app-net
-      - coolify
 
 networks:
   app-net:
     driver: bridge
-  coolify:
-    external: true
