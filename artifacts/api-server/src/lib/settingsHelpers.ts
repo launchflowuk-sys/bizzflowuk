@@ -12,7 +12,7 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   "primaryColor", "secondaryColor", "accentColor",
   "heroHeadline", "heroSubheadline", "ctaText", "ctaUrl",
   "aboutText", "serviceAreaText", "footerText",
-  "email", "phone", "address",
+  "email", "phone", "address", "city", "description",
   "socialFacebook", "socialInstagram", "socialTwitter", "socialLinkedin",
   "googleAnalyticsId",
   "createdAt", "updatedAt",

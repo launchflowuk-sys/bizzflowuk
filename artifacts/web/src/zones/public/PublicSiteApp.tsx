@@ -334,8 +334,15 @@ function PageHero({ tenantSlug, crumb, title, subtitle }: { tenantSlug: string; 
   );
 }
 
-function SiteFooter({ tenant, settings, tenantSlug }: any) {
+function SiteFooter({ tenant, settings }: any) {
   const siteBase = useSiteBase();
+  const platformDomain = import.meta.env.VITE_PLATFORM_DOMAIN;
+  const platformBase = platformDomain ? `https://${platformDomain}` : "";
+  const tenantLoginUrl = `${platformBase}/sign-in`;
+
+  const logoUrl = settings?.logoUrl;
+  const tenantName = tenant?.name || "";
+
   return (
     <footer style={{ backgroundColor: NAVY }} className="text-slate-300 pb-20 md:pb-0">
       {/* CTA strip */}
@@ -343,7 +350,9 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-5">
           <div>
             <p className="text-white font-bold text-lg">Ready to transform your property?</p>
-            <p className="text-slate-400 text-sm mt-1">Get a free quote — send photos and AMO will advise on the best render system.</p>
+            <p className="text-slate-400 text-sm mt-1">
+              Get a free, no-obligation quote from {tenantName} today.
+            </p>
           </div>
           <div className="flex-shrink-0">
             <BlueBtn href={`${siteBase}/quote`}>Get a Free Quote</BlueBtn>
@@ -351,24 +360,36 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
         </div>
       </div>
 
-      {/* Main columns — equal 4-col grid */}
+      {/* Main columns */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-12 pb-8 grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-10">
         {/* Brand */}
         <div className="col-span-2 lg:col-span-1 space-y-4">
-          <img
-            src="/amo-logo-dark.webp"
-            alt={tenant?.name || "AMO Rendering"}
-            className="h-16 w-auto object-contain"
-          />
-          <p className="text-sm leading-relaxed text-slate-400">
-            Rendering specialists based in Grays, Thurrock — serving Essex and London with silicone render, monocouche, K Rend, EWI and pebbledash removal.
-          </p>
+          {logoUrl ? (
+            <img src={logoUrl} alt={tenantName} className="h-16 w-auto object-contain" />
+          ) : (
+            <p className="text-white font-bold text-xl">{tenantName}</p>
+          )}
+          {settings?.description && (
+            <p className="text-sm leading-relaxed text-slate-400">{settings.description}</p>
+          )}
           <div className="space-y-1.5 text-sm text-slate-400">
-            <p className="text-slate-300 font-medium">Grays, Thurrock, Essex</p>
-            {settings?.phone && (
-              <p><a href={`tel:${settings.phone}`} className="hover:text-white transition-colors">{settings.phone}</a></p>
+            {settings?.city && (
+              <p className="text-slate-300 font-medium">{settings.city}</p>
             )}
-            <p><a href="mailto:info@amorendering.co.uk" className="hover:text-white transition-colors">info@amorendering.co.uk</a></p>
+            {settings?.phone && (
+              <p>
+                <a href={`tel:${settings.phone}`} className="hover:text-white transition-colors">
+                  {settings.phone}
+                </a>
+              </p>
+            )}
+            {settings?.email && (
+              <p>
+                <a href={`mailto:${settings.email}`} className="hover:text-white transition-colors">
+                  {settings.email}
+                </a>
+              </p>
+            )}
           </div>
         </div>
 
@@ -376,48 +397,58 @@ function SiteFooter({ tenant, settings, tenantSlug }: any) {
         <div className="space-y-2.5">
           <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Services</p>
           {[
-            { label: "Silicone Rendering", slug: "silicone-render" },
-            { label: "Monocouche Rendering", slug: "monocouche-render" },
-            { label: "K Rend", slug: "k-rend" },
-            { label: "External Wall Insulation", slug: "ewi-systems" },
-            { label: "Pebbledash Removal", slug: "pebble-dash-removal" },
-            { label: "Render Repairs", slug: "render-repairs" },
-          ].map(s => (
-            <a key={s.slug} href={`${siteBase}/services/${s.slug}`} className="block text-sm text-slate-400 hover:text-white transition-colors">{s.label}</a>
-          ))}
-        </div>
-
-        {/* Areas */}
-        <div className="space-y-2.5">
-          <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Areas</p>
-          {["Grays","Thurrock","Basildon","Romford","Chelmsford","Brentwood","London"].map(a => (
-            <a key={a} href={`${siteBase}/areas/${a.toLowerCase()}`} className="block text-sm text-slate-400 hover:text-white transition-colors">{a}</a>
-          ))}
-        </div>
-
-        {/* Company */}
-        <div className="space-y-2.5">
-          <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Company</p>
-          {[
-            { label: "Gallery", href: `${siteBase}/gallery` },
+            { label: "All Services", href: `${siteBase}/services` },
+            { label: "Before &amp; After", href: `${siteBase}/gallery` },
             { label: "Case Studies", href: `${siteBase}/case-studies` },
-            { label: "Reviews", href: `${siteBase}/reviews` },
-            { label: "FAQs", href: `${siteBase}/faqs` },
-            { label: "Contact", href: `${siteBase}/contact` },
             { label: "Get a Quote", href: `${siteBase}/quote` },
           ].map(l => (
-            <a key={l.label} href={l.href} className="block text-sm text-slate-400 hover:text-white transition-colors">{l.label}</a>
+            <a key={l.href} href={l.href} className="block text-sm text-slate-400 hover:text-white transition-colors" dangerouslySetInnerHTML={{ __html: l.label }} />
           ))}
+        </div>
+
+        {/* Information */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Information</p>
+          {[
+            { label: "Reviews", href: `${siteBase}/reviews` },
+            { label: "Areas We Cover", href: `${siteBase}/areas` },
+            { label: "FAQs", href: `${siteBase}/faqs` },
+            { label: "Contact Us", href: `${siteBase}/contact` },
+          ].map(l => (
+            <a key={l.href} href={l.href} className="block text-sm text-slate-400 hover:text-white transition-colors">{l.label}</a>
+          ))}
+        </div>
+
+        {/* Contact */}
+        <div className="space-y-2.5">
+          <p className="text-xs font-bold uppercase tracking-widest text-white mb-4">Contact</p>
+          {settings?.phone && (
+            <p className="text-sm text-slate-400">
+              <a href={`tel:${settings.phone}`} className="hover:text-white transition-colors">{settings.phone}</a>
+            </p>
+          )}
+          {settings?.email && (
+            <p className="text-sm text-slate-400">
+              <a href={`mailto:${settings.email}`} className="hover:text-white transition-colors">{settings.email}</a>
+            </p>
+          )}
+          {settings?.address && (
+            <p className="text-sm text-slate-400">{settings.address}</p>
+          )}
+          <div className="pt-2">
+            <BlueBtn href={`${siteBase}/quote`}>Request a Quote</BlueBtn>
+          </div>
         </div>
       </div>
 
       {/* Bottom bar */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-8 border-t border-slate-800 flex flex-wrap gap-3 items-center justify-between text-xs text-slate-600">
-        <span>&copy; {new Date().getFullYear()} {tenant?.name || "AMO Rendering"}. All rights reserved.</span>
+        <span>&copy; {new Date().getFullYear()} {tenantName}. All rights reserved.</span>
         <div className="flex gap-5">
           <a href={`${siteBase}/faqs`} className="hover:text-slate-400 transition-colors">FAQs</a>
           <a href={`${siteBase}/contact`} className="hover:text-slate-400 transition-colors">Contact</a>
           <a href={`${siteBase}/quote`} className="hover:text-slate-400 transition-colors">Get a Quote</a>
+          <a href={tenantLoginUrl} className="hover:text-slate-400 transition-colors">Client Login</a>
         </div>
       </div>
     </footer>
