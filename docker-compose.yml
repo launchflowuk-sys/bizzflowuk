@@ -15,6 +15,7 @@ services:
       PUBLIC_OBJECT_SEARCH_PATHS: ${PUBLIC_OBJECT_SEARCH_PATHS:-}
     networks:
       - app-net
+      - coolify
 
   web:
     build:
@@ -31,7 +32,10 @@ services:
       - api
     networks:
       - app-net
+      - coolify
 
 networks:
   app-net:
     driver: bridge
+  coolify:
+    external: true
