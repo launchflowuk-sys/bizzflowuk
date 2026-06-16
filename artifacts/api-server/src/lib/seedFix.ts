@@ -4,8 +4,10 @@ import {
   beforeAfterTable,
   caseStudiesTable,
   tenantsTable,
+  usersTable,
 } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { logger } from "./logger";
 
 const OLD_LOCATIONS = ["Bolton", "Salford", "Manchester", "Birmingham", "Oldham", "Bury", "Rochdale", "Stockport", "Wigan"];
@@ -31,7 +33,48 @@ async function hasOldData(tenantId: number): Promise<boolean> {
   return galleryStale || caseStale;
 }
 
+async function ensurePlatformUsers(): Promise<void> {
+  const tenants = await db
+    .select({ id: tenantsTable.id })
+    .from(tenantsTable)
+    .where(eq(tenantsTable.slug, "amo-rendering"))
+    .limit(1);
+
+  const amoTenantId = tenants[0]?.id ?? null;
+
+  const PLATFORM_USERS = [
+    { email: "launchflowuk@gmail.com", firstName: "LaunchFlow", lastName: "Admin", role: "SUPER_ADMIN" as const, tenantId: null },
+    { email: "shoji147@gmail.com",     firstName: "Shoji",      lastName: "Admin", role: "TENANT_ADMIN" as const, tenantId: amoTenantId },
+    { email: "mark@amorendering.co.uk",firstName: "Mark",       lastName: "",      role: "TENANT_ADMIN" as const, tenantId: amoTenantId },
+  ];
+
+  const hash = await bcrypt.hash("BizFlow2024!", 12);
+
+  for (const u of PLATFORM_USERS) {
+    await db
+      .insert(usersTable)
+      .values({ ...u, passwordHash: hash })
+      .onConflictDoUpdate({
+        target: usersTable.email,
+        set: {
+          role: sql`EXCLUDED.role`,
+          tenantId: sql`EXCLUDED.tenant_id`,
+          passwordHash: sql`EXCLUDED.password_hash`,
+          updatedAt: new Date(),
+        },
+      });
+  }
+
+  logger.info("Platform users ensured (launchflowuk, shoji147, mark)");
+}
+
 export async function runSeedFixIfNeeded(): Promise<void> {
+  try {
+    await ensurePlatformUsers();
+  } catch (err) {
+    logger.error({ err }, "ensurePlatformUsers failed — non-fatal");
+  }
+
   try {
     const tenants = await db
       .select({ id: tenantsTable.id })
