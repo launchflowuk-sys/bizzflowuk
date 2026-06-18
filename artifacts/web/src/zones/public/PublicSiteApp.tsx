@@ -1340,9 +1340,9 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
       <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
-      {isLoading ? <Spinner/> : a ? (
+      {isLoading ? <Spinner/> : (
         <>
-          <PageHero tenantSlug={tenantSlug} crumb={`Rendering in ${areaName}`} title={`Rendering in ${areaName}`} subtitle={a.description || `Silicone rendering, K Rend, monocouche render, external wall insulation and pebbledash removal for properties in ${areaName}.`}/>
+          <PageHero tenantSlug={tenantSlug} crumb={`Rendering in ${areaName}`} title={`Rendering in ${areaName}`} subtitle={a?.description || `Silicone rendering, K Rend, monocouche render, external wall insulation and pebbledash removal for properties in ${areaName}.`}/>
 
           <section className="py-16 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -1370,7 +1370,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
                   <div className="space-y-4">
                     <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Local Project Style</h2>
                     <p className="leading-relaxed" style={{ color: MUTED }}>Many properties across Essex and London benefit from a cleaner external finish. Rendering can improve kerb appeal, refresh dated walls and create a more consistent property exterior.</p>
-                    {a.content && <p className="leading-relaxed" style={{ color: MUTED }}>{a.content}</p>}
+                    {a?.content && <p className="leading-relaxed" style={{ color: MUTED }}>{a.content}</p>}
                   </div>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1421,7 +1421,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
             </div>
           </section>
         </>
-      ) : <div className="p-8 text-center" style={{ color: MUTED }}>Area not found</div>}
+      )}
 
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>

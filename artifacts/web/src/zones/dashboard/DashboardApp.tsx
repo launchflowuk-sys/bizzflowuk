@@ -4,11 +4,11 @@ import { createContext, useContext, useEffect, useState } from "react";
 
 import {
   useGetMe, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
-  useListLeads, useGetLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
+  useListLeads, useGetLead, useCreateLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
   useConvertLeadToQuote, useConvertLeadToProject,
-  useListQuotes, useGetQuote, useUpdateQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
-  useListProjects, useGetProject, useUpdateProject, useListProjectUpdates, useCreateProjectUpdate,
-  useListCustomers, useGetCustomer,
+  useListQuotes, useGetQuote, useCreateQuote, useUpdateQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
+  useListProjects, useGetProject, useCreateProject, useUpdateProject, useListProjectUpdates, useCreateProjectUpdate,
+  useListCustomers, useGetCustomer, useCreateCustomer,
   useListGalleryImages, useCreateGalleryImage, useUpdateGalleryImage, useDeleteGalleryImage,
   useListReviews, useCreateReview, useUpdateReview, useDeleteReview,
   useListCaseStudies, useCreateCaseStudy, useUpdateCaseStudy, useDeleteCaseStudy,
@@ -22,7 +22,7 @@ import {
   useGetSettings, useUpdateSettings, useTestEmailSettings, useTestSmsSettings,
 } from "@workspace/api-client-react";
 import {
-  getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey,
+  getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
   getListQuoteItemsQueryKey, getListProjectUpdatesQueryKey,
   getListGalleryImagesQueryKey, getListReviewsQueryKey, getListCaseStudiesQueryKey,
   getListServicesQueryKey, getListAreasQueryKey, getListFaqsQueryKey,
@@ -504,12 +504,122 @@ function LeadDetailPage({ id }: { id: number }) {
   );
 }
 
+// ─── New Lead Page ────────────────────────────────────────────────────────────
+function NewLeadPage() {
+  const [, navigate] = useWouterLocation();
+  const createMutation = useCreateLead();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const [form, setForm] = useState({
+    firstName: "", lastName: "", email: "", phone: "",
+    serviceInterest: "", city: "", address: "", source: "", status: "New", notes: "",
+  });
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) =>
+    setForm(f => ({ ...f, [k]: e.target.value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const lead = await createMutation.mutateAsync({ data: form } as any) as any;
+      qc.invalidateQueries({ queryKey: getListLeadsQueryKey() });
+      showToast("Lead created");
+      navigate(`/dashboard/leads/${lead.id}`);
+    } catch (err: any) { showToast(err?.message || "Failed to create lead", "error"); }
+  };
+
+  const fieldCls = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500";
+
+  return (
+    <div className="p-4 sm:p-6 max-w-2xl space-y-5">
+      <div className="flex items-center gap-3">
+        <Link href="/dashboard/leads" className="text-sm text-slate-500 hover:text-orange-500">← Leads</Link>
+        <h1 className="text-xl font-bold text-slate-900">New Lead</h1>
+      </div>
+      <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div><label className="block text-xs font-medium text-slate-700 mb-1">First Name</label><input value={form.firstName} onChange={set("firstName")} className={fieldCls} /></div>
+          <div><label className="block text-xs font-medium text-slate-700 mb-1">Last Name</label><input value={form.lastName} onChange={set("lastName")} className={fieldCls} /></div>
+          <div><label className="block text-xs font-medium text-slate-700 mb-1">Email</label><input type="email" value={form.email} onChange={set("email")} className={fieldCls} /></div>
+          <div><label className="block text-xs font-medium text-slate-700 mb-1">Phone</label><input type="tel" value={form.phone} onChange={set("phone")} className={fieldCls} /></div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Service Interest</label>
+            <select value={form.serviceInterest} onChange={set("serviceInterest")} className={fieldCls}>
+              <option value="">Select service...</option>
+              {["Silicone Rendering","Monocouche Rendering","K Rend","Pebbledash Removal","EWI","Render Repairs","Other"].map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Status</label>
+            <select value={form.status} onChange={set("status")} className={fieldCls}>
+              {["New","Contacted","Survey Booked","Quote Sent","Won","Lost"].map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div><label className="block text-xs font-medium text-slate-700 mb-1">City</label><input value={form.city} onChange={set("city")} className={fieldCls} /></div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Source</label>
+            <select value={form.source} onChange={set("source")} className={fieldCls}>
+              <option value="">Select source...</option>
+              {["Website","Referral","Google","Facebook","Instagram","Other"].map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+          <div className="sm:col-span-2"><label className="block text-xs font-medium text-slate-700 mb-1">Address</label><input value={form.address} onChange={set("address")} className={fieldCls} /></div>
+          <div className="sm:col-span-2"><label className="block text-xs font-medium text-slate-700 mb-1">Notes</label><textarea rows={3} value={form.notes} onChange={set("notes")} className={fieldCls} /></div>
+        </div>
+        <div className="flex gap-3 pt-1">
+          <button type="submit" disabled={createMutation.isPending} className="rounded-md bg-orange-500 px-5 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Saving..." : "Create Lead"}</button>
+          <Link href="/dashboard/leads" className="rounded-md border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</Link>
+        </div>
+      </form>
+    </div>
+  );
+}
+
 // ─── Quotes ────────────────────────────────────────────────────────────────────
 function QuotesPage() {
   const { data: quotes, isLoading } = useListQuotes();
+  const createMutation = useCreateQuote();
+  const [, navigate] = useWouterLocation();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const [showNew, setShowNew] = useState(false);
+  const [newRef, setNewRef] = useState("");
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const ref = newRef.trim() || `QUO-${Date.now()}`;
+      const q = await createMutation.mutateAsync({ data: { reference: ref } } as any) as any;
+      qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+      showToast("Quote created");
+      setShowNew(false);
+      setNewRef("");
+      navigate(`/dashboard/quotes/${q.id}`);
+    } catch (err: any) { showToast(err?.message || "Failed to create quote", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Quotes</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Quotes</h1>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New</button>
+      </div>
+      {showNew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+            <h2 className="font-semibold text-slate-900">New Quote</h2>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Reference <span className="font-normal text-slate-400">(leave blank to auto-generate)</span></label>
+                <input value={newRef} onChange={e => setNewRef(e.target.value)} placeholder="e.g. QUO-001" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Quote"}</button>
+                <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
           <div className="md:hidden space-y-2">
@@ -692,11 +802,59 @@ function QuoteDetailPage({ id }: { id: number }) {
 // ─── Projects ─────────────────────────────────────────────────────────────────
 function ProjectsPage() {
   const { data: projects, isLoading } = useListProjects();
+  const createMutation = useCreateProject();
+  const [, navigate] = useWouterLocation();
+  const qc = useQueryClient();
+  const showToast = useToast();
   const [statusFilter, setStatusFilter] = useState("");
+  const [showNew, setShowNew] = useState(false);
+  const [newProj, setNewProj] = useState({ title: "", city: "", description: "" });
   const filtered = (projects as any[])?.filter((p: any) => !statusFilter || p.status === statusFilter);
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newProj.title.trim()) return;
+    try {
+      const p = await createMutation.mutateAsync({ data: newProj } as any) as any;
+      qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+      showToast("Project created");
+      setShowNew(false);
+      setNewProj({ title: "", city: "", description: "" });
+      navigate(`/dashboard/projects/${p.id}`);
+    } catch (err: any) { showToast(err?.message || "Failed to create project", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Projects</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Projects</h1>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New</button>
+      </div>
+      {showNew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+            <h2 className="font-semibold text-slate-900">New Project</h2>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Title <span className="text-red-400">*</span></label>
+                <input required value={newProj.title} onChange={e => setNewProj(p => ({ ...p, title: e.target.value }))} placeholder="e.g. John Smith — Silicone Render" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
+                <input value={newProj.city} onChange={e => setNewProj(p => ({ ...p, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
+                <textarea rows={2} value={newProj.description} onChange={e => setNewProj(p => ({ ...p, description: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Project"}</button>
+                <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       <div className="flex flex-wrap gap-2">
         {["", "Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
@@ -837,9 +995,67 @@ function ProjectDetailPage({ id }: { id: number }) {
 // ─── Customers ─────────────────────────────────────────────────────────────────
 function CustomersPage() {
   const { data: customers, isLoading } = useListCustomers();
+  const createMutation = useCreateCustomer();
+  const [, navigate] = useWouterLocation();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const [showNew, setShowNew] = useState(false);
+  const [newCust, setNewCust] = useState({ firstName: "", lastName: "", email: "", phone: "", city: "" });
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newCust.firstName.trim() && !newCust.lastName.trim()) return;
+    try {
+      const c = await createMutation.mutateAsync({ data: newCust } as any) as any;
+      qc.invalidateQueries({ queryKey: getListCustomersQueryKey() });
+      showToast("Customer created");
+      setShowNew(false);
+      setNewCust({ firstName: "", lastName: "", email: "", phone: "", city: "" });
+      navigate(`/dashboard/customers/${c.id}`);
+    } catch (err: any) { showToast(err?.message || "Failed to create customer", "error"); }
+  };
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Customers</h1>
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Customers</h1>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New</button>
+      </div>
+      {showNew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
+          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+            <h2 className="font-semibold text-slate-900">New Customer</h2>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">First Name</label>
+                  <input value={newCust.firstName} onChange={e => setNewCust(c => ({ ...c, firstName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Last Name</label>
+                  <input value={newCust.lastName} onChange={e => setNewCust(c => ({ ...c, lastName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
+                <input type="email" value={newCust.email} onChange={e => setNewCust(c => ({ ...c, email: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
+                <input type="tel" value={newCust.phone} onChange={e => setNewCust(c => ({ ...c, phone: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
+                <input value={newCust.city} onChange={e => setNewCust(c => ({ ...c, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Customer"}</button>
+                <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
           <div className="md:hidden space-y-2">
@@ -1985,6 +2201,7 @@ export default function DashboardApp() {
             <Switch>
               <Route path="/dashboard" component={DashboardHome} />
               <Route path="/dashboard/leads" component={LeadsPage} />
+              <Route path="/dashboard/leads/new" component={NewLeadPage} />
               <Route path="/dashboard/leads/:id" component={({ params: p }) => <LeadDetailPage id={Number(p.id)} />} />
               <Route path="/dashboard/quotes" component={QuotesPage} />
               <Route path="/dashboard/quotes/:id" component={({ params: p }) => <QuoteDetailPage id={Number(p.id)} />} />

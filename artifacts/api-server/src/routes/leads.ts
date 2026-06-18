@@ -103,7 +103,7 @@ router.post("/leads/:id/notes", requireTenantAccess, async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.post("/leads/:id/convert-to-quote", requireTenantAccess, async (req, res) => {
+router.post("/leads/:id/convert-quote", requireTenantAccess, async (req, res) => {
   try {
     const lead = await db.select().from(leadsTable)
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
@@ -125,7 +125,7 @@ router.post("/leads/:id/convert-to-quote", requireTenantAccess, async (req, res)
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.post("/leads/:id/convert-to-project", requireTenantAccess, async (req, res) => {
+router.post("/leads/:id/convert-project", requireTenantAccess, async (req, res) => {
   try {
     const lead = await db.select().from(leadsTable)
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
