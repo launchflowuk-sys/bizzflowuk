@@ -72,19 +72,30 @@ const WHY_POINTS = [
   "Work focused on kerb appeal, protection and long-term finish",
 ];
 
-function PageSEO({ title, description }: { title: string; description: string }) {
+function PageSEO({ title, description, image, siteName }: { title: string; description: string; image?: string; siteName?: string }) {
   useEffect(() => {
     const prev = document.title;
     document.title = title;
-    let meta = document.querySelector('meta[name="description"]') as HTMLMetaElement | null;
-    const created = !meta;
-    if (!meta) { meta = document.createElement('meta'); meta.name = 'description'; document.head.appendChild(meta); }
-    meta.content = description;
-    return () => {
-      document.title = prev;
-      if (created) meta?.parentNode?.removeChild(meta);
+
+    const setMeta = (attr: string, key: string, value: string) => {
+      let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
+      el.setAttribute('content', value);
     };
-  }, [title, description]);
+
+    setMeta('name', 'description', description);
+    setMeta('property', 'og:title', title);
+    setMeta('property', 'og:description', description);
+    setMeta('property', 'og:type', 'website');
+    if (siteName) setMeta('property', 'og:site_name', siteName);
+    if (image) setMeta('property', 'og:image', image);
+    setMeta('name', 'twitter:card', image ? 'summary_large_image' : 'summary');
+    setMeta('name', 'twitter:title', title);
+    setMeta('name', 'twitter:description', description);
+    if (image) setMeta('name', 'twitter:image', image);
+
+    return () => { document.title = prev; };
+  }, [title, description, image, siteName]);
   return null;
 }
 
@@ -501,7 +512,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
-      <PageSEO title="AMO Rendering | Silicone Render Specialists — Grays, Essex & London" description="AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."/>
+      <PageSEO title={`${tenant?.name || 'AMO Rendering'} | Silicone Render Specialists — Grays, Essex & London`} description={settings?.seoDescription || "AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
       <TopBar/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -2563,6 +2574,29 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
   const params = useParams<{ tenantSlug: string }>();
   const tenantSlug = forcedSlug || params.tenantSlug || '';
   const siteBase = forcedBase !== undefined ? forcedBase : `/site/${tenantSlug}`;
+
+  // Fetch site data at root level for favicon (React Query caches — no extra network request per page)
+  const { data: rootSiteData } = useGetPublicSite(tenantSlug);
+  const { settings: rootSettings, tenant: rootTenant } = (rootSiteData as any) || {};
+
+  useEffect(() => {
+    const initial = ((rootTenant?.name || tenantSlug || 'T').charAt(0)).toUpperCase();
+    const color = rootSettings?.primaryColor || '#1F8CFF';
+    let link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null;
+    if (!link) { link = document.createElement('link'); link.rel = 'icon'; document.head.appendChild(link); }
+    if (rootSettings?.faviconUrl) {
+      link.type = '';
+      link.href = rootSettings.faviconUrl;
+    } else {
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" rx="20" fill="${color}"/><text x="50" y="68" font-family="Arial Black,Arial,sans-serif" font-size="52" font-weight="900" text-anchor="middle" fill="white">${initial}</text></svg>`;
+      link.type = 'image/svg+xml';
+      link.href = 'data:image/svg+xml,' + encodeURIComponent(svg);
+    }
+    return () => {
+      if (link) { link.type = 'image/svg+xml'; link.href = '/favicon.svg'; }
+    };
+  }, [rootSettings?.faviconUrl, rootSettings?.primaryColor, rootTenant?.name, tenantSlug]);
+
   return (
     <SiteBaseCtx.Provider value={siteBase}>
     <WouterRouter base={siteBase}>

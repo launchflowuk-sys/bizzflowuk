@@ -1761,7 +1761,8 @@ function SettingsPage() {
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-slate-900">Branding</h2>
           {field("primaryColor", "Primary Colour", "color")}
-          {field("logoUrl", "Logo URL")}
+          {field("logoUrl", "Logo URL", "text", "Full URL to your logo image (shown in the site header)")}
+          {field("faviconUrl", "Favicon URL", "text", "URL to your browser tab icon — paste the full URL to a PNG or ICO file (ideally 64×64px)")}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-slate-900">Hero Section</h2>
