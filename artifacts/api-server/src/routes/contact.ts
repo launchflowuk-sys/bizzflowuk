@@ -20,12 +20,13 @@ async function getTenantWithSettings(slug: string) {
 }
 
 // Public contact form submission — send admin+customer emails directly (no toggle needed for generic contact)
-router.post("/public/:tenantSlug/contact", publicFormRateLimiter, async (req, res) => {
+async function handleContactMessage(req: any, res: any, slug: string) {
   try {
-    const ts = await getTenantWithSettings(req.params.tenantSlug as string);
+    const ts = await getTenantWithSettings(slug);
     if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
     const { tenant, settings } = ts;
-    const msg = await db.insert(contactMessagesTable).values({ ...req.body, tenantId: tenant.id, source: "contact_form" }).returning();
+    const { tenantSlug: _slug, ...rest } = req.body;
+    const msg = await db.insert(contactMessagesTable).values({ ...rest, tenantId: tenant.id, source: "contact_form" }).returning();
 
     const adminEmail = settings?.adminNotificationEmail || tenant.email;
     const customerEmail = req.body.email;
@@ -48,15 +49,24 @@ router.post("/public/:tenantSlug/contact", publicFormRateLimiter, async (req, re
 
     res.status(201).json(msg[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+}
+
+router.post("/public/:tenantSlug/contact", publicFormRateLimiter, (req, res) => handleContactMessage(req, res, req.params.tenantSlug as string));
+
+// Alias at /contact (tenantSlug in body) for the generated API client
+router.post("/contact", publicFormRateLimiter, (req, res) => {
+  if (!req.body.tenantSlug) { res.status(400).json({ error: "tenantSlug required" }); return; }
+  return handleContactMessage(req, res, req.body.tenantSlug);
 });
 
 // Public quote request — creates a lead then fires lead_new through the unified notification helper
-router.post("/public/:tenantSlug/quote-request", publicFormRateLimiter, async (req, res) => {
+async function handleQuoteRequest(req: any, res: any, slug: string) {
   try {
-    const ts = await getTenantWithSettings(req.params.tenantSlug as string);
+    const ts = await getTenantWithSettings(slug);
     if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
     const { tenant } = ts;
-    const lead = await db.insert(leadsTable).values({ ...req.body, tenantId: tenant.id, status: "New", source: "Website" }).returning();
+    const { tenantSlug: _slug, ...rest } = req.body;
+    const lead = await db.insert(leadsTable).values({ ...rest, tenantId: tenant.id, status: "New", source: "Website" }).returning();
     res.status(201).json(lead[0]);
 
     // Fire through unified helper — respects per-channel toggles and sends admin alert + customer ack
@@ -69,6 +79,14 @@ router.post("/public/:tenantSlug/quote-request", publicFormRateLimiter, async (r
       customerPhone: lead[0].phone ?? undefined,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+}
+
+router.post("/public/:tenantSlug/quote-request", publicFormRateLimiter, (req, res) => handleQuoteRequest(req, res, req.params.tenantSlug as string));
+
+// Alias at /quote-request (tenantSlug in body) for the generated API client
+router.post("/quote-request", publicFormRateLimiter, (req, res) => {
+  if (!req.body.tenantSlug) { res.status(400).json({ error: "tenantSlug required" }); return; }
+  return handleQuoteRequest(req, res, req.body.tenantSlug);
 });
 
 // Public visualiser submission — alias at /visualiser for generated API client
