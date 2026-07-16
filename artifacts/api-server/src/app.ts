@@ -7,6 +7,12 @@ import { startReviewRequestScheduler } from "./lib/reviewRequestScheduler";
 
 const app: Express = express();
 
+// Coolify's Traefik reverse proxy is always the immediate hop in front of this
+// container in every deployment — trust exactly one proxy so rate limiting
+// and req.ip resolve the real client IP from X-Forwarded-For instead of
+// throwing/misidentifying every request as the proxy's own IP.
+app.set("trust proxy", 1);
+
 app.use(
   pinoHttp({
     logger,
