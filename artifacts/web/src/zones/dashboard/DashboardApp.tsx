@@ -1,6 +1,6 @@
 import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
 import { useAuthCtx } from "@/lib/auth";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import {
   useGetMe, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
@@ -2154,10 +2154,10 @@ export default function DashboardApp() {
   const [location] = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  let nextId = 0;
+  const nextIdRef = useRef(0);
 
   const showToast: ToastFn = (text, type = "success") => {
-    const id = ++nextId;
+    const id = ++nextIdRef.current;
     setToasts(prev => [...prev, { id, text, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   };

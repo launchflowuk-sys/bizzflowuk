@@ -174,8 +174,6 @@ function DomainRouteGuard({ children }: { children: React.ReactNode }) {
   const isKnownHost =
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
-    hostname.includes(".repl") ||
-    hostname.includes(".replit") ||
     (platformDomain !== "" && hostname === platformDomain) ||
     /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 

@@ -175,7 +175,7 @@ function OutlineBtn({ href, children, dark = false }: { href: string; children: 
   );
 }
 
-function ImageUpload({ onUploaded, label = "Upload photo", hint }: { onUploaded: (url: string) => void; label?: string; hint?: string }) {
+function ImageUpload({ tenantSlug, onUploaded, label = "Upload photo", hint }: { tenantSlug: string; onUploaded: (url: string) => void; label?: string; hint?: string }) {
   const requestUrl = useRequestUploadUrl();
   const inputRef = useRef<HTMLInputElement>(null);
   const [state, setState] = useState<"idle" | "uploading" | "done" | "error">("idle");
@@ -185,7 +185,7 @@ function ImageUpload({ onUploaded, label = "Upload photo", hint }: { onUploaded:
     setState("uploading");
     setPreview(URL.createObjectURL(file));
     try {
-      const result = await requestUrl.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type } }) as any;
+      const result = await requestUrl.mutateAsync({ data: { tenantSlug, name: file.name, size: file.size, contentType: file.type as any } }) as any;
       await fetch(result.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
       onUploaded(result.objectPath);
       setState("done");
@@ -215,18 +215,23 @@ function ImageUpload({ onUploaded, label = "Upload photo", hint }: { onUploaded:
             {hint && <p className="text-xs text-slate-400">{hint}</p>}
           </div>
         )}
-        <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}/>
+        <input ref={inputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleFile(f); }}/>
       </div>
     </div>
   );
 }
 
-function TopBar() {
+function TopBar({ tenant, settings }: any) {
+  const area = settings?.city || tenant?.address;
+  const areaText = area ? `Based in ${area}` : "Trusted local specialists";
+  const tagline = tenant?.businessType
+    ? `${tenant.businessType[0].toUpperCase()}${tenant.businessType.slice(1)} specialists`
+    : "Free, no-obligation quotes";
   return (
     <div className="hidden md:block text-xs text-white py-2" style={{ backgroundColor: "#0A1F3A" }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-4">
-        <span>Based in Grays, Thurrock — serving Essex &amp; London</span>
-        <span className="text-slate-400">Silicone Rendering • K Rend • EWI • Pebbledash Removal</span>
+        <span>{areaText}</span>
+        <span className="text-slate-400">{tagline}</span>
       </div>
     </div>
   );
@@ -236,9 +241,9 @@ function MobileBar({ tenantSlug, phone }: { tenantSlug: string; phone?: string }
   const siteBase = useSiteBase();
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 flex md:hidden border-t border-slate-200 shadow-lg">
-      <a href={phone ? `tel:${phone}` : `tel:01375123456`} className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-bold bg-white text-[#26323F] hover:bg-slate-50 transition-colors">
+      <a href={phone ? `tel:${phone}` : `${siteBase}/contact`} className="flex-1 flex items-center justify-center gap-2 py-4 text-sm font-bold bg-white text-[#26323F] hover:bg-slate-50 transition-colors">
         <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/></svg>
-        Call AMO
+        {phone ? "Call Us" : "Contact Us"}
       </a>
       <a href={`${siteBase}/quote`} className="flex-1 flex items-center justify-center py-4 text-sm font-bold text-white" style={{ backgroundColor: BLUE }}>
         Get Quote
@@ -324,13 +329,13 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
   );
 }
 
-function PageHero({ tenantSlug, crumb, title, subtitle }: { tenantSlug: string; crumb: string; title: string; subtitle: string }) {
+function PageHero({ tenantSlug, tenant, crumb, title, subtitle }: { tenantSlug: string; tenant?: any; crumb: string; title: string; subtitle: string }) {
   const siteBase = useSiteBase();
   return (
     <section style={{ backgroundColor: NAVY }} className="-mt-20 pt-28 pb-16 text-white">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
         <div className="flex items-center gap-2 text-xs text-slate-400">
-          <a href={siteBase || '/'} className="hover:text-white transition-colors">AMO Rendering</a>
+          <a href={siteBase || '/'} className="hover:text-white transition-colors">{tenant?.name || "Home"}</a>
           <span>/</span>
           <span>{crumb}</span>
         </div>
@@ -513,7 +518,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title={`${tenant?.name || 'AMO Rendering'} | Silicone Render Specialists — Grays, Essex & London`} description={settings?.seoDescription || "AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Hero — pulls up behind the transparent nav with -mt-20 */}
@@ -877,9 +882,9 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Rendering Services | AMO Rendering — Essex & London" description="Expert rendering services across Essex and London — silicone render, monocouche, K Rend, EWI, pebbledash removal and repair. Get a free quote."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Rendering Services Across Essex & London" title="Rendering Services Across Essex & London" subtitle="Specialist exterior rendering services for homeowners and properties across Grays, Thurrock, Essex and London."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Services Across Essex & London" title="Rendering Services Across Essex & London" subtitle="Specialist exterior rendering services for homeowners and properties across Grays, Thurrock, Essex and London."/>
 
       {/* Service Photo Cards */}
       <section className="py-16 bg-white">
@@ -1016,12 +1021,12 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
   return (
     <div>
       <PageSEO title={`${name} in Essex & London | AMO Rendering`} description={description || `Professional ${name} service across Essex and London. AMO Rendering — free quotes available.`}/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {isLoading ? <Spinner/> : (
         <>
-          <PageHero tenantSlug={tenantSlug} crumb={`${name} in Essex & London`} title={`${name} in Essex & London`} subtitle={description || `Expert ${name} for homeowners and properties across Grays, Thurrock, Essex and London.`}/>
+          <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb={`${name} in Essex & London`} title={`${name} in Essex & London`} subtitle={description || `Expert ${name} for homeowners and properties across Grays, Thurrock, Essex and London.`}/>
 
           {/* Main content + sidebar */}
           <section className="py-16 bg-white">
@@ -1168,9 +1173,9 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Areas We Cover | AMO Rendering — Essex & London" description="AMO Rendering covers Grays, Thurrock, Essex, London, Basildon, Romford, Chelmsford and surrounding areas. Local rendering specialists."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Areas We Cover" title="Local Rendering Across Essex & London" subtitle="AMO Rendering is based in Grays, Thurrock. We cover Essex, Greater London and surrounding areas for all rendering services."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Areas We Cover" title="Local Rendering Across Essex & London" subtitle="AMO Rendering is based in Grays, Thurrock. We cover Essex, Greater London and surrounding areas for all rendering services."/>
 
       {/* Photo area cards */}
       <section className="py-16 bg-white">
@@ -1337,12 +1342,12 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
   return (
     <div>
       <PageSEO title={`Rendering in ${areaName} | AMO Rendering`} description={a?.description || `Professional silicone rendering, monocouche, K Rend and pebbledash removal in ${areaName}. AMO Rendering — free quotes available.`}/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {isLoading ? <Spinner/> : (
         <>
-          <PageHero tenantSlug={tenantSlug} crumb={`Rendering in ${areaName}`} title={`Rendering in ${areaName}`} subtitle={a?.description || `Silicone rendering, K Rend, monocouche render, external wall insulation and pebbledash removal for properties in ${areaName}.`}/>
+          <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb={`Rendering in ${areaName}`} title={`Rendering in ${areaName}`} subtitle={a?.description || `Silicone rendering, K Rend, monocouche render, external wall insulation and pebbledash removal for properties in ${areaName}.`}/>
 
           <section className="py-16 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -1449,14 +1454,14 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Before & After Rendering Gallery | AMO Rendering" description="See real rendering transformations across Essex and London. Silicone render, monocouche and EWI before and after photos from AMO Rendering."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Dark hero header */}
       <section style={{ backgroundColor: NAVY }} className="-mt-20 pt-28 pb-16 px-4 text-white">
         <div className="max-w-7xl mx-auto">
           <div className="flex items-center gap-2 text-xs text-slate-400 mb-4">
-            <span>AMO Rendering</span><span>/</span><span>Before &amp; After</span>
+            <span>{tenant?.name || "Home"}</span><span>/</span><span>Before &amp; After</span>
           </div>
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div className="space-y-3">
@@ -1654,14 +1659,14 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Customer Reviews | AMO Rendering — Essex & London" description="Read verified customer reviews from homeowners across Essex and London. AMO Rendering — trusted rendering specialists."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Hero with aggregate */}
       <section style={{ backgroundColor: NAVY }} className="-mt-20 pt-28 pb-16 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-4">
           <div className="flex items-center gap-2 text-xs text-slate-400">
-            <a href={siteBase || '/'} className="hover:text-white">AMO Rendering</a>
+            <a href={siteBase || '/'} className="hover:text-white">{tenant?.name || "Home"}</a>
             <span>/</span><span>Reviews</span>
           </div>
           <h1 className="text-4xl font-bold">AMO Rendering Reviews</h1>
@@ -1737,9 +1742,9 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Rendering Case Studies | AMO Rendering — Essex & London" description="Detailed rendering project case studies from across Essex and London. See the challenge, solution and results from real AMO Rendering projects."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Rendering Case Studies" title="Rendering Case Studies" subtitle="Detailed examples of rendering projects across Essex and London, showing the problem, solution and finished exterior result."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Case Studies" title="Rendering Case Studies" subtitle="Detailed examples of rendering projects across Essex and London, showing the problem, solution and finished exterior result."/>
 
       {/* Case study cards */}
       <section className="py-16 bg-white">
@@ -1819,7 +1824,7 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
   return (
     <div>
       <PageSEO title={c ? `${c.title} | AMO Rendering` : "Case Study | AMO Rendering"} description={c?.tagline || "Detailed rendering project case study from AMO Rendering — see the challenge, solution and results."}/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {isLoading ? <Spinner/> : c ? (
@@ -1953,9 +1958,9 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Rendering FAQs | AMO Rendering — Essex & London" description="Answers to common questions about rendering, including silicone render, monocouche, K Rend, pebbledash removal and EWI."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Rendering FAQs" title="Rendering FAQs" subtitle="Common questions about silicone rendering, pebbledash removal, K Rend, EWI and quote requests."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering FAQs" title="Rendering FAQs" subtitle="Common questions about silicone rendering, pebbledash removal, K Rend, EWI and quote requests."/>
 
       {/* FAQ intro */}
       <section style={{ backgroundColor: LIGHT_BG }} className="py-10 border-b border-slate-200">
@@ -2022,9 +2027,9 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Rendering Advice & Guides | AMO Rendering Blog" description="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation across Essex and London."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Rendering Advice & Guides" title="Rendering Advice & Guides" subtitle="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Advice & Guides" title="Rendering Advice & Guides" subtitle="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation."/>
 
       {/* Blog posts */}
       <section className="py-16 bg-white">
@@ -2086,7 +2091,7 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
   return (
     <div>
       <PageSEO title={p ? `${p.title} | AMO Rendering` : "Blog | AMO Rendering"} description={p?.excerpt || "Rendering advice and tips from AMO Rendering — specialists in silicone render, monocouche and EWI across Essex and London."}/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} alwaysOpaque/>
 
       {isLoading ? <Spinner/> : p ? (
@@ -2185,9 +2190,9 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Get a Free Rendering Quote | AMO Rendering — Essex & London" description="Request a free rendering quote from AMO Rendering. Upload photos of your property and we'll recommend the right render system."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Request A Rendering Quote" title="Request A Rendering Quote" subtitle="Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Request A Rendering Quote" title="Request A Rendering Quote" subtitle="Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system."/>
 
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -2284,6 +2289,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                   </div>
                   <div><label className={labelCls} style={{ color: MUTED }}>Additional notes</label><textarea rows={3} className={inputCls} placeholder="Anything else about your property or project..." value={form.notes} onChange={f('notes')}/></div>
                   <ImageUpload
+                    tenantSlug={tenantSlug}
                     label="Property photos (recommended — helps us quote accurately)"
                     hint="Upload front, side or rear views · JPG or PNG · max 10MB"
                     onUploaded={url => setForm({ ...form, photoUrls: [url] })}
@@ -2333,9 +2339,9 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Contact AMO Rendering | Rendering Specialists — Essex & London" description="Get in touch with AMO Rendering to discuss your property and rendering options. Based in Grays, Thurrock — serving Essex and London."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Contact AMO Rendering" title="Contact AMO Rendering" subtitle="Speak to AMO Rendering about silicone rendering, K Rend, EWI, pebbledash removal or render repairs across Essex and London."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Contact AMO Rendering" title="Contact AMO Rendering" subtitle="Speak to AMO Rendering about silicone rendering, K Rend, EWI, pebbledash removal or render repairs across Essex and London."/>
 
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -2346,28 +2352,24 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
               <div className="rounded-2xl border border-slate-200 p-7 space-y-5 bg-white shadow-sm">
                 <h2 className="text-xl font-bold" style={{ color: TEXT }}>Contact Details</h2>
                 <div className="space-y-4 text-sm">
-                  <div>
-                    <p className="font-semibold" style={{ color: TEXT }}>Email</p>
-                    <a href="mailto:info@amorendering.co.uk" className="hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>info@amorendering.co.uk</a>
-                  </div>
-                  <div>
-                    <p className="font-semibold" style={{ color: TEXT }}>Direct Contact</p>
-                    <a href="mailto:mark@amorendering.co.uk" className="hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>mark@amorendering.co.uk</a>
-                  </div>
+                  {(settings?.email || tenant?.email) && (
+                    <div>
+                      <p className="font-semibold" style={{ color: TEXT }}>Email</p>
+                      <a href={`mailto:${settings?.email || tenant?.email}`} className="hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{settings?.email || tenant?.email}</a>
+                    </div>
+                  )}
                   {settings?.phone && (
                     <div>
                       <p className="font-semibold" style={{ color: TEXT }}>Phone</p>
                       <a href={`tel:${settings.phone}`} className="hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{settings.phone}</a>
                     </div>
                   )}
-                  <div>
-                    <p className="font-semibold" style={{ color: TEXT }}>Location</p>
-                    <p style={{ color: MUTED }}>Based in Grays, Thurrock. Serving Essex and London.</p>
-                  </div>
-                  <div>
-                    <p className="font-semibold" style={{ color: TEXT }}>Services</p>
-                    <p style={{ color: MUTED }}>Silicone rendering, K Rend, monocouche, EWI, pebbledash removal and repairs.</p>
-                  </div>
+                  {(settings?.address || settings?.city) && (
+                    <div>
+                      <p className="font-semibold" style={{ color: TEXT }}>Location</p>
+                      <p style={{ color: MUTED }}>{[settings?.address, settings?.city].filter(Boolean).join(", ")}</p>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -2458,9 +2460,9 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Render Visualiser | AMO Rendering — See Your Property Transformed" description="Upload a photo of your property and AMO Rendering will show you what new render could look like. Free visualisation service — Essex and London."/>
-      <TopBar/>
+      <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} crumb="Render Visualiser Request" title="Render Visualiser Request" subtitle="Upload your property photos, choose a render finish and tell AMO what exterior look you want to achieve."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Render Visualiser Request" title="Render Visualiser Request" subtitle="Upload your property photos, choose a render finish and tell AMO what exterior look you want to achieve."/>
 
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -2544,6 +2546,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
                     </select>
                   </div>
                   <ImageUpload
+                    tenantSlug={tenantSlug}
                     label="Property photo (strongly recommended)"
                     hint="Upload a clear front view of your property · JPG or PNG · max 10MB"
                     onUploaded={url => setForm({ ...form, photoUrls: [url] })}

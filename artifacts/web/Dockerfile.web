@@ -53,6 +53,22 @@ COPY --from=builder /app/artifacts/web/dist/public /usr/share/nginx/html
 # Override when deploying API and web as separate services.
 ENV API_UPSTREAM=api:8080
 
+# ---------------------------------------------------------------------------
+# Run as non-root. nginx:1.27-alpine ships a built-in unprivileged "nginx"
+# user (uid 101) but binding port 80 normally requires root. Rather than
+# running the whole master process as root, grant just the nginx binary the
+# CAP_NET_BIND_SERVICE capability via setcap, and hand ownership of every
+# directory nginx writes to at runtime — html root, cache, pid file, and
+# conf.d (the entrypoint's envsubst writes app.conf there) — to that user.
+# ---------------------------------------------------------------------------
+RUN apk add --no-cache libcap \
+  && setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx \
+  && chown -R nginx:nginx /usr/share/nginx/html /var/cache/nginx /etc/nginx/conf.d /etc/nginx/templates \
+  && touch /var/run/nginx.pid \
+  && chown nginx:nginx /var/run/nginx.pid
+
+USER nginx
+
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
