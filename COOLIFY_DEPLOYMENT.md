@@ -73,10 +73,10 @@ DNS propagation takes 5–30 minutes. Coolify handles SSL (Let's Encrypt) automa
 
 Click **Deploy** in Coolify. The build order is:
 
-1. Docker builds the `api` image (~2–3 min — Node 24 + pnpm install + esbuild)
+1. Docker builds the `bizzflowuk-api` image (~2–3 min — Node 24 + pnpm install + esbuild)
 2. Docker builds the `web` image (~2–3 min — Vite production build → nginx)
-3. `api` container starts → runs DB migrations automatically → health check passes
-4. `web` container starts → nginx serves the React app, proxies `/api` to `api:8080`
+3. `bizzflowuk-api` container starts → runs DB migrations automatically → health check passes
+4. `web` container starts → nginx serves the React app, proxies `/api` to `bizzflowuk-api:8080`
 
 ---
 
@@ -84,8 +84,10 @@ Click **Deploy** in Coolify. The build order is:
 
 | Service | What it does | Port |
 |---------|-------------|------|
-| `api` | Express API + Drizzle ORM | 8080 (internal) |
+| `bizzflowuk-api` | Express API + Drizzle ORM | 8080 (internal) |
 | `web` | nginx serving React SPA | 80 → Coolify routes to your domain |
+
+**Note:** the API service is deliberately named `bizzflowuk-api`, not the generic `api` — on Coolify's shared Docker network, a generic service name can collide with another project's service of the same name, causing requests to be intermittently routed to the wrong container. Don't rename it back to `api`.
 
 **Database:** Coolify managed Postgres 16 (separate from compose — survives redeployments)
 

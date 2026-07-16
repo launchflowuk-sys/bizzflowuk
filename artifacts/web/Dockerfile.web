@@ -49,9 +49,11 @@ COPY artifacts/web/nginx.conf /etc/nginx/templates/app.conf.template
 COPY --from=builder /app/artifacts/web/dist/public /usr/share/nginx/html
 
 # API_UPSTREAM: hostname:port of the API service.
-# Default matches the docker-compose service name.
+# Default matches the docker-compose service name (deliberately NOT "api" —
+# see docker-compose.yml for why a generic name collides across projects on
+# a shared Docker network).
 # Override when deploying API and web as separate services.
-ENV API_UPSTREAM=api:8080
+ENV API_UPSTREAM=bizzflowuk-api:8080
 
 # ---------------------------------------------------------------------------
 # Run as non-root. nginx:1.27-alpine ships a built-in unprivileged "nginx"

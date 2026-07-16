@@ -1,6 +1,13 @@
 services:
 
-  api:
+  # Named "bizzflowuk-api", not "api": on the shared external "coolify"
+  # network, Docker Compose auto-registers the service name as a DNS alias —
+  # a generic "api" collides with any other project on the same host that
+  # also names its backend service "api" (confirmed live: `nslookup api`
+  # from the web container returned two different IPs, ours and another
+  # project's, and nginx's resolver would nondeterministically pick either —
+  # causing intermittent requests to be silently routed to a different app).
+  bizzflowuk-api:
     build:
       context: .
       dockerfile: artifacts/api-server/Dockerfile.server
@@ -29,10 +36,10 @@ services:
         BASE_PATH: /
     restart: unless-stopped
     environment:
-      API_UPSTREAM: api:8080
+      API_UPSTREAM: bizzflowuk-api:8080
       SERVICE_FQDN_WEB_80:
     depends_on:
-      - api
+      - bizzflowuk-api
     networks:
       - app-net
       - coolify
