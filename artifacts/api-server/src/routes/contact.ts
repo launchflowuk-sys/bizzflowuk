@@ -29,21 +29,23 @@ async function handleContactMessage(req: any, res: any, slug: string) {
     const msg = await db.insert(contactMessagesTable).values({ ...rest, tenantId: tenant.id, source: "contact_form" }).returning();
 
     const adminEmail = settings?.adminNotificationEmail || tenant.email;
-    const customerEmail = req.body.email;
+    const senderName = req.body.senderName || "";
+    const senderEmail = req.body.senderEmail;
+    const senderPhone = req.body.senderPhone;
     const smtp = buildSmtpConfig(settings as any);
     const smsCreds = buildSmsCreds(settings as any);
     const adminPhone = settings?.adminNotificationPhone;
 
     if (adminEmail) {
-      sendEmail(buildContactAdminEmail({ tenantName: tenant.name, name: req.body.name, email: adminEmail, phone: req.body.phone, message: req.body.message }), smtp)
+      sendEmail(buildContactAdminEmail({ tenantName: tenant.name, name: senderName, email: senderEmail, phone: senderPhone, message: req.body.message }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send contact admin email"));
     }
-    if (customerEmail) {
-      sendEmail(buildContactCustomerEmail({ tenantName: tenant.name, name: req.body.senderName || req.body.name || "", tenantPhone: settings?.phone || tenant.phone || "", tenantEmail: adminEmail || tenant.email || "", to: customerEmail }), smtp)
+    if (senderEmail) {
+      sendEmail(buildContactCustomerEmail({ tenantName: tenant.name, name: senderName, tenantPhone: settings?.phone || tenant.phone || "", tenantEmail: adminEmail || tenant.email || "", to: senderEmail }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send contact customer email"));
     }
     if (adminPhone && smsCreds) {
-      sendSms(adminPhone, `New contact from ${req.body.name || "someone"}${req.body.phone ? ` — ${req.body.phone}` : ""}`, smsCreds)
+      sendSms(adminPhone, `New contact from ${senderName || "someone"}${senderPhone ? ` — ${senderPhone}` : ""}`, smsCreds)
         .catch(e => req.log.error({ err: e }, "Failed to send contact admin SMS"));
     }
 
