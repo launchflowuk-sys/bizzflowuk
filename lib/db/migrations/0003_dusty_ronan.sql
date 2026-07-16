@@ -31,10 +31,15 @@ ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "desired_finish" text;--> statement
 ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "timeframe" text;--> statement-breakpoint
 ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "photo_urls" jsonb DEFAULT '[]'::jsonb;--> statement-breakpoint
 ALTER TABLE "projects" ADD COLUMN IF NOT EXISTS "review_request_sent_at" timestamp with time zone;--> statement-breakpoint
+-- Existence-checked rather than EXCEPTION WHEN duplicate_object: adding a
+-- UNIQUE/FK constraint that already exists can raise duplicate_table (the
+-- implicit index collides) rather than duplicate_object depending on how it
+-- already got created, so catching only duplicate_object isn't reliable —
+-- confirmed the hard way against the live database.
 DO $$ BEGIN
-  ALTER TABLE "reviews" ADD CONSTRAINT "reviews_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'reviews_service_id_services_id_fk') THEN
+    ALTER TABLE "reviews" ADD CONSTRAINT "reviews_service_id_services_id_fk" FOREIGN KEY ("service_id") REFERENCES "public"."services"("id") ON DELETE no action ON UPDATE no action;
+  END IF;
 END $$;--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "users_tenant_id_idx" ON "users" USING btree ("tenant_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "customers_tenant_id_idx" ON "customers" USING btree ("tenant_id");--> statement-breakpoint
@@ -75,7 +80,7 @@ CREATE INDEX IF NOT EXISTS "portal_messages_tenant_id_idx" ON "portal_messages" 
 CREATE INDEX IF NOT EXISTS "portal_messages_customer_id_idx" ON "portal_messages" USING btree ("customer_id");--> statement-breakpoint
 CREATE INDEX IF NOT EXISTS "team_members_tenant_id_idx" ON "team_members" USING btree ("tenant_id");--> statement-breakpoint
 DO $$ BEGIN
-  ALTER TABLE "users" ADD CONSTRAINT "users_email_unique" UNIQUE("email");
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_email_unique') THEN
+    ALTER TABLE "users" ADD CONSTRAINT "users_email_unique" UNIQUE("email");
+  END IF;
 END $$;

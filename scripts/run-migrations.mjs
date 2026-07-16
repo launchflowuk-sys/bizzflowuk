@@ -25,20 +25,17 @@ try {
   await migrate(db, { migrationsFolder });
   console.log("==> Migrations completed successfully");
 } catch (err) {
-  // Drizzle-orm wraps the underlying pg error — check both err.code and
-  // err.cause?.code, and fall back to message text.
-  const pgCode = err?.code ?? err?.cause?.code;
+  // Every migration file is written to be idempotent (IF NOT EXISTS / guarded
+  // DO blocks) specifically so a genuine failure here always means something
+  // real is wrong — never swallow "already exists"-shaped errors as if they
+  // meant the whole migration set must already be applied. That fallback used
+  // to live here and silently reported success on a partially-applied
+  // database (a mid-transaction failure rolls back everything in that file,
+  // not just the failing statement), which took real production debugging to
+  // catch. Let it fail loudly so Coolify's deploy logs show the truth.
   const msg = String(err?.message ?? err ?? "");
-  const isAlreadyExists =
-    ["42710", "42P07", "42701"].includes(pgCode) ||
-    msg.includes("already exists");
-
-  if (isAlreadyExists) {
-    console.log(`==> Schema already exists — migration treated as complete`);
-  } else {
-    console.error("==> Migration failed:", msg);
-    process.exit(1);
-  }
+  console.error("==> Migration failed:", msg);
+  process.exit(1);
 } finally {
   await pool.end();
 }
