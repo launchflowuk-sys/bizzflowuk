@@ -32,3 +32,12 @@ export const uploadRateLimiter = rateLimit({
   legacyHeaders: false,
   handler: jsonRateLimitHandler,
 });
+
+/** Public payment-link lookups/attempts: tighter than lead-gen forms — a leaked/guessed token has financial stakes. */
+export const paymentLinkRateLimiter = rateLimit({
+  windowMs: FIFTEEN_MINUTES_MS,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  handler: jsonRateLimitHandler,
+});

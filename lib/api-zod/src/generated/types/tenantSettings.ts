@@ -82,6 +82,12 @@ export interface TenantSettings {
   /** @nullable */
   adminNotificationPhone?: string | null;
   /** @nullable */
+  squareApplicationId?: string | null;
+  /** @nullable */
+  squareLocationId?: string | null;
+  /** @nullable */
+  squareEnvironment?: string | null;
+  /** @nullable */
   customDomain?: string | null;
   /** @nullable */
   notifyLeadNewEmail?: boolean | null;
@@ -99,6 +105,10 @@ export interface TenantSettings {
   notifyQuoteAcceptedEmail?: boolean | null;
   /** @nullable */
   notifyQuoteAcceptedSms?: boolean | null;
+  /** @nullable */
+  notifyPaymentReceivedEmail?: boolean | null;
+  /** @nullable */
+  notifyPaymentReceivedSms?: boolean | null;
   /** @nullable */
   notifyLeadWonEmail?: boolean | null;
   /** @nullable */

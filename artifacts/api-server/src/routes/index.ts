@@ -13,6 +13,7 @@ import visualiserRouter from "./visualiser";
 import contactRouter from "./contact";
 import dashboardRouter from "./dashboard";
 import publicRouter from "./public";
+import publicPaymentsRouter from "./publicPayments";
 import usersRouter from "./users";
 import settingsRouter from "./settings";
 
@@ -32,6 +33,7 @@ router.use(visualiserRouter);
 router.use(contactRouter);
 router.use(dashboardRouter);
 router.use(publicRouter);
+router.use(publicPaymentsRouter);
 router.use(usersRouter);
 router.use(settingsRouter);
 

@@ -1,5 +1,6 @@
 import type { SmtpConfig } from "./email";
 import type { SmsCreds } from "./sms";
+import type { SquareCreds } from "./square";
 
 /**
  * Fields from tenantSettings that are safe to expose on the unauthenticated public site
@@ -40,6 +41,7 @@ export function maskSecretsForAuth(row: Record<string, unknown> | null | undefin
     ...row,
     smtpPass: row.smtpPass ? "" : null,
     twilioAuthToken: row.twilioAuthToken ? "" : null,
+    squareAccessToken: row.squareAccessToken ? "" : null,
   };
 }
 
@@ -61,5 +63,15 @@ export function buildSmsCreds(settings: Record<string, unknown> | null | undefin
     accountSid: settings.twilioAccountSid as string,
     authToken: settings.twilioAuthToken as string,
     fromNumber: settings.twilioFromNumber as string,
+  };
+}
+
+export function buildSquareConfig(settings: Record<string, unknown> | null | undefined): SquareCreds | null {
+  if (!settings?.squareApplicationId || !settings?.squareLocationId || !settings?.squareAccessToken) return null;
+  return {
+    applicationId: settings.squareApplicationId as string,
+    locationId: settings.squareLocationId as string,
+    accessToken: settings.squareAccessToken as string,
+    environment: (settings.squareEnvironment as "sandbox" | "production") || "sandbox",
   };
 }

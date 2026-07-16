@@ -122,6 +122,7 @@ export function buildQuoteSentCustomerEmail(opts: {
   tenantEmail: string;
   firstName: string;
   reference?: string;
+  paymentLinkUrl?: string;
   to: string;
 }): EmailPayload {
   return {
@@ -135,8 +136,9 @@ export function buildQuoteSentCustomerEmail(opts: {
         ${opts.tenantPhone ? `<li>Phone: <a href="tel:${opts.tenantPhone}">${opts.tenantPhone}</a></li>` : ""}
         ${opts.tenantEmail ? `<li>Email: <a href="mailto:${opts.tenantEmail}">${opts.tenantEmail}</a></li>` : ""}
       </ul>
+      ${opts.paymentLinkUrl ? `<p><a href="${opts.paymentLinkUrl}" style="display:inline-block;padding:12px 24px;background:#1F8CFF;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold">View & Pay Your Quote</a></p>` : ""}
       <p>— The ${opts.tenantName} Team</p>`,
-    text: `Hi ${opts.firstName}, your quote${opts.reference ? ` (${opts.reference})` : ""} is ready from ${opts.tenantName}. Questions? Call ${opts.tenantPhone}.`,
+    text: `Hi ${opts.firstName}, your quote${opts.reference ? ` (${opts.reference})` : ""} is ready from ${opts.tenantName}. Questions? Call ${opts.tenantPhone}.${opts.paymentLinkUrl ? ` View & pay: ${opts.paymentLinkUrl}` : ""}`,
   };
 }
 
@@ -155,6 +157,46 @@ export function buildQuoteAcceptedAdminEmail(opts: {
       <p>Quote <strong>${opts.reference}</strong>${opts.customerName ? ` from <strong>${opts.customerName}</strong>` : ""} has been accepted.</p>
       <p>Log in to your dashboard to create a project and schedule the work.</p>`,
     text: `Quote ${opts.reference}${opts.customerName ? ` from ${opts.customerName}` : ""} has been accepted. Log in to proceed.`,
+  };
+}
+
+// ─── 5b. Payment Received — admin alert ───────────────────────────────────────
+export function buildPaymentReceivedAdminEmail(opts: {
+  tenantName: string;
+  adminEmail: string;
+  reference: string;
+  amount: string;
+  customerName?: string;
+}): EmailPayload {
+  return {
+    to: opts.adminEmail,
+    subject: `Payment Received — ${opts.reference} (${opts.amount})`,
+    html: `
+      <h2>Payment Received!</h2>
+      <p><strong>${opts.amount}</strong> has been paid against quote <strong>${opts.reference}</strong>${opts.customerName ? ` by <strong>${opts.customerName}</strong>` : ""}.</p>
+      <p>Log in to your dashboard to view the full payment history for this quote.</p>`,
+    text: `Payment received: ${opts.amount} against quote ${opts.reference}${opts.customerName ? ` from ${opts.customerName}` : ""}.`,
+  };
+}
+
+// ─── 5c. Payment Received — customer receipt ──────────────────────────────────
+export function buildPaymentReceivedCustomerEmail(opts: {
+  tenantName: string;
+  tenantPhone: string;
+  firstName: string;
+  reference?: string;
+  amount: string;
+  to: string;
+}): EmailPayload {
+  return {
+    to: opts.to,
+    subject: `Payment received — ${opts.tenantName}`,
+    html: `
+      <h2>Thanks, ${opts.firstName} — payment received!</h2>
+      <p>We've received your payment of <strong>${opts.amount}</strong>${opts.reference ? ` for quote <strong>${opts.reference}</strong>` : ""}.</p>
+      <p>Questions? Call us on <a href="tel:${opts.tenantPhone}">${opts.tenantPhone}</a>.</p>
+      <p>— The ${opts.tenantName} Team</p>`,
+    text: `Hi ${opts.firstName}, we've received your payment of ${opts.amount}${opts.reference ? ` for quote ${opts.reference}` : ""}. Questions? Call ${opts.tenantPhone}.`,
   };
 }
 

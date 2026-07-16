@@ -1,5 +1,5 @@
 import { Switch, Route, useParams, Router as WouterRouter, Link as WouterLink } from "wouter";
-import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl } from "@workspace/api-client-react";
+import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl, useGetPublicPaymentPage, useChargePublicPaymentLink, useSubmitPublicQuoteAction } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 const SiteBaseCtx = createContext('');
 const useSiteBase = () => useContext(SiteBaseCtx);
@@ -2153,6 +2153,211 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// PAY QUOTE PAGE
+// ─────────────────────────────────────────────────────────────────────────────
+
+function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string }) {
+  const siteBase = useSiteBase();
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  const { data: pageData, isLoading, isError } = useGetPublicPaymentPage(token);
+  const chargeMutation = useChargePublicPaymentLink();
+  const actionMutation = useSubmitPublicQuoteAction();
+  const [cardReady, setCardReady] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [chargeResult, setChargeResult] = useState<{ status: string; error?: string | null } | null>(null);
+  const [quoteStatus, setQuoteStatus] = useState<string | null>(null);
+  const cardRef = useRef<any>(null);
+
+  const d = (pageData as any) || {};
+  const paySettings = d.settings || {};
+  const quote = d.quote || {};
+  const link = d.paymentLink || {};
+  const items: any[] = quote.items || [];
+  const paymentsConfigured = !!(paySettings.squareApplicationId && paySettings.squareLocationId);
+
+  useEffect(() => {
+    if (quote.status) setQuoteStatus(quote.status);
+  }, [quote.status]);
+
+  useEffect(() => {
+    if (!paymentsConfigured || link.status !== "Pending") return;
+
+    const scriptId = "square-web-payments-sdk";
+    const src = paySettings.squareEnvironment === "production"
+      ? "https://web.squarecdn.com/v1/square.js"
+      : "https://sandbox.web.squarecdn.com/v1/square.js";
+
+    let cancelled = false;
+    async function init() {
+      try {
+        const w = window as any;
+        const payments = w.Square.payments(paySettings.squareApplicationId, paySettings.squareLocationId);
+        const card = await payments.card();
+        await card.attach("#square-card-container");
+        if (cancelled) return;
+        cardRef.current = card;
+        setCardReady(true);
+      } catch {
+        if (!cancelled) setCardError("Unable to load the payment form. Please try again shortly.");
+      }
+    }
+
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existing) {
+      if ((window as any).Square) init();
+      else existing.addEventListener("load", init);
+    } else {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = src;
+      script.onload = init;
+      script.onerror = () => setCardError("Unable to load the payment form. Please try again shortly.");
+      document.body.appendChild(script);
+    }
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [paymentsConfigured, paySettings.squareApplicationId, paySettings.squareLocationId, paySettings.squareEnvironment, link.status]);
+
+  const handlePay = async () => {
+    if (!cardRef.current) return;
+    setPaying(true);
+    setCardError(null);
+    try {
+      const tokenizeResult = await cardRef.current.tokenize();
+      if (tokenizeResult.status !== "OK") {
+        setCardError(tokenizeResult.errors?.[0]?.message || "Card details invalid — please check and try again.");
+        setPaying(false);
+        return;
+      }
+      const res = await chargeMutation.mutateAsync({ token, data: { sourceId: tokenizeResult.token } }) as any;
+      setChargeResult({ status: res.status, error: res.error });
+      if (res.quoteStatus) setQuoteStatus(res.quoteStatus);
+    } catch (err: any) {
+      setChargeResult({ status: "Failed", error: err?.message || "Payment failed — please try again or contact us." });
+    } finally {
+      setPaying(false);
+    }
+  };
+
+  const handleAction = async (action: "accept" | "decline") => {
+    try {
+      const res = await actionMutation.mutateAsync({ token, data: { action } }) as any;
+      setQuoteStatus(res.status);
+    } catch {}
+  };
+
+  if (isLoading) return <Spinner />;
+  if (isError || !d.quote) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} alwaysOpaque />
+        <main className="flex-1 flex flex-col items-center justify-center px-6 text-center py-24">
+          <h1 className="text-2xl font-bold text-slate-900">This payment link isn't valid</h1>
+          <p className="mt-3 text-slate-500 max-w-sm">It may have expired or already been used. Please contact us if you need a new one.</p>
+          <a href={siteBase || '/'} className="mt-8 inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity" style={{ backgroundColor: BLUE }}>Back to homepage</a>
+        </main>
+        <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug} />
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <PageSEO title={`Quote ${quote.reference || ""} | ${tenant?.name || ""}`} description="View and pay your quote online."/>
+      <TopBar tenant={tenant} settings={settings}/>
+      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Your Quote" title={`Quote ${quote.reference || ""}`} subtitle="Review the details below and pay securely online, or let us know if you'd like to accept or decline."/>
+
+      <section className="py-16 bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8">
+          <div className="rounded-2xl border border-slate-200 p-7 space-y-4 bg-white shadow-sm">
+            <h2 className="text-lg font-bold" style={{ color: TEXT }}>Quote Summary</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-slate-100 text-xs uppercase" style={{ color: MUTED }}>
+                  <th className="text-left pb-2">Description</th><th className="text-right pb-2">Qty</th><th className="text-right pb-2">Unit £</th><th className="text-right pb-2">Total £</th>
+                </tr></thead>
+                <tbody>
+                  {items.map((item: any, i: number) => (
+                    <tr key={i} className="border-b border-slate-50">
+                      <td className="py-2 pr-4" style={{ color: TEXT }}>{item.description}</td>
+                      <td className="py-2 text-right" style={{ color: MUTED }}>{item.quantity}</td>
+                      <td className="py-2 text-right" style={{ color: MUTED }}>£{Number(item.unitPrice).toFixed(2)}</td>
+                      <td className="py-2 text-right font-medium" style={{ color: TEXT }}>£{Number(item.total).toFixed(2)}</td>
+                    </tr>
+                  ))}
+                  {!items.length && <tr><td colSpan={4} className="py-4 text-center text-xs" style={{ color: MUTED }}>No line items on this quote</td></tr>}
+                </tbody>
+              </table>
+            </div>
+            <div className="border-t border-slate-100 pt-3 space-y-1 text-sm text-right">
+              <div style={{ color: MUTED }}>Subtotal: <span className="font-medium" style={{ color: TEXT }}>£{Number(quote.subtotal || 0).toFixed(2)}</span></div>
+              {Number(quote.vatAmount) > 0 && <div style={{ color: MUTED }}>VAT: <span className="font-medium" style={{ color: TEXT }}>£{Number(quote.vatAmount).toFixed(2)}</span></div>}
+              <div className="text-base font-bold" style={{ color: TEXT }}>Quote Total: £{Number(quote.total || 0).toFixed(2)}</div>
+            </div>
+          </div>
+
+          {(quoteStatus === "Accepted" || quoteStatus === "Rejected") ? (
+            <div className="rounded-2xl p-7 text-center space-y-2" style={{ backgroundColor: quoteStatus === "Accepted" ? BLUE + "15" : "#F1F5F9" }}>
+              <h2 className="text-xl font-bold" style={{ color: TEXT }}>{quoteStatus === "Accepted" ? "Quote Accepted" : "Quote Declined"}</h2>
+              <p className="text-sm" style={{ color: MUTED }}>{quoteStatus === "Accepted" ? "Thank you — we'll be in touch to arrange next steps." : "You've declined this quote. Contact us if you change your mind."}</p>
+            </div>
+          ) : (
+            <>
+              <div className="rounded-2xl border border-slate-200 p-7 space-y-4 bg-white shadow-sm">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-bold" style={{ color: TEXT }}>Amount Requested</h2>
+                  <span className="text-2xl font-bold" style={{ color: BLUE }}>£{Number(link.amount || 0).toFixed(2)}</span>
+                </div>
+                {paySettings.squareEnvironment === "sandbox" && (
+                  <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 inline-block">Sandbox mode — no real charge will be made</p>
+                )}
+                {link.status !== "Pending" ? (
+                  <p className="text-sm" style={{ color: MUTED }}>
+                    {link.status === "Paid" ? "This payment has already been received — thank you!" : `This payment link is ${String(link.status).toLowerCase()}.`}
+                  </p>
+                ) : chargeResult?.status === "Paid" ? (
+                  <div className="text-center py-6 space-y-2">
+                    <div className="w-14 h-14 rounded-full mx-auto flex items-center justify-center" style={{ backgroundColor: BLUE + "20" }}><CheckIcon/></div>
+                    <h3 className="text-lg font-bold" style={{ color: TEXT }}>Payment Received</h3>
+                    <p className="text-sm" style={{ color: MUTED }}>Thank you! We've received your payment.</p>
+                  </div>
+                ) : !paymentsConfigured ? (
+                  <p className="text-sm" style={{ color: MUTED }}>Online payment isn't set up yet for this business — please contact us to arrange payment.</p>
+                ) : (
+                  <div className="space-y-3">
+                    <div id="square-card-container" className="min-h-[90px]" />
+                    {cardError && <p className="text-sm text-red-600">{cardError}</p>}
+                    {chargeResult?.status === "Failed" && <p className="text-sm text-red-600">{chargeResult.error || "Payment failed — please try again."}</p>}
+                    <button onClick={handlePay} disabled={!cardReady || paying} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
+                      {paying ? "Processing…" : `Pay £${Number(link.amount || 0).toFixed(2)}`}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 p-7 space-y-3 bg-white shadow-sm">
+                <h2 className="text-lg font-bold" style={{ color: TEXT }}>Prefer to respond without paying online?</h2>
+                <p className="text-sm" style={{ color: MUTED }}>You can accept or decline this quote directly — we'll follow up to arrange payment another way.</p>
+                <div className="flex gap-3">
+                  <button onClick={() => handleAction("accept")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border-2 py-2.5 text-sm font-bold hover:opacity-80 disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>Accept Quote</button>
+                  <button onClick={() => handleAction("decline")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-50">Decline</button>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+
+      <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // QUOTE PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2617,6 +2822,7 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
         <Route path="/blog">{() => <BlogListPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/blog/:slug">{(p: any) => <BlogPostPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/pay/:token">{(p: any) => <PayQuotePage tenantSlug={tenantSlug} token={p.token}/>}</Route>
         <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/visualiser">{() => <VisualiserPage tenantSlug={tenantSlug}/>}</Route>
         <Route>{() => <TenantNotFoundPage tenantSlug={tenantSlug}/>}</Route>

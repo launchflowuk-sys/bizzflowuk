@@ -8,6 +8,8 @@ import {
   buildSurveyBookedCustomerEmail,
   buildQuoteSentCustomerEmail,
   buildQuoteAcceptedAdminEmail,
+  buildPaymentReceivedAdminEmail,
+  buildPaymentReceivedCustomerEmail,
   buildLeadWonCustomerEmail,
   buildProjectInProgressCustomerEmail,
   buildProjectCompleteCustomerEmail,
@@ -21,6 +23,7 @@ export type NotificationEvent =
   | "survey_booked"
   | "quote_sent"
   | "quote_accepted"
+  | "payment_received"
   | "lead_won"
   | "project_in_progress"
   | "project_completed";
@@ -35,6 +38,8 @@ export interface NotificationContext {
   customerPhone?: string;
   reference?: string;
   projectTitle?: string;
+  paymentLinkUrl?: string;
+  amount?: string;
 }
 
 async function getTenantAndSettings(tenantId: number) {
@@ -53,6 +58,7 @@ function emailEnabled(s: Settings | null, event: NotificationEvent): boolean {
     case "survey_booked":      return s.notifySurveyBookedEmail !== false;
     case "quote_sent":         return s.notifyQuoteSentEmail !== false;
     case "quote_accepted":     return s.notifyQuoteAcceptedEmail !== false;
+    case "payment_received":  return s.notifyPaymentReceivedEmail !== false;
     case "lead_won":           return s.notifyLeadWonEmail !== false;
     case "project_in_progress":return s.notifyProjectInProgressEmail !== false;
     case "project_completed":  return s.notifyProjectCompleteEmail !== false;
@@ -67,6 +73,7 @@ function smsEnabled(s: Settings | null, event: NotificationEvent): boolean {
     case "survey_booked":      return s.notifySurveyBookedSms !== false;
     case "quote_sent":         return s.notifyQuoteSentSms !== false;
     case "quote_accepted":     return s.notifyQuoteAcceptedSms !== false;
+    case "payment_received":  return s.notifyPaymentReceivedSms !== false;
     case "lead_won":           return s.notifyLeadWonSms !== false;
     case "project_in_progress":return s.notifyProjectInProgressSms !== false;
     case "project_completed":  return s.notifyProjectCompleteSms !== false;
@@ -157,6 +164,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             tenantEmail,
             firstName,
             reference: ctx.reference,
+            paymentLinkUrl: ctx.paymentLinkUrl,
             to: ctx.customerEmail!,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent customer email failed"));
         }
@@ -180,6 +188,38 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
         if (doAdminSms) {
           sendSms(adminPhone!, `Quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""} accepted!`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] quote_accepted admin SMS failed"));
+        }
+        break;
+      }
+
+      // ── payment_received: admin alert + customer receipt ──────────────────
+      case "payment_received": {
+        if (doAdminEmail) {
+          sendEmail(buildPaymentReceivedAdminEmail({
+            tenantName: tenant.name,
+            adminEmail: adminEmail!,
+            reference: ctx.reference || "—",
+            amount: ctx.amount || "—",
+            customerName: fullName !== "Unknown" ? fullName : undefined,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] payment_received admin email failed"));
+        }
+        if (doAdminSms) {
+          sendSms(adminPhone!, `Payment received: ${ctx.amount || "—"} against quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""}.`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] payment_received admin SMS failed"));
+        }
+        if (doCustomerEmail) {
+          sendEmail(buildPaymentReceivedCustomerEmail({
+            tenantName: tenant.name,
+            tenantPhone,
+            firstName,
+            reference: ctx.reference,
+            amount: ctx.amount || "—",
+            to: ctx.customerEmail!,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] payment_received customer email failed"));
+        }
+        if (doCustomerSms) {
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, we've received your payment of ${ctx.amount || "—"}${ctx.reference ? ` for quote ${ctx.reference}` : ""}. Thank you! — ${tenant.name}`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] payment_received customer SMS failed"));
         }
         break;
       }

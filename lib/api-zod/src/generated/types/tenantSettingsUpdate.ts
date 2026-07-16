@@ -45,6 +45,10 @@ export interface TenantSettingsUpdate {
   twilioAuthToken?: string;
   twilioFromNumber?: string;
   adminNotificationPhone?: string;
+  squareApplicationId?: string;
+  squareLocationId?: string;
+  squareAccessToken?: string;
+  squareEnvironment?: string;
   customDomain?: string;
   notifyLeadNewEmail?: boolean;
   notifyLeadNewSms?: boolean;
@@ -54,6 +58,8 @@ export interface TenantSettingsUpdate {
   notifyQuoteSentSms?: boolean;
   notifyQuoteAcceptedEmail?: boolean;
   notifyQuoteAcceptedSms?: boolean;
+  notifyPaymentReceivedEmail?: boolean;
+  notifyPaymentReceivedSms?: boolean;
   notifyLeadWonEmail?: boolean;
   notifyLeadWonSms?: boolean;
   notifyProjectInProgressEmail?: boolean;

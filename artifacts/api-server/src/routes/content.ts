@@ -79,6 +79,7 @@ router.patch("/settings", requireTenantAccess, async (req, res) => {
     // Strip out blank password/token fields so they don't overwrite stored values
     if (!body.smtpPass) delete body.smtpPass;
     if (!body.twilioAuthToken) delete body.twilioAuthToken;
+    if (!body.squareAccessToken) delete body.squareAccessToken;
 
     // customDomain lives on tenantsTable — split it out
     const { customDomain, ...rest } = body;

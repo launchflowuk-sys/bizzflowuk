@@ -665,6 +665,50 @@ paths:
               schema:
                 $ref: "#/components/schemas/QuoteItem"
 
+  /quotes/{id}/payment-links:
+    get:
+      operationId: listQuotePaymentLinks
+      tags: [quotes]
+      summary: List payment links for a quote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Payment links
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaymentLink"
+    post:
+      operationId: createQuotePaymentLink
+      tags: [quotes]
+      summary: Generate a payment link for a quote
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaymentLinkInput"
+      responses:
+        "201":
+          description: Created payment link
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaymentLink"
+
   /quote-items/{id}:
     patch:
       operationId: updateQuoteItem
@@ -2201,6 +2245,79 @@ paths:
               schema:
                 $ref: "#/components/schemas/Lead"
 
+  # ─── Public payment links (Square) ──────────────────────────────────────────
+  /public/pay/{token}:
+    get:
+      operationId: getPublicPaymentPage
+      tags: [payments]
+      summary: Fetch quote + payment link details for the public payment page
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Payment page data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicPaymentPageData"
+
+  /public/pay/{token}/charge:
+    post:
+      operationId: chargePublicPaymentLink
+      tags: [payments]
+      summary: Charge a Square card nonce against a payment link
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SquareChargeRequest"
+      responses:
+        "200":
+          description: Charge result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SquareChargeResponse"
+
+  /public/pay/{token}/action:
+    post:
+      operationId: submitPublicQuoteAction
+      tags: [payments]
+      summary: Accept or decline a quote from the public payment page (no payment)
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicQuoteActionRequest"
+      responses:
+        "200":
+          description: Updated quote status
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+
   # ─── Team ─────────────────────────────────────────────────────────────────
   /team:
     get:
@@ -2802,6 +2919,12 @@ components:
           type: ["string", "null"]
         adminNotificationPhone:
           type: ["string", "null"]
+        squareApplicationId:
+          type: ["string", "null"]
+        squareLocationId:
+          type: ["string", "null"]
+        squareEnvironment:
+          type: ["string", "null"]
         customDomain:
           type: ["string", "null"]
         notifyLeadNewEmail:
@@ -2819,6 +2942,10 @@ components:
         notifyQuoteAcceptedEmail:
           type: ["boolean", "null"]
         notifyQuoteAcceptedSms:
+          type: ["boolean", "null"]
+        notifyPaymentReceivedEmail:
+          type: ["boolean", "null"]
+        notifyPaymentReceivedSms:
           type: ["boolean", "null"]
         notifyLeadWonEmail:
           type: ["boolean", "null"]
@@ -2922,6 +3049,14 @@ components:
           type: string
         adminNotificationPhone:
           type: string
+        squareApplicationId:
+          type: string
+        squareLocationId:
+          type: string
+        squareAccessToken:
+          type: string
+        squareEnvironment:
+          type: string
         customDomain:
           type: string
         notifyLeadNewEmail:
@@ -2939,6 +3074,10 @@ components:
         notifyQuoteAcceptedEmail:
           type: boolean
         notifyQuoteAcceptedSms:
+          type: boolean
+        notifyPaymentReceivedEmail:
+          type: boolean
+        notifyPaymentReceivedSms:
           type: boolean
         notifyLeadWonEmail:
           type: boolean
@@ -3285,6 +3424,121 @@ components:
           type: number
         notes:
           type: string
+
+    # ─── Payments (Square) ────────────────────────────────────────────────
+    PaymentLink:
+      type: object
+      required: [id, tenantId, quoteId, token, url, amount, currency, status, isAutoGenerated, createdAt]
+      properties:
+        id:
+          type: integer
+        tenantId:
+          type: integer
+        quoteId:
+          type: integer
+        token:
+          type: string
+        url:
+          type: string
+        amount:
+          type: number
+        currency:
+          type: string
+        status:
+          type: string
+          enum: [Pending, Paid, Failed, Expired, Cancelled]
+        isAutoGenerated:
+          type: boolean
+        failureReason:
+          type: ["string", "null"]
+        paidAt:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    PaymentLinkInput:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+          minimum: 0.01
+
+    PublicPaymentPageData:
+      type: object
+      required: [tenant, settings, quote, paymentLink]
+      properties:
+        tenant:
+          type: object
+          properties:
+            name:
+              type: string
+        settings:
+          type: object
+          properties:
+            squareApplicationId:
+              type: ["string", "null"]
+            squareLocationId:
+              type: ["string", "null"]
+            squareEnvironment:
+              type: ["string", "null"]
+            primaryColor:
+              type: ["string", "null"]
+        quote:
+          type: object
+          properties:
+            reference:
+              type: string
+            status:
+              type: string
+            subtotal:
+              type: number
+            vatAmount:
+              type: number
+            total:
+              type: number
+            items:
+              type: array
+              items:
+                $ref: "#/components/schemas/QuoteItem"
+        paymentLink:
+          type: object
+          properties:
+            amount:
+              type: number
+            currency:
+              type: string
+            status:
+              type: string
+              enum: [Pending, Paid, Failed, Expired, Cancelled]
+
+    SquareChargeRequest:
+      type: object
+      required: [sourceId]
+      properties:
+        sourceId:
+          type: string
+
+    SquareChargeResponse:
+      type: object
+      required: [status, quoteStatus]
+      properties:
+        status:
+          type: string
+          enum: [Paid, Failed]
+        quoteStatus:
+          type: string
+        error:
+          type: ["string", "null"]
+
+    PublicQuoteActionRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [accept, decline]
 
     # ─── Project ──────────────────────────────────────────────────────────
     Project:

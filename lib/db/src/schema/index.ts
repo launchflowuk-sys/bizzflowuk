@@ -4,6 +4,7 @@ export * from "./tenant_settings";
 export * from "./customers";
 export * from "./leads";
 export * from "./quotes";
+export * from "./payment_links";
 export * from "./projects";
 export * from "./services";
 export * from "./areas";

@@ -50,6 +50,11 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   twilioAuthToken: text("twilio_auth_token"),
   twilioFromNumber: text("twilio_from_number"),
   adminNotificationPhone: text("admin_notification_phone"),
+  // Square payment settings (per-tenant)
+  squareApplicationId: text("square_application_id"),
+  squareLocationId: text("square_location_id"),
+  squareAccessToken: text("square_access_token"),
+  squareEnvironment: text("square_environment").default("sandbox"), // 'sandbox' | 'production'
   // Per-event, per-channel notification toggles
   notifyLeadNewEmail: boolean("notify_lead_new_email").default(true),
   notifyLeadNewSms: boolean("notify_lead_new_sms").default(true),
@@ -59,6 +64,8 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   notifyQuoteSentSms: boolean("notify_quote_sent_sms").default(true),
   notifyQuoteAcceptedEmail: boolean("notify_quote_accepted_email").default(false),
   notifyQuoteAcceptedSms: boolean("notify_quote_accepted_sms").default(false),
+  notifyPaymentReceivedEmail: boolean("notify_payment_received_email").default(true),
+  notifyPaymentReceivedSms: boolean("notify_payment_received_sms").default(true),
   notifyLeadWonEmail: boolean("notify_lead_won_email").default(true),
   notifyLeadWonSms: boolean("notify_lead_won_sms").default(true),
   notifyProjectInProgressEmail: boolean("notify_project_in_progress_email").default(true),
