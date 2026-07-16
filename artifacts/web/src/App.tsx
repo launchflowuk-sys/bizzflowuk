@@ -235,11 +235,11 @@ function AppRoutes() {
       <Suspense fallback={<ZoneLoader />}>
         <Switch>
           <Route path="/" component={LandingPage} />
-          <Route path="/sign-in" component={() => isSignedIn ? <RoleRouter /> : <LoginForm />} />
+          <Route path="/sign-in">{() => isSignedIn ? <RoleRouter /> : <LoginForm />}</Route>
           <Route path="/dashboard/*?" component={DashboardApp} />
           <Route path="/portal/*?" component={PortalApp} />
           <Route path="/admin/*?" component={AdminApp} />
-          <Route path="/site/:tenantSlug/*?" component={(_p: any) => <PublicSiteApp />} />
+          <Route path="/site/:tenantSlug/*?">{() => <PublicSiteApp />}</Route>
           <Route component={NotFound} />
         </Switch>
       </Suspense>

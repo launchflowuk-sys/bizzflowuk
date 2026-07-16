@@ -2604,22 +2604,22 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
     <SiteBaseCtx.Provider value={siteBase}>
     <WouterRouter base={siteBase}>
       <Switch>
-        <Route path="/" component={() => <HomePage tenantSlug={tenantSlug}/>}/>
-        <Route path="/services" component={() => <ServicesPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/services/:slug" component={({ params: p }) => <ServiceDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}/>
-        <Route path="/areas" component={() => <AreasPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/areas/:slug" component={({ params: p }) => <AreaDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}/>
-        <Route path="/gallery" component={() => <GalleryPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/case-studies" component={() => <CaseStudiesPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/case-studies/:slug" component={({ params: p }) => <CaseStudyDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}/>
-        <Route path="/reviews" component={() => <ReviewsPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/faqs" component={() => <FaqsPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/blog" component={() => <BlogListPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/blog/:slug" component={({ params: p }) => <BlogPostPage tenantSlug={tenantSlug} slug={p.slug}/>}/>
-        <Route path="/quote" component={() => <QuotePage tenantSlug={tenantSlug}/>}/>
-        <Route path="/contact" component={() => <ContactPage tenantSlug={tenantSlug}/>}/>
-        <Route path="/visualiser" component={() => <VisualiserPage tenantSlug={tenantSlug}/>}/>
-        <Route component={() => <TenantNotFoundPage tenantSlug={tenantSlug}/>}/>
+        <Route path="/">{() => <HomePage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/services">{() => <ServicesPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/services/:slug">{(p: any) => <ServiceDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
+        <Route path="/areas">{() => <AreasPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/areas/:slug">{(p: any) => <AreaDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
+        <Route path="/gallery">{() => <GalleryPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/case-studies">{() => <CaseStudiesPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/case-studies/:slug">{(p: any) => <CaseStudyDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
+        <Route path="/reviews">{() => <ReviewsPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/faqs">{() => <FaqsPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/blog">{() => <BlogListPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/blog/:slug">{(p: any) => <BlogPostPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
+        <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/visualiser">{() => <VisualiserPage tenantSlug={tenantSlug}/>}</Route>
+        <Route>{() => <TenantNotFoundPage tenantSlug={tenantSlug}/>}</Route>
       </Switch>
     </WouterRouter>
     </SiteBaseCtx.Provider>
