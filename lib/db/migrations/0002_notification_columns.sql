@@ -18,8 +18,19 @@ ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "notify_project_complete_
 ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "review_request_delay_hours" integer DEFAULT 24;--> statement-breakpoint
 ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "review_request_channel" text DEFAULT 'both';--> statement-breakpoint
 
--- Copy existing delay_days value to delay_hours (days * 24) where set
-UPDATE "tenant_settings" SET "review_request_delay_hours" = "review_request_delay_days" * 24 WHERE "review_request_delay_days" IS NOT NULL;--> statement-breakpoint
+-- Copy existing delay_days value to delay_hours (days * 24) where set.
+-- Guarded: review_request_delay_days only ever existed on databases that went
+-- through an untracked manual schema change (the old pre-migration-history
+-- environment) — on any database created from this migration history alone,
+-- the column never existed, so the bare UPDATE below would fail outright.
+DO $$ BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'tenant_settings' AND column_name = 'review_request_delay_days'
+  ) THEN
+    UPDATE "tenant_settings" SET "review_request_delay_hours" = "review_request_delay_days" * 24 WHERE "review_request_delay_days" IS NOT NULL;
+  END IF;
+END $$;--> statement-breakpoint
 
 -- Update review_request_enabled default to true for new rows
 ALTER TABLE "tenant_settings" ALTER COLUMN "review_request_enabled" SET DEFAULT true;--> statement-breakpoint
