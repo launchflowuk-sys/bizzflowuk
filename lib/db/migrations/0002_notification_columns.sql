@@ -14,9 +14,16 @@ ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "notify_project_in_progre
 ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "notify_project_complete_email" boolean DEFAULT true;--> statement-breakpoint
 ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "notify_project_complete_sms" boolean DEFAULT true;--> statement-breakpoint
 
--- Review request: switch from days to hours, add channel selector
+-- Review request: switch from days to hours, add channel selector.
+-- review_request_enabled/template and review_platform_url below were also
+-- never created by migration 0000 — same untracked-ad-hoc-column history as
+-- review_request_delay_days — so they need ADD COLUMN IF NOT EXISTS here too,
+-- not just the ALTER COLUMN further down which assumes they already exist.
+ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "review_request_enabled" boolean DEFAULT true;--> statement-breakpoint
 ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "review_request_delay_hours" integer DEFAULT 24;--> statement-breakpoint
 ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "review_request_channel" text DEFAULT 'both';--> statement-breakpoint
+ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "review_request_template" text;--> statement-breakpoint
+ALTER TABLE "tenant_settings" ADD COLUMN IF NOT EXISTS "review_platform_url" text;--> statement-breakpoint
 
 -- Copy existing delay_days value to delay_hours (days * 24) where set.
 -- Guarded: review_request_delay_days only ever existed on databases that went
