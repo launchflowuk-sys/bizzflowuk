@@ -72,7 +72,7 @@ USER nginx
 EXPOSE 80
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
-  CMD wget -qO- http://localhost:80/ || exit 1
+  CMD wget -qO- http://127.0.0.1:80/ || exit 1
 
 # envsubst processes only $API_UPSTREAM — nginx's own $variables are preserved.
 CMD ["/bin/sh", "-c", "envsubst '$API_UPSTREAM' < /etc/nginx/templates/app.conf.template > /etc/nginx/conf.d/app.conf && nginx -g 'daemon off;'"]
