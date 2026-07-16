@@ -9,7 +9,7 @@ import { AuthProvider, useAuthCtx, getStoredToken } from "@/lib/auth";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: 1, staleTime: 30_000 } },
+  defaultOptions: { queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: false } },
 });
 
 const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
