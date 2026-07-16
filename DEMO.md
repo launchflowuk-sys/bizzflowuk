@@ -124,10 +124,10 @@ Tenant isolation is enforced at the API level — all queries filter by `tenantI
 
 ## Image Uploads
 
-File uploads use Replit Object Storage via pre-signed URLs:
-- Request a presigned upload URL: `POST /api/storage/uploads/request-url`
-- Upload directly to the URL from the browser
-- Store the returned public URL in the relevant record
+File uploads use local-disk storage on the API container (mounted as a Docker volume):
+- Request an upload target: `POST /api/storage/uploads/request-url`
+- Upload directly to the returned same-origin URL from the browser
+- Store the returned object path in the relevant record
 
 ---
 
@@ -144,12 +144,12 @@ Browser → Shared Proxy (port 80)
 ```
 
 **Stack:**
-- Frontend: React 19 + Vite + Tailwind CSS + wouter + Clerk auth
+- Frontend: React 19 + Vite + Tailwind CSS + wouter
 - API: Express 5 + Pino logging
 - Database: PostgreSQL + Drizzle ORM
-- Auth: Clerk (multi-tenant, role-based)
+- Auth: custom JWT (Bearer token, multi-tenant, role-based)
 - API contracts: OpenAPI → Orval → React Query hooks (type-safe)
-- Storage: Replit Object Storage (presigned URL uploads)
+- Storage: local-disk object store on the API container (Docker volume)
 
 ---
 
@@ -158,12 +158,8 @@ Browser → Shared Proxy (port 80)
 | Variable | Description |
 |----------|-------------|
 | `DATABASE_URL` | PostgreSQL connection string |
-| `CLERK_SECRET_KEY` | Clerk backend secret |
-| `VITE_CLERK_PUBLISHABLE_KEY` | Clerk frontend key |
-| `SESSION_SECRET` | Express session secret |
-| `DEFAULT_OBJECT_STORAGE_BUCKET_ID` | Replit storage bucket |
-| `PRIVATE_OBJECT_DIR` | Private storage path prefix |
-| `PUBLIC_OBJECT_SEARCH_PATHS` | Public storage search paths |
+| `SESSION_SECRET` | JWT signing secret |
+| `PRIVATE_UPLOAD_DIR` | Local-disk upload storage path |
 
 Optional (email):
 | `EMAIL_PROVIDER` | `resend` (default: dev/log-only mode) |

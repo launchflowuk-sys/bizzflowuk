@@ -10,9 +10,12 @@ services:
       PORT: 8080
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
-      DEFAULT_OBJECT_STORAGE_BUCKET_ID: ${DEFAULT_OBJECT_STORAGE_BUCKET_ID:-}
-      PRIVATE_OBJECT_DIR: ${PRIVATE_OBJECT_DIR:-}
-      PUBLIC_OBJECT_SEARCH_PATHS: ${PUBLIC_OBJECT_SEARCH_PATHS:-}
+      PRIVATE_UPLOAD_DIR: /data/uploads
+      # Only used for the one-time platform-admin bootstrap (see seedFix.ts) —
+      # safe to remove from the environment after first successful deploy.
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+    volumes:
+      - api-uploads:/data/uploads
     networks:
       - app-net
       - coolify
@@ -39,3 +42,6 @@ networks:
     driver: bridge
   coolify:
     external: true
+
+volumes:
+  api-uploads:

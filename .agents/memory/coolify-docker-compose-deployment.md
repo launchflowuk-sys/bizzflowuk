@@ -122,19 +122,14 @@ dbCredentials: {
 
 When docker-compose.yml changes on GitHub, Coolify shows a banner: "N unapplied configuration changes detected." User must click "View changes" → apply → redeploy. Git changes are detected but NOT auto-applied — Coolify stores compose content in its own database.
 
-## 12. GitHub push from Replit
-
-Use the GitHub Contents API via curl with `$GITHUB_ACCESS_TOKEN`. The `git commit` command is blocked by the platform.
-
-## 13. Required Coolify environment variables for this app
+## 12. Required Coolify environment variables for this app
 
 | Variable | Required | Notes |
 |---|---|---|
-| `POSTGRES_PASSWORD` | ✓ | Any strong password |
-| `SESSION_SECRET` | ✓ | Any long random string |
-| `CLERK_SECRET_KEY` | ✓ | From Clerk dashboard (sk_live_...) |
-| `VITE_CLERK_PUBLISHABLE_KEY` | ✓ | From Clerk dashboard (pk_live_...) |
-| `VITE_CLERK_PROXY_URL` | optional | Leave blank unless using Clerk proxy |
+| `DATABASE_URL` | ✓ | Internal connection URL from Coolify's managed Postgres |
+| `SESSION_SECRET` | ✓ | Any long random string — signs JWTs |
+| `SEED_ADMIN_PASSWORD` | first deploy only | One-time platform-admin bootstrap; safe to remove after |
+| `PRIVATE_UPLOAD_DIR` | optional | Defaults to `/data/uploads` (see docker-compose.yml volume) |
 
 ## 14. Pre-deploy checklist
 

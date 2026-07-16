@@ -55,6 +55,13 @@ RUN chmod +x ./docker-entrypoint.sh
 
 ENV NODE_ENV=production
 ENV PORT=8080
+ENV PRIVATE_UPLOAD_DIR=/data/uploads
+
+# Uploaded files (visualiser photos, etc.) live on a volume mounted at
+# /data/uploads — see docker-compose.yml. Owned by the built-in "node" user
+# (present on the official Node image) so the container doesn't run as root.
+RUN mkdir -p /data/uploads && chown -R node:node /data/uploads /app
+USER node
 
 EXPOSE 8080
 

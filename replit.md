@@ -19,7 +19,7 @@ A multi-tenant SaaS platform that gives home improvement businesses (rendering, 
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec at `lib/api-spec/openapi.yaml`)
 - Build: esbuild (CJS bundle)
-- Frontend: React + Vite + Tailwind CSS + wouter (routing) + Clerk (auth)
+- Frontend: React + Vite + Tailwind CSS + wouter (routing) + custom JWT auth
 
 ## Where things live
 
@@ -39,7 +39,7 @@ A multi-tenant SaaS platform that gives home improvement businesses (rendering, 
 - **Public routes need a nested wouter Router**: `<Router base={/site/${slug}>` is required inside PublicSiteApp because inner Switch routes (`/`, `/services`) are relative to the tenant base path
 - **OpenAPI-first API**: All API shapes come from `lib/api-spec/openapi.yaml`; never write types manually for API payloads
 - **Route mounting**: Express routes in `routes/*.ts` use paths WITHOUT `/api/` prefix (e.g. `"/public/:tenantSlug/site"`) — the `/api` prefix is added by `app.use("/api", router)` in `app.ts`
-- **Auth**: Clerk handles authentication; `setAuthTokenGetter` in `lib/api-client-react` attaches Bearer tokens to all API calls
+- **Auth**: Custom JWT scheme — login via `POST /api/auth/login` returns a signed token (see `artifacts/api-server/src/middlewares/auth.ts`); `setAuthTokenGetter` in `lib/api-client-react` attaches the token as a Bearer header to all API calls
 
 ## Product
 
