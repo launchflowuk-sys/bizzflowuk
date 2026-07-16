@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -18,6 +18,11 @@ export const leadsTable = pgTable("leads", {
   city: text("city"),
   postcode: text("postcode"),
   serviceInterest: text("service_interest"),
+  propertyType: text("property_type"),
+  existingSurface: text("existing_surface"),
+  desiredFinish: text("desired_finish"),
+  timeframe: text("timeframe"),
+  photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
   status: leadStatusEnum("status").notNull().default("New"),
   source: leadSourceEnum("source").default("Website"),
   assignedToId: integer("assigned_to_id").references(() => usersTable.id),
@@ -26,7 +31,10 @@ export const leadsTable = pgTable("leads", {
   lostReason: text("lost_reason"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("leads_tenant_id_idx").on(table.tenantId),
+  index("leads_assigned_to_id_idx").on(table.assignedToId),
+]);
 
 export const leadNotesTable = pgTable("lead_notes", {
   id: serial("id").primaryKey(),
@@ -34,7 +42,10 @@ export const leadNotesTable = pgTable("lead_notes", {
   authorId: integer("author_id").references(() => usersTable.id),
   content: text("content").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("lead_notes_lead_id_idx").on(table.leadId),
+  index("lead_notes_author_id_idx").on(table.authorId),
+]);
 
 export const insertLeadSchema = createInsertSchema(leadsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertLead = z.infer<typeof insertLeadSchema>;

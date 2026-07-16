@@ -1,11 +1,21 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { Readable } from "stream";
+import express from "express";
+import { createReadStream } from "fs";
+import { db } from "@workspace/db";
+import { tenantsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
 } from "@workspace/api-zod";
-import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
-import { ObjectPermission } from "../lib/objectAcl";
+import {
+  ObjectStorageService,
+  ObjectNotFoundError,
+  InvalidUploadError,
+  ForbiddenError,
+} from "../lib/objectStorage";
+import { requireAuth } from "../middlewares/auth";
+import { uploadRateLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -13,64 +23,106 @@ const objectStorageService = new ObjectStorageService();
 /**
  * POST /storage/uploads/request-url
  *
- * Request a presigned URL for file upload.
- * The client sends JSON metadata (name, size, contentType) — NOT the file.
- * Then uploads the file directly to the returned presigned URL.
+ * Public (used by the unauthenticated colour-visualiser upload) but rate
+ * limited, size/type validated, and scoped to a real tenant by slug. Returns
+ * a same-origin PUT target — NOT a cloud presigned URL, see objectStorage.ts.
  */
-router.post("/storage/uploads/request-url", async (req: Request, res: Response) => {
+router.post("/storage/uploads/request-url", uploadRateLimiter, async (req: Request, res: Response) => {
   const parsed = RequestUploadUrlBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Missing or invalid required fields" });
     return;
   }
 
-  try {
-    const { name, size, contentType } = parsed.data;
+  const { tenantSlug, name, size, contentType } = parsed.data;
 
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-    const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+  try {
+    const tenants = await db
+      .select({ id: tenantsTable.id })
+      .from(tenantsTable)
+      .where(eq(tenantsTable.slug, tenantSlug))
+      .limit(1);
+    if (!tenants.length) {
+      res.status(404).json({ error: "Tenant not found" });
+      return;
+    }
+
+    const { uploadURL, objectPath } = await objectStorageService.createUploadTarget({
+      tenantId: tenants[0].id,
+      contentType,
+      declaredSize: size,
+    });
 
     res.json(
       RequestUploadUrlResponse.parse({
         uploadURL,
         objectPath,
-        metadata: { name, size, contentType },
+        metadata: { tenantSlug, name, size, contentType },
       }),
     );
   } catch (error) {
+    if (error instanceof InvalidUploadError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     req.log.error({ err: error }, "Error generating upload URL");
     res.status(500).json({ error: "Failed to generate upload URL" });
   }
 });
 
 /**
+ * PUT /storage/uploads/direct/:token
+ *
+ * The one-time, short-lived target handed back by request-url above. Token
+ * is single-use and expires in 15 minutes; still rate limited since it's
+ * reachable without auth (the visualiser upload flow is anonymous by design).
+ */
+router.put(
+  "/storage/uploads/direct/:token",
+  uploadRateLimiter,
+  express.raw({ type: "*/*", limit: "11mb" }),
+  async (req: Request, res: Response) => {
+    try {
+      const body = req.body;
+      if (!Buffer.isBuffer(body) || body.length === 0) {
+        res.status(400).json({ error: "Missing file body" });
+        return;
+      }
+      await objectStorageService.completeUpload(req.params.token as string, body);
+      res.status(200).json({ ok: true });
+    } catch (error) {
+      if (error instanceof ObjectNotFoundError) {
+        res.status(404).json({ error: "Upload token not found or expired" });
+        return;
+      }
+      if (error instanceof InvalidUploadError) {
+        res.status(400).json({ error: error.message });
+        return;
+      }
+      req.log.error({ err: error }, "Error completing upload");
+      res.status(500).json({ error: "Failed to complete upload" });
+    }
+  },
+);
+
+/**
  * GET /storage/public-objects/*
  *
- * Serve public assets from PUBLIC_OBJECT_SEARCH_PATHS.
- * These are unconditionally public — no authentication or ACL checks.
- * IMPORTANT: Always provide this endpoint when object storage is set up.
+ * Unconditionally public static assets (e.g. seeded gallery images) — no
+ * auth/ACL by design.
  */
 router.get("/storage/public-objects/*filePath", async (req: Request, res: Response) => {
   try {
     const raw = req.params.filePath;
     const filePath = Array.isArray(raw) ? raw.join("/") : raw;
-    const file = await objectStorageService.searchPublicObject(filePath);
-    if (!file) {
+    const resolved = await objectStorageService.resolvePublicObject(filePath);
+    if (!resolved) {
       res.status(404).json({ error: "File not found" });
       return;
     }
-
-    const response = await objectStorageService.downloadObject(file);
-
-    res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
-
-    if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
-      nodeStream.pipe(res);
-    } else {
-      res.end();
-    }
+    res.setHeader("Content-Type", resolved.contentType);
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    createReadStream(resolved.absolutePath).pipe(res);
   } catch (error) {
     req.log.error({ err: error }, "Error serving public object");
     res.status(500).json({ error: "Failed to serve public object" });
@@ -80,46 +132,29 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 /**
  * GET /storage/objects/*
  *
- * Serve object entities from PRIVATE_OBJECT_DIR.
- * These are served from a separate path from /public-objects and can optionally
- * be protected with authentication or ACL checks based on the use case.
+ * Private object entities. Requires auth; the tenant id embedded in the
+ * object path (see objectStorage.ts) is checked against the caller's tenant.
  */
-router.get("/storage/objects/*path", async (req: Request, res: Response) => {
+router.get("/storage/objects/*path", requireAuth, async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
-    const objectFile = await objectStorageService.getObjectEntityFile(objectPath);
 
-    // --- Protected route example (uncomment when using replit-auth) ---
-    // if (!req.isAuthenticated()) {
-    //   res.status(401).json({ error: "Unauthorized" });
-    //   return;
-    // }
-    // const canAccess = await objectStorageService.canAccessObjectEntity({
-    //   userId: req.user.id,
-    //   objectFile,
-    //   requestedPermission: ObjectPermission.READ,
-    // });
-    // if (!canAccess) {
-    //   res.status(403).json({ error: "Forbidden" });
-    //   return;
-    // }
+    const { absolutePath, contentType } = await objectStorageService.resolveForDownload(objectPath, {
+      tenantId: req.authUser?.tenantId ?? null,
+      isSuperAdmin: req.authUser?.role === "SUPER_ADMIN",
+    });
 
-    const response = await objectStorageService.downloadObject(objectFile);
-
-    res.status(response.status);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
-
-    if (response.body) {
-      const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
-      nodeStream.pipe(res);
-    } else {
-      res.end();
-    }
+    res.setHeader("Content-Type", contentType);
+    res.setHeader("Cache-Control", "private, max-age=3600");
+    createReadStream(absolutePath).pipe(res);
   } catch (error) {
+    if (error instanceof ForbiddenError) {
+      res.status(403).json({ error: "Forbidden" });
+      return;
+    }
     if (error instanceof ObjectNotFoundError) {
-      req.log.warn({ err: error }, "Object not found");
       res.status(404).json({ error: "Object not found" });
       return;
     }

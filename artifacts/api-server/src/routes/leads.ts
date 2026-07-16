@@ -4,6 +4,7 @@ import { leadsTable, leadNotesTable, quotesTable, projectsTable } from "@workspa
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
+import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 
 const router = Router();
 
@@ -50,7 +51,7 @@ router.patch("/leads/:id", requireTenantAccess, async (req, res) => {
     const before = await db.select().from(leadsTable)
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .limit(1);
-    const l = await db.update(leadsTable).set(req.body)
+    const l = await db.update(leadsTable).set(sanitizeUpdate(req.body))
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .returning();
     if (!l.length) { res.status(404).json({ error: "Not found" }); return; }
@@ -83,10 +84,24 @@ router.delete("/leads/:id", requireTenantAccess, async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+/** Confirms :id refers to a lead the caller's tenant actually owns (or bypasses for SUPER_ADMIN). */
+async function requireOwnedLead(req: any, res: any): Promise<number | null> {
+  const lead = await db.select({ id: leadsTable.id }).from(leadsTable)
+    .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
+    .limit(1);
+  if (!lead.length) {
+    res.status(404).json({ error: "Not found" });
+    return null;
+  }
+  return lead[0].id;
+}
+
 router.get("/leads/:id/notes", requireTenantAccess, async (req, res) => {
   try {
+    const leadId = await requireOwnedLead(req, res);
+    if (leadId === null) return;
     const notes = await db.select().from(leadNotesTable)
-      .where(eq(leadNotesTable.leadId, Number(req.params.id)))
+      .where(eq(leadNotesTable.leadId, leadId))
       .orderBy(sql`${leadNotesTable.createdAt} desc`);
     res.json(notes);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -94,8 +109,10 @@ router.get("/leads/:id/notes", requireTenantAccess, async (req, res) => {
 
 router.post("/leads/:id/notes", requireTenantAccess, async (req, res) => {
   try {
+    const leadId = await requireOwnedLead(req, res);
+    if (leadId === null) return;
     const note = await db.insert(leadNotesTable).values({
-      leadId: Number(req.params.id),
+      leadId,
       authorId: req.authUser!.id,
       content: req.body.content,
     }).returning();

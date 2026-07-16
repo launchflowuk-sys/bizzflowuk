@@ -3004,17 +3004,20 @@ export const GetLeadPipelineResponse = zod.object({
  */
 
 
+export const requestUploadUrlBodySizeMax = 10485760;
 
 
 
 export const RequestUploadUrlBody = zod.object({
+  "tenantSlug": zod.string().min(1),
   "name": zod.string().min(1),
-  "size": zod.number().min(1),
-  "contentType": zod.string().min(1)
+  "size": zod.number().min(1).max(requestUploadUrlBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 })
 
 
 
+export const requestUploadUrlResponseMetadataSizeMax = 10485760;
 
 
 
@@ -3022,9 +3025,10 @@ export const RequestUploadUrlResponse = zod.object({
   "uploadURL": zod.string().url(),
   "objectPath": zod.string(),
   "metadata": zod.object({
+  "tenantSlug": zod.string().min(1),
   "name": zod.string().min(1),
-  "size": zod.number().min(1),
-  "contentType": zod.string().min(1)
+  "size": zod.number().min(1).max(requestUploadUrlResponseMetadataSizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 }).optional()
 })
 

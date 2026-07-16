@@ -4,6 +4,7 @@ import { projectsTable, projectUpdatesTable, customersTable } from "@workspace/d
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
+import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 
 const router = Router();
 
@@ -38,7 +39,7 @@ router.patch("/projects/:id", requireTenantAccess, async (req, res) => {
     const before = await db.select().from(projectsTable)
       .where(and(eq(projectsTable.id, Number(req.params.id)), tenantFilter(req, projectsTable.tenantId)))
       .limit(1);
-    const updateData: any = { ...req.body };
+    const updateData: any = sanitizeUpdate(req.body);
     if (req.body.status === "Completed" && !before[0]?.completedAt) {
       updateData.completedAt = new Date();
     }
@@ -87,10 +88,24 @@ router.delete("/projects/:id", requireTenantAccess, async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+/** Confirms :id refers to a project the caller's tenant actually owns (or bypasses for SUPER_ADMIN). */
+async function requireOwnedProject(req: any, res: any): Promise<number | null> {
+  const project = await db.select({ id: projectsTable.id }).from(projectsTable)
+    .where(and(eq(projectsTable.id, Number(req.params.id)), tenantFilter(req, projectsTable.tenantId)))
+    .limit(1);
+  if (!project.length) {
+    res.status(404).json({ error: "Not found" });
+    return null;
+  }
+  return project[0].id;
+}
+
 router.get("/projects/:id/updates", requireTenantAccess, async (req, res) => {
   try {
+    const projectId = await requireOwnedProject(req, res);
+    if (projectId === null) return;
     const updates = await db.select().from(projectUpdatesTable)
-      .where(eq(projectUpdatesTable.projectId, Number(req.params.id)))
+      .where(eq(projectUpdatesTable.projectId, projectId))
       .orderBy(sql`${projectUpdatesTable.createdAt} desc`);
     res.json(updates);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -98,7 +113,9 @@ router.get("/projects/:id/updates", requireTenantAccess, async (req, res) => {
 
 router.post("/projects/:id/updates", requireTenantAccess, async (req, res) => {
   try {
-    const u = await db.insert(projectUpdatesTable).values({ ...req.body, projectId: Number(req.params.id) }).returning();
+    const projectId = await requireOwnedProject(req, res);
+    if (projectId === null) return;
+    const u = await db.insert(projectUpdatesTable).values({ ...req.body, projectId }).returning();
     res.status(201).json(u[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { customersTable, portalMessagesTable, projectsTable, quotesTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, requireAuth, tenantFilter } from "../middlewares/auth";
+import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 
 const router = Router();
 
@@ -34,7 +35,7 @@ router.get("/customers/:id", requireTenantAccess, async (req, res) => {
 
 router.patch("/customers/:id", requireTenantAccess, async (req, res) => {
   try {
-    const c = await db.update(customersTable).set(req.body)
+    const c = await db.update(customersTable).set(sanitizeUpdate(req.body))
       .where(and(eq(customersTable.id, Number(req.params.id)), tenantFilter(req, customersTable.tenantId)))
       .returning();
     if (!c.length) { res.status(404).json({ error: "Not found" }); return; }

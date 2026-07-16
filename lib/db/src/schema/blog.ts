@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -9,7 +9,9 @@ export const blogCategoriesTable = pgTable("blog_categories", {
   name: text("name").notNull(),
   slug: text("slug").notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("blog_categories_tenant_id_idx").on(table.tenantId),
+]);
 
 export const blogPostsTable = pgTable("blog_posts", {
   id: serial("id").primaryKey(),
@@ -28,7 +30,10 @@ export const blogPostsTable = pgTable("blog_posts", {
   seoDescription: text("seo_description"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("blog_posts_tenant_id_idx").on(table.tenantId),
+  index("blog_posts_category_id_idx").on(table.categoryId),
+]);
 
 export const insertBlogCategorySchema = createInsertSchema(blogCategoriesTable).omit({ id: true, createdAt: true });
 export type InsertBlogCategory = z.infer<typeof insertBlogCategorySchema>;

@@ -4,6 +4,7 @@ import { db } from "@workspace/db";
 import { usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireAuth, signAuthToken } from "../middlewares/auth";
+import { loginRateLimiter } from "../middlewares/rateLimit";
 
 const router = Router();
 
@@ -12,7 +13,7 @@ router.get("/me", requireAuth, async (req, res) => {
   res.json({ id, email, role, firstName, lastName, tenantId, clerkId });
 });
 
-router.post("/login", async (req, res) => {
+router.post("/login", loginRateLimiter, async (req, res) => {
   try {
     const { email, password } = req.body as { email?: string; password?: string };
     if (!email || !password) {

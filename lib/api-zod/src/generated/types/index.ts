@@ -95,6 +95,7 @@ export * from './tenantStatus';
 export * from './tenantSuspend';
 export * from './tenantUpdate';
 export * from './uploadUrlRequest';
+export * from './uploadUrlRequestContentType';
 export * from './uploadUrlResponse';
 export * from './user';
 export * from './userRole';

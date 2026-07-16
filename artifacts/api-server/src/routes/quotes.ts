@@ -4,6 +4,7 @@ import { quotesTable, quoteItemsTable, projectsTable, leadsTable, customersTable
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
+import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 
 const router = Router();
 
@@ -39,7 +40,7 @@ router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
     const before = await db.select().from(quotesTable)
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
       .limit(1);
-    const q = await db.update(quotesTable).set(req.body)
+    const q = await db.update(quotesTable).set(sanitizeUpdate(req.body))
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
       .returning();
     if (!q.length) { res.status(404).json({ error: "Not found" }); return; }
@@ -115,10 +116,24 @@ router.post("/quotes/:id/convert-to-project", requireTenantAccess, async (req, r
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+/** Confirms :id refers to a quote the caller's tenant actually owns (or bypasses for SUPER_ADMIN). */
+async function requireOwnedQuote(req: any, res: any): Promise<number | null> {
+  const quote = await db.select({ id: quotesTable.id }).from(quotesTable)
+    .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
+    .limit(1);
+  if (!quote.length) {
+    res.status(404).json({ error: "Not found" });
+    return null;
+  }
+  return quote[0].id;
+}
+
 router.get("/quotes/:id/items", requireTenantAccess, async (req, res) => {
   try {
+    const quoteId = await requireOwnedQuote(req, res);
+    if (quoteId === null) return;
     const items = await db.select().from(quoteItemsTable)
-      .where(eq(quoteItemsTable.quoteId, Number(req.params.id)))
+      .where(eq(quoteItemsTable.quoteId, quoteId))
       .orderBy(quoteItemsTable.sortOrder);
     res.json(items);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -126,21 +141,31 @@ router.get("/quotes/:id/items", requireTenantAccess, async (req, res) => {
 
 router.post("/quotes/:id/items", requireTenantAccess, async (req, res) => {
   try {
-    const item = await db.insert(quoteItemsTable).values({ ...req.body, quoteId: Number(req.params.id) }).returning();
+    const quoteId = await requireOwnedQuote(req, res);
+    if (quoteId === null) return;
+    const item = await db.insert(quoteItemsTable).values({ ...req.body, quoteId }).returning();
     res.status(201).json(item[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.patch("/quotes/:id/items/:itemId", requireTenantAccess, async (req, res) => {
   try {
-    const item = await db.update(quoteItemsTable).set(req.body).where(eq(quoteItemsTable.id, Number(req.params.itemId))).returning();
+    const quoteId = await requireOwnedQuote(req, res);
+    if (quoteId === null) return;
+    const item = await db.update(quoteItemsTable).set(sanitizeUpdate(req.body))
+      .where(and(eq(quoteItemsTable.id, Number(req.params.itemId)), eq(quoteItemsTable.quoteId, quoteId)))
+      .returning();
+    if (!item.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(item[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.delete("/quotes/:id/items/:itemId", requireTenantAccess, async (req, res) => {
   try {
-    await db.delete(quoteItemsTable).where(eq(quoteItemsTable.id, Number(req.params.itemId)));
+    const quoteId = await requireOwnedQuote(req, res);
+    if (quoteId === null) return;
+    await db.delete(quoteItemsTable)
+      .where(and(eq(quoteItemsTable.id, Number(req.params.itemId)), eq(quoteItemsTable.quoteId, quoteId)));
     res.status(204).send();
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

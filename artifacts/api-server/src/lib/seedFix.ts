@@ -6,7 +6,7 @@ import {
   tenantsTable,
   usersTable,
 } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { logger } from "./logger";
 
@@ -33,7 +33,23 @@ async function hasOldData(tenantId: number): Promise<boolean> {
   return galleryStale || caseStale;
 }
 
+/**
+ * One-time bootstrap only: creates platform users if (and only if) they don't
+ * already exist. Never touches role/tenantId/passwordHash of an existing row —
+ * a prior version of this ran onConflictDoUpdate on every boot, silently
+ * resetting real admin passwords back to a hardcoded value forever. Requires
+ * SEED_ADMIN_PASSWORD so no fixed password ships in source; if it's unset,
+ * missing users are skipped (logged) instead of created with a guessable default.
+ */
 async function ensurePlatformUsers(): Promise<void> {
+  const initialPassword = process.env["SEED_ADMIN_PASSWORD"];
+  if (!initialPassword) {
+    logger.warn(
+      "SEED_ADMIN_PASSWORD not set — skipping platform user bootstrap (existing users are never modified regardless)",
+    );
+    return;
+  }
+
   const tenants = await db
     .select({ id: tenantsTable.id })
     .from(tenantsTable)
@@ -48,24 +64,19 @@ async function ensurePlatformUsers(): Promise<void> {
     { email: "mark@amorendering.co.uk",firstName: "Mark",       lastName: "",      role: "TENANT_ADMIN" as const, tenantId: amoTenantId },
   ];
 
-  const hash = await bcrypt.hash("BizFlow2024!", 12);
+  const hash = await bcrypt.hash(initialPassword, 12);
 
   for (const u of PLATFORM_USERS) {
-    await db
+    const inserted = await db
       .insert(usersTable)
       .values({ ...u, passwordHash: hash })
-      .onConflictDoUpdate({
-        target: usersTable.email,
-        set: {
-          role: sql`EXCLUDED.role`,
-          tenantId: sql`EXCLUDED.tenant_id`,
-          passwordHash: sql`EXCLUDED.password_hash`,
-          updatedAt: new Date(),
-        },
-      });
-  }
+      .onConflictDoNothing({ target: usersTable.email })
+      .returning({ email: usersTable.email });
 
-  logger.info("Platform users ensured (launchflowuk, shoji147, mark)");
+    if (inserted.length) {
+      logger.info({ email: u.email }, "Platform user bootstrapped (new account)");
+    }
+  }
 }
 
 export async function runSeedFixIfNeeded(): Promise<void> {

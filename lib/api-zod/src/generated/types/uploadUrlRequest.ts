@@ -5,12 +5,17 @@
  * LaunchFlow multi-tenant SaaS platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { UploadUrlRequestContentType } from './uploadUrlRequestContentType';
 
 export interface UploadUrlRequest {
   /** @minLength 1 */
-  name: string;
-  /** @minimum 1 */
-  size: number;
+  tenantSlug: string;
   /** @minLength 1 */
-  contentType: string;
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: UploadUrlRequestContentType;
 }

@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { blogPostsTable, blogCategoriesTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
+import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -52,7 +53,7 @@ router.get("/blog/posts/:id", requireTenantAccess, async (req, res) => {
 
 router.patch("/blog/posts/:id", requireTenantAccess, async (req, res) => {
   try {
-    const post = await db.update(blogPostsTable).set(req.body).where(and(eq(blogPostsTable.id, Number(req.params.id)), eq(blogPostsTable.tenantId, tid(req)))).returning();
+    const post = await db.update(blogPostsTable).set(sanitizeUpdate(req.body)).where(and(eq(blogPostsTable.id, Number(req.params.id)), eq(blogPostsTable.tenantId, tid(req)))).returning();
     if (!post.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(post[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

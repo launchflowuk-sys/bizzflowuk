@@ -7,6 +7,7 @@ import {
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { maskSecretsForAuth } from "../lib/settingsHelpers";
+import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -34,7 +35,7 @@ function crud<T>(table: any, routePrefix: string, extraInsert?: (req: any) => ob
   });
   router.patch(`/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
     try {
-      const row = await db.update(table).set(req.body).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req)))).returning();
+      const row = await db.update(table).set(sanitizeUpdate(req.body)).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req)))).returning();
       if (!row.length) { res.status(404).json({ error: "Not found" }); return; }
       res.json(row[0]);
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -80,7 +81,8 @@ router.patch("/settings", requireTenantAccess, async (req, res) => {
     if (!body.twilioAuthToken) delete body.twilioAuthToken;
 
     // customDomain lives on tenantsTable — split it out
-    const { customDomain, ...settingsBody } = body;
+    const { customDomain, ...rest } = body;
+    const settingsBody = sanitizeUpdate(rest);
     if (customDomain !== undefined) {
       await db.update(tenantsTable).set({ customDomain: customDomain || null }).where(eq(tenantsTable.id, tid(req)));
     }

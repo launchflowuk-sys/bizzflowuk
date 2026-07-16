@@ -1,33 +1,6 @@
-import { Storage, File } from "@google-cloud/storage";
-import { Readable } from "stream";
+import { stat, mkdir, writeFile } from "fs/promises";
+import path from "path";
 import { randomUUID } from "crypto";
-import {
-  ObjectAclPolicy,
-  ObjectPermission,
-  canAccessObject,
-  getObjectAclPolicy,
-  setObjectAclPolicy,
-} from "./objectAcl";
-
-const REPLIT_SIDECAR_ENDPOINT = "http://127.0.0.1:1106";
-
-export const objectStorageClient = new Storage({
-  credentials: {
-    audience: "replit",
-    subject_token_type: "access_token",
-    token_url: `${REPLIT_SIDECAR_ENDPOINT}/token`,
-    type: "external_account",
-    credential_source: {
-      url: `${REPLIT_SIDECAR_ENDPOINT}/credential`,
-      format: {
-        type: "json",
-        subject_token_field_name: "access_token",
-      },
-    },
-    universe_domain: "googleapis.com",
-  },
-  projectId: "",
-});
 
 export class ObjectNotFoundError extends Error {
   constructor() {
@@ -37,232 +10,154 @@ export class ObjectNotFoundError extends Error {
   }
 }
 
-export class ObjectStorageService {
-  constructor() {}
+export class InvalidUploadError extends Error {}
+export class ForbiddenError extends Error {}
 
-  getPublicObjectSearchPaths(): Array<string> {
-    const pathsStr = process.env.PUBLIC_OBJECT_SEARCH_PATHS || "";
-    const paths = Array.from(
-      new Set(
-        pathsStr
-          .split(",")
-          .map((path) => path.trim())
-          .filter((path) => path.length > 0)
-      )
+export const MAX_UPLOAD_BYTES = 10 * 1024 * 1024; // 10MB
+
+const ALLOWED_CONTENT_TYPES: Record<string, string> = {
+  "image/jpeg": ".jpg",
+  "image/png": ".png",
+  "image/webp": ".webp",
+  "image/gif": ".gif",
+};
+
+const PENDING_UPLOAD_TTL_MS = 15 * 60 * 1000; // 15 min, matches the old presigned-URL TTL
+
+interface PendingUpload {
+  absolutePath: string;
+  expiresAt: number;
+}
+
+// Single-instance in-memory pending-upload table. Fine for this app's scale
+// (one API container); if the api service is ever scaled horizontally this
+// needs to move to the DB or a shared cache instead.
+const pendingUploads = new Map<string, PendingUpload>();
+
+function sweepExpiredUploads(): void {
+  const now = Date.now();
+  for (const [token, entry] of pendingUploads) {
+    if (entry.expiresAt < now) pendingUploads.delete(token);
+  }
+}
+
+function getUploadRoot(): string {
+  const dir = process.env["PRIVATE_UPLOAD_DIR"];
+  if (!dir) {
+    throw new Error(
+      "PRIVATE_UPLOAD_DIR environment variable is required for file uploads.",
     );
-    if (paths.length === 0) {
-      throw new Error(
-        "PUBLIC_OBJECT_SEARCH_PATHS not set. Create a bucket in 'Object Storage' " +
-          "tool and set PUBLIC_OBJECT_SEARCH_PATHS env var (comma-separated paths)."
-      );
-    }
-    return paths;
   }
+  return path.resolve(dir);
+}
 
-  getPrivateObjectDir(): string {
-    const dir = process.env.PRIVATE_OBJECT_DIR || "";
-    if (!dir) {
-      throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          "tool and set PRIVATE_OBJECT_DIR env var."
-      );
+/**
+ * Local-disk object store. Object paths are shaped
+ * "/objects/{tenantId}/{uuid}.{ext}" — the tenant id embedded in the path IS
+ * the access-control boundary: only that tenant's staff (or a super admin)
+ * may read it back. Replaces a prior implementation that only worked against
+ * Replit's dev-sidecar GCS credential exchange, which doesn't exist in the
+ * Docker/Coolify production deployment.
+ */
+export class ObjectStorageService {
+  /** Step 1 of upload: validate + reserve a disk path, hand back a same-origin PUT target. */
+  async createUploadTarget({
+    tenantId,
+    contentType,
+    declaredSize,
+  }: {
+    tenantId: number;
+    contentType: string;
+    declaredSize: number;
+  }): Promise<{ uploadURL: string; objectPath: string }> {
+    const ext = ALLOWED_CONTENT_TYPES[contentType];
+    if (!ext) {
+      throw new InvalidUploadError(`Unsupported content type: ${contentType}`);
     }
-    return dir;
-  }
-
-  async searchPublicObject(filePath: string): Promise<File | null> {
-    for (const searchPath of this.getPublicObjectSearchPaths()) {
-      const fullPath = `${searchPath}/${filePath}`;
-
-      const { bucketName, objectName } = parseObjectPath(fullPath);
-      const bucket = objectStorageClient.bucket(bucketName);
-      const file = bucket.file(objectName);
-
-      const [exists] = await file.exists();
-      if (exists) {
-        return file;
-      }
-    }
-
-    return null;
-  }
-
-  async downloadObject(file: File, cacheTtlSec: number = 3600): Promise<Response> {
-    const [metadata] = await file.getMetadata();
-    const aclPolicy = await getObjectAclPolicy(file);
-    const isPublic = aclPolicy?.visibility === "public";
-
-    const nodeStream = file.createReadStream();
-    const webStream = Readable.toWeb(nodeStream) as ReadableStream;
-
-    const headers: Record<string, string> = {
-      "Content-Type": (metadata.contentType as string) || "application/octet-stream",
-      "Cache-Control": `${isPublic ? "public" : "private"}, max-age=${cacheTtlSec}`,
-    };
-    if (metadata.size) {
-      headers["Content-Length"] = String(metadata.size);
+    if (declaredSize > MAX_UPLOAD_BYTES) {
+      throw new InvalidUploadError(`File too large (max ${MAX_UPLOAD_BYTES} bytes)`);
     }
 
-    return new Response(webStream, { headers });
-  }
-
-  async getObjectEntityUploadURL(): Promise<string> {
-    const privateObjectDir = this.getPrivateObjectDir();
-    if (!privateObjectDir) {
-      throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          "tool and set PRIVATE_OBJECT_DIR env var."
-      );
-    }
+    sweepExpiredUploads();
 
     const objectId = randomUUID();
-    const fullPath = `${privateObjectDir}/uploads/${objectId}`;
+    const objectPath = `/objects/${tenantId}/${objectId}${ext}`;
+    const absolutePath = path.join(getUploadRoot(), String(tenantId), `${objectId}${ext}`);
 
-    const { bucketName, objectName } = parseObjectPath(fullPath);
-
-    return signObjectURL({
-      bucketName,
-      objectName,
-      method: "PUT",
-      ttlSec: 900,
+    const token = randomUUID();
+    pendingUploads.set(token, {
+      absolutePath,
+      expiresAt: Date.now() + PENDING_UPLOAD_TTL_MS,
     });
+
+    return { uploadURL: `/api/storage/uploads/direct/${token}`, objectPath };
   }
 
-  async getObjectEntityFile(objectPath: string): Promise<File> {
-    if (!objectPath.startsWith("/objects/")) {
+  /** Step 2 of upload: client PUTs the raw file to the token URL from step 1. */
+  async completeUpload(token: string, body: Buffer): Promise<void> {
+    const pending = pendingUploads.get(token);
+    if (!pending || pending.expiresAt < Date.now()) {
+      pendingUploads.delete(token);
+      throw new ObjectNotFoundError();
+    }
+    if (body.length === 0 || body.length > MAX_UPLOAD_BYTES) {
+      pendingUploads.delete(token);
+      throw new InvalidUploadError(`File too large (max ${MAX_UPLOAD_BYTES} bytes)`);
+    }
+
+    await mkdir(path.dirname(pending.absolutePath), { recursive: true });
+    await writeFile(pending.absolutePath, body);
+    pendingUploads.delete(token);
+  }
+
+  /** Resolve + authorize a stored object for download. */
+  async resolveForDownload(
+    objectPath: string,
+    requester: { tenantId: number | null; isSuperAdmin: boolean },
+  ): Promise<{ absolutePath: string; contentType: string }> {
+    const match = /^\/objects\/(\d+)\/([a-f0-9-]+\.(jpg|png|webp|gif))$/i.exec(objectPath);
+    if (!match) throw new ObjectNotFoundError();
+
+    const ownerTenantId = Number(match[1]);
+    const filename = match[2];
+
+    if (!requester.isSuperAdmin && requester.tenantId !== ownerTenantId) {
+      throw new ForbiddenError();
+    }
+
+    const root = getUploadRoot();
+    const absolutePath = path.resolve(root, String(ownerTenantId), filename);
+    if (!absolutePath.startsWith(root + path.sep)) {
+      // Path traversal guard — unreachable given the regex above, kept as defense in depth.
       throw new ObjectNotFoundError();
     }
 
-    const parts = objectPath.slice(1).split("/");
-    if (parts.length < 2) {
+    try {
+      await stat(absolutePath);
+    } catch {
       throw new ObjectNotFoundError();
     }
 
-    const entityId = parts.slice(1).join("/");
-    let entityDir = this.getPrivateObjectDir();
-    if (!entityDir.endsWith("/")) {
-      entityDir = `${entityDir}/`;
-    }
-    const objectEntityPath = `${entityDir}${entityId}`;
-    const { bucketName, objectName } = parseObjectPath(objectEntityPath);
-    const bucket = objectStorageClient.bucket(bucketName);
-    const objectFile = bucket.file(objectName);
-    const [exists] = await objectFile.exists();
-    if (!exists) {
-      throw new ObjectNotFoundError();
-    }
-    return objectFile;
+    return { absolutePath, contentType: contentTypeForExt(path.extname(filename)) };
   }
 
-  normalizeObjectEntityPath(rawPath: string): string {
-    if (!rawPath.startsWith("https://storage.googleapis.com/")) {
-      return rawPath;
+  /** Public, unauthenticated assets served from {PRIVATE_UPLOAD_DIR}/public/** (e.g. seeded gallery images). */
+  async resolvePublicObject(filePath: string): Promise<{ absolutePath: string; contentType: string } | null> {
+    const root = path.resolve(getUploadRoot(), "public");
+    const absolutePath = path.resolve(root, filePath);
+    if (!absolutePath.startsWith(root + path.sep)) return null;
+
+    try {
+      await stat(absolutePath);
+    } catch {
+      return null;
     }
 
-    const url = new URL(rawPath);
-    const rawObjectPath = url.pathname;
-
-    let objectEntityDir = this.getPrivateObjectDir();
-    if (!objectEntityDir.endsWith("/")) {
-      objectEntityDir = `${objectEntityDir}/`;
-    }
-
-    if (!rawObjectPath.startsWith(objectEntityDir)) {
-      return rawObjectPath;
-    }
-
-    const entityId = rawObjectPath.slice(objectEntityDir.length);
-    return `/objects/${entityId}`;
-  }
-
-  async trySetObjectEntityAclPolicy(
-    rawPath: string,
-    aclPolicy: ObjectAclPolicy
-  ): Promise<string> {
-    const normalizedPath = this.normalizeObjectEntityPath(rawPath);
-    if (!normalizedPath.startsWith("/")) {
-      return normalizedPath;
-    }
-
-    const objectFile = await this.getObjectEntityFile(normalizedPath);
-    await setObjectAclPolicy(objectFile, aclPolicy);
-    return normalizedPath;
-  }
-
-  async canAccessObjectEntity({
-    userId,
-    objectFile,
-    requestedPermission,
-  }: {
-    userId?: string;
-    objectFile: File;
-    requestedPermission?: ObjectPermission;
-  }): Promise<boolean> {
-    return canAccessObject({
-      userId,
-      objectFile,
-      requestedPermission: requestedPermission ?? ObjectPermission.READ,
-    });
+    return { absolutePath, contentType: contentTypeForExt(path.extname(absolutePath)) };
   }
 }
 
-function parseObjectPath(path: string): {
-  bucketName: string;
-  objectName: string;
-} {
-  if (!path.startsWith("/")) {
-    path = `/${path}`;
-  }
-  const pathParts = path.split("/");
-  if (pathParts.length < 3) {
-    throw new Error("Invalid path: must contain at least a bucket name");
-  }
-
-  const bucketName = pathParts[1];
-  const objectName = pathParts.slice(2).join("/");
-
-  return {
-    bucketName,
-    objectName,
-  };
-}
-
-async function signObjectURL({
-  bucketName,
-  objectName,
-  method,
-  ttlSec,
-}: {
-  bucketName: string;
-  objectName: string;
-  method: "GET" | "PUT" | "DELETE" | "HEAD";
-  ttlSec: number;
-}): Promise<string> {
-  const request = {
-    bucket_name: bucketName,
-    object_name: objectName,
-    method,
-    expires_at: new Date(Date.now() + ttlSec * 1000).toISOString(),
-  };
-  const response = await fetch(
-    `${REPLIT_SIDECAR_ENDPOINT}/object-storage/signed-object-url`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(request),
-      signal: AbortSignal.timeout(30_000),
-    }
-  );
-  if (!response.ok) {
-    throw new Error(
-      `Failed to sign object URL, errorcode: ${response.status}, ` +
-        `make sure you're running on Replit`
-    );
-  }
-
-  const json = await response.json() as { signed_url: string };
-  const signedURL = json.signed_url;
-  return signedURL;
+function contentTypeForExt(ext: string): string {
+  const found = Object.entries(ALLOWED_CONTENT_TYPES).find(([, e]) => e === ext.toLowerCase());
+  return found?.[0] ?? "application/octet-stream";
 }

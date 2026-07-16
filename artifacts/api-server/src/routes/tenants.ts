@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { tenantsTable, tenantSettingsTable, leadsTable, projectsTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
 import { requireAuth, requireSuperAdmin } from "../middlewares/auth";
+import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 
 const router = Router();
 
@@ -31,7 +32,7 @@ router.get("/tenants/:id", requireSuperAdmin, async (req, res) => {
 
 router.patch("/tenants/:id", requireSuperAdmin, async (req, res) => {
   try {
-    const t = await db.update(tenantsTable).set(req.body).where(eq(tenantsTable.id, Number(req.params.id))).returning();
+    const t = await db.update(tenantsTable).set(sanitizeUpdate(req.body)).where(eq(tenantsTable.id, Number(req.params.id))).returning();
     if (!t.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(t[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

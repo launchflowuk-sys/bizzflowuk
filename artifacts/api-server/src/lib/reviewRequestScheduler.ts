@@ -8,12 +8,7 @@ import { logger } from "./logger";
 
 const INTERVAL_MS = 15 * 60 * 1000;
 
-const PLATFORM_BASE_URL =
-  (() => {
-    const domains = process.env.REPLIT_DOMAINS;
-    if (domains) return `https://${domains.split(",")[0].trim()}`;
-    return process.env.PUBLIC_BASE_URL || "https://bizzflowuk.com";
-  })();
+const PLATFORM_BASE_URL = process.env.PUBLIC_BASE_URL || "https://bizzflowuk.com";
 
 function deriveReviewUrl(opts: {
   customDomain?: string | null;

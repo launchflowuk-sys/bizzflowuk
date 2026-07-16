@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -17,7 +17,11 @@ export const galleryImagesTable = pgTable("gallery_images", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("gallery_images_tenant_id_idx").on(table.tenantId),
+  index("gallery_images_service_id_idx").on(table.serviceId),
+  index("gallery_images_area_id_idx").on(table.areaId),
+]);
 
 export const beforeAfterTable = pgTable("before_after", {
   id: serial("id").primaryKey(),
@@ -30,7 +34,10 @@ export const beforeAfterTable = pgTable("before_after", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("before_after_tenant_id_idx").on(table.tenantId),
+  index("before_after_service_id_idx").on(table.serviceId),
+]);
 
 export const insertGalleryImageSchema = createInsertSchema(galleryImagesTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertGalleryImage = z.infer<typeof insertGalleryImageSchema>;

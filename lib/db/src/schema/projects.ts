@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, boolean, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -26,7 +26,11 @@ export const projectsTable = pgTable("projects", {
   reviewRequestSentAt: timestamp("review_request_sent_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("projects_tenant_id_idx").on(table.tenantId),
+  index("projects_customer_id_idx").on(table.customerId),
+  index("projects_quote_id_idx").on(table.quoteId),
+]);
 
 export const projectUpdatesTable = pgTable("project_updates", {
   id: serial("id").primaryKey(),
@@ -36,7 +40,9 @@ export const projectUpdatesTable = pgTable("project_updates", {
   visibleToCustomer: boolean("visible_to_customer").notNull().default(true),
   photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  index("project_updates_project_id_idx").on(table.projectId),
+]);
 
 export const insertProjectSchema = createInsertSchema(projectsTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertProject = z.infer<typeof insertProjectSchema>;

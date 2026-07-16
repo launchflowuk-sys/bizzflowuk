@@ -3,6 +3,7 @@ import { db } from "@workspace/db";
 import { contactMessagesTable, tenantsTable, tenantSettingsTable, leadsTable, visualiserRequestsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
+import { publicFormRateLimiter } from "../middlewares/rateLimit";
 import { sendEmail, buildContactAdminEmail, buildContactCustomerEmail, buildVisualiserAdminEmail } from "../lib/email";
 import { sendSms } from "../lib/sms";
 import { buildSmtpConfig, buildSmsCreds } from "../lib/settingsHelpers";
@@ -19,9 +20,9 @@ async function getTenantWithSettings(slug: string) {
 }
 
 // Public contact form submission — send admin+customer emails directly (no toggle needed for generic contact)
-router.post("/public/:tenantSlug/contact", async (req, res) => {
+router.post("/public/:tenantSlug/contact", publicFormRateLimiter, async (req, res) => {
   try {
-    const ts = await getTenantWithSettings(req.params.tenantSlug);
+    const ts = await getTenantWithSettings(req.params.tenantSlug as string);
     if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
     const { tenant, settings } = ts;
     const msg = await db.insert(contactMessagesTable).values({ ...req.body, tenantId: tenant.id, source: "contact_form" }).returning();
@@ -50,9 +51,9 @@ router.post("/public/:tenantSlug/contact", async (req, res) => {
 });
 
 // Public quote request — creates a lead then fires lead_new through the unified notification helper
-router.post("/public/:tenantSlug/quote-request", async (req, res) => {
+router.post("/public/:tenantSlug/quote-request", publicFormRateLimiter, async (req, res) => {
   try {
-    const ts = await getTenantWithSettings(req.params.tenantSlug);
+    const ts = await getTenantWithSettings(req.params.tenantSlug as string);
     if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
     const { tenant } = ts;
     const lead = await db.insert(leadsTable).values({ ...req.body, tenantId: tenant.id, status: "New", source: "Website" }).returning();
@@ -71,7 +72,7 @@ router.post("/public/:tenantSlug/quote-request", async (req, res) => {
 });
 
 // Public visualiser submission — alias at /visualiser for generated API client
-router.post("/visualiser", async (req, res) => {
+router.post("/visualiser", publicFormRateLimiter, async (req, res) => {
   try {
     const slug = req.body.tenantSlug;
     if (!slug) { res.status(400).json({ error: "tenantSlug required" }); return; }
@@ -101,9 +102,9 @@ router.post("/visualiser", async (req, res) => {
 });
 
 // Public visualiser submission
-router.post("/public/:tenantSlug/visualiser", async (req, res) => {
+router.post("/public/:tenantSlug/visualiser", publicFormRateLimiter, async (req, res) => {
   try {
-    const ts = await getTenantWithSettings(req.params.tenantSlug);
+    const ts = await getTenantWithSettings(req.params.tenantSlug as string);
     if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
     const { tenant, settings } = ts;
     const r = await db.insert(visualiserRequestsTable).values({ ...req.body, tenantId: tenant.id, status: "pending" }).returning();

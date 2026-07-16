@@ -13,13 +13,27 @@ export interface ErrorEnvelope {
   error: string;
 }
 
+export type UploadUrlRequestContentType = typeof UploadUrlRequestContentType[keyof typeof UploadUrlRequestContentType];
+
+
+export const UploadUrlRequestContentType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+  'image/gif': 'image/gif',
+} as const;
+
 export interface UploadUrlRequest {
   /** @minLength 1 */
-  name: string;
-  /** @minimum 1 */
-  size: number;
+  tenantSlug: string;
   /** @minLength 1 */
-  contentType: string;
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: UploadUrlRequestContentType;
 }
 
 export interface UploadUrlResponse {

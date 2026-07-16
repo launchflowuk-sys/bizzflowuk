@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, numeric, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -24,7 +24,11 @@ export const quotesTable = pgTable("quotes", {
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("quotes_tenant_id_idx").on(table.tenantId),
+  index("quotes_customer_id_idx").on(table.customerId),
+  index("quotes_lead_id_idx").on(table.leadId),
+]);
 
 export const quoteItemsTable = pgTable("quote_items", {
   id: serial("id").primaryKey(),
@@ -36,7 +40,9 @@ export const quoteItemsTable = pgTable("quote_items", {
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
-});
+}, (table) => [
+  index("quote_items_quote_id_idx").on(table.quoteId),
+]);
 
 export const insertQuoteSchema = createInsertSchema(quotesTable).omit({ id: true, createdAt: true, updatedAt: true });
 export type InsertQuote = z.infer<typeof insertQuoteSchema>;
