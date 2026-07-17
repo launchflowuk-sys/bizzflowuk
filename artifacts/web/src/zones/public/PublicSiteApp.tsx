@@ -1,9 +1,15 @@
-import { Switch, Route, useParams, Router as WouterRouter, Link as WouterLink } from "wouter";
+import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
 import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl, useGetPublicPaymentPage, useChargePublicPaymentLink, useSubmitPublicQuoteAction } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { initGoogleTag, updateConsent, fireQuoteRequestConversion } from "./analytics";
 const SiteBaseCtx = createContext('');
 const useSiteBase = () => useContext(SiteBaseCtx);
+
+// Absolute origin (scheme+host) for the current tenant site. Read from context rather than
+// window.location directly so PageSEO's canonical tag can be provided correctly by a future
+// server-side renderer (which has no `window`) without changing PageSEO itself.
+const SiteOriginCtx = createContext('');
+const useSiteOrigin = () => useContext(SiteOriginCtx);
 
 const BLUE = "#1F8CFF";
 const NAVY = "#0A121C";
@@ -73,38 +79,36 @@ const WHY_POINTS = [
   "Work focused on kerb appeal, protection and long-term finish",
 ];
 
+// Renders <title>/<meta>/<link> as plain JSX — React 19 hoists these into <head> automatically
+// no matter where in the tree they render, in both client and server rendering, so this needs
+// no DOM manipulation and produces real tags in a server-rendered HTML snapshot too.
 function PageSEO({ title, description, image, siteName }: { title: string; description: string; image?: string; siteName?: string }) {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = title;
+  const siteBase = useSiteBase();
+  const origin = useSiteOrigin();
+  const [location] = useLocation();
 
-    const setMeta = (attr: string, key: string, value: string) => {
-      let el = document.querySelector(`meta[${attr}="${key}"]`) as HTMLMetaElement | null;
-      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, key); document.head.appendChild(el); }
-      el.setAttribute('content', value);
-    };
+  // Canonical strips query strings (ad click UTM params in particular) and any trailing
+  // slash so ad traffic and share links don't read as separate pages from the plain URL.
+  const rawPath = `${siteBase}${location}`;
+  const path = rawPath.length > 1 ? rawPath.replace(/\/+$/, '') : rawPath;
+  const canonicalHref = origin ? `${origin}${path}` : undefined;
 
-    setMeta('name', 'description', description);
-    setMeta('property', 'og:title', title);
-    setMeta('property', 'og:description', description);
-    setMeta('property', 'og:type', 'website');
-    if (siteName) setMeta('property', 'og:site_name', siteName);
-    if (image) setMeta('property', 'og:image', image);
-    setMeta('name', 'twitter:card', image ? 'summary_large_image' : 'summary');
-    setMeta('name', 'twitter:title', title);
-    setMeta('name', 'twitter:description', description);
-    if (image) setMeta('name', 'twitter:image', image);
-
-    // Canonical strips query strings (ad click UTM params in particular) and any trailing
-    // slash so ad traffic and share links don't read as separate pages from the plain URL.
-    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
-    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
-    const path = window.location.pathname.length > 1 ? window.location.pathname.replace(/\/+$/, '') : window.location.pathname;
-    canonical.href = `${window.location.origin}${path}`;
-
-    return () => { document.title = prev; };
-  }, [title, description, image, siteName]);
-  return null;
+  return (
+    <>
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:type" content="website" />
+      {siteName && <meta property="og:site_name" content={siteName} />}
+      {image && <meta property="og:image" content={image} />}
+      <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      {image && <meta name="twitter:image" content={image} />}
+      {canonicalHref && <link rel="canonical" href={canonicalHref} />}
+    </>
+  );
 }
 
 /** Renders a JSON-LD structured-data block. `data` should be a plain schema.org object (or array of them). */
@@ -3331,6 +3335,13 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
   const { data: rootSiteData } = useGetPublicSite(tenantSlug);
   const { settings: rootSettings, tenant: rootTenant } = (rootSiteData as any) || {};
 
+  // index.html ships generic platform-wide meta tags as a fallback for the very first paint —
+  // every tenant page now renders its own via PageSEO, so remove the static ones once so they
+  // don't sit duplicated alongside the real per-page tags (see index.html's data-default-seo).
+  useEffect(() => {
+    document.querySelectorAll('[data-default-seo]').forEach(el => el.remove());
+  }, []);
+
   useEffect(() => {
     const initial = ((rootTenant?.name || tenantSlug || 'T').charAt(0)).toUpperCase();
     const color = rootSettings?.primaryColor || '#1F8CFF';
@@ -3356,6 +3367,7 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
   }, [rootSettings?.googleAnalyticsId, rootSettings?.googleAdsConversionId]);
 
   return (
+    <SiteOriginCtx.Provider value={typeof window !== 'undefined' ? window.location.origin : ''}>
     <SiteBaseCtx.Provider value={siteBase}>
     <WouterRouter base={siteBase}>
       <Switch>
@@ -3382,5 +3394,6 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
       <CookieBanner siteBase={siteBase}/>
     </WouterRouter>
     </SiteBaseCtx.Provider>
+    </SiteOriginCtx.Provider>
   );
 }
