@@ -472,6 +472,26 @@ export function buildContactCustomerEmail(opts: {
   };
 }
 
+// ─── Dashboard-composed email — sent manually by a tenant admin, still templated ──
+export function buildComposedEmail(opts: {
+  brand: BrandConfig;
+  subject: string;
+  bodyHtml: string;
+  to: string;
+}): EmailPayload {
+  return {
+    to: opts.to,
+    subject: opts.subject,
+    html: renderEmailShell({
+      brand: opts.brand,
+      preheader: opts.subject,
+      heading: opts.subject,
+      bodyHtml: opts.bodyHtml,
+    }),
+    text: opts.bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+  };
+}
+
 export function buildVisualiserAdminEmail(opts: {
   brand: BrandConfig;
   adminEmail: string;

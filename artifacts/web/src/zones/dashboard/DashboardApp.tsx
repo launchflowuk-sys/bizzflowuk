@@ -21,13 +21,14 @@ import {
   useListContactMessages,
   useListTeamMembers, useCreateTeamMember, useUpdateTeamMember, useDeleteTeamMember,
   useGetSettings, useUpdateSettings, useTestEmailSettings, useTestSmsSettings,
+  useListSentEmails, useComposeEmail,
 } from "@workspace/api-client-react";
 import {
   getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
   getListQuoteItemsQueryKey, getListQuotePaymentLinksQueryKey, getListPaymentLinksQueryKey, getListProjectUpdatesQueryKey,
   getListGalleryImagesQueryKey, getListReviewsQueryKey, getListCaseStudiesQueryKey,
   getListServicesQueryKey, getListAreasQueryKey, getListFaqsQueryKey,
-  getListBlogPostsQueryKey, getListTeamMembersQueryKey,
+  getListBlogPostsQueryKey, getListTeamMembersQueryKey, getListSentEmailsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -152,6 +153,7 @@ const NAV_ITEMS = [
   { path: "/dashboard/leads", label: "Leads", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
   { path: "/dashboard/quotes", label: "Quotes", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
   { path: "/dashboard/payment-links", label: "Payment Links", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
+  { path: "/dashboard/emails", label: "Emails", icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
   { path: "/dashboard/projects", label: "Projects", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
   { path: "/dashboard/customers", label: "Customers", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
   null,
@@ -844,6 +846,158 @@ function PaymentLinksPage() {
                           </div>
                         )}
                       </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ─── Rich text editor — minimal contentEditable + execCommand toolbar, no dependency ──
+// Uncontrolled by design: React never re-renders its own innerHTML back in, so typing
+// never resets the cursor. Give it a `key` from the parent to force a fresh, empty mount.
+function RichTextEditor({ onChange }: { onChange: (html: string) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const exec = (cmd: string, arg?: string) => {
+    ref.current?.focus();
+    document.execCommand(cmd, false, arg);
+    if (ref.current) onChange(ref.current.innerHTML);
+  };
+  const handleLink = () => {
+    const url = window.prompt("Link URL (e.g. https://example.com)");
+    if (url) exec("createLink", url);
+  };
+  return (
+    <div className="rounded-md border border-slate-300 overflow-hidden">
+      <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5">
+        <button type="button" onClick={() => exec("bold")} className="w-7 h-7 rounded hover:bg-slate-200 text-sm font-bold text-slate-700">B</button>
+        <button type="button" onClick={() => exec("italic")} className="w-7 h-7 rounded hover:bg-slate-200 text-sm italic text-slate-700">I</button>
+        <button type="button" onClick={() => exec("underline")} className="w-7 h-7 rounded hover:bg-slate-200 text-sm underline text-slate-700">U</button>
+        <span className="w-px h-5 bg-slate-300 mx-1" />
+        <button type="button" onClick={() => exec("insertUnorderedList")} className="px-2 h-7 rounded hover:bg-slate-200 text-xs text-slate-700">• List</button>
+        <button type="button" onClick={() => exec("insertOrderedList")} className="px-2 h-7 rounded hover:bg-slate-200 text-xs text-slate-700">1. List</button>
+        <span className="w-px h-5 bg-slate-300 mx-1" />
+        <button type="button" onClick={handleLink} className="px-2 h-7 rounded hover:bg-slate-200 text-xs text-slate-700">Link</button>
+      </div>
+      <div
+        ref={ref}
+        contentEditable
+        suppressContentEditableWarning
+        onInput={() => ref.current && onChange(ref.current.innerHTML)}
+        className="min-h-[180px] max-h-[360px] overflow-y-auto px-3 py-2 text-sm text-slate-800 focus:outline-none"
+      />
+    </div>
+  );
+}
+
+// ─── Emails — one-off branded compose + send log (not a synced inbox) ─────────
+function EmailsPage() {
+  const { data: emails, isLoading } = useListSentEmails();
+  const composeEmail = useComposeEmail();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeKey, setComposeKey] = useState(0);
+  const [form, setForm] = useState({ toEmail: "", toName: "", subject: "" });
+  const bodyRef = useRef("");
+
+  const openCompose = () => {
+    setForm({ toEmail: "", toName: "", subject: "" });
+    bodyRef.current = "";
+    setComposeKey(k => k + 1);
+    setShowCompose(true);
+  };
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.toEmail || !form.subject || !bodyRef.current.trim()) { showToast("Fill in recipient, subject, and message", "error"); return; }
+    try {
+      await composeEmail.mutateAsync({ data: { toEmail: form.toEmail, toName: form.toName || undefined, subject: form.subject, bodyHtml: bodyRef.current } } as any);
+      qc.invalidateQueries({ queryKey: getListSentEmailsQueryKey() });
+      showToast("Email sent");
+      setShowCompose(false);
+    } catch (err: any) {
+      showToast(err?.message || "Failed to send email", "error");
+    }
+  };
+
+  const rows = (emails as any[]) || [];
+
+  return (
+    <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Emails</h1>
+          <p className="text-sm text-slate-500">Send a one-off branded email to a lead or customer, and keep a record of what was sent.</p>
+        </div>
+        <button onClick={openCompose} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 whitespace-nowrap">+ Compose</button>
+      </div>
+
+      {showCompose && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowCompose(false); }}>
+          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="font-semibold text-slate-900">Compose Email</h2>
+            <form onSubmit={handleSend} className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">To Email *</label>
+                  <input type="email" value={form.toEmail} onChange={e => setForm({ ...form, toEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">To Name</label>
+                  <input value={form.toName} onChange={e => setForm({ ...form, toName: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Subject *</label>
+                <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Message *</label>
+                <RichTextEditor key={composeKey} onChange={html => { bodyRef.current = html; }} />
+                <p className="mt-1 text-[11px] text-slate-400">Sent in your business's branded email design automatically — no need to add a signature.</p>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={composeEmail.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{composeEmail.isPending ? "Sending..." : "Send Email"}</button>
+                <button type="button" onClick={() => setShowCompose(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
+        <>
+          <div className="md:hidden space-y-2">
+            {!rows.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No emails sent yet</div> : rows.map((m: any) => (
+              <div key={m.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-1">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium text-slate-900">{m.subject}</div>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status}</span>
+                </div>
+                <div className="text-xs text-slate-500">{m.toName ? `${m.toName} · ` : ""}{m.toEmail}</div>
+                <div className="text-xs text-slate-400">{new Date(m.createdAt).toLocaleString("en-GB")}</div>
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                  <th className="text-left px-4 py-3">Subject</th><th className="text-left px-4 py-3">To</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Sent</th>
+                </tr></thead>
+                <tbody>
+                  {!rows.length ? <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No emails sent yet</td></tr> : rows.map((m: any) => (
+                    <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-900">{m.subject}</td>
+                      <td className="px-4 py-3 text-slate-600">{m.toName ? `${m.toName} · ` : ""}{m.toEmail}</td>
+                      <td className="px-4 py-3"><span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status}</span></td>
+                      <td className="px-4 py-3 text-slate-500">{new Date(m.createdAt).toLocaleString("en-GB")}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -2545,6 +2699,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/quotes" component={QuotesPage} />
               <Route path="/dashboard/quotes/:id" component={({ params: p }) => <QuoteDetailPage id={Number(p.id)} />} />
               <Route path="/dashboard/payment-links" component={PaymentLinksPage} />
+              <Route path="/dashboard/emails" component={EmailsPage} />
               <Route path="/dashboard/projects" component={ProjectsPage} />
               <Route path="/dashboard/projects/:id" component={({ params: p }) => <ProjectDetailPage id={Number(p.id)} />} />
               <Route path="/dashboard/customers" component={CustomersPage} />

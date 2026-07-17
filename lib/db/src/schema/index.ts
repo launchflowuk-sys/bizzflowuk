@@ -16,3 +16,4 @@ export * from "./blog";
 export * from "./visualiser";
 export * from "./contact";
 export * from "./team";
+export * from "./sent_emails";

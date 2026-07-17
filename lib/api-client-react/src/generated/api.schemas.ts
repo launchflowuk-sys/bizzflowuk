@@ -842,6 +842,40 @@ export interface PaymentLinkInput {
   customerAddress?: string;
 }
 
+export type SentEmailStatus = typeof SentEmailStatus[keyof typeof SentEmailStatus];
+
+
+export const SentEmailStatus = {
+  sent: 'sent',
+  failed: 'failed',
+} as const;
+
+export interface SentEmail {
+  id: number;
+  tenantId: number;
+  /** @nullable */
+  sentByUserId?: number | null;
+  /** @nullable */
+  leadId?: number | null;
+  toEmail: string;
+  /** @nullable */
+  toName?: string | null;
+  subject: string;
+  bodyHtml: string;
+  status: SentEmailStatus;
+  /** @nullable */
+  errorMessage?: string | null;
+  createdAt: string;
+}
+
+export interface SentEmailInput {
+  toEmail: string;
+  toName?: string;
+  subject: string;
+  bodyHtml: string;
+  leadId?: number;
+}
+
 export type PublicPaymentPageDataTenant = {
   name?: string;
 };

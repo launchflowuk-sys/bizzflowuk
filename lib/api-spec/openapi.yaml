@@ -43,6 +43,8 @@ tags:
     description: Contact messages
   - name: team
     description: Team member management
+  - name: emails
+    description: Dashboard email composer and sent-email log
   - name: settings
     description: Tenant settings
   - name: dashboard
@@ -759,6 +761,40 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PaymentLink"
+
+  /emails:
+    get:
+      operationId: listSentEmails
+      tags: [emails]
+      summary: List emails sent from the dashboard composer for the current tenant
+      responses:
+        "200":
+          description: Sent emails
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SentEmail"
+
+  /emails/compose:
+    post:
+      operationId: composeEmail
+      tags: [emails]
+      summary: Compose and send a branded email to a lead or customer, and log it
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SentEmailInput"
+      responses:
+        "201":
+          description: Logged sent email
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SentEmail"
 
   /quote-items/{id}:
     patch:
@@ -3695,6 +3731,50 @@ components:
           type: string
         customerAddress:
           type: string
+
+    SentEmail:
+      type: object
+      required: [id, tenantId, toEmail, subject, bodyHtml, status, createdAt]
+      properties:
+        id:
+          type: integer
+        tenantId:
+          type: integer
+        sentByUserId:
+          type: ["integer", "null"]
+        leadId:
+          type: ["integer", "null"]
+        toEmail:
+          type: string
+        toName:
+          type: ["string", "null"]
+        subject:
+          type: string
+        bodyHtml:
+          type: string
+        status:
+          type: string
+          enum: [sent, failed]
+        errorMessage:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    SentEmailInput:
+      type: object
+      required: [toEmail, subject, bodyHtml]
+      properties:
+        toEmail:
+          type: string
+        toName:
+          type: string
+        subject:
+          type: string
+        bodyHtml:
+          type: string
+        leadId:
+          type: integer
 
     PublicPaymentPageData:
       type: object

@@ -1040,6 +1040,37 @@ export const SendPaymentLinkResponse = zod.object({
 
 
 /**
+ * @summary List emails sent from the dashboard composer for the current tenant
+ */
+export const ListSentEmailsResponseItem = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "sentByUserId": zod.number().nullish(),
+  "leadId": zod.number().nullish(),
+  "toEmail": zod.string(),
+  "toName": zod.string().nullish(),
+  "subject": zod.string(),
+  "bodyHtml": zod.string(),
+  "status": zod.enum(['sent', 'failed']),
+  "errorMessage": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListSentEmailsResponse = zod.array(ListSentEmailsResponseItem)
+
+
+/**
+ * @summary Compose and send a branded email to a lead or customer, and log it
+ */
+export const ComposeEmailBody = zod.object({
+  "toEmail": zod.string(),
+  "toName": zod.string().optional(),
+  "subject": zod.string(),
+  "bodyHtml": zod.string(),
+  "leadId": zod.number().optional()
+})
+
+
+/**
  * @summary Update quote item
  */
 export const UpdateQuoteItemParams = zod.object({
