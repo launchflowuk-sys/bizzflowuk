@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Router, type Request, type Response } from "express";
 import fs from "node:fs";
 import path from "node:path";
 import { db } from "@workspace/db";
@@ -46,15 +46,20 @@ function injectIntoShell(indexHtml: string, appHtml: string, dehydratedState: un
 }
 
 /**
- * GET /public/render/*path
+ * GET /render and the wildcard /render/... route registered below.
  *
  * Serves a fully rendered public marketing page: a cache hit returns the stored HTML instantly;
  * a miss renders it on the spot (via the pre-built SSR bundle, see entry-server.tsx) and caches
  * the result, so every page is guaranteed real HTML by its second-ever visit. Not yet reachable
  * from real traffic — nginx doesn't route anything here until the Stage 6 cutover — so this is
  * only exercised directly against this route for now.
+ *
+ * Deliberately NOT nested under /public/ — a path like /public/render/reviews would collide
+ * with the existing /public/:tenantSlug/reviews pattern (Express would match "render" as the
+ * tenant slug). Two routes rather than one: Express 5's wildcard route parameter requires at
+ * least one path segment, so the bare home-page request needs its own exact route for path "/".
  */
-router.get("/public/render/*path", async (req, res) => {
+async function handleRender(req: Request, res: Response, requestPath: string) {
   try {
     const host = (req.query.host as string) || (req.headers.host as string) || "";
     const tenants = await db
@@ -64,10 +69,6 @@ router.get("/public/render/*path", async (req, res) => {
       .limit(1);
     if (!tenants.length) { res.status(404).json({ error: "Domain not found" }); return; }
     const tenant = tenants[0];
-
-    const raw = req.params.path;
-    const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
-    const requestPath = `/${wildcardPath}`;
 
     const cached = await db
       .select()
@@ -110,6 +111,13 @@ router.get("/public/render/*path", async (req, res) => {
     req.log.error({ err }, "Error rendering public page");
     res.status(500).json({ error: "Failed to render page" });
   }
+}
+
+router.get("/render", (req, res) => handleRender(req, res, "/"));
+router.get("/render/*path", (req, res) => {
+  const raw = req.params.path;
+  const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
+  handleRender(req, res, `/${wildcardPath}`);
 });
 
 export default router;
