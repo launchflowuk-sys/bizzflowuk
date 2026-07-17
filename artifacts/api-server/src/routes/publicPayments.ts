@@ -15,9 +15,12 @@ async function loadPaymentLinkContext(token: string) {
   const link = linkRows[0];
   if (!link) return null;
 
-  const quoteRows = await db.select().from(quotesTable).where(eq(quotesTable.id, link.quoteId)).limit(1);
-  const quote = quoteRows[0];
-  if (!quote) return null;
+  let quote = null;
+  if (link.quoteId) {
+    const quoteRows = await db.select().from(quotesTable).where(eq(quotesTable.id, link.quoteId)).limit(1);
+    quote = quoteRows[0] ?? null;
+    if (!quote) return null;
+  }
 
   const tenantRows = await db.select().from(tenantsTable).where(eq(tenantsTable.id, link.tenantId)).limit(1);
   const settingsRows = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, link.tenantId)).limit(1);
@@ -31,9 +34,9 @@ router.get("/public/pay/:token", paymentLinkRateLimiter, async (req, res) => {
     const ctx = await loadPaymentLinkContext(req.params.token as string);
     if (!ctx) { res.status(404).json({ error: "Payment link not found" }); return; }
 
-    const items = await db.select().from(quoteItemsTable)
-      .where(eq(quoteItemsTable.quoteId, ctx.quote.id))
-      .orderBy(asc(quoteItemsTable.sortOrder));
+    const items = ctx.quote
+      ? await db.select().from(quoteItemsTable).where(eq(quoteItemsTable.quoteId, ctx.quote.id)).orderBy(asc(quoteItemsTable.sortOrder))
+      : [];
 
     res.json({
       tenant: { name: ctx.tenant?.name ?? "" },
@@ -43,18 +46,19 @@ router.get("/public/pay/:token", paymentLinkRateLimiter, async (req, res) => {
         squareEnvironment: ctx.settings?.squareEnvironment ?? "sandbox",
         primaryColor: ctx.settings?.primaryColor ?? null,
       },
-      quote: {
+      quote: ctx.quote ? {
         reference: ctx.quote.reference,
         status: ctx.quote.status,
         subtotal: ctx.quote.subtotal,
         vatAmount: ctx.quote.vatAmount,
         total: ctx.quote.total,
         items,
-      },
+      } : null,
       paymentLink: {
         amount: ctx.link.amount,
         currency: ctx.link.currency,
         status: ctx.link.status,
+        customerName: ctx.link.customerName,
       },
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -89,10 +93,16 @@ router.post("/public/pay/:token/charge", paymentLinkRateLimiter, async (req, res
       await db.update(paymentLinksTable)
         .set({ status: "Paid", paidAt: new Date(), squarePaymentId: result.paymentId })
         .where(eq(paymentLinksTable.id, link.id));
-      const quoteRows = await db.update(quotesTable).set({ status: "Accepted" }).where(eq(quotesTable.id, link.quoteId)).returning();
-      const quote = quoteRows[0];
 
-      res.json({ status: "Paid", quoteStatus: quote?.status ?? "Accepted" });
+      let quoteStatus = "Paid";
+      let quote: typeof quotesTable.$inferSelect | undefined;
+      if (link.quoteId) {
+        const quoteRows = await db.update(quotesTable).set({ status: "Accepted" }).where(eq(quotesTable.id, link.quoteId)).returning();
+        quote = quoteRows[0];
+        quoteStatus = quote?.status ?? "Accepted";
+      }
+
+      res.json({ status: "Paid", quoteStatus });
 
       if (quote) {
         const recipient = await resolveQuoteRecipient(quote);
@@ -101,6 +111,15 @@ router.post("/public/pay/:token/charge", paymentLinkRateLimiter, async (req, res
           event: "payment_received",
           ...recipient,
           reference: quote.reference,
+          amount: `${link.currency} ${Number(link.amount).toFixed(2)}`,
+        });
+      } else if (link.customerEmail || link.customerPhone) {
+        fireNotification({
+          tenantId: link.tenantId,
+          event: "payment_received",
+          firstName: link.customerName ?? undefined,
+          customerEmail: link.customerEmail ?? undefined,
+          customerPhone: link.customerPhone ?? undefined,
           amount: `${link.currency} ${Number(link.amount).toFixed(2)}`,
         });
       }
@@ -114,7 +133,8 @@ router.post("/public/pay/:token/charge", paymentLinkRateLimiter, async (req, res
 });
 
 // Accept or decline a quote from the public payment page, independent of paying — idempotent so a
-// double-click or a reopened email link never produces a confusing error.
+// double-click or a reopened email link never produces a confusing error. Only meaningful for
+// quote-linked payment links — standalone links have no quote to accept/decline.
 router.post("/public/pay/:token/action", paymentLinkRateLimiter, async (req, res) => {
   try {
     const action = req.body?.action;
@@ -123,6 +143,7 @@ router.post("/public/pay/:token/action", paymentLinkRateLimiter, async (req, res
     const linkRows = await db.select().from(paymentLinksTable).where(eq(paymentLinksTable.token, req.params.token as string)).limit(1);
     const link = linkRows[0];
     if (!link) { res.status(404).json({ error: "Payment link not found" }); return; }
+    if (!link.quoteId) { res.status(400).json({ error: "This payment link has no associated quote" }); return; }
 
     const quoteRows = await db.select().from(quotesTable).where(eq(quotesTable.id, link.quoteId)).limit(1);
     const quote = quoteRows[0];

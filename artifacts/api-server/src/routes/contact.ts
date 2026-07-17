@@ -6,7 +6,7 @@ import { requireTenantAccess } from "../middlewares/auth";
 import { publicFormRateLimiter } from "../middlewares/rateLimit";
 import { sendEmail, buildContactAdminEmail, buildContactCustomerEmail, buildVisualiserAdminEmail } from "../lib/email";
 import { sendSms } from "../lib/sms";
-import { buildSmtpConfig, buildSmsCreds } from "../lib/settingsHelpers";
+import { buildSmtpConfig, buildSmsCreds, buildBrandConfig } from "../lib/settingsHelpers";
 import { fireNotification } from "../lib/notifications";
 
 const router = Router();
@@ -35,13 +35,14 @@ async function handleContactMessage(req: any, res: any, slug: string) {
     const smtp = buildSmtpConfig(settings as any);
     const smsCreds = buildSmsCreds(settings as any);
     const adminPhone = settings?.adminNotificationPhone;
+    const brand = buildBrandConfig(tenant as any, settings as any);
 
     if (adminEmail) {
-      sendEmail(buildContactAdminEmail({ tenantName: tenant.name, name: senderName, email: senderEmail, phone: senderPhone, message: req.body.message }), smtp)
+      sendEmail(buildContactAdminEmail({ brand, name: senderName, email: senderEmail, phone: senderPhone, message: req.body.message }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send contact admin email"));
     }
     if (senderEmail) {
-      sendEmail(buildContactCustomerEmail({ tenantName: tenant.name, name: senderName, tenantPhone: settings?.phone || tenant.phone || "", tenantEmail: adminEmail || tenant.email || "", to: senderEmail }), smtp)
+      sendEmail(buildContactCustomerEmail({ brand, name: senderName, to: senderEmail }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send contact customer email"));
     }
     if (adminPhone && smsCreds) {
@@ -134,9 +135,10 @@ router.post("/visualiser", publicFormRateLimiter, async (req, res) => {
     const smtp = buildSmtpConfig(settings as any);
     const smsCreds = buildSmsCreds(settings as any);
     const adminPhone = settings?.adminNotificationPhone;
+    const brand = buildBrandConfig(tenant as any, settings as any);
 
     if (adminEmail) {
-      sendEmail(buildVisualiserAdminEmail({ tenantName: tenant.name, adminEmail, name: req.body.firstName ? `${req.body.firstName} ${req.body.lastName || ""}`.trim() : req.body.name, email: req.body.email, phone: req.body.phone, renderColour: req.body.colourPreference || req.body.renderColour, notes: req.body.notes }), smtp)
+      sendEmail(buildVisualiserAdminEmail({ brand, adminEmail, name: req.body.firstName ? `${req.body.firstName} ${req.body.lastName || ""}`.trim() : req.body.name, email: req.body.email, phone: req.body.phone, renderColour: req.body.colourPreference || req.body.renderColour, notes: req.body.notes }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send visualiser admin email"));
     }
     if (adminPhone && smsCreds) {
@@ -161,9 +163,10 @@ router.post("/public/:tenantSlug/visualiser", publicFormRateLimiter, async (req,
     const smtp = buildSmtpConfig(settings as any);
     const smsCreds = buildSmsCreds(settings as any);
     const adminPhone = settings?.adminNotificationPhone;
+    const brand = buildBrandConfig(tenant as any, settings as any);
 
     if (adminEmail) {
-      sendEmail(buildVisualiserAdminEmail({ tenantName: tenant.name, adminEmail, name: req.body.name, email: req.body.email, phone: req.body.phone, renderColour: req.body.renderColour, notes: req.body.notes }), smtp)
+      sendEmail(buildVisualiserAdminEmail({ brand, adminEmail, name: req.body.name, email: req.body.email, phone: req.body.phone, renderColour: req.body.renderColour, notes: req.body.notes }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send visualiser admin email"));
     }
     if (adminPhone && smsCreds) {

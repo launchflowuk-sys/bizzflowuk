@@ -15,7 +15,7 @@ import {
   buildProjectCompleteCustomerEmail,
 } from "./email";
 import { sendSms } from "./sms";
-import { buildSmtpConfig, buildSmsCreds } from "./settingsHelpers";
+import { buildSmtpConfig, buildSmsCreds, buildBrandConfig } from "./settingsHelpers";
 import { logger } from "./logger";
 
 export type NotificationEvent =
@@ -40,6 +40,7 @@ export interface NotificationContext {
   projectTitle?: string;
   paymentLinkUrl?: string;
   amount?: string;
+  remainingBalance?: string;
   serviceInterest?: string;
   address?: string;
   postcode?: string;
@@ -115,10 +116,10 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
 
     const smtp = buildSmtpConfig(settings as any);
     const smsCreds = buildSmsCreds(settings as any);
+    const brand = buildBrandConfig(tenant as any, settings as any);
     const adminEmail = settings?.adminNotificationEmail || tenant.email || null;
     const adminPhone = settings?.adminNotificationPhone || null;
     const tenantPhone = settings?.phone || tenant.phone || "";
-    const tenantEmail = settings?.email || tenant.email || "";
 
     const doAdminEmail  = emailEnabled(settings, ctx.event) && !!adminEmail && !!smtp;
     const doAdminSms    = smsEnabled(settings, ctx.event) && !!adminPhone && !!smsCreds;
@@ -135,7 +136,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "lead_new": {
         if (doAdminEmail) {
           sendEmail(buildLeadNewAdminEmail({
-            tenantName: tenant.name,
+            brand,
             adminEmail: adminEmail!,
             firstName: ctx.firstName || "",
             lastName: ctx.lastName || "",
@@ -176,9 +177,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
         }
         if (doCustomerEmail) {
           sendEmail(buildLeadNewCustomerEmail({
-            tenantName: tenant.name,
-            tenantPhone,
-            tenantEmail,
+            brand,
             firstName,
             serviceInterest: ctx.serviceInterest,
             to: ctx.customerEmail!,
@@ -195,8 +194,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "survey_booked": {
         if (doCustomerEmail) {
           sendEmail(buildSurveyBookedCustomerEmail({
-            tenantName: tenant.name,
-            tenantPhone,
+            brand,
             firstName,
             to: ctx.customerEmail!,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] survey_booked customer email failed"));
@@ -212,12 +210,12 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "quote_sent": {
         if (doCustomerEmail) {
           sendEmail(buildQuoteSentCustomerEmail({
-            tenantName: tenant.name,
-            tenantPhone,
-            tenantEmail,
+            brand,
             firstName,
             reference: ctx.reference,
             paymentLinkUrl: ctx.paymentLinkUrl,
+            paymentAmount: ctx.amount,
+            remainingBalance: ctx.remainingBalance,
             to: ctx.customerEmail!,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent customer email failed"));
         }
@@ -232,7 +230,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "quote_accepted": {
         if (doAdminEmail) {
           sendEmail(buildQuoteAcceptedAdminEmail({
-            tenantName: tenant.name,
+            brand,
             adminEmail: adminEmail!,
             reference: ctx.reference || "—",
             customerName: fullName !== "Unknown" ? fullName : undefined,
@@ -249,7 +247,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "payment_received": {
         if (doAdminEmail) {
           sendEmail(buildPaymentReceivedAdminEmail({
-            tenantName: tenant.name,
+            brand,
             adminEmail: adminEmail!,
             reference: ctx.reference || "—",
             amount: ctx.amount || "—",
@@ -262,8 +260,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
         }
         if (doCustomerEmail) {
           sendEmail(buildPaymentReceivedCustomerEmail({
-            tenantName: tenant.name,
-            tenantPhone,
+            brand,
             firstName,
             reference: ctx.reference,
             amount: ctx.amount || "—",
@@ -281,8 +278,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "lead_won": {
         if (doCustomerEmail) {
           sendEmail(buildLeadWonCustomerEmail({
-            tenantName: tenant.name,
-            tenantPhone,
+            brand,
             firstName,
             to: ctx.customerEmail!,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_won customer email failed"));
@@ -298,8 +294,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "project_in_progress": {
         if (doCustomerEmail) {
           sendEmail(buildProjectInProgressCustomerEmail({
-            tenantName: tenant.name,
-            tenantPhone,
+            brand,
             firstName,
             projectTitle: ctx.projectTitle || "your project",
             to: ctx.customerEmail!,
@@ -316,8 +311,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       case "project_completed": {
         if (doCustomerEmail) {
           sendEmail(buildProjectCompleteCustomerEmail({
-            tenantName: tenant.name,
-            tenantPhone,
+            brand,
             firstName,
             projectTitle: ctx.projectTitle || "your project",
             to: ctx.customerEmail!,

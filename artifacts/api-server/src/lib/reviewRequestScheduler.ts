@@ -3,7 +3,7 @@ import { projectsTable, tenantSettingsTable, tenantsTable, customersTable } from
 import { eq, isNull, and } from "drizzle-orm";
 import { sendEmail, buildReviewRequestEmail } from "./email";
 import { sendSms } from "./sms";
-import { buildSmtpConfig, buildSmsCreds } from "./settingsHelpers";
+import { buildSmtpConfig, buildSmsCreds, buildBrandConfig } from "./settingsHelpers";
 import { logger } from "./logger";
 
 const INTERVAL_MS = 15 * 60 * 1000;
@@ -73,7 +73,7 @@ async function runReviewRequests() {
         try {
           await sendEmail(
             buildReviewRequestEmail({
-              tenantName: tenant.name,
+              brand: buildBrandConfig(tenant as any, settings as any),
               firstName: customerFirstName,
               reviewUrl,
               customTemplate: settings.reviewRequestTemplate ?? undefined,

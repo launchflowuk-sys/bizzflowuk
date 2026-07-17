@@ -2662,6 +2662,224 @@ export const useCreateQuotePaymentLink = <TError = ErrorType<unknown>,
       return useMutation(getCreateQuotePaymentLinkMutationOptions(options));
     }
 
+export const getListPaymentLinksUrl = () => {
+
+
+
+
+  return `/api/payment-links`
+}
+
+/**
+ * @summary List all payment links for the current tenant (quote-linked and standalone)
+ */
+export const listPaymentLinks = async ( options?: RequestInit): Promise<PaymentLink[]> => {
+
+  return customFetch<PaymentLink[]>(getListPaymentLinksUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaymentLinksQueryKey = () => {
+    return [
+    `/api/payment-links`
+    ] as const;
+    }
+
+
+export const getListPaymentLinksQueryOptions = <TData = Awaited<ReturnType<typeof listPaymentLinks>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaymentLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaymentLinksQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPaymentLinks>>> = ({ signal }) => listPaymentLinks({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPaymentLinks>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaymentLinksQueryResult = NonNullable<Awaited<ReturnType<typeof listPaymentLinks>>>
+export type ListPaymentLinksQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all payment links for the current tenant (quote-linked and standalone)
+ */
+
+export function useListPaymentLinks<TData = Awaited<ReturnType<typeof listPaymentLinks>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaymentLinks>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaymentLinksQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateStandalonePaymentLinkUrl = () => {
+
+
+
+
+  return `/api/payment-links`
+}
+
+/**
+ * @summary Create a standalone payment link (no quote — e.g. a phone sale)
+ */
+export const createStandalonePaymentLink = async (paymentLinkInput: PaymentLinkInput, options?: RequestInit): Promise<PaymentLink> => {
+
+  return customFetch<PaymentLink>(getCreateStandalonePaymentLinkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      paymentLinkInput,)
+  }
+);}
+
+
+
+
+export const getCreateStandalonePaymentLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStandalonePaymentLink>>, TError,{data: BodyType<PaymentLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createStandalonePaymentLink>>, TError,{data: BodyType<PaymentLinkInput>}, TContext> => {
+
+const mutationKey = ['createStandalonePaymentLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createStandalonePaymentLink>>, {data: BodyType<PaymentLinkInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createStandalonePaymentLink(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateStandalonePaymentLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createStandalonePaymentLink>>>
+    export type CreateStandalonePaymentLinkMutationBody = BodyType<PaymentLinkInput>
+    export type CreateStandalonePaymentLinkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a standalone payment link (no quote — e.g. a phone sale)
+ */
+export const useCreateStandalonePaymentLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createStandalonePaymentLink>>, TError,{data: BodyType<PaymentLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createStandalonePaymentLink>>,
+        TError,
+        {data: BodyType<PaymentLinkInput>},
+        TContext
+      > => {
+      return useMutation(getCreateStandalonePaymentLinkMutationOptions(options));
+    }
+
+export const getSendPaymentLinkUrl = (id: number,) => {
+
+
+
+
+  return `/api/payment-links/${id}/send`
+}
+
+/**
+ * @summary Email the customer a payment link (quote-linked or standalone)
+ */
+export const sendPaymentLink = async (id: number, options?: RequestInit): Promise<PaymentLink> => {
+
+  return customFetch<PaymentLink>(getSendPaymentLinkUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSendPaymentLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPaymentLink>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendPaymentLink>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['sendPaymentLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendPaymentLink>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  sendPaymentLink(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendPaymentLinkMutationResult = NonNullable<Awaited<ReturnType<typeof sendPaymentLink>>>
+
+    export type SendPaymentLinkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Email the customer a payment link (quote-linked or standalone)
+ */
+export const useSendPaymentLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendPaymentLink>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendPaymentLink>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getSendPaymentLinkMutationOptions(options));
+    }
+
 export const getUpdateQuoteItemUrl = (id: number,) => {
 
 

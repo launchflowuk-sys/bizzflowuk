@@ -7,6 +7,9 @@
  */
 import type { QuoteItem } from './quoteItem';
 
+/**
+ * @nullable
+ */
 export type PublicPaymentPageDataQuote = {
   reference?: string;
   status?: string;
@@ -14,4 +17,4 @@ export type PublicPaymentPageDataQuote = {
   vatAmount?: number;
   total?: number;
   items?: QuoteItem[];
-};
+} | null;

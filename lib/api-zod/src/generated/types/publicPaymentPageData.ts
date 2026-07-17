@@ -13,6 +13,7 @@ import type { PublicPaymentPageDataTenant } from './publicPaymentPageDataTenant'
 export interface PublicPaymentPageData {
   tenant: PublicPaymentPageDataTenant;
   settings: PublicPaymentPageDataSettings;
-  quote: PublicPaymentPageDataQuote;
+  /** @nullable */
+  quote?: PublicPaymentPageDataQuote;
   paymentLink: PublicPaymentPageDataPaymentLink;
 }

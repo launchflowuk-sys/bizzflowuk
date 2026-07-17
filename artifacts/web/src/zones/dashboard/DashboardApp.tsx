@@ -7,7 +7,7 @@ import {
   useListLeads, useGetLead, useCreateLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
   useConvertLeadToQuote, useConvertLeadToProject,
   useListQuotes, useGetQuote, useCreateQuote, useUpdateQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
-  useListQuotePaymentLinks, useCreateQuotePaymentLink,
+  useListQuotePaymentLinks, useCreateQuotePaymentLink, useSendPaymentLink, useListPaymentLinks, useCreateStandalonePaymentLink,
   useListProjects, useGetProject, useCreateProject, useUpdateProject, useListProjectUpdates, useCreateProjectUpdate,
   useListCustomers, useGetCustomer, useCreateCustomer,
   useListGalleryImages, useCreateGalleryImage, useUpdateGalleryImage, useDeleteGalleryImage,
@@ -24,7 +24,7 @@ import {
 } from "@workspace/api-client-react";
 import {
   getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
-  getListQuoteItemsQueryKey, getListQuotePaymentLinksQueryKey, getListProjectUpdatesQueryKey,
+  getListQuoteItemsQueryKey, getListQuotePaymentLinksQueryKey, getListPaymentLinksQueryKey, getListProjectUpdatesQueryKey,
   getListGalleryImagesQueryKey, getListReviewsQueryKey, getListCaseStudiesQueryKey,
   getListServicesQueryKey, getListAreasQueryKey, getListFaqsQueryKey,
   getListBlogPostsQueryKey, getListTeamMembersQueryKey,
@@ -151,6 +151,7 @@ const NAV_ITEMS = [
   { path: "/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
   { path: "/dashboard/leads", label: "Leads", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" },
   { path: "/dashboard/quotes", label: "Quotes", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
+  { path: "/dashboard/payment-links", label: "Payment Links", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
   { path: "/dashboard/projects", label: "Projects", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
   { path: "/dashboard/customers", label: "Customers", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
   null,
@@ -699,6 +700,154 @@ function QuotesPage() {
   );
 }
 
+// ─── Standalone Payment Links ──────────────────────────────────────────────────
+function PaymentLinksPage() {
+  const { data: links, isLoading } = useListPaymentLinks();
+  const createLink = useCreateStandalonePaymentLink();
+  const sendPaymentLink = useSendPaymentLink();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const [showNew, setShowNew] = useState(false);
+  const [form, setForm] = useState({ customerName: "", customerAddress: "", customerPhone: "", customerEmail: "", amount: "" });
+
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const amount = Number(form.amount);
+    if (!form.customerName || !form.customerEmail) { showToast("Customer name and email are required", "error"); return; }
+    if (!Number.isFinite(amount) || amount <= 0) { showToast("Enter a valid amount", "error"); return; }
+    try {
+      await createLink.mutateAsync({ data: {
+        customerName: form.customerName,
+        customerAddress: form.customerAddress || undefined,
+        customerPhone: form.customerPhone || undefined,
+        customerEmail: form.customerEmail,
+        amount,
+      } } as any);
+      qc.invalidateQueries({ queryKey: getListPaymentLinksQueryKey() });
+      showToast("Payment link created");
+      setShowNew(false);
+      setForm({ customerName: "", customerAddress: "", customerPhone: "", customerEmail: "", amount: "" });
+    } catch (err: any) {
+      showToast(err?.message || "Failed to create payment link", "error");
+    }
+  };
+
+  const copyLink = async (url: string) => {
+    try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Copy failed", "error"); }
+  };
+  const handleSend = async (linkId: number) => {
+    try {
+      await sendPaymentLink.mutateAsync({ id: linkId } as any);
+      qc.invalidateQueries({ queryKey: getListPaymentLinksQueryKey() });
+      showToast("Payment link sent to customer");
+    } catch (err: any) {
+      showToast(err?.message || "Failed to send payment link", "error");
+    }
+  };
+
+  const rows = (links as any[]) || [];
+
+  return (
+    <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Payment Links</h1>
+          <p className="text-sm text-slate-500">Create and send one-off payment requests for phone or in-person sales — no quote required.</p>
+        </div>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 whitespace-nowrap">+ New</button>
+      </div>
+
+      {showNew && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+            <h2 className="font-semibold text-slate-900">Create Payment Link</h2>
+            <form onSubmit={handleCreate} className="space-y-3">
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Customer Name *</label>
+                <input value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Address</label>
+                <input value={form.customerAddress} onChange={e => setForm({ ...form, customerAddress: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Phone Number</label>
+                <input value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Email *</label>
+                <input type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Amount to request (£) *</label>
+                <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="submit" disabled={createLink.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createLink.isPending ? "Creating..." : "Create Payment Link"}</button>
+                <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
+        <>
+          <div className="md:hidden space-y-2">
+            {!rows.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No payment links yet</div> : rows.map((l: any) => (
+              <div key={l.id} className="rounded-xl border border-slate-200 bg-white p-4 space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="font-medium text-slate-900">{l.customerName || l.quoteId && `Quote #${l.quoteId}` || "—"}</div>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${l.status === "Paid" ? "bg-green-100 text-green-700" : l.status === "Failed" ? "bg-red-100 text-red-700" : l.status === "Cancelled" ? "bg-slate-200 text-slate-500" : "bg-amber-100 text-amber-700"}`}>{l.status}</span>
+                </div>
+                <div className="text-xs text-slate-500 space-y-0.5">
+                  <div className="font-semibold text-slate-700">£{Number(l.amount).toFixed(2)}</div>
+                  {l.customerEmail && <div>{l.customerEmail}</div>}
+                  <div>{new Date(l.createdAt).toLocaleDateString("en-GB")} {l.quoteId ? "· Quote-linked" : "· Standalone"}</div>
+                </div>
+                {l.status === "Pending" && (
+                  <div className="flex gap-2 pt-1">
+                    <button onClick={() => copyLink(l.url)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Copy link</button>
+                    <button onClick={() => handleSend(l.id)} disabled={sendPaymentLink.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">{sendPaymentLink.isPending ? "Sending..." : "Send Payment Link"}</button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+          <div className="hidden md:block rounded-xl border border-slate-200 bg-white overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
+                  <th className="text-left px-4 py-3">Customer</th><th className="text-left px-4 py-3">Type</th><th className="text-left px-4 py-3">Amount</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Created</th><th className="px-4 py-3" />
+                </tr></thead>
+                <tbody>
+                  {!rows.length ? <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No payment links yet</td></tr> : rows.map((l: any) => (
+                    <tr key={l.id} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="px-4 py-3 font-medium text-slate-900">{l.customerName || "—"}<div className="text-xs font-normal text-slate-400">{l.customerEmail}</div></td>
+                      <td className="px-4 py-3 text-slate-500">{l.quoteId ? <Link href={`/dashboard/quotes/${l.quoteId}`} className="text-orange-500 hover:text-orange-600">Quote-linked</Link> : "Standalone"}</td>
+                      <td className="px-4 py-3 text-slate-700">£{Number(l.amount).toFixed(2)}</td>
+                      <td className="px-4 py-3"><span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${l.status === "Paid" ? "bg-green-100 text-green-700" : l.status === "Failed" ? "bg-red-100 text-red-700" : l.status === "Cancelled" ? "bg-slate-200 text-slate-500" : "bg-amber-100 text-amber-700"}`}>{l.status}</span></td>
+                      <td className="px-4 py-3 text-slate-500">{new Date(l.createdAt).toLocaleDateString("en-GB")}</td>
+                      <td className="px-4 py-3 text-right">
+                        {l.status === "Pending" && (
+                          <div className="flex items-center justify-end gap-3">
+                            <button onClick={() => copyLink(l.url)} className="text-xs text-slate-500 hover:text-slate-700 font-medium">Copy link</button>
+                            <button onClick={() => handleSend(l.id)} disabled={sendPaymentLink.isPending} className="text-xs text-orange-500 hover:text-orange-600 font-medium disabled:opacity-50">{sendPaymentLink.isPending ? "Sending..." : "Send Payment Link"}</button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 function QuoteDetailPage({ id }: { id: number }) {
   const [, navigate] = useWouterLocation();
   const { data: quote, isLoading } = useGetQuote(id);
@@ -709,6 +858,7 @@ function QuoteDetailPage({ id }: { id: number }) {
   const deleteItem = useDeleteQuoteItem();
   const convertToProject = useConvertQuoteToProject();
   const createPaymentLink = useCreateQuotePaymentLink();
+  const sendPaymentLink = useSendPaymentLink();
   const qc = useQueryClient();
   const showToast = useToast();
   const [newItem, setNewItem] = useState({ description: "", quantity: 1, unitPrice: "" });
@@ -772,6 +922,16 @@ function QuoteDetailPage({ id }: { id: number }) {
   };
   const copyLink = async (url: string) => {
     try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Copy failed", "error"); }
+  };
+  const handleSendPaymentLink = async (linkId: number) => {
+    try {
+      await sendPaymentLink.mutateAsync({ id: linkId } as any);
+      qc.invalidateQueries({ queryKey: getListQuotePaymentLinksQueryKey(id) });
+      qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+      showToast("Payment link sent to customer");
+    } catch (err: any) {
+      showToast(err?.message || "Failed to send payment link", "error");
+    }
   };
 
   return (
@@ -855,7 +1015,14 @@ function QuoteDetailPage({ id }: { id: number }) {
                     </div>
                     <div className="flex items-center justify-between text-slate-500">
                       <span>{l.isAutoGenerated ? "Auto (full amount)" : "Manual"} · {new Date(l.createdAt).toLocaleDateString("en-GB")}</span>
-                      {l.status === "Pending" && <button onClick={() => copyLink(l.url)} className="text-orange-600 hover:text-orange-500 font-medium">Copy link</button>}
+                      {l.status === "Pending" && (
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => copyLink(l.url)} className="text-slate-500 hover:text-slate-700 font-medium">Copy link</button>
+                          <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendPaymentLink.isPending} className="text-orange-600 hover:text-orange-500 font-medium disabled:opacity-50">
+                            {sendPaymentLink.isPending ? "Sending..." : "Send Payment Link"}
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -2322,6 +2489,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/leads/:id" component={({ params: p }) => <LeadDetailPage id={Number(p.id)} />} />
               <Route path="/dashboard/quotes" component={QuotesPage} />
               <Route path="/dashboard/quotes/:id" component={({ params: p }) => <QuoteDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/payment-links" component={PaymentLinksPage} />
               <Route path="/dashboard/projects" component={ProjectsPage} />
               <Route path="/dashboard/projects/:id" component={({ params: p }) => <ProjectDetailPage id={Number(p.id)} />} />
               <Route path="/dashboard/customers" component={CustomersPage} />

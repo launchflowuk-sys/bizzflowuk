@@ -9,4 +9,8 @@
 export interface PaymentLinkInput {
   /** @minimum 0.01 */
   amount: number;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  customerAddress?: string;
 }

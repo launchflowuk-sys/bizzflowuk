@@ -1,6 +1,7 @@
 import type { SmtpConfig } from "./email";
 import type { SmsCreds } from "./sms";
 import type { SquareCreds } from "./square";
+import type { BrandConfig } from "./emailShell";
 
 /**
  * Fields from tenantSettings that are safe to expose on the unauthenticated public site
@@ -63,6 +64,29 @@ export function buildSmsCreds(settings: Record<string, unknown> | null | undefin
     accountSid: settings.twilioAccountSid as string,
     authToken: settings.twilioAuthToken as string,
     fromNumber: settings.twilioFromNumber as string,
+  };
+}
+
+/** Builds the branding used by the shared HTML email shell — settings override tenant defaults. */
+export function buildBrandConfig(
+  tenant: Record<string, unknown> | null | undefined,
+  settings: Record<string, unknown> | null | undefined,
+): BrandConfig {
+  return {
+    tenantName: (tenant?.name as string) || "",
+    logoUrl: (settings?.logoUrl as string) || (tenant?.logoUrl as string) || null,
+    primaryColor: (settings?.primaryColor as string) || (tenant?.primaryColor as string) || null,
+    secondaryColor: (settings?.secondaryColor as string) || null,
+    phone: (settings?.phone as string) || (tenant?.phone as string) || null,
+    email: (settings?.email as string) || (tenant?.email as string) || null,
+    address: (settings?.address as string) || (tenant?.address as string) || null,
+    city: (settings?.city as string) || (tenant?.city as string) || null,
+    websiteUrl: (tenant?.website as string) || null,
+    facebookUrl: (settings?.facebookUrl as string) || null,
+    instagramUrl: (settings?.instagramUrl as string) || null,
+    twitterUrl: (settings?.twitterUrl as string) || null,
+    youtubeUrl: (settings?.youtubeUrl as string) || null,
+    tiktokUrl: (settings?.tiktokUrl as string) || null,
   };
 }
 

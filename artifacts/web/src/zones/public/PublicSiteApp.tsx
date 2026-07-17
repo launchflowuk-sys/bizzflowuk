@@ -2276,14 +2276,15 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
 
   const d = (pageData as any) || {};
   const paySettings = d.settings || {};
-  const quote = d.quote || {};
+  const quote = d.quote ?? null;
   const link = d.paymentLink || {};
-  const items: any[] = quote.items || [];
+  const items: any[] = quote?.items || [];
   const paymentsConfigured = !!(paySettings.squareApplicationId && paySettings.squareLocationId);
+  const remainingBalance = quote && Number(link.amount) < Number(quote.total) ? Number(quote.total) - Number(link.amount) : null;
 
   useEffect(() => {
-    if (quote.status) setQuoteStatus(quote.status);
-  }, [quote.status]);
+    if (quote?.status) setQuoteStatus(quote.status);
+  }, [quote?.status]);
 
   useEffect(() => {
     if (!paymentsConfigured || link.status !== "Pending") return;
@@ -2353,7 +2354,7 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
   };
 
   if (isLoading) return <Spinner />;
-  if (isError || !d.quote) {
+  if (isError || !d.paymentLink) {
     return (
       <div className="min-h-screen flex flex-col">
         <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} alwaysOpaque />
@@ -2369,41 +2370,49 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
 
   return (
     <div>
-      <PageSEO title={`Quote ${quote.reference || ""} | ${tenant?.name || ""}`} description="View and pay your quote online."/>
+      <PageSEO title={quote ? `Quote ${quote.reference || ""} | ${tenant?.name || ""}` : `Payment Request | ${tenant?.name || ""}`} description="View and pay online."/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Your Quote" title={`Quote ${quote.reference || ""}`} subtitle="Review the details below and pay securely online, or let us know if you'd like to accept or decline."/>
+      <PageHero
+        tenantSlug={tenantSlug}
+        tenant={tenant}
+        crumb={quote ? "Your Quote" : "Payment Request"}
+        title={quote ? `Quote ${quote.reference || ""}` : `Payment Request${link.customerName ? ` for ${link.customerName}` : ""}`}
+        subtitle={quote ? "Review the details below and pay securely online, or let us know if you'd like to accept or decline." : "Review the amount below and pay securely online."}
+      />
 
       <section className="py-16 bg-white">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 space-y-8">
-          <div className="rounded-2xl border border-slate-200 p-7 space-y-4 bg-white shadow-sm">
-            <h2 className="text-lg font-bold" style={{ color: TEXT }}>Quote Summary</h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b border-slate-100 text-xs uppercase" style={{ color: MUTED }}>
-                  <th className="text-left pb-2">Description</th><th className="text-right pb-2">Qty</th><th className="text-right pb-2">Unit £</th><th className="text-right pb-2">Total £</th>
-                </tr></thead>
-                <tbody>
-                  {items.map((item: any, i: number) => (
-                    <tr key={i} className="border-b border-slate-50">
-                      <td className="py-2 pr-4" style={{ color: TEXT }}>{item.description}</td>
-                      <td className="py-2 text-right" style={{ color: MUTED }}>{item.quantity}</td>
-                      <td className="py-2 text-right" style={{ color: MUTED }}>£{Number(item.unitPrice).toFixed(2)}</td>
-                      <td className="py-2 text-right font-medium" style={{ color: TEXT }}>£{Number(item.total).toFixed(2)}</td>
-                    </tr>
-                  ))}
-                  {!items.length && <tr><td colSpan={4} className="py-4 text-center text-xs" style={{ color: MUTED }}>No line items on this quote</td></tr>}
-                </tbody>
-              </table>
+          {quote && (
+            <div className="rounded-2xl border border-slate-200 p-7 space-y-4 bg-white shadow-sm">
+              <h2 className="text-lg font-bold" style={{ color: TEXT }}>Quote Summary</h2>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-slate-100 text-xs uppercase" style={{ color: MUTED }}>
+                    <th className="text-left pb-2">Description</th><th className="text-right pb-2">Qty</th><th className="text-right pb-2">Unit £</th><th className="text-right pb-2">Total £</th>
+                  </tr></thead>
+                  <tbody>
+                    {items.map((item: any, i: number) => (
+                      <tr key={i} className="border-b border-slate-50">
+                        <td className="py-2 pr-4" style={{ color: TEXT }}>{item.description}</td>
+                        <td className="py-2 text-right" style={{ color: MUTED }}>{item.quantity}</td>
+                        <td className="py-2 text-right" style={{ color: MUTED }}>£{Number(item.unitPrice).toFixed(2)}</td>
+                        <td className="py-2 text-right font-medium" style={{ color: TEXT }}>£{Number(item.total).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                    {!items.length && <tr><td colSpan={4} className="py-4 text-center text-xs" style={{ color: MUTED }}>No line items on this quote</td></tr>}
+                  </tbody>
+                </table>
+              </div>
+              <div className="border-t border-slate-100 pt-3 space-y-1 text-sm text-right">
+                <div style={{ color: MUTED }}>Subtotal: <span className="font-medium" style={{ color: TEXT }}>£{Number(quote.subtotal || 0).toFixed(2)}</span></div>
+                {Number(quote.vatAmount) > 0 && <div style={{ color: MUTED }}>VAT: <span className="font-medium" style={{ color: TEXT }}>£{Number(quote.vatAmount).toFixed(2)}</span></div>}
+                <div className="text-base font-bold" style={{ color: TEXT }}>Quote Total: £{Number(quote.total || 0).toFixed(2)}</div>
+              </div>
             </div>
-            <div className="border-t border-slate-100 pt-3 space-y-1 text-sm text-right">
-              <div style={{ color: MUTED }}>Subtotal: <span className="font-medium" style={{ color: TEXT }}>£{Number(quote.subtotal || 0).toFixed(2)}</span></div>
-              {Number(quote.vatAmount) > 0 && <div style={{ color: MUTED }}>VAT: <span className="font-medium" style={{ color: TEXT }}>£{Number(quote.vatAmount).toFixed(2)}</span></div>}
-              <div className="text-base font-bold" style={{ color: TEXT }}>Quote Total: £{Number(quote.total || 0).toFixed(2)}</div>
-            </div>
-          </div>
+          )}
 
-          {(quoteStatus === "Accepted" || quoteStatus === "Rejected") ? (
+          {quote && (quoteStatus === "Accepted" || quoteStatus === "Rejected") ? (
             <div className="rounded-2xl p-7 text-center space-y-2" style={{ backgroundColor: quoteStatus === "Accepted" ? BLUE + "15" : "#F1F5F9" }}>
               <h2 className="text-xl font-bold" style={{ color: TEXT }}>{quoteStatus === "Accepted" ? "Quote Accepted" : "Quote Declined"}</h2>
               <p className="text-sm" style={{ color: MUTED }}>{quoteStatus === "Accepted" ? "Thank you — we'll be in touch to arrange next steps." : "You've declined this quote. Contact us if you change your mind."}</p>
@@ -2415,6 +2424,9 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
                   <h2 className="text-lg font-bold" style={{ color: TEXT }}>Amount Requested</h2>
                   <span className="text-2xl font-bold" style={{ color: BLUE }}>£{Number(link.amount || 0).toFixed(2)}</span>
                 </div>
+                {remainingBalance !== null && (
+                  <p className="text-sm" style={{ color: MUTED }}>Remaining balance after this payment: <strong style={{ color: TEXT }}>£{remainingBalance.toFixed(2)}</strong></p>
+                )}
                 {paySettings.squareEnvironment === "sandbox" && (
                   <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 inline-block">Sandbox mode — no real charge will be made</p>
                 )}
@@ -2442,14 +2454,16 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
                 )}
               </div>
 
-              <div className="rounded-2xl border border-slate-200 p-7 space-y-3 bg-white shadow-sm">
-                <h2 className="text-lg font-bold" style={{ color: TEXT }}>Prefer to respond without paying online?</h2>
-                <p className="text-sm" style={{ color: MUTED }}>You can accept or decline this quote directly — we'll follow up to arrange payment another way.</p>
-                <div className="flex gap-3">
-                  <button onClick={() => handleAction("accept")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border-2 py-2.5 text-sm font-bold hover:opacity-80 disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>Accept Quote</button>
-                  <button onClick={() => handleAction("decline")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-50">Decline</button>
+              {quote && (
+                <div className="rounded-2xl border border-slate-200 p-7 space-y-3 bg-white shadow-sm">
+                  <h2 className="text-lg font-bold" style={{ color: TEXT }}>Prefer to respond without paying online?</h2>
+                  <p className="text-sm" style={{ color: MUTED }}>You can accept or decline this quote directly — we'll follow up to arrange payment another way.</p>
+                  <div className="flex gap-3">
+                    <button onClick={() => handleAction("accept")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border-2 py-2.5 text-sm font-bold hover:opacity-80 disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>Accept Quote</button>
+                    <button onClick={() => handleAction("decline")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-50">Decline</button>
+                  </div>
                 </div>
-              </div>
+              )}
             </>
           )}
         </div>

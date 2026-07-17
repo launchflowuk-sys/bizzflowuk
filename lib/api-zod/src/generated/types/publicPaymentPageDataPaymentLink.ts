@@ -11,4 +11,6 @@ export type PublicPaymentPageDataPaymentLink = {
   amount?: number;
   currency?: string;
   status?: PublicPaymentPageDataPaymentLinkStatus;
+  /** @nullable */
+  customerName?: string | null;
 };
