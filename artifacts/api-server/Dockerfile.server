@@ -66,6 +66,11 @@ COPY --from=builder /app/artifacts/api-server/dist ./dist
 COPY --from=builder /app/artifacts/web/dist/server ./ssr
 COPY --from=builder /app/artifacts/web/dist/public/index.html ./web-public/index.html
 
+# Vite's SSR build emits a plain .js file with ESM syntax but no package.json of its own,
+# so Node has to fall back to sniffing the file content to guess its module type on every
+# import() — declaring it explicitly here skips that and silences the startup warning.
+RUN echo '{"type":"module"}' > ./ssr/package.json
+
 # ---- Startup + migration scripts ----
 COPY artifacts/api-server/docker-entrypoint.sh ./docker-entrypoint.sh
 COPY scripts/run-migrations.mjs ./scripts/run-migrations.mjs
