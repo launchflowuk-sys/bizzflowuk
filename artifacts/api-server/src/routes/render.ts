@@ -20,10 +20,29 @@ function loadSsrModule(): Promise<SsrModule> {
   return ssrModulePromise;
 }
 
+// React 19 hoists <title>/<meta>/<link>/JSON-LD <script> tags rendered anywhere in the tree to
+// the front of the string — renderToString has no real document to hoist them into, unlike the
+// live DOM case, so they land as plain text at the start of the fragment rather than in a head
+// element. Pull them back out here and place them in the shell's actual <head>.
+const HEAD_TAG_PATTERN = /<title>[\s\S]*?<\/title>|<meta\b[^>]*\/?>|<link\b[^>]*\/?>|<script type="application\/ld\+json">[\s\S]*?<\/script>/g;
+const DEFAULT_SEO_TAG_PATTERN = /<meta[^>]*\bdata-default-seo\b[^>]*>/g;
+
 function injectIntoShell(indexHtml: string, appHtml: string, dehydratedState: unknown): string {
   const serialized = JSON.stringify(dehydratedState).replace(/</g, "\\u003c");
   const stateScript = `<script>window.__DEHYDRATED_STATE__=${serialized}</script>`;
-  return indexHtml.replace('<div id="root"></div>', `<div id="root">${appHtml}</div>${stateScript}`);
+
+  const headTags = appHtml.match(HEAD_TAG_PATTERN) ?? [];
+  const bodyHtml = appHtml.replace(HEAD_TAG_PATTERN, "");
+
+  // Drop the shell's static title/defaults so the real per-page ones aren't left duplicated
+  // alongside them (same reasoning as the data-default-seo cleanup in PublicSiteApp.tsx, just
+  // needed again here since that cleanup only runs client-side and never touches this response).
+  const shellWithoutDefaults = indexHtml
+    .replace(/<title>[\s\S]*?<\/title>/, "")
+    .replace(DEFAULT_SEO_TAG_PATTERN, "");
+  const shellWithHead = shellWithoutDefaults.replace("</head>", `${headTags.join("")}</head>`);
+
+  return shellWithHead.replace('<div id="root"></div>', `<div id="root">${bodyHtml}</div>${stateScript}`);
 }
 
 /**
