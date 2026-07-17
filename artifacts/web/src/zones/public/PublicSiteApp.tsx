@@ -659,6 +659,7 @@ function TrustBar() {
 
 function HomePage({ tenantSlug }: { tenantSlug: string }) {
   const siteBase = useSiteBase();
+  const origin = useSiteOrigin();
   const { data, isLoading } = useGetPublicSite(tenantSlug);
   if (isLoading) return <Spinner/>;
   if (!data) return <div className="p-8 text-center text-slate-500">Site not found</div>;
@@ -670,7 +671,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title={`${tenant?.name || 'AMO Rendering'} | Silicone Render Specialists — Grays, Essex & London`} description={settings?.seoDescription || "AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
-      <JsonLd data={localBusinessSchema(tenant, settings, window.location.origin, avgRating, reviewList.length)}/>
+      <JsonLd data={localBusinessSchema(tenant, settings, origin, avgRating, reviewList.length)}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -3326,7 +3327,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
 // ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?: string; forcedBase?: string } = {}) {
+export default function PublicSiteApp({ forcedSlug, forcedBase, forcedOrigin, ssrPath }: { forcedSlug?: string; forcedBase?: string; forcedOrigin?: string; ssrPath?: string } = {}) {
   const params = useParams<{ tenantSlug: string }>();
   const tenantSlug = forcedSlug || params.tenantSlug || '';
   const siteBase = forcedBase !== undefined ? forcedBase : `/site/${tenantSlug}`;
@@ -3367,9 +3368,9 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
   }, [rootSettings?.googleAnalyticsId, rootSettings?.googleAdsConversionId]);
 
   return (
-    <SiteOriginCtx.Provider value={typeof window !== 'undefined' ? window.location.origin : ''}>
+    <SiteOriginCtx.Provider value={forcedOrigin ?? (typeof window !== 'undefined' ? window.location.origin : '')}>
     <SiteBaseCtx.Provider value={siteBase}>
-    <WouterRouter base={siteBase}>
+    <WouterRouter base={siteBase} ssrPath={ssrPath}>
       <Switch>
         <Route path="/">{() => <HomePage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/services">{() => <ServicesPage tenantSlug={tenantSlug}/>}</Route>

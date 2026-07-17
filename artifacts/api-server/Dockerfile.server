@@ -12,9 +12,13 @@ RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 # Copy workspace manifests first — maximises layer cache reuse
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml .npmrc ./
 
-# Copy all source packages that the API server depends on
+# Copy all source packages that the API server depends on. artifacts/web is included too — the
+# public-page render cache (see routes/render.ts) imports its pre-built SSR bundle at runtime,
+# which needs the same JSX/React toolchain web already builds with, so it's built here rather
+# than duplicating that toolchain into api-server's own esbuild setup.
 COPY lib/ lib/
 COPY artifacts/api-server/ artifacts/api-server/
+COPY artifacts/web/ artifacts/web/
 COPY scripts/ scripts/
 
 # Install all workspace dependencies
@@ -26,6 +30,13 @@ RUN pnpm --filter @workspace/db run generate
 
 # Bundle the API server with esbuild
 RUN pnpm --filter @workspace/api-server run build
+
+# Build the public-site SSR render bundle (see artifacts/web/src/entry-server.tsx), plus the
+# normal client build — the render route needs its index.html (correct hashed asset filenames)
+# as the shell it injects rendered HTML into. Deterministic from the same source, so this stays
+# byte-identical to what web's own Dockerfile produces from the same commit.
+RUN pnpm --filter @workspace/web run build:ssr
+RUN pnpm --filter @workspace/web run build
 
 # =============================================================================
 # Stage 2: Runtime
@@ -47,6 +58,10 @@ COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 # ---- API server bundle ----
 COPY --from=builder /app/artifacts/api-server/dist ./dist
+
+# ---- Public-site SSR render bundle + its index.html shell ----
+COPY --from=builder /app/artifacts/web/dist/server ./ssr
+COPY --from=builder /app/artifacts/web/dist/public/index.html ./web-public/index.html
 
 # ---- Startup + migration scripts ----
 COPY artifacts/api-server/docker-entrypoint.sh ./docker-entrypoint.sh

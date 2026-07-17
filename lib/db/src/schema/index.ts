@@ -17,3 +17,4 @@ export * from "./visualiser";
 export * from "./contact";
 export * from "./team";
 export * from "./sent_emails";
+export * from "./page_render_cache";
