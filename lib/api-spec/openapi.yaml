@@ -3026,6 +3026,10 @@ components:
           type: ["string", "null"]
         googleAnalyticsId:
           type: ["string", "null"]
+        googleAdsConversionId:
+          type: ["string", "null"]
+        googleAdsConversionLabel:
+          type: ["string", "null"]
         termsContent:
           type: ["string", "null"]
         privacyContent:
@@ -3151,6 +3155,10 @@ components:
         seoDescription:
           type: string
         googleAnalyticsId:
+          type: string
+        googleAdsConversionId:
+          type: string
+        googleAdsConversionLabel:
           type: string
         termsContent:
           type: string

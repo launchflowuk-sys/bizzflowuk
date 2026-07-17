@@ -2798,7 +2798,9 @@ function SettingsPage() {
             <label className={labelCls}>SEO Description</label>
             <textarea rows={3} className={inputCls} value={form.seoDescription || ""} onChange={e => setForm({ ...form, seoDescription: e.target.value })} />
           </div>
-          {field("googleAnalyticsId", "Google Analytics ID")}
+          {field("googleAnalyticsId", "Google Analytics ID", "text", "GA4 Measurement ID, e.g. G-XXXXXXXXXX")}
+          {field("googleAdsConversionId", "Google Ads Conversion ID", "text", "e.g. AW-XXXXXXXXX — used to track quote-request conversions for ad campaigns")}
+          {field("googleAdsConversionLabel", "Google Ads Conversion Label", "text", "The conversion label from your Google Ads conversion action")}
         </div>
         <div className="flex items-center gap-4 pb-4">
           <button type="submit" disabled={updateMutation.isPending} className="inline-flex h-10 items-center rounded-md bg-orange-500 px-6 text-sm font-semibold text-white hover:bg-orange-400 disabled:opacity-50">

@@ -29,6 +29,92 @@ router.get("/public/resolve-domain", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+/**
+ * GET /public/robots.txt
+ *
+ * Same reasoning as sitemap.xml below — robots.txt needs a tenant-specific
+ * absolute Sitemap: URL, which a static file baked at build time can't give
+ * every custom domain. Falls back to a generic allow-all with no Sitemap
+ * line for hosts that aren't a recognized tenant custom domain (e.g. the
+ * platform's own domain).
+ */
+router.get("/public/robots.txt", async (req, res) => {
+  try {
+    const host = (req.query.host as string) || (req.headers.host as string) || "";
+    const tenants = await db
+      .select({ customDomain: tenantsTable.customDomain })
+      .from(tenantsTable)
+      .where(and(eq(tenantsTable.customDomain, host), sql`${tenantsTable.suspended} = false`))
+      .limit(1);
+    const sitemapLine = tenants.length ? `\nSitemap: https://${tenants[0].customDomain}/sitemap.xml\n` : "";
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send(`User-agent: *\nAllow: /\n${sitemapLine}`);
+  } catch (err) { req.log.error(err); res.status(500).send("User-agent: *\nAllow: /\n"); }
+});
+
+function escapeXml(value: string): string {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+function urlEntry(loc: string, lastmod?: Date | string | null): string {
+  const lm = lastmod ? `<lastmod>${new Date(lastmod).toISOString().slice(0, 10)}</lastmod>` : "";
+  return `  <url><loc>${escapeXml(loc)}</loc>${lm}</url>`;
+}
+
+/**
+ * GET /public/sitemap.xml
+ *
+ * Resolves the requesting tenant by the Host header (same lookup as
+ * resolve-domain) since each tenant's sitemap must only list that tenant's
+ * own pages at their own custom domain — served at nginx's document root via
+ * a path rewrite, see nginx.conf, so it lands at https://<domain>/sitemap.xml
+ * where Google Search Console expects it.
+ */
+router.get("/public/sitemap.xml", async (req, res) => {
+  try {
+    const host = (req.query.host as string) || (req.headers.host as string) || "";
+    const tenants = await db
+      .select()
+      .from(tenantsTable)
+      .where(and(eq(tenantsTable.customDomain, host), sql`${tenantsTable.suspended} = false`))
+      .limit(1);
+    if (!tenants.length) { res.status(404).json({ error: "Domain not found" }); return; }
+    const tenant = tenants[0];
+    const tid = tenant.id;
+    const base = `https://${tenant.customDomain}`;
+
+    const [settings] = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid)).limit(1);
+    const services = await db.select().from(servicesTable).where(and(eq(servicesTable.tenantId, tid), sql`${servicesTable.published} = true`));
+    const areas = await db.select().from(areasTable).where(and(eq(areasTable.tenantId, tid), sql`${areasTable.published} = true`));
+    const caseStudies = await db.select().from(caseStudiesTable).where(and(eq(caseStudiesTable.tenantId, tid), sql`${caseStudiesTable.published} = true`));
+    const posts = settings?.showBlog === false ? [] : await db.select().from(blogPostsTable).where(and(eq(blogPostsTable.tenantId, tid), sql`${blogPostsTable.published} = true`));
+
+    const urls: string[] = [urlEntry(`${base}/`, tenant.updatedAt)];
+    urls.push(urlEntry(`${base}/services`));
+    urls.push(urlEntry(`${base}/areas`));
+    if (settings?.showGallery !== false) urls.push(urlEntry(`${base}/gallery`));
+    urls.push(urlEntry(`${base}/case-studies`));
+    if (settings?.showReviews !== false) urls.push(urlEntry(`${base}/reviews`));
+    urls.push(urlEntry(`${base}/faqs`));
+    if (settings?.showBlog !== false) urls.push(urlEntry(`${base}/blog`));
+    urls.push(urlEntry(`${base}/quote`));
+    urls.push(urlEntry(`${base}/contact`));
+    urls.push(urlEntry(`${base}/visualiser`));
+    urls.push(urlEntry(`${base}/terms`));
+    urls.push(urlEntry(`${base}/privacy`));
+
+    for (const s of services) urls.push(urlEntry(`${base}/services/${s.slug}`, s.updatedAt));
+    for (const a of areas) urls.push(urlEntry(`${base}/areas/${a.slug}`, a.updatedAt));
+    for (const c of caseStudies) urls.push(urlEntry(`${base}/case-studies/${c.slug}`, c.updatedAt));
+    for (const p of posts) urls.push(urlEntry(`${base}/blog/${p.slug}`, p.updatedAt ?? p.publishedAt));
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join("\n")}\n</urlset>\n`;
+    res.setHeader("Content-Type", "application/xml; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(xml);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // Full public site data bundle
 router.get("/public/:tenantSlug/site", async (req, res) => {
   try {

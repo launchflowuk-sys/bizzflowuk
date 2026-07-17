@@ -261,6 +261,10 @@ export interface TenantSettings {
   /** @nullable */
   googleAnalyticsId?: string | null;
   /** @nullable */
+  googleAdsConversionId?: string | null;
+  /** @nullable */
+  googleAdsConversionLabel?: string | null;
+  /** @nullable */
   termsContent?: string | null;
   /** @nullable */
   privacyContent?: string | null;
@@ -484,6 +488,8 @@ export interface TenantSettingsUpdate {
   seoTitle?: string;
   seoDescription?: string;
   googleAnalyticsId?: string;
+  googleAdsConversionId?: string;
+  googleAdsConversionLabel?: string;
   termsContent?: string;
   privacyContent?: string;
   ctaText?: string;

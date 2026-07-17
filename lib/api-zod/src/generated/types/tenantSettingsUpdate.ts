@@ -30,6 +30,8 @@ export interface TenantSettingsUpdate {
   seoTitle?: string;
   seoDescription?: string;
   googleAnalyticsId?: string;
+  googleAdsConversionId?: string;
+  googleAdsConversionLabel?: string;
   termsContent?: string;
   privacyContent?: string;
   ctaText?: string;

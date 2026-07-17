@@ -1,6 +1,7 @@
 import { Switch, Route, useParams, Router as WouterRouter, Link as WouterLink } from "wouter";
 import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl, useGetPublicPaymentPage, useChargePublicPaymentLink, useSubmitPublicQuoteAction } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, createContext, useContext } from "react";
+import { initGoogleTag, updateConsent, fireQuoteRequestConversion } from "./analytics";
 const SiteBaseCtx = createContext('');
 const useSiteBase = () => useContext(SiteBaseCtx);
 
@@ -94,9 +95,46 @@ function PageSEO({ title, description, image, siteName }: { title: string; descr
     setMeta('name', 'twitter:description', description);
     if (image) setMeta('name', 'twitter:image', image);
 
+    // Canonical strips query strings (ad click UTM params in particular) and any trailing
+    // slash so ad traffic and share links don't read as separate pages from the plain URL.
+    let canonical = document.querySelector('link[rel="canonical"]') as HTMLLinkElement | null;
+    if (!canonical) { canonical = document.createElement('link'); canonical.rel = 'canonical'; document.head.appendChild(canonical); }
+    const path = window.location.pathname.length > 1 ? window.location.pathname.replace(/\/+$/, '') : window.location.pathname;
+    canonical.href = `${window.location.origin}${path}`;
+
     return () => { document.title = prev; };
   }, [title, description, image, siteName]);
   return null;
+}
+
+/** Renders a JSON-LD structured-data block. `data` should be a plain schema.org object (or array of them). */
+function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
+  return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
+}
+
+/** Shared LocalBusiness schema — same facts every page can reuse (address, phone, sameAs links, rating). */
+function localBusinessSchema(tenant: any, settings: any, siteUrl: string, avgRating?: number, reviewCount?: number) {
+  const sameAs = [settings?.facebookUrl, settings?.instagramUrl, settings?.twitterUrl, settings?.youtubeUrl, settings?.tiktokUrl].filter(Boolean);
+  return {
+    "@context": "https://schema.org",
+    "@type": "HomeAndConstructionBusiness",
+    name: tenant?.name || "AMO Rendering",
+    image: settings?.logoUrl || settings?.heroImageUrl || undefined,
+    url: siteUrl,
+    telephone: settings?.phone || undefined,
+    email: settings?.email || undefined,
+    address: settings?.address || settings?.city ? {
+      "@type": "PostalAddress",
+      streetAddress: settings?.address || undefined,
+      addressLocality: settings?.city || undefined,
+      addressCountry: "GB",
+    } : undefined,
+    areaServed: ["Grays", "Thurrock", "Essex", "London"],
+    ...(sameAs.length ? { sameAs } : {}),
+    ...(avgRating && reviewCount ? {
+      aggregateRating: { "@type": "AggregateRating", ratingValue: avgRating, reviewCount },
+    } : {}),
+  };
 }
 
 function Spinner() {
@@ -622,10 +660,13 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
   if (!data) return <div className="p-8 text-center text-slate-500">Site not found</div>;
   const { tenant, settings, featuredServices, featuredReviews, recentCaseStudies, featuredBeforeAfter, globalFaqs } = data as any;
   const services = featuredServices?.length ? featuredServices : STATIC_SERVICES;
+  const reviewList = (featuredReviews as any[]) || [];
+  const avgRating = reviewList.length ? Math.round((reviewList.reduce((s, r) => s + r.rating, 0) / reviewList.length) * 10) / 10 : undefined;
 
   return (
     <div>
       <PageSEO title={`${tenant?.name || 'AMO Rendering'} | Silicone Render Specialists — Grays, Essex & London`} description={settings?.seoDescription || "AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
+      <JsonLd data={localBusinessSchema(tenant, settings, window.location.origin, avgRating, reviewList.length)}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -1129,6 +1170,15 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
   return (
     <div>
       <PageSEO title={`${name} in Essex & London | AMO Rendering`} description={description || `Professional ${name} service across Essex and London. AMO Rendering — free quotes available.`}/>
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "Service",
+        serviceType: name,
+        name: `${name} in Essex & London`,
+        description: description || `Professional ${name} service across Essex and London.`,
+        areaServed: ["Grays", "Thurrock", "Essex", "London"],
+        provider: { "@type": "HomeAndConstructionBusiness", name: tenant?.name || "AMO Rendering" },
+      }}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -1767,6 +1817,20 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Customer Reviews | AMO Rendering — Essex & London" description="Read verified customer reviews from homeowners across Essex and London. AMO Rendering — trusted rendering specialists."/>
+      {list.length > 0 && (
+        <JsonLd data={{
+          "@context": "https://schema.org",
+          "@type": "HomeAndConstructionBusiness",
+          name: tenant?.name || "AMO Rendering",
+          aggregateRating: { "@type": "AggregateRating", ratingValue: avgRating, reviewCount: list.length },
+          review: list.slice(0, 20).map((r: any) => ({
+            "@type": "Review",
+            reviewRating: { "@type": "Rating", ratingValue: r.rating, bestRating: 5 },
+            author: { "@type": "Person", name: r.reviewerName },
+            reviewBody: r.content,
+          })),
+        }}/>
+      )}
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -2066,6 +2130,17 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div>
       <PageSEO title="Rendering FAQs | AMO Rendering — Essex & London" description="Answers to common questions about rendering, including silicone render, monocouche, K Rend, pebbledash removal and EWI."/>
+      {(faqs as any[])?.length > 0 && (
+        <JsonLd data={{
+          "@context": "https://schema.org",
+          "@type": "FAQPage",
+          mainEntity: (faqs as any[]).map((faq: any) => ({
+            "@type": "Question",
+            name: faq.question,
+            acceptedAnswer: { "@type": "Answer", text: faq.answer },
+          })),
+        }}/>
+      )}
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering FAQs" title="Rendering FAQs" subtitle="Common questions about silicone rendering, pebbledash removal, K Rend, EWI and quote requests."/>
@@ -2214,6 +2289,7 @@ function CookieBanner({ siteBase }: { siteBase: string }) {
 
   const decide = (value: "accepted" | "rejected") => {
     try { window.localStorage.setItem(COOKIE_CONSENT_KEY, value); } catch {}
+    updateConsent(value);
     setChoice(value);
   };
 
@@ -2710,6 +2786,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
       const result = await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any) as any;
       setReference(result?.reference ?? null);
       setSubmitted(true);
+      fireQuoteRequestConversion(settings?.googleAdsConversionId, settings?.googleAdsConversionLabel);
     } catch {}
   };
 
@@ -3271,6 +3348,12 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
       if (link) { link.type = 'image/svg+xml'; link.href = '/favicon.svg'; }
     };
   }, [rootSettings?.faviconUrl, rootSettings?.primaryColor, rootTenant?.name, tenantSlug]);
+
+  useEffect(() => {
+    if (rootSettings?.googleAnalyticsId || rootSettings?.googleAdsConversionId) {
+      initGoogleTag(rootSettings.googleAnalyticsId, rootSettings.googleAdsConversionId);
+    }
+  }, [rootSettings?.googleAnalyticsId, rootSettings?.googleAdsConversionId]);
 
   return (
     <SiteBaseCtx.Provider value={siteBase}>

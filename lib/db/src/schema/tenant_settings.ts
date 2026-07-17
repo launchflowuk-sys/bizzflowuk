@@ -28,6 +28,8 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   seoTitle: text("seo_title"),
   seoDescription: text("seo_description"),
   googleAnalyticsId: text("google_analytics_id"),
+  googleAdsConversionId: text("google_ads_conversion_id"),
+  googleAdsConversionLabel: text("google_ads_conversion_label"),
   termsContent: text("terms_content"),
   privacyContent: text("privacy_content"),
   ctaText: text("cta_text").default("Get a Free Quote"),

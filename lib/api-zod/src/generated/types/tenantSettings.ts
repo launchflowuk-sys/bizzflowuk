@@ -56,6 +56,10 @@ export interface TenantSettings {
   /** @nullable */
   googleAnalyticsId?: string | null;
   /** @nullable */
+  googleAdsConversionId?: string | null;
+  /** @nullable */
+  googleAdsConversionLabel?: string | null;
+  /** @nullable */
   termsContent?: string | null;
   /** @nullable */
   privacyContent?: string | null;
