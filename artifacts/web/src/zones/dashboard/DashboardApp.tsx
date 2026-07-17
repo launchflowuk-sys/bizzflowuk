@@ -873,15 +873,25 @@ function QuoteDetailPage({ id }: { id: number }) {
   const [confirmProject, setConfirmProject] = useState(false);
   const [confirmPayment, setConfirmPayment] = useState(false);
   const [payAmount, setPayAmount] = useState("");
+  const [depositMode, setDepositMode] = useState(false);
   const [sendingLinkId, setSendingLinkId] = useState<number | null>(null);
+  const [applyVat, setApplyVat] = useState(true);
+  const [vatInitialized, setVatInitialized] = useState(false);
   const q = quote as any;
   const lineItems = items as any[] || [];
+
+  useEffect(() => {
+    if (q && !vatInitialized) {
+      setApplyVat(Number(q.vatRate) > 0);
+      setVatInitialized(true);
+    }
+  }, [q, vatInitialized]);
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
   if (!q) return <div className="p-8 text-center text-slate-500">Quote not found</div>;
 
   const subtotal = lineItems.reduce((s: number, i: any) => s + Number(i.total || 0), 0);
-  const vat = subtotal * (Number(q.vatRate || 0) / 100);
+  const vat = applyVat ? subtotal * 0.2 : 0;
   const total = subtotal + vat;
 
   const handleAddItem = async (e: React.FormEvent) => {
@@ -899,10 +909,19 @@ function QuoteDetailPage({ id }: { id: number }) {
   };
   const handleStatusChange = async (status: string) => {
     try {
-      await updateMutation.mutateAsync({ id, data: { status, total, subtotal, vatAmount: vat } } as any);
+      await updateMutation.mutateAsync({ id, data: { status } } as any);
       qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
     } catch (err: any) {
       showToast(err?.message || "Update failed", "error");
+    }
+  };
+  const handleSaveQuote = async () => {
+    try {
+      await updateMutation.mutateAsync({ id, data: { vatRate: applyVat ? 20 : 0, subtotal, vatAmount: vat, total } } as any);
+      qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+      showToast("Quote saved");
+    } catch (err: any) {
+      showToast(err?.message || "Failed to save quote", "error");
     }
   };
   const handleConvertToProject = async () => {
@@ -982,10 +1001,19 @@ function QuoteDetailPage({ id }: { id: number }) {
               <input type="number" placeholder="£ Unit" value={newItem.unitPrice} onChange={e => setNewItem({ ...newItem, unitPrice: e.target.value })} className="w-20 rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
               <button type="submit" className="rounded bg-orange-500 px-3 py-1.5 text-sm text-white font-medium hover:bg-orange-400">Add</button>
             </form>
-            <div className="border-t border-slate-100 pt-3 space-y-1 text-sm text-right">
-              <div className="text-slate-600">Subtotal: <span className="font-medium text-slate-900">£{subtotal.toFixed(2)}</span></div>
-              {Number(q.vatRate) > 0 && <div className="text-slate-600">VAT ({q.vatRate}%): <span className="font-medium text-slate-900">£{vat.toFixed(2)}</span></div>}
-              <div className="text-base font-bold text-slate-900">Total: £{total.toFixed(2)}</div>
+            <div className="border-t border-slate-100 pt-3 space-y-2">
+              <label className="flex items-center gap-2 text-sm text-slate-700">
+                <input type="checkbox" checked={applyVat} onChange={e => setApplyVat(e.target.checked)} className="rounded border-slate-300 text-orange-500 focus:ring-orange-500" />
+                Apply VAT (20%)
+              </label>
+              <div className="text-sm text-right space-y-1">
+                <div className="text-slate-600">Subtotal: <span className="font-medium text-slate-900">£{subtotal.toFixed(2)}</span></div>
+                {applyVat && <div className="text-slate-600">VAT (20%): <span className="font-medium text-slate-900">£{vat.toFixed(2)}</span></div>}
+                <div className="text-base font-bold text-slate-900">Total: £{total.toFixed(2)}</div>
+              </div>
+              <button onClick={handleSaveQuote} disabled={updateMutation.isPending} className="w-full rounded-md bg-orange-500 text-white py-2 text-sm font-medium hover:bg-orange-400 disabled:opacity-50">
+                {updateMutation.isPending ? "Saving..." : "Save Quote"}
+              </button>
             </div>
           </div>
           {q.notes && <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5"><h2 className="font-semibold text-slate-900 mb-2">Notes</h2><p className="text-sm text-slate-600">{q.notes}</p></div>}
@@ -1050,16 +1078,22 @@ function QuoteDetailPage({ id }: { id: number }) {
               </div>
             )}
             {!confirmPayment ? (
-              <button onClick={() => setConfirmPayment(true)} className="w-full rounded-md border border-slate-300 text-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-50">+ Generate Custom Payment Link</button>
+              <button onClick={() => { setConfirmPayment(true); setDepositMode(false); setPayAmount(total.toFixed(2)); }} className="w-full rounded-md border border-slate-300 text-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-50">+ Generate Payment Link</button>
             ) : (
               <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
-                <p className="text-xs font-medium text-slate-700">Amount to request (£):</p>
-                <input type="number" min="0.01" step="0.01" value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder={total.toFixed(2)} className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <p className="text-xs font-medium text-slate-700">Amount to request:</p>
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => { setDepositMode(false); setPayAmount(total.toFixed(2)); }} className={`flex-1 rounded px-2 py-1.5 text-xs font-medium transition-colors ${!depositMode ? "bg-orange-500 text-white" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"}`}>Full Amount (£{total.toFixed(2)})</button>
+                  <button type="button" onClick={() => { setDepositMode(true); setPayAmount(""); }} className={`flex-1 rounded px-2 py-1.5 text-xs font-medium transition-colors ${depositMode ? "bg-orange-500 text-white" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"}`}>Deposit</button>
+                </div>
+                {depositMode && (
+                  <input type="number" min="0.01" step="0.01" value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="e.g. 500.00" autoFocus className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                )}
                 <div className="flex gap-2">
                   <button onClick={handleGeneratePaymentLink} disabled={createPaymentLink.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">
                     {createPaymentLink.isPending ? "Generating..." : "Generate Link"}
                   </button>
-                  <button onClick={() => { setConfirmPayment(false); setPayAmount(""); }} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium">Cancel</button>
+                  <button onClick={() => { setConfirmPayment(false); setPayAmount(""); setDepositMode(false); }} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium">Cancel</button>
                 </div>
               </div>
             )}
