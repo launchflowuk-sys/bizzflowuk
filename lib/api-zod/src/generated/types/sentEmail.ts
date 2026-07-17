@@ -19,6 +19,8 @@ export interface SentEmail {
   toName?: string | null;
   subject: string;
   bodyHtml: string;
+  /** @nullable */
+  attachmentUrls?: string[] | null;
   status: SentEmailStatus;
   /** @nullable */
   errorMessage?: string | null;

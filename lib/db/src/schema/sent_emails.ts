@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, jsonb, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -18,6 +18,7 @@ export const sentEmailsTable = pgTable("sent_emails", {
   toName: text("to_name"),
   subject: text("subject").notNull(),
   bodyHtml: text("body_html").notNull(),
+  attachmentUrls: jsonb("attachment_urls").$type<string[]>().default([]),
   status: sentEmailStatusEnum("status").notNull().default("sent"),
   errorMessage: text("error_message"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

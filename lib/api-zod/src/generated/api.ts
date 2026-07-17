@@ -1051,6 +1051,7 @@ export const ListSentEmailsResponseItem = zod.object({
   "toName": zod.string().nullish(),
   "subject": zod.string(),
   "bodyHtml": zod.string(),
+  "attachmentUrls": zod.array(zod.string()).nullish(),
   "status": zod.enum(['sent', 'failed']),
   "errorMessage": zod.string().nullish(),
   "createdAt": zod.coerce.date()
@@ -1066,7 +1067,8 @@ export const ComposeEmailBody = zod.object({
   "toName": zod.string().optional(),
   "subject": zod.string(),
   "bodyHtml": zod.string(),
-  "leadId": zod.number().optional()
+  "leadId": zod.number().optional(),
+  "attachmentUrls": zod.array(zod.string()).optional()
 })
 
 
@@ -3385,6 +3387,38 @@ export const RequestUploadUrlResponse = zod.object({
   "tenantSlug": zod.string().min(1),
   "name": zod.string().min(1),
   "size": zod.number().min(1).max(requestUploadUrlResponseMetadataSizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+}).optional()
+})
+
+
+/**
+ * @summary Request an upload URL scoped to the current authenticated tenant (e.g. email attachments)
+ */
+
+export const requestDashboardUploadUrlBodySizeMax = 10485760;
+
+
+
+export const RequestDashboardUploadUrlBody = zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1).max(requestDashboardUploadUrlBodySizeMax),
+  "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
+})
+
+
+
+export const requestDashboardUploadUrlResponseMetadataSizeMax = 10485760;
+
+
+
+export const RequestDashboardUploadUrlResponse = zod.object({
+  "uploadURL": zod.string().describe('A same-origin PUT target — a relative path, not necessarily an absolute URL.'),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "tenantSlug": zod.string().min(1),
+  "name": zod.string().min(1),
+  "size": zod.number().min(1).max(requestDashboardUploadUrlResponseMetadataSizeMax),
   "contentType": zod.enum(['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])
 }).optional()
 })

@@ -12,4 +12,5 @@ export interface SentEmailInput {
   subject: string;
   bodyHtml: string;
   leadId?: number;
+  attachmentUrls?: string[];
 }

@@ -32,6 +32,8 @@ export * from './customerMessageSenderType';
 export * from './customerPortalData';
 export * from './customerUpdate';
 export * from './dashboardStats';
+export * from './dashboardUploadUrlRequest';
+export * from './dashboardUploadUrlRequestContentType';
 export * from './domainResolution';
 export * from './errorEnvelope';
 export * from './faq';

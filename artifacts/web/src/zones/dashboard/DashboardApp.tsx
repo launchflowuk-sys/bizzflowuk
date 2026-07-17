@@ -21,7 +21,7 @@ import {
   useListContactMessages,
   useListTeamMembers, useCreateTeamMember, useUpdateTeamMember, useDeleteTeamMember,
   useGetSettings, useUpdateSettings, useTestEmailSettings, useTestSmsSettings,
-  useListSentEmails, useComposeEmail,
+  useListSentEmails, useComposeEmail, useRequestDashboardUploadUrl,
 } from "@workspace/api-client-react";
 import {
   getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
@@ -870,39 +870,152 @@ function PaymentLinksPage() {
   );
 }
 
-// ─── Rich text editor — minimal contentEditable + execCommand toolbar, no dependency ──
+// ─── Rich text editor — contentEditable + execCommand toolbar, no dependency ──
 // Uncontrolled by design: React never re-renders its own innerHTML back in, so typing
 // never resets the cursor. Give it a `key` from the parent to force a fresh, empty mount.
+function ToolbarBtn({ onClick, title, children }: { onClick: () => void; title: string; children: React.ReactNode }) {
+  return (
+    <button type="button" onMouseDown={e => e.preventDefault()} onClick={onClick} title={title} className="w-8 h-8 flex items-center justify-center rounded-md text-slate-600 hover:bg-slate-200 hover:text-slate-900 transition-colors">
+      {children}
+    </button>
+  );
+}
+const ToolbarDivider = () => <span className="w-px h-6 bg-slate-300 mx-1 flex-shrink-0" />;
+
 function RichTextEditor({ onChange }: { onChange: (html: string) => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const [isEmpty, setIsEmpty] = useState(true);
   const exec = (cmd: string, arg?: string) => {
     ref.current?.focus();
     document.execCommand(cmd, false, arg);
-    if (ref.current) onChange(ref.current.innerHTML);
+    if (ref.current) {
+      onChange(ref.current.innerHTML);
+      setIsEmpty(!ref.current.textContent?.trim());
+    }
   };
   const handleLink = () => {
     const url = window.prompt("Link URL (e.g. https://example.com)");
     if (url) exec("createLink", url);
   };
   return (
-    <div className="rounded-md border border-slate-300 overflow-hidden">
-      <div className="flex items-center gap-1 border-b border-slate-200 bg-slate-50 px-2 py-1.5">
-        <button type="button" onClick={() => exec("bold")} className="w-7 h-7 rounded hover:bg-slate-200 text-sm font-bold text-slate-700">B</button>
-        <button type="button" onClick={() => exec("italic")} className="w-7 h-7 rounded hover:bg-slate-200 text-sm italic text-slate-700">I</button>
-        <button type="button" onClick={() => exec("underline")} className="w-7 h-7 rounded hover:bg-slate-200 text-sm underline text-slate-700">U</button>
-        <span className="w-px h-5 bg-slate-300 mx-1" />
-        <button type="button" onClick={() => exec("insertUnorderedList")} className="px-2 h-7 rounded hover:bg-slate-200 text-xs text-slate-700">• List</button>
-        <button type="button" onClick={() => exec("insertOrderedList")} className="px-2 h-7 rounded hover:bg-slate-200 text-xs text-slate-700">1. List</button>
-        <span className="w-px h-5 bg-slate-300 mx-1" />
-        <button type="button" onClick={handleLink} className="px-2 h-7 rounded hover:bg-slate-200 text-xs text-slate-700">Link</button>
+    <div className="rounded-md border border-slate-300 overflow-hidden focus-within:ring-1 focus-within:ring-orange-500 focus-within:border-orange-500">
+      <div className="flex items-center gap-0.5 flex-wrap border-b border-slate-200 bg-slate-50 px-2 py-1.5">
+        <ToolbarBtn onClick={() => exec("formatBlock", "<h2>")} title="Heading"><span className="text-sm font-bold">H</span></ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("formatBlock", "<p>")} title="Paragraph"><span className="text-sm">¶</span></ToolbarBtn>
+        <ToolbarDivider/>
+        <ToolbarBtn onClick={() => exec("bold")} title="Bold"><span className="text-sm font-bold">B</span></ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("italic")} title="Italic"><span className="text-sm italic">I</span></ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("underline")} title="Underline"><span className="text-sm underline">U</span></ToolbarBtn>
+        <ToolbarDivider/>
+        <ToolbarBtn onClick={() => exec("insertUnorderedList")} title="Bullet list">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="5" cy="7" r="1.3" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1.3" fill="currentColor" stroke="none"/><path strokeLinecap="round" strokeWidth={2} d="M9.5 7h9M9.5 12h9M9.5 17h9"/></svg>
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("insertOrderedList")} title="Numbered list"><span className="text-xs font-semibold">1.</span></ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("formatBlock", "<blockquote>")} title="Quote">
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M7.17 6A4.5 4.5 0 003 10.5V18h6v-6H5.5v-1.5A2.5 2.5 0 018 8V6H7.17zm10 0A4.5 4.5 0 0013 10.5V18h6v-6h-3.5v-1.5A2.5 2.5 0 0118 8V6h-.83z"/></svg>
+        </ToolbarBtn>
+        <ToolbarDivider/>
+        <ToolbarBtn onClick={handleLink} title="Insert link">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 015.656 5.656l-1.5 1.5"/></svg>
+        </ToolbarBtn>
+        <ToolbarDivider/>
+        <ToolbarBtn onClick={() => exec("undo")} title="Undo">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 14l-4-4 4-4m-4 4h10.5a4.5 4.5 0 110 9H11"/></svg>
+        </ToolbarBtn>
+        <ToolbarBtn onClick={() => exec("redo")} title="Redo">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4 4-4 4m4-4H8.5a4.5 4.5 0 100 9H13"/></svg>
+        </ToolbarBtn>
       </div>
-      <div
-        ref={ref}
-        contentEditable
-        suppressContentEditableWarning
-        onInput={() => ref.current && onChange(ref.current.innerHTML)}
-        className="min-h-[180px] max-h-[360px] overflow-y-auto px-3 py-2 text-sm text-slate-800 focus:outline-none"
-      />
+      <div className="relative">
+        {isEmpty && <p className="pointer-events-none absolute top-3 left-3 text-sm text-slate-400">Write your message…</p>}
+        <div
+          ref={ref}
+          contentEditable
+          suppressContentEditableWarning
+          onInput={() => { if (ref.current) { onChange(ref.current.innerHTML); setIsEmpty(!ref.current.textContent?.trim()); } }}
+          className="email-rich-editor min-h-[200px] max-h-[400px] overflow-y-auto px-3 py-3 text-[15px] leading-relaxed text-slate-800 focus:outline-none"
+        />
+      </div>
+      <style>{`
+        .email-rich-editor h2 { font-size: 1.15em; font-weight: 700; margin: 0.5em 0; }
+        .email-rich-editor blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75em; margin: 0.5em 0; color: #64748b; }
+        .email-rich-editor ul { list-style: disc; padding-left: 1.5em; }
+        .email-rich-editor ol { list-style: decimal; padding-left: 1.5em; }
+        .email-rich-editor a { color: #f97316; text-decoration: underline; }
+      `}</style>
+    </div>
+  );
+}
+
+// ─── Attachment upload — used by the email composer, authenticated dashboard upload ──
+const EMAIL_ATTACHMENT_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+const MAX_EMAIL_ATTACHMENTS = 5;
+
+function EmailAttachmentUpload({ onChange }: { onChange: (urls: string[]) => void }) {
+  const requestUrl = useRequestDashboardUploadUrl();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<{ url: string; name: string; state: "uploading" | "done" | "error" }[]>([]);
+  const [limitError, setLimitError] = useState<string | null>(null);
+
+  const handleFiles = async (fileList: FileList) => {
+    setLimitError(null);
+    const incoming = Array.from(fileList);
+    const room = MAX_EMAIL_ATTACHMENTS - files.length;
+    if (room <= 0) { setLimitError(`You can attach up to ${MAX_EMAIL_ATTACHMENTS} files.`); return; }
+    const toUpload = incoming.slice(0, room);
+    if (incoming.length > room) setLimitError(`Only ${room} more file${room === 1 ? "" : "s"} could be added (max ${MAX_EMAIL_ATTACHMENTS} total).`);
+
+    const newEntries = toUpload.map(f => ({ url: "", name: f.name, state: "uploading" as const }));
+    setFiles(prev => [...prev, ...newEntries]);
+
+    for (const file of toUpload) {
+      try {
+        const result = await requestUrl.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type as any } }) as any;
+        await fetch(result.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+        setFiles(prev => {
+          const next = prev.map(f => (f.name === file.name && f.state === "uploading") ? { ...f, url: result.objectPath, state: "done" as const } : f);
+          onChange(next.filter(f => f.state === "done").map(f => f.url));
+          return next;
+        });
+      } catch {
+        setFiles(prev => prev.map(f => (f.name === file.name && f.state === "uploading") ? { ...f, state: "error" as const } : f));
+      }
+    }
+  };
+
+  const removeFile = (name: string) => {
+    setFiles(prev => {
+      const next = prev.filter(f => f.name !== name);
+      onChange(next.filter(f => f.state === "done").map(f => f.url));
+      return next;
+    });
+  };
+
+  return (
+    <div>
+      <div className="flex items-center gap-2 flex-wrap">
+        <button type="button" onClick={() => inputRef.current?.click()} className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-50">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
+          Attach Files
+        </button>
+        <span className="text-[11px] text-slate-400">Photos, PDF or Word — up to {MAX_EMAIL_ATTACHMENTS} files, 10MB each</span>
+        <input ref={inputRef} type="file" multiple accept={EMAIL_ATTACHMENT_ACCEPT} className="hidden" onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; }} />
+      </div>
+      {limitError && <p className="text-xs text-red-600 mt-1">{limitError}</p>}
+      {files.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-2">
+          {files.map(f => (
+            <div key={f.name} className="flex items-center gap-1.5 rounded-md border border-slate-200 bg-slate-50 pl-2 pr-1.5 py-1 text-xs">
+              <svg className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+              <span className="max-w-[140px] truncate text-slate-700">{f.name}</span>
+              {f.state === "uploading" && <span className="text-slate-400">…</span>}
+              {f.state === "error" && <span className="text-red-500 font-medium">Failed</span>}
+              {f.state === "done" && <span className="text-green-600">✓</span>}
+              <button type="button" onClick={() => removeFile(f.name)} className="text-slate-400 hover:text-red-500 ml-0.5">✕</button>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -921,12 +1034,13 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
   const showToast = useToast();
   const [form, setForm] = useState({ toEmail: initialTo, toName: initialToName, subject: initialSubject });
   const bodyRef = useRef("");
+  const attachmentsRef = useRef<string[]>([]);
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.toEmail || !form.subject || !bodyRef.current.trim()) { showToast("Fill in recipient, subject, and message", "error"); return; }
     try {
-      await composeEmail.mutateAsync({ data: { toEmail: form.toEmail, toName: form.toName || undefined, subject: form.subject, bodyHtml: bodyRef.current, leadId } } as any);
+      await composeEmail.mutateAsync({ data: { toEmail: form.toEmail, toName: form.toName || undefined, subject: form.subject, bodyHtml: bodyRef.current, leadId, attachmentUrls: attachmentsRef.current } } as any);
       qc.invalidateQueries({ queryKey: getListSentEmailsQueryKey() });
       showToast("Email sent");
       onSent?.();
@@ -938,7 +1052,7 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
-      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div className="w-full max-w-xl rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
         <h2 className="font-semibold text-slate-900">Compose Email</h2>
         <form onSubmit={handleSend} className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -958,8 +1072,12 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Message *</label>
             <RichTextEditor onChange={html => { bodyRef.current = html; }} />
-            <p className="mt-1 text-[11px] text-slate-400">Sent in your business's branded email design automatically — no need to add a signature.</p>
           </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Attachments</label>
+            <EmailAttachmentUpload onChange={urls => { attachmentsRef.current = urls; }} />
+          </div>
+          <p className="text-[11px] text-slate-400">Sent in your business's branded email design automatically — no need to add a signature.</p>
           <div className="flex gap-2 pt-1">
             <button type="submit" disabled={composeEmail.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{composeEmail.isPending ? "Sending..." : "Send Email"}</button>
             <button type="button" onClick={onClose} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
@@ -999,7 +1117,7 @@ function EmailsPage() {
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status}</span>
                 </div>
                 <div className="text-xs text-slate-500">{m.toName ? `${m.toName} · ` : ""}{m.toEmail}</div>
-                <div className="text-xs text-slate-400">{new Date(m.createdAt).toLocaleString("en-GB")}</div>
+                <div className="text-xs text-slate-400">{new Date(m.createdAt).toLocaleString("en-GB")}{m.attachmentUrls?.length ? ` · 📎 ${m.attachmentUrls.length}` : ""}</div>
               </div>
             ))}
           </div>
@@ -1007,14 +1125,15 @@ function EmailsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">Subject</th><th className="text-left px-4 py-3">To</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Sent</th>
+                  <th className="text-left px-4 py-3">Subject</th><th className="text-left px-4 py-3">To</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Attachments</th><th className="text-left px-4 py-3">Sent</th>
                 </tr></thead>
                 <tbody>
-                  {!rows.length ? <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">No emails sent yet</td></tr> : rows.map((m: any) => (
+                  {!rows.length ? <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No emails sent yet</td></tr> : rows.map((m: any) => (
                     <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-900">{m.subject}</td>
                       <td className="px-4 py-3 text-slate-600">{m.toName ? `${m.toName} · ` : ""}{m.toEmail}</td>
                       <td className="px-4 py-3"><span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status}</span></td>
+                      <td className="px-4 py-3 text-slate-500">{m.attachmentUrls?.length || "—"}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(m.createdAt).toLocaleString("en-GB")}</td>
                     </tr>
                   ))}

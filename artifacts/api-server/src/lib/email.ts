@@ -11,11 +11,18 @@ export interface SmtpConfig {
   from: string;
 }
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+  contentType?: string;
+}
+
 export interface EmailPayload {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  attachments?: EmailAttachment[];
 }
 
 export async function sendEmail(payload: EmailPayload, smtp: SmtpConfig | null | undefined): Promise<void> {
@@ -35,6 +42,7 @@ export async function sendEmail(payload: EmailPayload, smtp: SmtpConfig | null |
     subject: payload.subject,
     html: payload.html,
     text: payload.text,
+    attachments: payload.attachments,
   });
 }
 
@@ -478,6 +486,7 @@ export function buildComposedEmail(opts: {
   subject: string;
   bodyHtml: string;
   to: string;
+  attachments?: EmailAttachment[];
 }): EmailPayload {
   return {
     to: opts.to,
@@ -489,6 +498,7 @@ export function buildComposedEmail(opts: {
       bodyHtml: opts.bodyHtml,
     }),
     text: opts.bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim(),
+    attachments: opts.attachments,
   };
 }
 

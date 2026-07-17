@@ -44,6 +44,7 @@ import type {
   CustomerPortalData,
   CustomerUpdate,
   DashboardStats,
+  DashboardUploadUrlRequest,
   DomainResolution,
   ErrorEnvelope,
   FAQInput,
@@ -10278,6 +10279,77 @@ export const useRequestUploadUrl = <TError = ErrorType<ErrorEnvelope>,
         TContext
       > => {
       return useMutation(getRequestUploadUrlMutationOptions(options));
+    }
+
+export const getRequestDashboardUploadUrlUrl = () => {
+
+
+
+
+  return `/api/dashboard/uploads/request-url`
+}
+
+/**
+ * @summary Request an upload URL scoped to the current authenticated tenant (e.g. email attachments)
+ */
+export const requestDashboardUploadUrl = async (dashboardUploadUrlRequest: DashboardUploadUrlRequest, options?: RequestInit): Promise<UploadUrlResponse> => {
+
+  return customFetch<UploadUrlResponse>(getRequestDashboardUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      dashboardUploadUrlRequest,)
+  }
+);}
+
+
+
+
+export const getRequestDashboardUploadUrlMutationOptions = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestDashboardUploadUrl>>, TError,{data: BodyType<DashboardUploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestDashboardUploadUrl>>, TError,{data: BodyType<DashboardUploadUrlRequest>}, TContext> => {
+
+const mutationKey = ['requestDashboardUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestDashboardUploadUrl>>, {data: BodyType<DashboardUploadUrlRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestDashboardUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestDashboardUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestDashboardUploadUrl>>>
+    export type RequestDashboardUploadUrlMutationBody = BodyType<DashboardUploadUrlRequest>
+    export type RequestDashboardUploadUrlMutationError = ErrorType<ErrorEnvelope>
+
+    /**
+ * @summary Request an upload URL scoped to the current authenticated tenant (e.g. email attachments)
+ */
+export const useRequestDashboardUploadUrl = <TError = ErrorType<ErrorEnvelope>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestDashboardUploadUrl>>, TError,{data: BodyType<DashboardUploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestDashboardUploadUrl>>,
+        TError,
+        {data: BodyType<DashboardUploadUrlRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestDashboardUploadUrlMutationOptions(options));
     }
 
 export const getGetPublicObjectUrl = (filePath: string,) => {

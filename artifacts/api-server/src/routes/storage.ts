@@ -7,6 +7,8 @@ import { eq } from "drizzle-orm";
 import {
   RequestUploadUrlBody,
   RequestUploadUrlResponse,
+  RequestDashboardUploadUrlBody,
+  RequestDashboardUploadUrlResponse,
 } from "@workspace/api-zod";
 import {
   ObjectStorageService,
@@ -14,7 +16,7 @@ import {
   InvalidUploadError,
   ForbiddenError,
 } from "../lib/objectStorage";
-import { requireAuth } from "../middlewares/auth";
+import { requireAuth, requireTenantAccess } from "../middlewares/auth";
 import { uploadRateLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
@@ -66,6 +68,41 @@ router.post("/storage/uploads/request-url", uploadRateLimiter, async (req: Reque
       return;
     }
     req.log.error({ err: error }, "Error generating upload URL");
+    res.status(500).json({ error: "Failed to generate upload URL" });
+  }
+});
+
+/**
+ * POST /dashboard/uploads/request-url
+ *
+ * Authenticated equivalent of the endpoint above — scoped to the caller's own
+ * tenant via their session rather than a tenantSlug in the body. Used by
+ * dashboard features like the email composer's attachments.
+ */
+router.post("/dashboard/uploads/request-url", requireTenantAccess, async (req: Request, res: Response) => {
+  const parsed = RequestDashboardUploadUrlBody.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Missing or invalid required fields" });
+    return;
+  }
+
+  const { size, contentType } = parsed.data;
+
+  try {
+    const tenantId = req.authUser!.tenantId!;
+    const { uploadURL, objectPath } = await objectStorageService.createUploadTarget({
+      tenantId,
+      contentType,
+      declaredSize: size,
+    });
+
+    res.json(RequestDashboardUploadUrlResponse.parse({ uploadURL, objectPath }));
+  } catch (error) {
+    if (error instanceof InvalidUploadError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
+    req.log.error({ err: error }, "Error generating dashboard upload URL");
     res.status(500).json({ error: "Failed to generate upload URL" });
   }
 });

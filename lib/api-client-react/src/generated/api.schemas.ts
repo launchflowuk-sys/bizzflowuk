@@ -48,6 +48,32 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
+export type DashboardUploadUrlRequestContentType = typeof DashboardUploadUrlRequestContentType[keyof typeof DashboardUploadUrlRequestContentType];
+
+
+export const DashboardUploadUrlRequestContentType = {
+  'image/jpeg': 'image/jpeg',
+  'image/png': 'image/png',
+  'image/webp': 'image/webp',
+  'image/gif': 'image/gif',
+  'image/heic': 'image/heic',
+  'image/heif': 'image/heif',
+  'application/pdf': 'application/pdf',
+  'application/msword': 'application/msword',
+  'application/vndopenxmlformats-officedocumentwordprocessingmldocument': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+} as const;
+
+export interface DashboardUploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /**
+     * @minimum 1
+     * @maximum 10485760
+     */
+  size: number;
+  contentType: DashboardUploadUrlRequestContentType;
+}
+
 export type UserRole = typeof UserRole[keyof typeof UserRole];
 
 
@@ -862,6 +888,8 @@ export interface SentEmail {
   toName?: string | null;
   subject: string;
   bodyHtml: string;
+  /** @nullable */
+  attachmentUrls?: string[] | null;
   status: SentEmailStatus;
   /** @nullable */
   errorMessage?: string | null;
@@ -874,6 +902,7 @@ export interface SentEmailInput {
   subject: string;
   bodyHtml: string;
   leadId?: number;
+  attachmentUrls?: string[];
 }
 
 export type PublicPaymentPageDataTenant = {
