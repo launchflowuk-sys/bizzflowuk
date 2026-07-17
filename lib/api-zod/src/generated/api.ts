@@ -943,6 +943,7 @@ export const ListQuotePaymentLinksResponseItem = zod.object({
   "customerPhone": zod.string().nullish(),
   "customerAddress": zod.string().nullish(),
   "failureReason": zod.string().nullish(),
+  "sentAt": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
@@ -987,6 +988,7 @@ export const ListPaymentLinksResponseItem = zod.object({
   "customerPhone": zod.string().nullish(),
   "customerAddress": zod.string().nullish(),
   "failureReason": zod.string().nullish(),
+  "sentAt": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })
@@ -1031,6 +1033,7 @@ export const SendPaymentLinkResponse = zod.object({
   "customerPhone": zod.string().nullish(),
   "customerAddress": zod.string().nullish(),
   "failureReason": zod.string().nullish(),
+  "sentAt": zod.string().nullish(),
   "paidAt": zod.string().nullish(),
   "createdAt": zod.coerce.date()
 })

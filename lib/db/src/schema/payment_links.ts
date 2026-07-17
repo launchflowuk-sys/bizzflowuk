@@ -23,6 +23,7 @@ export const paymentLinksTable = pgTable("payment_links", {
   idempotencyKey: text("idempotency_key").notNull(),
   squarePaymentId: text("square_payment_id"),
   failureReason: text("failure_reason"),
+  sentAt: timestamp("sent_at", { withTimezone: true }),
   paidAt: timestamp("paid_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

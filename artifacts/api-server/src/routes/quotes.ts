@@ -73,16 +73,13 @@ router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
 
     const newStatus = req.body.status;
     if (newStatus && before[0]?.status !== newStatus) {
-      const recipient = await resolveQuoteRecipient(q[0]);
-
-      // Note: marking a quote "Sent" just notifies the customer the quote is ready — it does not
-      // generate or email a payment link. Mark decides the amount (full or deposit) explicitly via
-      // "Generate Payment Link", then triggers the actual email via "Send Payment Link" — see
-      // POST /payment-links and POST /payment-links/:id/send in paymentLinks.ts. This keeps the
-      // amount decision deliberate rather than firing automatically the instant Sent is clicked.
-      if (newStatus === "Sent") {
-        fireNotification({ tenantId: q[0].tenantId, event: "quote_sent", ...recipient, reference: q[0].reference });
-      } else if (newStatus === "Accepted") {
+      // Note: manually flipping status here is bookkeeping only — it never emails the customer.
+      // The customer is only ever notified about a quote via the explicit "Send Payment Link"
+      // action (POST /payment-links/:id/send in paymentLinks.ts), which includes the real amount
+      // and pay link. Firing a "quote sent" email from a bare status change produced a duplicate,
+      // content-less email with no payment link, since this handler has no amount to attach.
+      if (newStatus === "Accepted") {
+        const recipient = await resolveQuoteRecipient(q[0]);
         fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", ...recipient, reference: q[0].reference });
       }
     }

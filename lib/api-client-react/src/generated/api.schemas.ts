@@ -827,6 +827,8 @@ export interface PaymentLink {
   /** @nullable */
   failureReason?: string | null;
   /** @nullable */
+  sentAt?: string | null;
+  /** @nullable */
   paidAt?: string | null;
   createdAt: string;
 }

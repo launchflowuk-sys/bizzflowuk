@@ -709,6 +709,7 @@ function PaymentLinksPage() {
   const showToast = useToast();
   const [showNew, setShowNew] = useState(false);
   const [form, setForm] = useState({ customerName: "", customerAddress: "", customerPhone: "", customerEmail: "", amount: "" });
+  const [sendingLinkId, setSendingLinkId] = useState<number | null>(null);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -736,12 +737,15 @@ function PaymentLinksPage() {
     try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Copy failed", "error"); }
   };
   const handleSend = async (linkId: number) => {
+    setSendingLinkId(linkId);
     try {
       await sendPaymentLink.mutateAsync({ id: linkId } as any);
       qc.invalidateQueries({ queryKey: getListPaymentLinksQueryKey() });
       showToast("Payment link sent to customer");
     } catch (err: any) {
       showToast(err?.message || "Failed to send payment link", "error");
+    } finally {
+      setSendingLinkId(null);
     }
   };
 
@@ -806,10 +810,13 @@ function PaymentLinksPage() {
                   <div>{new Date(l.createdAt).toLocaleDateString("en-GB")} {l.quoteId ? "· Quote-linked" : "· Standalone"}</div>
                 </div>
                 {l.status === "Pending" && (
-                  <div className="flex gap-2 pt-1">
-                    <button onClick={() => copyLink(l.url)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Copy link</button>
-                    <button onClick={() => handleSend(l.id)} disabled={sendPaymentLink.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">{sendPaymentLink.isPending ? "Sending..." : "Send Payment Link"}</button>
-                  </div>
+                  <>
+                    {l.sentAt && <div className="text-[11px] text-green-700 font-medium">✓ Sent {new Date(l.sentAt).toLocaleDateString("en-GB")}</div>}
+                    <div className="flex gap-2 pt-1">
+                      <button onClick={() => copyLink(l.url)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Copy link</button>
+                      <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
+                    </div>
+                  </>
                 )}
               </div>
             ))}
@@ -831,8 +838,9 @@ function PaymentLinksPage() {
                       <td className="px-4 py-3 text-right">
                         {l.status === "Pending" && (
                           <div className="flex items-center justify-end gap-3">
+                            {l.sentAt && <span className="text-[11px] text-green-700 font-medium">✓ Sent {new Date(l.sentAt).toLocaleDateString("en-GB")}</span>}
                             <button onClick={() => copyLink(l.url)} className="text-xs text-slate-500 hover:text-slate-700 font-medium">Copy link</button>
-                            <button onClick={() => handleSend(l.id)} disabled={sendPaymentLink.isPending} className="text-xs text-orange-500 hover:text-orange-600 font-medium disabled:opacity-50">{sendPaymentLink.isPending ? "Sending..." : "Send Payment Link"}</button>
+                            <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="text-xs text-orange-500 hover:text-orange-600 font-medium disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
                           </div>
                         )}
                       </td>
@@ -865,6 +873,7 @@ function QuoteDetailPage({ id }: { id: number }) {
   const [confirmProject, setConfirmProject] = useState(false);
   const [confirmPayment, setConfirmPayment] = useState(false);
   const [payAmount, setPayAmount] = useState("");
+  const [sendingLinkId, setSendingLinkId] = useState<number | null>(null);
   const q = quote as any;
   const lineItems = items as any[] || [];
 
@@ -924,6 +933,7 @@ function QuoteDetailPage({ id }: { id: number }) {
     try { await navigator.clipboard.writeText(url); showToast("Link copied"); } catch { showToast("Copy failed", "error"); }
   };
   const handleSendPaymentLink = async (linkId: number) => {
+    setSendingLinkId(linkId);
     try {
       await sendPaymentLink.mutateAsync({ id: linkId } as any);
       qc.invalidateQueries({ queryKey: getListQuotePaymentLinksQueryKey(id) });
@@ -931,6 +941,8 @@ function QuoteDetailPage({ id }: { id: number }) {
       showToast("Payment link sent to customer");
     } catch (err: any) {
       showToast(err?.message || "Failed to send payment link", "error");
+    } finally {
+      setSendingLinkId(null);
     }
   };
 
@@ -1018,9 +1030,18 @@ function QuoteDetailPage({ id }: { id: number }) {
                       {l.status === "Pending" && (
                         <div className="flex items-center gap-2">
                           <button onClick={() => copyLink(l.url)} className="text-slate-500 hover:text-slate-700 font-medium">Copy link</button>
-                          <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendPaymentLink.isPending} className="text-orange-600 hover:text-orange-500 font-medium disabled:opacity-50">
-                            {sendPaymentLink.isPending ? "Sending..." : "Send Payment Link"}
-                          </button>
+                          {l.sentAt ? (
+                            <span className="flex items-center gap-1.5">
+                              <span className="text-green-700 font-medium">✓ Sent {new Date(l.sentAt).toLocaleDateString("en-GB")}</span>
+                              <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendingLinkId === l.id} className="text-orange-600 hover:text-orange-500 font-medium disabled:opacity-50">
+                                {sendingLinkId === l.id ? "Resending..." : "Resend"}
+                              </button>
+                            </span>
+                          ) : (
+                            <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendingLinkId === l.id} className="text-orange-600 hover:text-orange-500 font-medium disabled:opacity-50">
+                              {sendingLinkId === l.id ? "Sending..." : "Send Payment Link"}
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

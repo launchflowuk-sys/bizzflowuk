@@ -93,10 +93,13 @@ router.patch("/leads/:id", requireTenantAccess, async (req, res) => {
         customerEmail: l[0].email ?? undefined,
         customerPhone: l[0].phone ?? undefined,
       };
+      // Note: "Quote Sent" is deliberately not wired to a notification here — the customer is
+      // only ever emailed about a quote via the explicit "Send Payment Link" action (see
+      // POST /payment-links/:id/send), which has the real amount and pay link to include.
+      // Firing from a bare status change produced a content-less "quote is ready" email with
+      // no link, since neither this handler nor a lead conversion has that data.
       if (newStatus === "Survey Booked") {
         fireNotification({ ...ctx, event: "survey_booked" });
-      } else if (newStatus === "Quote Sent") {
-        fireNotification({ ...ctx, event: "quote_sent" });
       } else if (newStatus === "Won") {
         fireNotification({ ...ctx, event: "lead_won" });
       }
@@ -156,17 +159,11 @@ router.post("/leads/:id/convert-quote", requireTenantAccess, async (req, res) =>
     if (!lead.length) { res.status(404).json({ error: "Not found" }); return; }
     const ref = `QUO-${Date.now()}`;
     const quote = await db.insert(quotesTable).values({ tenantId: lead[0].tenantId, reference: ref, leadId: lead[0].id }).returning();
+    // Note: converting a lead to a quote just creates the draft — it does not email the customer.
+    // Mark still needs to add line items and generate/send a payment link before anything goes
+    // out; auto-firing here produced a content-less "quote is ready" email with no pay link.
     await db.update(leadsTable).set({ status: "Quote Sent" }).where(eq(leadsTable.id, lead[0].id));
     res.status(201).json(quote[0]);
-    fireNotification({
-      tenantId: lead[0].tenantId,
-      event: "quote_sent",
-      firstName: lead[0].firstName ?? undefined,
-      lastName: lead[0].lastName ?? undefined,
-      customerEmail: lead[0].email ?? undefined,
-      customerPhone: lead[0].phone ?? undefined,
-      reference: ref,
-    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

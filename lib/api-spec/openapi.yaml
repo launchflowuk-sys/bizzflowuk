@@ -3672,6 +3672,8 @@ components:
           type: ["string", "null"]
         failureReason:
           type: ["string", "null"]
+        sentAt:
+          type: ["string", "null"]
         paidAt:
           type: ["string", "null"]
         createdAt:

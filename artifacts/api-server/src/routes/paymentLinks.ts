@@ -97,6 +97,10 @@ router.post("/payment-links/:id/send", requireTenantAccess, async (req, res) => 
     const link = rows[0];
     if (!link) { res.status(404).json({ error: "Not found" }); return; }
 
+    const sentAt = new Date();
+    await db.update(paymentLinksTable).set({ sentAt }).where(eq(paymentLinksTable.id, link.id));
+    link.sentAt = sentAt;
+
     if (link.quoteId) {
       const quoteRows = await db.select().from(quotesTable).where(eq(quotesTable.id, link.quoteId)).limit(1);
       const quote = quoteRows[0];
