@@ -8,6 +8,7 @@
 import type { UploadUrlRequest } from './uploadUrlRequest';
 
 export interface UploadUrlResponse {
+  /** A same-origin PUT target — a relative path, not necessarily an absolute URL. */
   uploadURL: string;
   objectPath: string;
   metadata?: UploadUrlRequest;

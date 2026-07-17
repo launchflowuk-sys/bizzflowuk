@@ -3158,7 +3158,7 @@ export const requestUploadUrlResponseMetadataSizeMax = 10485760;
 
 
 export const RequestUploadUrlResponse = zod.object({
-  "uploadURL": zod.string().url(),
+  "uploadURL": zod.string().describe('A same-origin PUT target — a relative path, not necessarily an absolute URL.'),
   "objectPath": zod.string(),
   "metadata": zod.object({
   "tenantSlug": zod.string().min(1),
