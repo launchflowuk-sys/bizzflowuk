@@ -534,6 +534,8 @@ function SiteFooter({ tenant, settings }: any) {
             { label: "Areas We Cover", href: `${siteBase}/areas` },
             { label: "FAQs", href: `${siteBase}/faqs` },
             { label: "Contact Us", href: `${siteBase}/contact` },
+            { label: "Terms & Conditions", href: `${siteBase}/terms` },
+            { label: "Privacy Policy", href: `${siteBase}/privacy` },
           ].map(l => (
             <a key={l.href} href={l.href} className="block text-sm text-slate-400 hover:text-white transition-colors">{l.label}</a>
           ))}
@@ -568,6 +570,8 @@ function SiteFooter({ tenant, settings }: any) {
           <a href={`${siteBase}/faqs`} className="hover:text-slate-400 transition-colors">FAQs</a>
           <a href={`${siteBase}/contact`} className="hover:text-slate-400 transition-colors">Contact</a>
           <a href={`${siteBase}/quote`} className="hover:text-slate-400 transition-colors">Get a Quote</a>
+          <a href={`${siteBase}/terms`} className="hover:text-slate-400 transition-colors">Terms</a>
+          <a href={`${siteBase}/privacy`} className="hover:text-slate-400 transition-colors">Privacy</a>
           <a href={tenantLoginUrl} className="hover:text-slate-400 transition-colors">Client Login</a>
         </div>
       </div>
@@ -2119,6 +2123,117 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// LEGAL PAGES — Terms & Conditions / Privacy Policy
+// ─────────────────────────────────────────────────────────────────────────────
+
+function defaultTermsSections(tenantName: string, contact: string): { heading: string; body: string }[] {
+  return [
+    { heading: "1. About These Terms", body: `These terms and conditions ("Terms") apply to every quotation, estimate and rendering, insulation or exterior finishing project carried out by ${tenantName} ("we", "us", "our"). By requesting a quote, accepting a quote, or instructing us to carry out work, you ("the Customer") agree to be bound by these Terms.` },
+    { heading: "2. Quotations and Estimates", body: `Quotations are based on the information, photographs and site details provided by the Customer at the time of enquiry. Prices are estimates until confirmed by a full site survey where required, and remain valid for 30 days from the date issued unless otherwise stated. If the actual condition of the property, substrate or access differs materially from what was described or photographed, we reserve the right to revise the quotation before work begins, and will notify the Customer of any change before proceeding.` },
+    { heading: "3. Deposits and Payment", body: `A deposit may be required before work is scheduled or materials are ordered, with the balance due on completion unless a different payment schedule has been agreed in writing. Payment can be made by the methods offered at the time (including online card payment). Late payment may incur reasonable administrative costs and can result in work being paused until payment is received.` },
+    { heading: "4. Cancellations", body: `The Customer may cancel a confirmed booking by giving reasonable written notice. Where materials have already been ordered or work scheduled, the Customer may be liable for costs reasonably incurred up to the point of cancellation, including any non-refundable deposit already paid to third-party suppliers.` },
+    { heading: "5. Access and Site Conditions", body: `The Customer is responsible for providing safe and reasonable access to the property, including any parking, scaffolding permissions, or neighbour/right-of-way consents needed to carry out the work. The Customer must inform us of any known issues (structural, damp, asbestos, party wall matters, or planning/listed building restrictions) before work begins. Where planning permission or listed building consent is required for the proposed works, obtaining it is the Customer's responsibility unless we have expressly agreed otherwise in writing.` },
+    { heading: "6. Weather and Programme", body: `Rendering, insulation and exterior finishing work is weather-dependent. Application in unsuitable temperatures, rain, or frost can affect the quality and durability of the finish, so we reserve the right to reschedule work for weather reasons. We will keep the Customer informed of any changes to the expected programme and will not unreasonably delay the works.` },
+    { heading: "7. Workmanship and Guarantee", body: `We guarantee our workmanship against defects arising from faulty application for a period stated on your invoice or completion certificate (commonly a minimum of 2 years for workmanship, with manufacturer material guarantees applying separately and typically running longer). This guarantee does not cover damage caused by structural movement, extreme weather events, impact damage, lack of routine maintenance, or work carried out or altered by others after completion.` },
+    { heading: "8. Materials, Colour and Finish", body: `Colours, textures and finishes shown in samples, brochures or visualiser tools are a close representation but may vary slightly from the finished result due to lighting, substrate, application method and natural material variation. We will use reasonable skill to match the agreed sample as closely as practicable.` },
+    { heading: "9. Liability and Insurance", body: `We hold public liability insurance for the work we carry out. Our liability is limited to direct loss or damage caused by our negligence in carrying out the work, and does not extend to indirect or consequential losses. Nothing in these Terms limits liability for death or personal injury caused by negligence, or for fraud, or any other liability that cannot be excluded by law.` },
+    { heading: "10. Complaints", body: `If you are unhappy with any aspect of our work, please contact us as soon as possible so we can investigate and put things right. We aim to acknowledge complaints promptly and resolve them fairly and without unnecessary delay.` },
+    { heading: "11. Governing Law", body: `These Terms are governed by the laws of England and Wales, and any disputes will be subject to the exclusive jurisdiction of the courts of England and Wales.` },
+    { heading: "12. Contact Us", body: `Questions about these Terms can be sent to us using the contact details below.\n\n${contact}` },
+  ];
+}
+
+function defaultPrivacySections(tenantName: string, contact: string): { heading: string; body: string }[] {
+  return [
+    { heading: "1. Who We Are", body: `${tenantName} ("we", "us", "our") is the data controller for the personal information described in this policy. If you have any questions about how we handle your data, please contact us using the details below.\n\n${contact}` },
+    { heading: "2. Information We Collect", body: `Depending on how you interact with us, we may collect: your name, phone number and email address; your property address and postcode; details about your project (service required, property type, photographs you upload, timeframe and budget); and payment-related information such as the amount paid and payment status (we do not store your full card details — these are handled directly and securely by our payment processor).` },
+    { heading: "3. How We Use Your Information", body: `We use your information to respond to enquiries, prepare quotations, arrange surveys and bookings, carry out and manage projects, process payments, and send you updates about your enquiry, quote or project. We may also use your contact details to ask for a review after a project completes, and, where you have agreed, to send you occasional updates about our services.` },
+    { heading: "4. Our Legal Basis for Processing", body: `We process your information because it is necessary to perform a contract with you (or to take steps at your request before entering into one), because it is in our legitimate business interests to respond to enquiries and operate our business, or because you have given consent (for example, for marketing communications), and in some cases to comply with a legal obligation such as accounting and tax record-keeping.` },
+    { heading: "5. Sharing Your Information", body: `We do not sell your personal information. We share information with trusted third parties only where necessary to provide our services — for example, our email and SMS notification providers, and our payment processor for handling online card payments. These providers are only permitted to use your information to provide the relevant service to us.` },
+    { heading: "6. Cookies", body: `Our website uses cookies. Essential cookies are required for the site to function correctly and cannot be switched off. Non-essential cookies (such as analytics) are only set with your consent, which you can give or withhold using the cookie banner shown when you first visit our site. You can change your preference at any time by clearing your browser's cookies for this site and reloading the page.` },
+    { heading: "7. How Long We Keep Your Information", body: `We keep personal information for as long as necessary to fulfil the purposes described in this policy, including any legal, accounting or reporting requirements. Enquiry and quote information not converted into a project is generally retained for a reasonable period to allow for follow-up, after which it may be deleted or anonymised.` },
+    { heading: "8. Your Rights", body: `Under UK data protection law, you have the right to: request access to the personal information we hold about you; request correction of inaccurate information; request erasure of your information in certain circumstances; object to or restrict certain processing; and request that your information be provided to you or transferred to another organisation in a portable format. To exercise any of these rights, please contact us using the details below. You also have the right to lodge a complaint with the Information Commissioner's Office (ICO) at ico.org.uk if you believe your data protection rights have been infringed.` },
+    { heading: "9. Keeping Your Information Secure", body: `We take reasonable technical and organisational measures to protect your personal information against unauthorised access, loss, or misuse.` },
+    { heading: "10. Changes to This Policy", body: `We may update this policy from time to time. Any changes will be posted on this page with an updated date.` },
+    { heading: "11. Contact Us", body: `If you have any questions about this Privacy Policy or how we handle your information, please get in touch.\n\n${contact}` },
+  ];
+}
+
+function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "privacy" }) {
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  const tenantName = tenant?.name || "this business";
+  const contact = [settings?.phone, settings?.email, settings?.address].filter(Boolean).join(" · ");
+  const customContent = kind === "terms" ? settings?.termsContent : settings?.privacyContent;
+  const title = kind === "terms" ? "Terms & Conditions" : "Privacy Policy";
+  const sections = kind === "terms" ? defaultTermsSections(tenantName, contact) : defaultPrivacySections(tenantName, contact);
+  const lastUpdated = new Date().toLocaleDateString("en-GB", { year: "numeric", month: "long" });
+
+  return (
+    <div>
+      <PageSEO title={`${title} | ${tenantName}`} description={`${title} for ${tenantName}.`}/>
+      <TopBar tenant={tenant} settings={settings}/>
+      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb={title} title={title} subtitle={`Last updated ${lastUpdated}`}/>
+
+      <section className="py-16 bg-white">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          {customContent ? (
+            <div className="whitespace-pre-wrap text-sm leading-relaxed" style={{ color: TEXT }}>{customContent}</div>
+          ) : (
+            <div className="space-y-8">
+              {sections.map((s, i) => (
+                <div key={i}>
+                  <h2 className="font-bold text-lg mb-2" style={{ color: TEXT }}>{s.heading}</h2>
+                  <p className="text-sm leading-relaxed whitespace-pre-line" style={{ color: MUTED }}>{s.body}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// COOKIE CONSENT BANNER
+// ─────────────────────────────────────────────────────────────────────────────
+
+const COOKIE_CONSENT_KEY = "bizzflow_cookie_consent";
+
+function CookieBanner({ siteBase }: { siteBase: string }) {
+  const [choice, setChoice] = useState<string | null>(() => {
+    try { return window.localStorage.getItem(COOKIE_CONSENT_KEY); } catch { return "accepted"; }
+  });
+
+  if (choice) return null;
+
+  const decide = (value: "accepted" | "rejected") => {
+    try { window.localStorage.setItem(COOKIE_CONSENT_KEY, value); } catch {}
+    setChoice(value);
+  };
+
+  return (
+    <div className="fixed bottom-0 inset-x-0 z-[60] border-t border-slate-200 bg-white shadow-[0_-4px_16px_rgba(0,0,0,0.08)]">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-6">
+        <p className="text-xs sm:text-sm flex-1" style={{ color: MUTED }}>
+          We use cookies to run this site and, with your consent, to understand how it's used. See our{" "}
+          <a href={`${siteBase}/privacy`} className="underline hover:no-underline" style={{ color: BLUE }}>Privacy Policy</a> for details.
+        </p>
+        <div className="flex gap-2 flex-shrink-0">
+          <button onClick={() => decide("rejected")} className="rounded-md border border-slate-300 px-4 py-2 text-xs sm:text-sm font-semibold text-slate-600 hover:bg-slate-50">Reject Non-Essential</button>
+          <button onClick={() => decide("accepted")} className="rounded-md px-4 py-2 text-xs sm:text-sm font-semibold text-white hover:opacity-90" style={{ backgroundColor: BLUE }}>Accept All</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // BLOG LIST PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 
@@ -2272,6 +2387,7 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
   const [paying, setPaying] = useState(false);
   const [chargeResult, setChargeResult] = useState<{ status: string; error?: string | null } | null>(null);
   const [quoteStatus, setQuoteStatus] = useState<string | null>(null);
+  const [termsAgreed, setTermsAgreed] = useState(false);
   const cardRef = useRef<any>(null);
 
   const d = (pageData as any) || {};
@@ -2419,6 +2535,14 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
             </div>
           ) : (
             <>
+              {quote && (
+                <div className="rounded-2xl border border-slate-200 p-5 bg-white shadow-sm">
+                  <label className="flex items-start gap-2 text-sm" style={{ color: TEXT }}>
+                    <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300" style={{ accentColor: BLUE }} checked={termsAgreed} onChange={e => setTermsAgreed(e.target.checked)}/>
+                    <span>By accepting or paying this quote you agree to our <a href={`${siteBase}/terms`} target="_blank" rel="noreferrer" className="underline hover:no-underline" style={{ color: BLUE }}>Terms &amp; Conditions</a>.</span>
+                  </label>
+                </div>
+              )}
               <div className="rounded-2xl border border-slate-200 p-7 space-y-4 bg-white shadow-sm">
                 <div className="flex items-center justify-between">
                   <h2 className="text-lg font-bold" style={{ color: TEXT }}>Amount Requested</h2>
@@ -2447,7 +2571,7 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
                     <div id="square-card-container" className="min-h-[90px]" />
                     {cardError && <p className="text-sm text-red-600">{cardError}</p>}
                     {chargeResult?.status === "Failed" && <p className="text-sm text-red-600">{chargeResult.error || "Payment failed — please try again."}</p>}
-                    <button onClick={handlePay} disabled={!cardReady || paying} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
+                    <button onClick={handlePay} disabled={!cardReady || paying || (!!quote && !termsAgreed)} title={quote && !termsAgreed ? "Please agree to the Terms & Conditions first" : undefined} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
                       {paying ? "Processing…" : `Pay £${Number(link.amount || 0).toFixed(2)}`}
                     </button>
                   </div>
@@ -2458,8 +2582,9 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
                 <div className="rounded-2xl border border-slate-200 p-7 space-y-3 bg-white shadow-sm">
                   <h2 className="text-lg font-bold" style={{ color: TEXT }}>Prefer to respond without paying online?</h2>
                   <p className="text-sm" style={{ color: MUTED }}>You can accept or decline this quote directly — we'll follow up to arrange payment another way.</p>
+                  {!termsAgreed && <p className="text-xs" style={{ color: MUTED }}>Please tick the Terms &amp; Conditions box above to enable Accept.</p>}
                   <div className="flex gap-3">
-                    <button onClick={() => handleAction("accept")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border-2 py-2.5 text-sm font-bold hover:opacity-80 disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>Accept Quote</button>
+                    <button onClick={() => handleAction("accept")} disabled={actionMutation.isPending || !termsAgreed} title={!termsAgreed ? "Please agree to the Terms & Conditions first" : undefined} className="flex-1 rounded-lg border-2 py-2.5 text-sm font-bold hover:opacity-80 disabled:opacity-50" style={{ borderColor: BLUE, color: BLUE }}>Accept Quote</button>
                     <button onClick={() => handleAction("decline")} disabled={actionMutation.isPending} className="flex-1 rounded-lg border border-slate-300 py-2.5 text-sm font-bold text-slate-500 hover:bg-slate-50 disabled:opacity-50">Decline</button>
                   </div>
                 </div>
@@ -2833,7 +2958,10 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                   <div id="qf-consentAgreed">
                     <label className="flex items-start gap-2 text-sm" style={{ color: TEXT }}>
                       <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1F8CFF] focus:ring-[#1F8CFF]" checked={form.consentAgreed} onChange={e => setForm({ ...form, consentAgreed: e.target.checked })}/>
-                      I agree to the Privacy Policy and consent to {tenant?.name || "AMO Rendering"} contacting me about this quotation request.
+                      <span>
+                        I agree to the <a href={`${siteBase}/terms`} target="_blank" rel="noreferrer" className="underline hover:no-underline" style={{ color: BLUE }}>Terms &amp; Conditions</a> and{" "}
+                        <a href={`${siteBase}/privacy`} target="_blank" rel="noreferrer" className="underline hover:no-underline" style={{ color: BLUE }}>Privacy Policy</a>, and consent to {tenant?.name || "this business"} contacting me about this quotation request.
+                      </span>
                     </label>
                     <FieldError message={errors.consentAgreed}/>
                   </div>
@@ -3164,8 +3292,11 @@ export default function PublicSiteApp({ forcedSlug, forcedBase }: { forcedSlug?:
         <Route path="/pay/:token">{(p: any) => <PayQuotePage tenantSlug={tenantSlug} token={p.token}/>}</Route>
         <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/visualiser">{() => <VisualiserPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/terms">{() => <LegalPage tenantSlug={tenantSlug} kind="terms"/>}</Route>
+        <Route path="/privacy">{() => <LegalPage tenantSlug={tenantSlug} kind="privacy"/>}</Route>
         <Route>{() => <TenantNotFoundPage tenantSlug={tenantSlug}/>}</Route>
       </Switch>
+      <CookieBanner siteBase={siteBase}/>
     </WouterRouter>
     </SiteBaseCtx.Provider>
   );

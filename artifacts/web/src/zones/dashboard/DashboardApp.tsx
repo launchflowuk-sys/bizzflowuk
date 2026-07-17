@@ -2659,6 +2659,20 @@ function SettingsPage() {
           {field("twitterUrl", "Twitter/X URL")}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Legal Pages</h2>
+            <p className="text-xs text-slate-500 mt-1">Your site already publishes a solid default Terms &amp; Conditions and Privacy Policy for a UK rendering business, linked in the footer and referenced on the quote form and payment pages. Leave these blank to use the default, or paste your own wording to replace it entirely.</p>
+          </div>
+          <div>
+            <label className={labelCls}>Custom Terms &amp; Conditions (optional)</label>
+            <textarea rows={6} className={inputCls} placeholder="Leave blank to use the default Terms & Conditions" value={form.termsContent || ""} onChange={e => setForm({ ...form, termsContent: e.target.value })} />
+          </div>
+          <div>
+            <label className={labelCls}>Custom Privacy Policy (optional)</label>
+            <textarea rows={6} className={inputCls} placeholder="Leave blank to use the default Privacy Policy" value={form.privacyContent || ""} onChange={e => setForm({ ...form, privacyContent: e.target.value })} />
+          </div>
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-slate-900">SEO</h2>
           {field("seoTitle", "SEO Title")}
           <div>

@@ -16,7 +16,7 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   "aboutText", "serviceAreaText", "footerText",
   "email", "phone", "address", "city", "description",
   "socialFacebook", "socialInstagram", "socialTwitter", "socialLinkedin",
-  "googleAnalyticsId",
+  "googleAnalyticsId", "termsContent", "privacyContent",
   "createdAt", "updatedAt",
 ]);
 
