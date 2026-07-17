@@ -4,6 +4,7 @@ import { tenantsTable, tenantSettingsTable, leadsTable, projectsTable } from "@w
 import { eq, count, sql } from "drizzle-orm";
 import { requireAuth, requireSuperAdmin } from "../middlewares/auth";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { invalidateTenantPageCache } from "../lib/pageCache";
 
 const router = Router();
 
@@ -35,6 +36,7 @@ router.patch("/tenants/:id", requireSuperAdmin, async (req, res) => {
     const t = await db.update(tenantsTable).set(sanitizeUpdate(req.body)).where(eq(tenantsTable.id, Number(req.params.id))).returning();
     if (!t.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(t[0]);
+    invalidateTenantPageCache(t[0].id).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

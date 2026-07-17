@@ -4,6 +4,7 @@ import { blogPostsTable, blogCategoriesTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { invalidateTenantPageCache } from "../lib/pageCache";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -40,6 +41,7 @@ router.post("/blog/posts", requireTenantAccess, async (req, res) => {
   try {
     const post = await db.insert(blogPostsTable).values({ ...req.body, tenantId: tid(req) }).returning();
     res.status(201).json(post[0]);
+    invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -56,6 +58,7 @@ router.patch("/blog/posts/:id", requireTenantAccess, async (req, res) => {
     const post = await db.update(blogPostsTable).set(sanitizeUpdate(req.body)).where(and(eq(blogPostsTable.id, Number(req.params.id)), eq(blogPostsTable.tenantId, tid(req)))).returning();
     if (!post.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(post[0]);
+    invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -63,6 +66,7 @@ router.delete("/blog/posts/:id", requireTenantAccess, async (req, res) => {
   try {
     await db.delete(blogPostsTable).where(and(eq(blogPostsTable.id, Number(req.params.id)), eq(blogPostsTable.tenantId, tid(req))));
     res.status(204).send();
+    invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

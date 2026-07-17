@@ -8,6 +8,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { maskSecretsForAuth } from "../lib/settingsHelpers";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { invalidateTenantPageCache } from "../lib/pageCache";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -24,6 +25,7 @@ function crud<T>(table: any, routePrefix: string, extraInsert?: (req: any) => ob
     try {
       const row = await db.insert(table).values({ ...req.body, tenantId: tid(req), ...(extraInsert ? extraInsert(req) : {}) }).returning() as any[];
       res.status(201).json(row[0]);
+      invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
   router.get(`/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
@@ -38,12 +40,14 @@ function crud<T>(table: any, routePrefix: string, extraInsert?: (req: any) => ob
       const row = await db.update(table).set(sanitizeUpdate(req.body)).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req)))).returning();
       if (!row.length) { res.status(404).json({ error: "Not found" }); return; }
       res.json(row[0]);
+      invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
   router.delete(`/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
     try {
       await db.delete(table).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req))));
       res.status(204).send();
+      invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
   });
 }
@@ -97,6 +101,7 @@ router.patch("/settings", requireTenantAccess, async (req, res) => {
     }
     const tenantRows = await db.select({ customDomain: tenantsTable.customDomain }).from(tenantsTable).where(eq(tenantsTable.id, tid(req))).limit(1);
     res.json({ ...maskSecretsForAuth(updated), customDomain: tenantRows[0]?.customDomain ?? null });
+    invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
