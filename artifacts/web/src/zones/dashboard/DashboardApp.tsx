@@ -376,6 +376,7 @@ function LeadDetailPage({ id }: { id: number }) {
   const [noteContent, setNoteContent] = useState("");
   const [confirmQuote, setConfirmQuote] = useState(false);
   const [confirmProject, setConfirmProject] = useState(false);
+  const [showCompose, setShowCompose] = useState(false);
   const l = lead as any;
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
@@ -505,6 +506,9 @@ function LeadDetailPage({ id }: { id: number }) {
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <h2 className="font-semibold text-slate-900">Actions</h2>
+            <button onClick={() => setShowCompose(true)} disabled={!l.email} title={!l.email ? "This lead has no email on file" : undefined} className="w-full rounded-md border border-slate-300 text-slate-700 px-3 py-2.5 text-sm font-medium hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+              ✉ Send Email / Request More Info
+            </button>
             {!confirmQuote ? (
               <button onClick={() => setConfirmQuote(true)} className="w-full rounded-md border border-orange-500 text-orange-600 px-3 py-2.5 text-sm font-medium hover:bg-orange-50">
                 → Convert to Quote
@@ -538,6 +542,14 @@ function LeadDetailPage({ id }: { id: number }) {
           </div>
         </div>
       </div>
+      {showCompose && (
+        <ComposeEmailModal
+          initialTo={l.email || ""}
+          initialToName={`${l.firstName || ""} ${l.lastName || ""}`.trim()}
+          leadId={id}
+          onClose={() => setShowCompose(false)}
+        />
+      )}
     </div>
   );
 }
@@ -895,36 +907,73 @@ function RichTextEditor({ onChange }: { onChange: (html: string) => void }) {
   );
 }
 
-// ─── Emails — one-off branded compose + send log (not a synced inbox) ─────────
-function EmailsPage() {
-  const { data: emails, isLoading } = useListSentEmails();
+// ─── Compose Email modal — reused by the Emails panel and the Lead detail page ──
+function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject = "", leadId, onClose, onSent }: {
+  initialTo?: string;
+  initialToName?: string;
+  initialSubject?: string;
+  leadId?: number;
+  onClose: () => void;
+  onSent?: () => void;
+}) {
   const composeEmail = useComposeEmail();
   const qc = useQueryClient();
   const showToast = useToast();
-  const [showCompose, setShowCompose] = useState(false);
-  const [composeKey, setComposeKey] = useState(0);
-  const [form, setForm] = useState({ toEmail: "", toName: "", subject: "" });
+  const [form, setForm] = useState({ toEmail: initialTo, toName: initialToName, subject: initialSubject });
   const bodyRef = useRef("");
-
-  const openCompose = () => {
-    setForm({ toEmail: "", toName: "", subject: "" });
-    bodyRef.current = "";
-    setComposeKey(k => k + 1);
-    setShowCompose(true);
-  };
 
   const handleSend = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.toEmail || !form.subject || !bodyRef.current.trim()) { showToast("Fill in recipient, subject, and message", "error"); return; }
     try {
-      await composeEmail.mutateAsync({ data: { toEmail: form.toEmail, toName: form.toName || undefined, subject: form.subject, bodyHtml: bodyRef.current } } as any);
+      await composeEmail.mutateAsync({ data: { toEmail: form.toEmail, toName: form.toName || undefined, subject: form.subject, bodyHtml: bodyRef.current, leadId } } as any);
       qc.invalidateQueries({ queryKey: getListSentEmailsQueryKey() });
       showToast("Email sent");
-      setShowCompose(false);
+      onSent?.();
+      onClose();
     } catch (err: any) {
       showToast(err?.message || "Failed to send email", "error");
     }
   };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <h2 className="font-semibold text-slate-900">Compose Email</h2>
+        <form onSubmit={handleSend} className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">To Email *</label>
+              <input type="email" value={form.toEmail} onChange={e => setForm({ ...form, toEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-slate-700 mb-1">To Name</label>
+              <input value={form.toName} onChange={e => setForm({ ...form, toName: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Subject *</label>
+            <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+          </div>
+          <div>
+            <label className="block text-xs font-medium text-slate-700 mb-1">Message *</label>
+            <RichTextEditor onChange={html => { bodyRef.current = html; }} />
+            <p className="mt-1 text-[11px] text-slate-400">Sent in your business's branded email design automatically — no need to add a signature.</p>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <button type="submit" disabled={composeEmail.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{composeEmail.isPending ? "Sending..." : "Send Email"}</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// ─── Emails — one-off branded compose + send log (not a synced inbox) ─────────
+function EmailsPage() {
+  const { data: emails, isLoading } = useListSentEmails();
+  const [showCompose, setShowCompose] = useState(false);
 
   const rows = (emails as any[]) || [];
 
@@ -935,41 +984,10 @@ function EmailsPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Emails</h1>
           <p className="text-sm text-slate-500">Send a one-off branded email to a lead or customer, and keep a record of what was sent.</p>
         </div>
-        <button onClick={openCompose} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 whitespace-nowrap">+ Compose</button>
+        <button onClick={() => setShowCompose(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 whitespace-nowrap">+ Compose</button>
       </div>
 
-      {showCompose && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowCompose(false); }}>
-          <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="font-semibold text-slate-900">Compose Email</h2>
-            <form onSubmit={handleSend} className="space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">To Email *</label>
-                  <input type="email" value={form.toEmail} onChange={e => setForm({ ...form, toEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1">To Name</label>
-                  <input value={form.toName} onChange={e => setForm({ ...form, toName: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Subject *</label>
-                <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Message *</label>
-                <RichTextEditor key={composeKey} onChange={html => { bodyRef.current = html; }} />
-                <p className="mt-1 text-[11px] text-slate-400">Sent in your business's branded email design automatically — no need to add a signature.</p>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={composeEmail.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{composeEmail.isPending ? "Sending..." : "Send Email"}</button>
-                <button type="button" onClick={() => setShowCompose(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {showCompose && <ComposeEmailModal onClose={() => setShowCompose(false)} />}
 
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
