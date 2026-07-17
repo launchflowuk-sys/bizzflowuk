@@ -221,6 +221,110 @@ function ImageUpload({ tenantSlug, onUploaded, label = "Upload photo", hint }: {
   );
 }
 
+function isImageName(name: string): boolean {
+  return /\.(jpe?g|png|webp|gif|heic|heif)$/i.test(name);
+}
+
+const MAX_FILES = 10;
+const MULTI_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+interface UploadedFile { url: string; name: string; state: "uploading" | "done" | "error"; previewUrl?: string; }
+
+function MultiFileUpload({ tenantSlug, onChange, label = "Upload photos or documents", hint }: { tenantSlug: string; onChange: (urls: string[]) => void; label?: string; hint?: string }) {
+  const requestUrl = useRequestUploadUrl();
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<UploadedFile[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [limitError, setLimitError] = useState<string | null>(null);
+
+  const handleFiles = async (fileList: FileList) => {
+    setLimitError(null);
+    const incoming = Array.from(fileList);
+    const room = MAX_FILES - files.length;
+    if (room <= 0) { setLimitError(`You can upload up to ${MAX_FILES} files.`); return; }
+    const toUpload = incoming.slice(0, room);
+    if (incoming.length > room) setLimitError(`Only ${room} more file${room === 1 ? "" : "s"} could be added (max ${MAX_FILES} total).`);
+
+    const newEntries = toUpload.map(f => ({
+      url: "", name: f.name, state: "uploading" as const,
+      previewUrl: f.type.startsWith("image/") ? URL.createObjectURL(f) : undefined,
+    }));
+    setFiles(prev => [...prev, ...newEntries]);
+
+    for (const file of toUpload) {
+      try {
+        const result = await requestUrl.mutateAsync({ data: { tenantSlug, name: file.name, size: file.size, contentType: file.type as any } }) as any;
+        await fetch(result.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+        setFiles(prev => {
+          const next = prev.map(f => (f.name === file.name && f.state === "uploading") ? { ...f, url: result.objectPath, state: "done" as const } : f);
+          onChange(next.filter(f => f.state === "done").map(f => f.url));
+          return next;
+        });
+      } catch {
+        setFiles(prev => prev.map(f => (f.name === file.name && f.state === "uploading") ? { ...f, state: "error" as const } : f));
+      }
+    }
+  };
+
+  const removeFile = (name: string) => {
+    setFiles(prev => {
+      const next = prev.filter(f => f.name !== name);
+      onChange(next.filter(f => f.state === "done").map(f => f.url));
+      return next;
+    });
+  };
+
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1" style={{ color: TEXT }}>{label}</label>
+      <div
+        onClick={() => inputRef.current?.click()}
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={e => {
+          e.preventDefault();
+          setDragOver(false);
+          if (e.dataTransfer.files?.length) handleFiles(e.dataTransfer.files);
+        }}
+        className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${dragOver ? "border-[#1F8CFF] bg-blue-50" : "border-slate-300 bg-slate-50 hover:border-[#1F8CFF]"}`}
+      >
+        <svg className="w-8 h-8 mx-auto text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+        <p className="text-sm text-slate-500">Click to upload, or drag and drop files here</p>
+        {hint && <p className="text-xs text-slate-400 mt-1">{hint}</p>}
+        <input
+          ref={inputRef}
+          type="file"
+          multiple
+          accept={MULTI_UPLOAD_ACCEPT}
+          className="hidden"
+          onChange={e => { if (e.target.files?.length) handleFiles(e.target.files); e.target.value = ""; }}
+        />
+      </div>
+      {limitError && <p className="text-xs text-red-600 mt-1">{limitError}</p>}
+      {files.length > 0 && (
+        <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {files.map(f => (
+            <div key={f.name} className="relative rounded-lg border border-slate-200 bg-white p-2 text-xs">
+              <button type="button" onClick={() => removeFile(f.name)} className="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-white/90 border border-slate-200 text-slate-500 hover:text-red-500 flex items-center justify-center">✕</button>
+              {f.previewUrl ? (
+                <img src={f.previewUrl} alt={f.name} className="w-full h-20 object-cover rounded"/>
+              ) : (
+                <div className="w-full h-20 rounded bg-slate-50 flex items-center justify-center">
+                  <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                </div>
+              )}
+              <p className="truncate mt-1" style={{ color: TEXT }}>{f.name}</p>
+              {f.state === "uploading" && <span className="text-slate-400">Uploading…</span>}
+              {f.state === "done" && <span className="text-green-600 font-medium">✓ Uploaded</span>}
+              {f.state === "error" && <span className="text-red-500">Failed</span>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function TopBar({ tenant, settings }: any) {
   const area = settings?.city || tenant?.address;
   const areaText = area ? `Based in ${area}` : "Trusted local specialists";
@@ -2361,21 +2465,73 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
 // QUOTE PAGE
 // ─────────────────────────────────────────────────────────────────────────────
 
-const PROPERTY_TYPES = ["Terraced house","Semi-detached","Detached","End-of-terrace","Bungalow","Commercial property","Flat / apartment block","Other"];
-const SURFACE_TYPES = ["Existing render","Pebbledash","Brick","Block","Other / not sure"];
-const TIMEFRAMES = ["As soon as possible","Within 1 month","1–3 months","3–6 months","Planning stage"];
+const PROPERTY_TYPES = ["Detached House","Semi-detached House","Terraced House","End-terrace House","Bungalow","Flat or Apartment","Commercial Property","Extension","Garage","Other"];
+const AREA_TO_RENDER = ["Entire Property","Front Elevation","Rear Elevation","One Side","Multiple Sides","Extension","Garden or Boundary Wall","Garage","Chimney","Other"];
+const STOREYS = ["Ground Floor Only","One Storey","Two Storeys","Three Storeys","Four or More"];
+const WALL_AREAS = ["Under 50m²","50–100m²","100–200m²","More Than 200m²","Not Sure"];
+const SERVICES = ["Silicone Render","Monocouche Render","K Rend","Traditional Sand and Cement Render","External Wall Insulation","Pebble Dash Removal","Render Repairs","Crack Repairs","Brick Slip System","Not Sure"];
+const SURFACE_TYPES = ["Brick","Blockwork","Existing Render","Painted Render","Pebble Dash","Bare Masonry","Mixed Surfaces","Not Sure"];
+const CONDITIONS = ["Good Condition","Cracked","Loose or Hollow Render","Damp","Peeling Paint","Moss or Staining","Damaged Areas","Not Sure"];
+const FINISHES = ["Smooth Silicone Finish","Textured Silicone Finish","Scraped Monocouche Finish","Traditional Render Finish","Dash Finish","Not Sure"];
+const COLOURS = ["White","Cream","Grey","Beige","Custom Colour","Not Sure"];
+const INSULATION_THICKNESS = ["40mm","50mm","60mm","80mm","90mm","100mm","120mm","Not Sure"];
+const INSULATION_MATERIAL = ["White EPS","Graphite EPS","Mineral Wool","Phenolic Insulation","Not Sure"];
+const ACCESS_CONDITIONS = ["Easy Access Around Property","Limited Side Access","Rear Access Only","Restricted Parking","Conservatory or Extension Below Wall","Sloping or Uneven Ground","Property Beside a Busy Road","Scaffolding May Be Required","Not Sure"];
+const PROPERTY_STATUSES = ["Occupied","Vacant","New Build","Extension Under Construction","Commercial Site"];
+const TIMEFRAMES = ["As Soon as Possible","Within One Month","Within 1–3 Months","Within 3–6 Months","Just Researching"];
+const BUDGETS = ["Under £5,000","£5,000–£10,000","£10,000–£20,000","More Than £20,000","Not Sure"];
+const CONTACT_METHODS = ["Phone","WhatsApp","Email"];
+const BEST_TIMES = ["Morning","Afternoon","Evening","Anytime"];
+const YES_NO_NOTSURE = ["Yes","No","Not Sure"];
+
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return <h2 className="font-bold text-base pt-2 first:pt-0 border-t border-slate-100 first:border-t-0 mt-2 first:mt-0" style={{ color: TEXT }}>{children}</h2>;
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="text-xs text-red-600 mt-1">{message}</p>;
+}
+
+function CheckboxGroup({ options, values, onChange }: { options: string[]; values: string[]; onChange: (v: string[]) => void }) {
+  const toggle = (opt: string) => {
+    onChange(values.includes(opt) ? values.filter(v => v !== opt) : [...values, opt]);
+  };
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+      {options.map(opt => (
+        <label key={opt} className="flex items-center gap-2 text-sm" style={{ color: TEXT }}>
+          <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[#1F8CFF] focus:ring-[#1F8CFF]" checked={values.includes(opt)} onChange={() => toggle(opt)} />
+          {opt}
+        </label>
+      ))}
+    </div>
+  );
+}
+
+const QUOTE_FORM_DEFAULTS = {
+  firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postcode: '',
+  preferredContactMethod: '', bestTimeToContact: '',
+  propertyType: '', propertyTypeOther: '', companyName: '',
+  areaToRender: '', areaToRenderOther: '', numberOfStoreys: '', wallArea: '',
+  serviceInterest: '', existingSurface: '', currentCondition: [] as string[], desiredFinish: '',
+  preferredColour: '', preferredColourOther: '',
+  requiresInsulation: '', insulationThickness: '', insulationMaterial: '',
+  accessConditions: [] as string[], propertyStatus: '',
+  timeframe: '', budget: '', notes: '',
+  photoUrls: [] as string[],
+  consentAgreed: false,
+};
 
 function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
   const mutation = useSubmitQuoteRequest();
-  const [form, setForm] = useState({
-    firstName: '', lastName: '', email: '', phone: '', address: '', city: '', postcode: '',
-    serviceInterest: '', notes: '', propertyType: '', existingSurface: '', desiredFinish: '', timeframe: '',
-    photoUrls: [] as string[],
-  });
+  const [form, setForm] = useState(QUOTE_FORM_DEFAULTS);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
+  const [reference, setReference] = useState<string | null>(null);
   const quoteSuccessRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (submitted) quoteSuccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2383,11 +2539,37 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   const f = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [field]: e.target.value });
   const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F8CFF] focus:border-[#1F8CFF] transition";
   const labelCls = "block text-xs font-semibold uppercase tracking-wide mb-1";
+  const gridCls = "grid grid-cols-1 sm:grid-cols-2 gap-4";
+  const isEwi = form.serviceInterest === "External Wall Insulation";
+  const isCommercial = form.propertyType === "Commercial Property";
+
+  const validate = (): Record<string, string> => {
+    const e: Record<string, string> = {};
+    if (!form.firstName.trim()) e.name = "Full name is required";
+    if (!form.phone.trim()) e.phone = "Phone number is required";
+    if (!form.postcode.trim()) e.postcode = "Postcode is required";
+    if (!form.propertyType) e.propertyType = "Please select a property type";
+    if (!form.areaToRender) e.areaToRender = "Please select the area to be rendered";
+    if (!form.numberOfStoreys) e.numberOfStoreys = "Please select the number of storeys";
+    if (!form.serviceInterest) e.serviceInterest = "Please select a service";
+    if (!form.existingSurface) e.existingSurface = "Please select the existing surface";
+    if (!form.timeframe) e.timeframe = "Please select a preferred timeframe";
+    if (!form.consentAgreed) e.consentAgreed = "Please confirm you agree before submitting";
+    return e;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      const firstKey = Object.keys(validationErrors)[0];
+      document.getElementById(`qf-${firstKey}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
     try {
-      await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any);
+      const result = await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any) as any;
+      setReference(result?.reference ?? null);
       setSubmitted(true);
     } catch {}
   };
@@ -2439,66 +2621,209 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                   </div>
                   <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Quote Request Received</h2>
                   <p style={{ color: MUTED }}>Thank you. We'll review your request and be in touch within 24 hours.</p>
+                  {reference && <p className="text-sm font-mono" style={{ color: MUTED }}>Reference: <span className="font-bold" style={{ color: TEXT }}>{reference}</span></p>}
                   <BlueBtn href={siteBase || '/'}>Back to Home</BlueBtn>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                  <h2 className="font-bold text-lg" style={{ color: TEXT }}>Your Details</h2>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className={labelCls} style={{ color: MUTED }}>Full name *</label><input required className={inputCls} placeholder="Full name" value={form.firstName + (form.lastName ? ' ' + form.lastName : '')} onChange={e => { const parts = e.target.value.split(' '); setForm({ ...form, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') }); }}/></div>
-                    <div><label className={labelCls} style={{ color: MUTED }}>Phone number *</label><input required className={inputCls} placeholder="Phone number" value={form.phone} onChange={f('phone')}/></div>
+
+                  <SectionHeading>1. Your Details</SectionHeading>
+                  <div className={gridCls}>
+                    <div id="qf-name"><label className={labelCls} style={{ color: MUTED }}>Full Name *</label><input className={inputCls} placeholder="Full name" value={form.firstName + (form.lastName ? ' ' + form.lastName : '')} onChange={e => { const parts = e.target.value.split(' '); setForm({ ...form, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') }); }}/><FieldError message={errors.name}/></div>
+                    <div id="qf-phone"><label className={labelCls} style={{ color: MUTED }}>Phone Number *</label><input className={inputCls} placeholder="Phone number" value={form.phone} onChange={f('phone')}/><FieldError message={errors.phone}/></div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div><label className={labelCls} style={{ color: MUTED }}>Email address</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/></div>
-                    <div><label className={labelCls} style={{ color: MUTED }}>Postcode *</label><input required className={inputCls} placeholder="Postcode" value={form.postcode} onChange={f('postcode')}/></div>
+                  <div className={gridCls}>
+                    <div><label className={labelCls} style={{ color: MUTED }}>Email Address</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/></div>
+                    <div id="qf-postcode"><label className={labelCls} style={{ color: MUTED }}>Property Postcode *</label><input className={inputCls} placeholder="Postcode" value={form.postcode} onChange={f('postcode')}/><FieldError message={errors.postcode}/></div>
                   </div>
-                  <div><label className={labelCls} style={{ color: MUTED }}>Property address</label><input className={inputCls} placeholder="Street address" value={form.address} onChange={f('address')}/></div>
-                  <div className="grid grid-cols-2 gap-4">
+                  <div><label className={labelCls} style={{ color: MUTED }}>Property Address</label><input className={inputCls} placeholder="Street address" value={form.address} onChange={f('address')}/></div>
+                  <div className={gridCls}>
                     <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Property type</label>
+                      <label className={labelCls} style={{ color: MUTED }}>Preferred Contact Method</label>
+                      <select className={inputCls} value={form.preferredContactMethod} onChange={f('preferredContactMethod')}>
+                        <option value="">Select...</option>
+                        {CONTACT_METHODS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Best Time to Contact</label>
+                      <select className={inputCls} value={form.bestTimeToContact} onChange={f('bestTimeToContact')}>
+                        <option value="">Select...</option>
+                        {BEST_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <SectionHeading>2. Property and Project</SectionHeading>
+                  <div className={gridCls}>
+                    <div id="qf-propertyType">
+                      <label className={labelCls} style={{ color: MUTED }}>Property Type *</label>
                       <select className={inputCls} value={form.propertyType} onChange={f('propertyType')}>
                         <option value="">Select type...</option>
                         {PROPERTY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
+                      <FieldError message={errors.propertyType}/>
+                    </div>
+                    <div id="qf-areaToRender">
+                      <label className={labelCls} style={{ color: MUTED }}>Area to Be Rendered *</label>
+                      <select className={inputCls} value={form.areaToRender} onChange={f('areaToRender')}>
+                        <option value="">Select area...</option>
+                        {AREA_TO_RENDER.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <FieldError message={errors.areaToRender}/>
+                    </div>
+                  </div>
+                  {form.propertyType === "Other" && (
+                    <div><label className={labelCls} style={{ color: MUTED }}>Please specify property type</label><input className={inputCls} value={form.propertyTypeOther} onChange={f('propertyTypeOther')}/></div>
+                  )}
+                  {form.areaToRender === "Other" && (
+                    <div><label className={labelCls} style={{ color: MUTED }}>Please specify area to be rendered</label><input className={inputCls} value={form.areaToRenderOther} onChange={f('areaToRenderOther')}/></div>
+                  )}
+                  {isCommercial && (
+                    <div><label className={labelCls} style={{ color: MUTED }}>Company Name</label><input className={inputCls} value={form.companyName} onChange={f('companyName')}/></div>
+                  )}
+                  <div className={gridCls}>
+                    <div id="qf-numberOfStoreys">
+                      <label className={labelCls} style={{ color: MUTED }}>Number of Storeys *</label>
+                      <select className={inputCls} value={form.numberOfStoreys} onChange={f('numberOfStoreys')}>
+                        <option value="">Select...</option>
+                        {STOREYS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <FieldError message={errors.numberOfStoreys}/>
                     </div>
                     <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Service required</label>
-                      <select className={inputCls} value={form.serviceInterest} onChange={f('serviceInterest')}>
-                        <option value="">Select service...</option>
-                        {["Silicone Rendering","Monocouche Rendering","K Rend","External Wall Insulation","Pebbledash Removal","Render Repairs","Not sure"].map(s => <option key={s} value={s}>{s}</option>)}
+                      <label className={labelCls} style={{ color: MUTED }}>Approximate Wall Area</label>
+                      <select className={inputCls} value={form.wallArea} onChange={f('wallArea')}>
+                        <option value="">Select...</option>
+                        {WALL_AREAS.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
                     </div>
                   </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Existing surface</label>
+
+                  <SectionHeading>3. Rendering Requirements</SectionHeading>
+                  <div className={gridCls}>
+                    <div id="qf-serviceInterest">
+                      <label className={labelCls} style={{ color: MUTED }}>Service Required *</label>
+                      <select className={inputCls} value={form.serviceInterest} onChange={f('serviceInterest')}>
+                        <option value="">Select service...</option>
+                        {SERVICES.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                      <FieldError message={errors.serviceInterest}/>
+                    </div>
+                    <div id="qf-existingSurface">
+                      <label className={labelCls} style={{ color: MUTED }}>Existing Surface *</label>
                       <select className={inputCls} value={form.existingSurface} onChange={f('existingSurface')}>
                         <option value="">Select...</option>
                         {SURFACE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                       </select>
-                    </div>
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Desired finish</label>
-                      <select className={inputCls} value={form.desiredFinish} onChange={f('desiredFinish')}>
-                        <option value="">Select...</option>
-                        {["Smooth modern finish","Textured finish","Coloured render","Insulated render","Not sure"].map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
+                      <FieldError message={errors.existingSurface}/>
                     </div>
                   </div>
                   <div>
-                    <label className={labelCls} style={{ color: MUTED }}>Preferred timeframe</label>
-                    <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
+                    <label className={labelCls} style={{ color: MUTED }}>Current Condition</label>
+                    <CheckboxGroup options={CONDITIONS} values={form.currentCondition} onChange={v => setForm({ ...form, currentCondition: v })}/>
+                  </div>
+                  <div className={gridCls}>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Desired Finish</label>
+                      <select className={inputCls} value={form.desiredFinish} onChange={f('desiredFinish')}>
+                        <option value="">Select...</option>
+                        {FINISHES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Preferred Colour</label>
+                      <select className={inputCls} value={form.preferredColour} onChange={f('preferredColour')}>
+                        <option value="">Select...</option>
+                        {COLOURS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  {form.preferredColour === "Custom Colour" && (
+                    <div><label className={labelCls} style={{ color: MUTED }}>Please specify colour</label><input className={inputCls} value={form.preferredColourOther} onChange={f('preferredColourOther')}/></div>
+                  )}
+
+                  {isEwi && (
+                    <>
+                      <SectionHeading>4. External Wall Insulation</SectionHeading>
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>Do You Require External Wall Insulation?</label>
+                        <select className={inputCls} value={form.requiresInsulation} onChange={f('requiresInsulation')}>
+                          <option value="">Select...</option>
+                          {YES_NO_NOTSURE.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div className={gridCls}>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Preferred Insulation Thickness</label>
+                          <select className={inputCls} value={form.insulationThickness} onChange={f('insulationThickness')}>
+                            <option value="">Select...</option>
+                            {INSULATION_THICKNESS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Preferred Insulation Material</label>
+                          <select className={inputCls} value={form.insulationMaterial} onChange={f('insulationMaterial')}>
+                            <option value="">Select...</option>
+                            {INSULATION_MATERIAL.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  <SectionHeading>5. Access and Site Conditions</SectionHeading>
+                  <div>
+                    <label className={labelCls} style={{ color: MUTED }}>Access Conditions</label>
+                    <CheckboxGroup options={ACCESS_CONDITIONS} values={form.accessConditions} onChange={v => setForm({ ...form, accessConditions: v })}/>
+                  </div>
+                  <div>
+                    <label className={labelCls} style={{ color: MUTED }}>Property Status</label>
+                    <select className={inputCls} value={form.propertyStatus} onChange={f('propertyStatus')}>
                       <option value="">Select...</option>
-                      {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
+                      {PROPERTY_STATUSES.map(t => <option key={t} value={t}>{t}</option>)}
                     </select>
                   </div>
-                  <div><label className={labelCls} style={{ color: MUTED }}>Additional notes</label><textarea rows={3} className={inputCls} placeholder="Anything else about your property or project..." value={form.notes} onChange={f('notes')}/></div>
-                  <ImageUpload
+
+                  <SectionHeading>6. Project Timing</SectionHeading>
+                  <div className={gridCls}>
+                    <div id="qf-timeframe">
+                      <label className={labelCls} style={{ color: MUTED }}>Preferred Timeframe *</label>
+                      <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
+                        <option value="">Select...</option>
+                        {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <FieldError message={errors.timeframe}/>
+                    </div>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Optional Budget Range</label>
+                      <select className={inputCls} value={form.budget} onChange={f('budget')}>
+                        <option value="">Select...</option>
+                        {BUDGETS.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+
+                  <SectionHeading>7. Additional Information</SectionHeading>
+                  <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Tell us anything else about your property, existing walls, access or the work required…" value={form.notes} onChange={f('notes')}/></div>
+
+                  <SectionHeading>8. Property Photos</SectionHeading>
+                  <MultiFileUpload
                     tenantSlug={tenantSlug}
-                    label="Property photos (recommended — helps us quote accurately)"
-                    hint="Upload front, side or rear views · JPG or PNG · max 10MB"
-                    onUploaded={url => setForm({ ...form, photoUrls: [url] })}
+                    label="Upload photos or documents"
+                    hint="Upload clear photos of the front, rear, sides and any damaged areas. Photos help us provide a faster and more accurate quotation. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
+                    onChange={urls => setForm({ ...form, photoUrls: urls })}
                   />
+
+                  <SectionHeading>9. Consent</SectionHeading>
+                  <div id="qf-consentAgreed">
+                    <label className="flex items-start gap-2 text-sm" style={{ color: TEXT }}>
+                      <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1F8CFF] focus:ring-[#1F8CFF]" checked={form.consentAgreed} onChange={e => setForm({ ...form, consentAgreed: e.target.checked })}/>
+                      I agree to the Privacy Policy and consent to {tenant?.name || "AMO Rendering"} contacting me about this quotation request.
+                    </label>
+                    <FieldError message={errors.consentAgreed}/>
+                  </div>
+
                   <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
                     {mutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
                   </button>

@@ -8,21 +8,39 @@
 
 export interface LeadInput {
   /** @minLength 1 */
-  name: string;
+  firstName: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   address?: string;
+  city?: string;
   postcode?: string;
-  serviceRequired?: string;
+  serviceInterest?: string;
   propertyType?: string;
+  propertyTypeOther?: string;
   existingSurface?: string;
   desiredFinish?: string;
-  projectSize?: string;
-  budgetRange?: string;
-  preferredTimeframe?: string;
+  timeframe?: string;
+  budget?: string;
   notes?: string;
   status?: string;
   assignedToId?: number;
   source?: string;
-  fileUrls?: string[];
+  photoUrls?: string[];
+  preferredContactMethod?: string;
+  bestTimeToContact?: string;
+  areaToRender?: string;
+  areaToRenderOther?: string;
+  numberOfStoreys?: string;
+  wallArea?: string;
+  currentCondition?: string[];
+  preferredColour?: string;
+  preferredColourOther?: string;
+  requiresInsulation?: string;
+  insulationThickness?: string;
+  insulationMaterial?: string;
+  accessConditions?: string[];
+  propertyStatus?: string;
+  companyName?: string;
+  consentAgreed?: boolean;
 }

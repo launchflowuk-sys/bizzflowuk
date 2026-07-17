@@ -21,6 +21,11 @@ export const UploadUrlRequestContentType = {
   'image/png': 'image/png',
   'image/webp': 'image/webp',
   'image/gif': 'image/gif',
+  'image/heic': 'image/heic',
+  'image/heif': 'image/heif',
+  'application/pdf': 'application/pdf',
+  'application/msword': 'application/msword',
+  'application/vndopenxmlformats-officedocumentwordprocessingmldocument': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 } as const;
 
 export interface UploadUrlRequest {
@@ -517,7 +522,10 @@ export const LeadStatus = {
 export interface Lead {
   id: number;
   tenantId: number;
-  name: string;
+  /** @nullable */
+  reference?: string | null;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   email?: string | null;
   /** @nullable */
@@ -525,21 +533,23 @@ export interface Lead {
   /** @nullable */
   address?: string | null;
   /** @nullable */
+  city?: string | null;
+  /** @nullable */
   postcode?: string | null;
   /** @nullable */
-  serviceRequired?: string | null;
+  serviceInterest?: string | null;
   /** @nullable */
   propertyType?: string | null;
+  /** @nullable */
+  propertyTypeOther?: string | null;
   /** @nullable */
   existingSurface?: string | null;
   /** @nullable */
   desiredFinish?: string | null;
   /** @nullable */
-  projectSize?: string | null;
+  timeframe?: string | null;
   /** @nullable */
-  budgetRange?: string | null;
-  /** @nullable */
-  preferredTimeframe?: string | null;
+  budget?: string | null;
   /** @nullable */
   notes?: string | null;
   status: LeadStatus;
@@ -547,50 +557,115 @@ export interface Lead {
   assignedToId?: number | null;
   /** @nullable */
   source?: string | null;
-  fileUrls?: string[];
+  photoUrls?: string[];
+  /** @nullable */
+  preferredContactMethod?: string | null;
+  /** @nullable */
+  bestTimeToContact?: string | null;
+  /** @nullable */
+  areaToRender?: string | null;
+  /** @nullable */
+  areaToRenderOther?: string | null;
+  /** @nullable */
+  numberOfStoreys?: string | null;
+  /** @nullable */
+  wallArea?: string | null;
+  currentCondition?: string[];
+  /** @nullable */
+  preferredColour?: string | null;
+  /** @nullable */
+  preferredColourOther?: string | null;
+  /** @nullable */
+  requiresInsulation?: string | null;
+  /** @nullable */
+  insulationThickness?: string | null;
+  /** @nullable */
+  insulationMaterial?: string | null;
+  accessConditions?: string[];
+  /** @nullable */
+  propertyStatus?: string | null;
+  /** @nullable */
+  companyName?: string | null;
+  consentAgreed?: boolean;
   createdAt: string;
   updatedAt?: string;
 }
 
 export interface LeadInput {
   /** @minLength 1 */
-  name: string;
+  firstName: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   address?: string;
+  city?: string;
   postcode?: string;
-  serviceRequired?: string;
+  serviceInterest?: string;
   propertyType?: string;
+  propertyTypeOther?: string;
   existingSurface?: string;
   desiredFinish?: string;
-  projectSize?: string;
-  budgetRange?: string;
-  preferredTimeframe?: string;
+  timeframe?: string;
+  budget?: string;
   notes?: string;
   status?: string;
   assignedToId?: number;
   source?: string;
-  fileUrls?: string[];
+  photoUrls?: string[];
+  preferredContactMethod?: string;
+  bestTimeToContact?: string;
+  areaToRender?: string;
+  areaToRenderOther?: string;
+  numberOfStoreys?: string;
+  wallArea?: string;
+  currentCondition?: string[];
+  preferredColour?: string;
+  preferredColourOther?: string;
+  requiresInsulation?: string;
+  insulationThickness?: string;
+  insulationMaterial?: string;
+  accessConditions?: string[];
+  propertyStatus?: string;
+  companyName?: string;
+  consentAgreed?: boolean;
 }
 
 export interface LeadUpdate {
-  name?: string;
+  firstName?: string;
+  lastName?: string;
   email?: string;
   phone?: string;
   address?: string;
+  city?: string;
   postcode?: string;
-  serviceRequired?: string;
+  serviceInterest?: string;
   propertyType?: string;
+  propertyTypeOther?: string;
   existingSurface?: string;
   desiredFinish?: string;
-  projectSize?: string;
-  budgetRange?: string;
-  preferredTimeframe?: string;
+  timeframe?: string;
+  budget?: string;
   notes?: string;
   status?: string;
   /** @nullable */
   assignedToId?: number | null;
-  fileUrls?: string[];
+  photoUrls?: string[];
+  preferredContactMethod?: string;
+  bestTimeToContact?: string;
+  areaToRender?: string;
+  areaToRenderOther?: string;
+  numberOfStoreys?: string;
+  wallArea?: string;
+  currentCondition?: string[];
+  preferredColour?: string;
+  preferredColourOther?: string;
+  requiresInsulation?: string;
+  insulationThickness?: string;
+  insulationMaterial?: string;
+  accessConditions?: string[];
+  propertyStatus?: string;
+  companyName?: string;
+  consentAgreed?: boolean;
 }
 
 export interface LeadNote {
@@ -609,20 +684,38 @@ export interface LeadNoteInput {
 
 export interface QuoteRequestInput {
   tenantSlug: string;
-  name: string;
+  firstName: string;
+  lastName?: string;
   email?: string;
-  phone?: string;
+  phone: string;
   address?: string;
-  postcode?: string;
-  serviceRequired?: string;
+  city?: string;
+  postcode: string;
+  preferredContactMethod?: string;
+  bestTimeToContact?: string;
   propertyType?: string;
+  propertyTypeOther?: string;
+  areaToRender?: string;
+  areaToRenderOther?: string;
+  numberOfStoreys?: string;
+  wallArea?: string;
+  serviceInterest?: string;
   existingSurface?: string;
+  currentCondition?: string[];
   desiredFinish?: string;
-  projectSize?: string;
-  budgetRange?: string;
-  preferredTimeframe?: string;
+  preferredColour?: string;
+  preferredColourOther?: string;
+  requiresInsulation?: string;
+  insulationThickness?: string;
+  insulationMaterial?: string;
+  accessConditions?: string[];
+  propertyStatus?: string;
+  companyName?: string;
+  timeframe?: string;
+  budget?: string;
   notes?: string;
-  fileUrls?: string[];
+  photoUrls?: string[];
+  consentAgreed: boolean;
 }
 
 export type QuoteStatus = typeof QuoteStatus[keyof typeof QuoteStatus];

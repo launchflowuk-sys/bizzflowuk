@@ -2610,7 +2610,7 @@ components:
           maximum: 10485760
         contentType:
           type: string
-          enum: [image/jpeg, image/png, image/webp, image/gif]
+          enum: [image/jpeg, image/png, image/webp, image/gif, image/heic, image/heif, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document]
 
     UploadUrlResponse:
       type: object
@@ -3114,13 +3114,17 @@ components:
     # ─── Lead ─────────────────────────────────────────────────────────────
     Lead:
       type: object
-      required: [id, tenantId, name, status, createdAt]
+      required: [id, tenantId, firstName, lastName, status, createdAt]
       properties:
         id:
           type: integer
         tenantId:
           type: integer
-        name:
+        reference:
+          type: ["string", "null"]
+        firstName:
+          type: string
+        lastName:
           type: string
         email:
           type: ["string", "null"]
@@ -3128,21 +3132,23 @@ components:
           type: ["string", "null"]
         address:
           type: ["string", "null"]
+        city:
+          type: ["string", "null"]
         postcode:
           type: ["string", "null"]
-        serviceRequired:
+        serviceInterest:
           type: ["string", "null"]
         propertyType:
+          type: ["string", "null"]
+        propertyTypeOther:
           type: ["string", "null"]
         existingSurface:
           type: ["string", "null"]
         desiredFinish:
           type: ["string", "null"]
-        projectSize:
+        timeframe:
           type: ["string", "null"]
-        budgetRange:
-          type: ["string", "null"]
-        preferredTimeframe:
+        budget:
           type: ["string", "null"]
         notes:
           type: ["string", "null"]
@@ -3153,10 +3159,46 @@ components:
           type: ["integer", "null"]
         source:
           type: ["string", "null"]
-        fileUrls:
+        photoUrls:
           type: array
           items:
             type: string
+        preferredContactMethod:
+          type: ["string", "null"]
+        bestTimeToContact:
+          type: ["string", "null"]
+        areaToRender:
+          type: ["string", "null"]
+        areaToRenderOther:
+          type: ["string", "null"]
+        numberOfStoreys:
+          type: ["string", "null"]
+        wallArea:
+          type: ["string", "null"]
+        currentCondition:
+          type: array
+          items:
+            type: string
+        preferredColour:
+          type: ["string", "null"]
+        preferredColourOther:
+          type: ["string", "null"]
+        requiresInsulation:
+          type: ["string", "null"]
+        insulationThickness:
+          type: ["string", "null"]
+        insulationMaterial:
+          type: ["string", "null"]
+        accessConditions:
+          type: array
+          items:
+            type: string
+        propertyStatus:
+          type: ["string", "null"]
+        companyName:
+          type: ["string", "null"]
+        consentAgreed:
+          type: boolean
         createdAt:
           type: string
           format: date-time
@@ -3166,32 +3208,36 @@ components:
 
     LeadInput:
       type: object
-      required: [name]
+      required: [firstName]
       properties:
-        name:
+        firstName:
           type: string
           minLength: 1
+        lastName:
+          type: string
         email:
           type: string
         phone:
           type: string
         address:
           type: string
+        city:
+          type: string
         postcode:
           type: string
-        serviceRequired:
+        serviceInterest:
           type: string
         propertyType:
+          type: string
+        propertyTypeOther:
           type: string
         existingSurface:
           type: string
         desiredFinish:
           type: string
-        projectSize:
+        timeframe:
           type: string
-        budgetRange:
-          type: string
-        preferredTimeframe:
+        budget:
           type: string
         notes:
           type: string
@@ -3201,15 +3247,53 @@ components:
           type: integer
         source:
           type: string
-        fileUrls:
+        photoUrls:
           type: array
           items:
             type: string
+        preferredContactMethod:
+          type: string
+        bestTimeToContact:
+          type: string
+        areaToRender:
+          type: string
+        areaToRenderOther:
+          type: string
+        numberOfStoreys:
+          type: string
+        wallArea:
+          type: string
+        currentCondition:
+          type: array
+          items:
+            type: string
+        preferredColour:
+          type: string
+        preferredColourOther:
+          type: string
+        requiresInsulation:
+          type: string
+        insulationThickness:
+          type: string
+        insulationMaterial:
+          type: string
+        accessConditions:
+          type: array
+          items:
+            type: string
+        propertyStatus:
+          type: string
+        companyName:
+          type: string
+        consentAgreed:
+          type: boolean
 
     LeadUpdate:
       type: object
       properties:
-        name:
+        firstName:
+          type: string
+        lastName:
           type: string
         email:
           type: string
@@ -3217,21 +3301,23 @@ components:
           type: string
         address:
           type: string
+        city:
+          type: string
         postcode:
           type: string
-        serviceRequired:
+        serviceInterest:
           type: string
         propertyType:
+          type: string
+        propertyTypeOther:
           type: string
         existingSurface:
           type: string
         desiredFinish:
           type: string
-        projectSize:
+        timeframe:
           type: string
-        budgetRange:
-          type: string
-        preferredTimeframe:
+        budget:
           type: string
         notes:
           type: string
@@ -3239,10 +3325,46 @@ components:
           type: string
         assignedToId:
           type: ["integer", "null"]
-        fileUrls:
+        photoUrls:
           type: array
           items:
             type: string
+        preferredContactMethod:
+          type: string
+        bestTimeToContact:
+          type: string
+        areaToRender:
+          type: string
+        areaToRenderOther:
+          type: string
+        numberOfStoreys:
+          type: string
+        wallArea:
+          type: string
+        currentCondition:
+          type: array
+          items:
+            type: string
+        preferredColour:
+          type: string
+        preferredColourOther:
+          type: string
+        requiresInsulation:
+          type: string
+        insulationThickness:
+          type: string
+        insulationMaterial:
+          type: string
+        accessConditions:
+          type: array
+          items:
+            type: string
+        propertyStatus:
+          type: string
+        companyName:
+          type: string
+        consentAgreed:
+          type: boolean
 
     LeadNote:
       type: object
@@ -3270,11 +3392,13 @@ components:
 
     QuoteRequestInput:
       type: object
-      required: [name, tenantSlug]
+      required: [firstName, phone, postcode, tenantSlug, consentAgreed]
       properties:
         tenantSlug:
           type: string
-        name:
+        firstName:
+          type: string
+        lastName:
           type: string
         email:
           type: string
@@ -3282,28 +3406,66 @@ components:
           type: string
         address:
           type: string
+        city:
+          type: string
         postcode:
           type: string
-        serviceRequired:
+        preferredContactMethod:
+          type: string
+        bestTimeToContact:
           type: string
         propertyType:
           type: string
+        propertyTypeOther:
+          type: string
+        areaToRender:
+          type: string
+        areaToRenderOther:
+          type: string
+        numberOfStoreys:
+          type: string
+        wallArea:
+          type: string
+        serviceInterest:
+          type: string
         existingSurface:
           type: string
-        desiredFinish:
-          type: string
-        projectSize:
-          type: string
-        budgetRange:
-          type: string
-        preferredTimeframe:
-          type: string
-        notes:
-          type: string
-        fileUrls:
+        currentCondition:
           type: array
           items:
             type: string
+        desiredFinish:
+          type: string
+        preferredColour:
+          type: string
+        preferredColourOther:
+          type: string
+        requiresInsulation:
+          type: string
+        insulationThickness:
+          type: string
+        insulationMaterial:
+          type: string
+        accessConditions:
+          type: array
+          items:
+            type: string
+        propertyStatus:
+          type: string
+        companyName:
+          type: string
+        timeframe:
+          type: string
+        budget:
+          type: string
+        notes:
+          type: string
+        photoUrls:
+          type: array
+          items:
+            type: string
+        consentAgreed:
+          type: boolean
 
     # ─── Quote ────────────────────────────────────────────────────────────
     Quote:

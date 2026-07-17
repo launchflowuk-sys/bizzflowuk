@@ -8,18 +8,36 @@
 
 export interface QuoteRequestInput {
   tenantSlug: string;
-  name: string;
+  firstName: string;
+  lastName?: string;
   email?: string;
-  phone?: string;
+  phone: string;
   address?: string;
-  postcode?: string;
-  serviceRequired?: string;
+  city?: string;
+  postcode: string;
+  preferredContactMethod?: string;
+  bestTimeToContact?: string;
   propertyType?: string;
+  propertyTypeOther?: string;
+  areaToRender?: string;
+  areaToRenderOther?: string;
+  numberOfStoreys?: string;
+  wallArea?: string;
+  serviceInterest?: string;
   existingSurface?: string;
+  currentCondition?: string[];
   desiredFinish?: string;
-  projectSize?: string;
-  budgetRange?: string;
-  preferredTimeframe?: string;
+  preferredColour?: string;
+  preferredColourOther?: string;
+  requiresInsulation?: string;
+  insulationThickness?: string;
+  insulationMaterial?: string;
+  accessConditions?: string[];
+  propertyStatus?: string;
+  companyName?: string;
+  timeframe?: string;
+  budget?: string;
   notes?: string;
-  fileUrls?: string[];
+  photoUrls?: string[];
+  consentAgreed: boolean;
 }

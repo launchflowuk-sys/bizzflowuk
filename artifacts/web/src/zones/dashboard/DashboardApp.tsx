@@ -428,18 +428,52 @@ function LeadDetailPage({ id }: { id: number }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 space-y-4">
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
-            <h2 className="font-semibold text-slate-900">Contact Details</h2>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="font-semibold text-slate-900">Contact Details</h2>
+              {l.reference && <span className="text-xs font-mono text-slate-400">{l.reference}</span>}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
               <div><span className="text-slate-500">Email: </span><a href={`mailto:${l.email}`} className="text-orange-600 hover:underline break-all">{l.email || "-"}</a></div>
               <div><span className="text-slate-500">Phone: </span><a href={`tel:${l.phone}`} className="text-orange-600 hover:underline">{l.phone || "-"}</a></div>
+              <div><span className="text-slate-500">Preferred Contact Method: </span><span className="text-slate-900">{l.preferredContactMethod || "-"}</span></div>
+              <div><span className="text-slate-500">Best Time to Contact: </span><span className="text-slate-900">{l.bestTimeToContact || "-"}</span></div>
               <div><span className="text-slate-500">City: </span><span className="text-slate-900">{l.city || "-"}</span></div>
               <div><span className="text-slate-500">Postcode: </span><span className="text-slate-900">{l.postcode || "-"}</span></div>
               <div className="sm:col-span-2"><span className="text-slate-500">Address: </span><span className="text-slate-900">{l.address || "-"}</span></div>
+              <div><span className="text-slate-500">Property Type: </span><span className="text-slate-900">{l.propertyType === "Other" && l.propertyTypeOther ? `Other — ${l.propertyTypeOther}` : (l.propertyType || "-")}</span></div>
+              {l.companyName && <div><span className="text-slate-500">Company Name: </span><span className="text-slate-900">{l.companyName}</span></div>}
+              <div><span className="text-slate-500">Area to Be Rendered: </span><span className="text-slate-900">{l.areaToRender === "Other" && l.areaToRenderOther ? `Other — ${l.areaToRenderOther}` : (l.areaToRender || "-")}</span></div>
+              <div><span className="text-slate-500">Number of Storeys: </span><span className="text-slate-900">{l.numberOfStoreys || "-"}</span></div>
+              <div><span className="text-slate-500">Approx. Wall Area: </span><span className="text-slate-900">{l.wallArea || "-"}</span></div>
               <div><span className="text-slate-500">Service: </span><span className="text-slate-900">{l.serviceInterest || "-"}</span></div>
+              <div><span className="text-slate-500">Existing Surface: </span><span className="text-slate-900">{l.existingSurface || "-"}</span></div>
+              <div className="sm:col-span-2"><span className="text-slate-500">Current Condition: </span><span className="text-slate-900">{(l.currentCondition as string[] | undefined)?.length ? (l.currentCondition as string[]).join(", ") : "-"}</span></div>
+              <div><span className="text-slate-500">Desired Finish: </span><span className="text-slate-900">{l.desiredFinish || "-"}</span></div>
+              <div><span className="text-slate-500">Preferred Colour: </span><span className="text-slate-900">{(l.preferredColour === "Custom Colour" || l.preferredColour === "Other") && l.preferredColourOther ? `${l.preferredColour} — ${l.preferredColourOther}` : (l.preferredColour || "-")}</span></div>
+              {l.serviceInterest === "External Wall Insulation" && (
+                <>
+                  <div><span className="text-slate-500">Requires Insulation: </span><span className="text-slate-900">{l.requiresInsulation || "-"}</span></div>
+                  <div><span className="text-slate-500">Insulation Thickness: </span><span className="text-slate-900">{l.insulationThickness || "-"}</span></div>
+                  <div><span className="text-slate-500">Insulation Material: </span><span className="text-slate-900">{l.insulationMaterial || "-"}</span></div>
+                </>
+              )}
+              <div className="sm:col-span-2"><span className="text-slate-500">Access Conditions: </span><span className="text-slate-900">{(l.accessConditions as string[] | undefined)?.length ? (l.accessConditions as string[]).join(", ") : "-"}</span></div>
+              <div><span className="text-slate-500">Property Status: </span><span className="text-slate-900">{l.propertyStatus || "-"}</span></div>
+              <div><span className="text-slate-500">Timeframe: </span><span className="text-slate-900">{l.timeframe || "-"}</span></div>
               <div><span className="text-slate-500">Source: </span><span className="text-slate-900">{l.source || "-"}</span></div>
               <div><span className="text-slate-500">Budget: </span><span className="text-slate-900">{l.budget || "-"}</span></div>
               <div><span className="text-slate-500">Created: </span><span className="text-slate-900">{l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-GB") : "-"}</span></div>
               {l.notes && <div className="sm:col-span-2"><span className="text-slate-500">Notes: </span><span className="text-slate-900">{l.notes}</span></div>}
+              {!!(l.photoUrls as string[] | undefined)?.length && (
+                <div className="sm:col-span-2">
+                  <span className="text-slate-500">Attachments: </span>
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {(l.photoUrls as string[]).map((u, i) => (
+                      <a key={u} href={u} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50">Attachment {i + 1}</a>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">

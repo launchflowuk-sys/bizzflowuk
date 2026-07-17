@@ -40,6 +40,32 @@ export interface NotificationContext {
   projectTitle?: string;
   paymentLinkUrl?: string;
   amount?: string;
+  serviceInterest?: string;
+  address?: string;
+  postcode?: string;
+  budget?: string;
+  notes?: string;
+  propertyType?: string;
+  propertyTypeOther?: string;
+  existingSurface?: string;
+  desiredFinish?: string;
+  timeframe?: string;
+  photoUrls?: string[];
+  preferredContactMethod?: string;
+  bestTimeToContact?: string;
+  areaToRender?: string;
+  areaToRenderOther?: string;
+  numberOfStoreys?: string;
+  wallArea?: string;
+  currentCondition?: string[];
+  preferredColour?: string;
+  preferredColourOther?: string;
+  requiresInsulation?: string;
+  insulationThickness?: string;
+  insulationMaterial?: string;
+  accessConditions?: string[];
+  propertyStatus?: string;
+  companyName?: string;
 }
 
 async function getTenantAndSettings(tenantId: number) {
@@ -115,6 +141,33 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             lastName: ctx.lastName || "",
             email: ctx.customerEmail,
             phone: ctx.customerPhone,
+            reference: ctx.reference,
+            serviceInterest: ctx.serviceInterest,
+            address: ctx.address,
+            postcode: ctx.postcode,
+            budget: ctx.budget,
+            notes: ctx.notes,
+            propertyType: ctx.propertyType,
+            propertyTypeOther: ctx.propertyTypeOther,
+            existingSurface: ctx.existingSurface,
+            desiredFinish: ctx.desiredFinish,
+            timeframe: ctx.timeframe,
+            photoUrls: ctx.photoUrls,
+            preferredContactMethod: ctx.preferredContactMethod,
+            bestTimeToContact: ctx.bestTimeToContact,
+            areaToRender: ctx.areaToRender,
+            areaToRenderOther: ctx.areaToRenderOther,
+            numberOfStoreys: ctx.numberOfStoreys,
+            wallArea: ctx.wallArea,
+            currentCondition: ctx.currentCondition,
+            preferredColour: ctx.preferredColour,
+            preferredColourOther: ctx.preferredColourOther,
+            requiresInsulation: ctx.requiresInsulation,
+            insulationThickness: ctx.insulationThickness,
+            insulationMaterial: ctx.insulationMaterial,
+            accessConditions: ctx.accessConditions,
+            propertyStatus: ctx.propertyStatus,
+            companyName: ctx.companyName,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new admin email failed"));
         }
         if (doAdminSms) {
@@ -127,7 +180,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             tenantPhone,
             tenantEmail,
             firstName,
-            serviceInterest: undefined,
+            serviceInterest: ctx.serviceInterest,
             to: ctx.customerEmail!,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new customer email failed"));
         }

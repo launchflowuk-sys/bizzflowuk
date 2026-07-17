@@ -10,7 +10,10 @@ import type { LeadStatus } from './leadStatus';
 export interface Lead {
   id: number;
   tenantId: number;
-  name: string;
+  /** @nullable */
+  reference?: string | null;
+  firstName: string;
+  lastName: string;
   /** @nullable */
   email?: string | null;
   /** @nullable */
@@ -18,21 +21,23 @@ export interface Lead {
   /** @nullable */
   address?: string | null;
   /** @nullable */
+  city?: string | null;
+  /** @nullable */
   postcode?: string | null;
   /** @nullable */
-  serviceRequired?: string | null;
+  serviceInterest?: string | null;
   /** @nullable */
   propertyType?: string | null;
+  /** @nullable */
+  propertyTypeOther?: string | null;
   /** @nullable */
   existingSurface?: string | null;
   /** @nullable */
   desiredFinish?: string | null;
   /** @nullable */
-  projectSize?: string | null;
+  timeframe?: string | null;
   /** @nullable */
-  budgetRange?: string | null;
-  /** @nullable */
-  preferredTimeframe?: string | null;
+  budget?: string | null;
   /** @nullable */
   notes?: string | null;
   status: LeadStatus;
@@ -40,7 +45,36 @@ export interface Lead {
   assignedToId?: number | null;
   /** @nullable */
   source?: string | null;
-  fileUrls?: string[];
+  photoUrls?: string[];
+  /** @nullable */
+  preferredContactMethod?: string | null;
+  /** @nullable */
+  bestTimeToContact?: string | null;
+  /** @nullable */
+  areaToRender?: string | null;
+  /** @nullable */
+  areaToRenderOther?: string | null;
+  /** @nullable */
+  numberOfStoreys?: string | null;
+  /** @nullable */
+  wallArea?: string | null;
+  currentCondition?: string[];
+  /** @nullable */
+  preferredColour?: string | null;
+  /** @nullable */
+  preferredColourOther?: string | null;
+  /** @nullable */
+  requiresInsulation?: string | null;
+  /** @nullable */
+  insulationThickness?: string | null;
+  /** @nullable */
+  insulationMaterial?: string | null;
+  accessConditions?: string[];
+  /** @nullable */
+  propertyStatus?: string | null;
+  /** @nullable */
+  companyName?: string | null;
+  consentAgreed?: boolean;
   createdAt: Date;
   updatedAt?: Date;
 }

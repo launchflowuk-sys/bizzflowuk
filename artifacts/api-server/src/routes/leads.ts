@@ -23,7 +23,8 @@ router.get("/leads", requireTenantAccess, async (req, res) => {
 
 router.post("/leads", requireTenantAccess, async (req, res) => {
   try {
-    const lead = await db.insert(leadsTable).values({ ...req.body, tenantId: resolvedTenantId(req) }).returning();
+    const reference = req.body.reference ?? `ENQ-${Date.now()}`;
+    const lead = await db.insert(leadsTable).values({ ...req.body, reference, tenantId: resolvedTenantId(req) }).returning();
     res.status(201).json(lead[0]);
     fireNotification({
       tenantId: lead[0].tenantId,
@@ -32,6 +33,33 @@ router.post("/leads", requireTenantAccess, async (req, res) => {
       lastName: lead[0].lastName ?? undefined,
       customerEmail: lead[0].email ?? undefined,
       customerPhone: lead[0].phone ?? undefined,
+      reference: lead[0].reference ?? undefined,
+      serviceInterest: lead[0].serviceInterest ?? undefined,
+      address: lead[0].address ?? undefined,
+      postcode: lead[0].postcode ?? undefined,
+      budget: lead[0].budget ?? undefined,
+      notes: lead[0].notes ?? undefined,
+      propertyType: lead[0].propertyType ?? undefined,
+      propertyTypeOther: lead[0].propertyTypeOther ?? undefined,
+      existingSurface: lead[0].existingSurface ?? undefined,
+      desiredFinish: lead[0].desiredFinish ?? undefined,
+      timeframe: lead[0].timeframe ?? undefined,
+      photoUrls: (lead[0].photoUrls as string[] | null) ?? undefined,
+      preferredContactMethod: lead[0].preferredContactMethod ?? undefined,
+      bestTimeToContact: lead[0].bestTimeToContact ?? undefined,
+      areaToRender: lead[0].areaToRender ?? undefined,
+      areaToRenderOther: lead[0].areaToRenderOther ?? undefined,
+      numberOfStoreys: lead[0].numberOfStoreys ?? undefined,
+      wallArea: lead[0].wallArea ?? undefined,
+      currentCondition: (lead[0].currentCondition as string[] | null) ?? undefined,
+      preferredColour: lead[0].preferredColour ?? undefined,
+      preferredColourOther: lead[0].preferredColourOther ?? undefined,
+      requiresInsulation: lead[0].requiresInsulation ?? undefined,
+      insulationThickness: lead[0].insulationThickness ?? undefined,
+      insulationMaterial: lead[0].insulationMaterial ?? undefined,
+      accessConditions: (lead[0].accessConditions as string[] | null) ?? undefined,
+      propertyStatus: lead[0].propertyStatus ?? undefined,
+      companyName: lead[0].companyName ?? undefined,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

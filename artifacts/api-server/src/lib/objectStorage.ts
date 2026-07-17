@@ -20,6 +20,11 @@ const ALLOWED_CONTENT_TYPES: Record<string, string> = {
   "image/png": ".png",
   "image/webp": ".webp",
   "image/gif": ".gif",
+  "image/heic": ".heic",
+  "image/heif": ".heif",
+  "application/pdf": ".pdf",
+  "application/msword": ".doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
 };
 
 const PENDING_UPLOAD_TTL_MS = 15 * 60 * 1000; // 15 min, matches the old presigned-URL TTL
@@ -115,7 +120,7 @@ export class ObjectStorageService {
     objectPath: string,
     requester: { tenantId: number | null; isSuperAdmin: boolean },
   ): Promise<{ absolutePath: string; contentType: string }> {
-    const match = /^\/objects\/(\d+)\/([a-f0-9-]+\.(jpg|png|webp|gif))$/i.exec(objectPath);
+    const match = /^\/objects\/(\d+)\/([a-f0-9-]+\.(jpg|png|webp|gif|heic|heif|pdf|doc|docx))$/i.exec(objectPath);
     if (!match) throw new ObjectNotFoundError();
 
     const ownerTenantId = Number(match[1]);

@@ -14,4 +14,9 @@ export const UploadUrlRequestContentType = {
   'image/png': 'image/png',
   'image/webp': 'image/webp',
   'image/gif': 'image/gif',
+  'image/heic': 'image/heic',
+  'image/heif': 'image/heif',
+  'application/pdf': 'application/pdf',
+  'application/msword': 'application/msword',
+  'application/vndopenxmlformats-officedocumentwordprocessingmldocument': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 } as const;

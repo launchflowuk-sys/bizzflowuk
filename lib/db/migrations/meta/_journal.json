@@ -36,6 +36,13 @@
       "when": 1784242281284,
       "tag": "0004_wonderful_maximus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784248668816,
+      "tag": "0005_lonely_mauler",
+      "breakpoints": true
     }
   ]
 }

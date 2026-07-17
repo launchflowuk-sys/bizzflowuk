@@ -68,7 +68,8 @@ async function handleQuoteRequest(req: any, res: any, slug: string) {
     if (!ts) { res.status(404).json({ error: "Tenant not found" }); return; }
     const { tenant } = ts;
     const { tenantSlug: _slug, ...rest } = req.body;
-    const lead = await db.insert(leadsTable).values({ ...rest, tenantId: tenant.id, status: "New", source: "Website" }).returning();
+    const reference = `ENQ-${Date.now()}`;
+    const lead = await db.insert(leadsTable).values({ ...rest, reference, tenantId: tenant.id, status: "New", source: "Website" }).returning();
     res.status(201).json(lead[0]);
 
     // Fire through unified helper — respects per-channel toggles and sends admin alert + customer ack
@@ -79,6 +80,33 @@ async function handleQuoteRequest(req: any, res: any, slug: string) {
       lastName: lead[0].lastName ?? undefined,
       customerEmail: lead[0].email ?? undefined,
       customerPhone: lead[0].phone ?? undefined,
+      reference: lead[0].reference ?? undefined,
+      serviceInterest: lead[0].serviceInterest ?? undefined,
+      address: lead[0].address ?? undefined,
+      postcode: lead[0].postcode ?? undefined,
+      budget: lead[0].budget ?? undefined,
+      notes: lead[0].notes ?? undefined,
+      propertyType: lead[0].propertyType ?? undefined,
+      propertyTypeOther: lead[0].propertyTypeOther ?? undefined,
+      existingSurface: lead[0].existingSurface ?? undefined,
+      desiredFinish: lead[0].desiredFinish ?? undefined,
+      timeframe: lead[0].timeframe ?? undefined,
+      photoUrls: (lead[0].photoUrls as string[] | null) ?? undefined,
+      preferredContactMethod: lead[0].preferredContactMethod ?? undefined,
+      bestTimeToContact: lead[0].bestTimeToContact ?? undefined,
+      areaToRender: lead[0].areaToRender ?? undefined,
+      areaToRenderOther: lead[0].areaToRenderOther ?? undefined,
+      numberOfStoreys: lead[0].numberOfStoreys ?? undefined,
+      wallArea: lead[0].wallArea ?? undefined,
+      currentCondition: (lead[0].currentCondition as string[] | null) ?? undefined,
+      preferredColour: lead[0].preferredColour ?? undefined,
+      preferredColourOther: lead[0].preferredColourOther ?? undefined,
+      requiresInsulation: lead[0].requiresInsulation ?? undefined,
+      insulationThickness: lead[0].insulationThickness ?? undefined,
+      insulationMaterial: lead[0].insulationMaterial ?? undefined,
+      accessConditions: (lead[0].accessConditions as string[] | null) ?? undefined,
+      propertyStatus: lead[0].propertyStatus ?? undefined,
+      companyName: lead[0].companyName ?? undefined,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 }

@@ -45,29 +45,75 @@ export function buildLeadNewAdminEmail(opts: {
   lastName: string;
   email?: string;
   phone?: string;
+  reference?: string;
   serviceInterest?: string;
   address?: string;
   postcode?: string;
   budget?: string;
   notes?: string;
+  propertyType?: string;
+  propertyTypeOther?: string;
+  existingSurface?: string;
+  desiredFinish?: string;
+  timeframe?: string;
+  photoUrls?: string[];
+  preferredContactMethod?: string;
+  bestTimeToContact?: string;
+  areaToRender?: string;
+  areaToRenderOther?: string;
+  numberOfStoreys?: string;
+  wallArea?: string;
+  currentCondition?: string[];
+  preferredColour?: string;
+  preferredColourOther?: string;
+  requiresInsulation?: string;
+  insulationThickness?: string;
+  insulationMaterial?: string;
+  accessConditions?: string[];
+  propertyStatus?: string;
+  companyName?: string;
 }): EmailPayload {
   const name = `${opts.firstName} ${opts.lastName}`.trim();
+  const row = (label: string, value?: string) => `<tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">${label}</td><td style="padding:8px">${value || "—"}</td></tr>`;
+  const withOther = (value?: string, other?: string) => value === "Other" && other ? `Other — ${other}` : value;
+  const isEwi = opts.serviceInterest === "External Wall Insulation";
+  const photosRow = opts.photoUrls?.length
+    ? `<tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Attachments</td><td style="padding:8px">${opts.photoUrls.map((u, i) => `<a href="${u}">Attachment ${i + 1}</a>`).join(" · ")}</td></tr>`
+    : "";
   return {
     to: opts.adminEmail,
-    subject: `New Lead — ${name}`,
+    subject: `New Lead — ${name}${opts.reference ? ` (${opts.reference})` : ""}`,
     html: `
       <h2>New Lead Received</h2>
-      <p>A new lead has been submitted on your ${opts.tenantName} platform.</p>
+      <p>A new lead has been submitted on your ${opts.tenantName} platform${opts.reference ? ` — reference <strong>${opts.reference}</strong>` : ""}.</p>
       <table style="border-collapse:collapse;width:100%;max-width:600px">
-        <tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Name</td><td style="padding:8px">${name}</td></tr>
+        ${row("Name", name)}
         <tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Email</td><td style="padding:8px">${opts.email ? `<a href="mailto:${opts.email}">${opts.email}</a>` : "—"}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Phone</td><td style="padding:8px">${opts.phone || "—"}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Service</td><td style="padding:8px">${opts.serviceInterest || "—"}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Address</td><td style="padding:8px">${[opts.address, opts.postcode].filter(Boolean).join(", ") || "—"}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Budget</td><td style="padding:8px">${opts.budget || "—"}</td></tr>
-        <tr><td style="padding:8px;font-weight:bold;background:#f5f5f5">Notes</td><td style="padding:8px">${opts.notes || "—"}</td></tr>
+        ${row("Phone", opts.phone)}
+        ${row("Preferred Contact Method", opts.preferredContactMethod)}
+        ${row("Best Time to Contact", opts.bestTimeToContact)}
+        ${row("Address", [opts.address, opts.postcode].filter(Boolean).join(", ") || undefined)}
+        ${row("Property Type", withOther(opts.propertyType, opts.propertyTypeOther))}
+        ${opts.companyName ? row("Company Name", opts.companyName) : ""}
+        ${row("Area to Be Rendered", withOther(opts.areaToRender, opts.areaToRenderOther))}
+        ${row("Number of Storeys", opts.numberOfStoreys)}
+        ${row("Approximate Wall Area", opts.wallArea)}
+        ${row("Service Required", opts.serviceInterest)}
+        ${row("Existing Surface", opts.existingSurface)}
+        ${row("Current Condition", opts.currentCondition?.length ? opts.currentCondition.join(", ") : undefined)}
+        ${row("Desired Finish", opts.desiredFinish)}
+        ${row("Preferred Colour", withOther(opts.preferredColour, opts.preferredColourOther))}
+        ${isEwi ? row("Requires Insulation", opts.requiresInsulation) : ""}
+        ${isEwi ? row("Insulation Thickness", opts.insulationThickness) : ""}
+        ${isEwi ? row("Insulation Material", opts.insulationMaterial) : ""}
+        ${row("Access Conditions", opts.accessConditions?.length ? opts.accessConditions.join(", ") : undefined)}
+        ${row("Property Status", opts.propertyStatus)}
+        ${row("Preferred Timeframe", opts.timeframe)}
+        ${row("Budget", opts.budget)}
+        ${row("Notes", opts.notes)}
+        ${photosRow}
       </table>`,
-    text: `New lead: ${name}. Email: ${opts.email || "—"}. Phone: ${opts.phone || "—"}. Service: ${opts.serviceInterest || "—"}.`,
+    text: `New lead${opts.reference ? ` (${opts.reference})` : ""}: ${name}. Email: ${opts.email || "—"}. Phone: ${opts.phone || "—"}. Service: ${opts.serviceInterest || "—"}. Property: ${opts.propertyType || "—"}. Area: ${opts.areaToRender || "—"}. Surface: ${opts.existingSurface || "—"}. Finish: ${opts.desiredFinish || "—"}. Timeframe: ${opts.timeframe || "—"}. Address: ${[opts.address, opts.postcode].filter(Boolean).join(", ") || "—"}. Notes: ${opts.notes || "—"}.`,
   };
 }
 
