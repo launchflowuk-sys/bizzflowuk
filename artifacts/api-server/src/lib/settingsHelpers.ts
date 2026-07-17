@@ -2,6 +2,21 @@ import type { SmtpConfig } from "./email";
 import type { SmsCreds } from "./sms";
 import type { SquareCreds } from "./square";
 import type { BrandConfig } from "./emailShell";
+import { signObjectAccessToken } from "./objectStorage";
+
+const PLATFORM_BASE_URL = process.env.PUBLIC_BASE_URL || "https://bizzflowuk.com";
+
+/**
+ * Builds a fetchable URL for a private object-storage path (e.g. an uploaded lead photo),
+ * honoring a tenant's custom domain if set. The stored path alone (e.g. "/objects/6/x.jpg")
+ * isn't reachable on its own — the real route lives at /api/storage/objects/... and requires
+ * either an in-app session or this signed token, so every place that links to an uploaded
+ * file (an email, in particular) must go through this rather than use the raw path directly.
+ */
+export function buildObjectUrl(objectPath: string, customDomain?: string | null): string {
+  const origin = customDomain ? `https://${customDomain}` : PLATFORM_BASE_URL;
+  return `${origin}/api/storage${objectPath}?token=${signObjectAccessToken(objectPath)}`;
+}
 
 /**
  * Fields from tenantSettings that are safe to expose on the unauthenticated public site

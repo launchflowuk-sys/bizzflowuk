@@ -15,8 +15,9 @@ import {
   ObjectNotFoundError,
   InvalidUploadError,
   ForbiddenError,
+  verifyObjectAccessToken,
 } from "../lib/objectStorage";
-import { requireAuth, requireTenantAccess } from "../middlewares/auth";
+import { requireTenantAccess, tryBearerAuth } from "../middlewares/auth";
 import { uploadRateLimiter } from "../middlewares/rateLimit";
 
 const router: IRouter = Router();
@@ -169,18 +170,30 @@ router.get("/storage/public-objects/*filePath", async (req: Request, res: Respon
 /**
  * GET /storage/objects/*
  *
- * Private object entities. Requires auth; the tenant id embedded in the
- * object path (see objectStorage.ts) is checked against the caller's tenant.
+ * Private object entities. The tenant id embedded in the object path (see objectStorage.ts) is
+ * checked against the caller's tenant. Accepts two ways in: the normal Authorization: Bearer
+ * header (in-app fetches), or a `?token=` query param signed for this exact path — a plain
+ * browser navigation (an "open in new tab" click, or a link in an emailed notification) never
+ * carries the Bearer header, so without the token fallback those links can never resolve.
  */
-router.get("/storage/objects/*path", requireAuth, async (req: Request, res: Response) => {
+router.get("/storage/objects/*path", async (req: Request, res: Response) => {
   try {
     const raw = req.params.path;
     const wildcardPath = Array.isArray(raw) ? raw.join("/") : raw;
     const objectPath = `/objects/${wildcardPath}`;
 
+    const user = await tryBearerAuth(req);
+    const queryToken = typeof req.query.token === "string" ? req.query.token : undefined;
+    const hasValidObjectToken = !user && !!queryToken && verifyObjectAccessToken(queryToken, objectPath);
+
+    if (!user && !hasValidObjectToken) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
     const { absolutePath, contentType } = await objectStorageService.resolveForDownload(objectPath, {
-      tenantId: req.authUser?.tenantId ?? null,
-      isSuperAdmin: req.authUser?.role === "SUPER_ADMIN",
+      tenantId: user?.tenantId ?? null,
+      isSuperAdmin: hasValidObjectToken || user?.role === "SUPER_ADMIN",
     });
 
     res.setHeader("Content-Type", contentType);

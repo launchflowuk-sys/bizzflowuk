@@ -5,6 +5,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { buildRelativeObjectUrl } from "../lib/objectStorage";
 
 const router = Router();
 
@@ -70,7 +71,8 @@ router.get("/leads/:id", requireTenantAccess, async (req, res) => {
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .limit(1);
     if (!l.length) { res.status(404).json({ error: "Not found" }); return; }
-    res.json(l[0]);
+    const photoUrls = (l[0].photoUrls as string[] | null)?.map(buildRelativeObjectUrl);
+    res.json({ ...l[0], photoUrls });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

@@ -1,6 +1,35 @@
 import { stat, mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
+import jwt from "jsonwebtoken";
+
+const OBJECT_TOKEN_SECRET = process.env.SESSION_SECRET!;
+
+/**
+ * Signs a token scoped to exactly one object path, so a plain link (an emailed attachment, or
+ * "open in new tab" from the dashboard) can fetch a private file without an SPA session — a
+ * browser navigation never carries the app's Authorization: Bearer header, so the private
+ * /storage/objects route needs some other way to authorize a direct click. The token itself
+ * *is* the authorization, scoped to this one file, rather than granting the bearer general
+ * tenant access the way the normal auth token does.
+ */
+export function signObjectAccessToken(objectPath: string): string {
+  return jwt.sign({ objectPath }, OBJECT_TOKEN_SECRET, { expiresIn: "30d" });
+}
+
+export function verifyObjectAccessToken(token: string, objectPath: string): boolean {
+  try {
+    const payload = jwt.verify(token, OBJECT_TOKEN_SECRET) as { objectPath?: string };
+    return payload.objectPath === objectPath;
+  } catch {
+    return false;
+  }
+}
+
+/** Same-origin clickable URL for use inside the dashboard (e.g. a lead's attachment links). */
+export function buildRelativeObjectUrl(objectPath: string): string {
+  return `/api/storage${objectPath}?token=${signObjectAccessToken(objectPath)}`;
+}
 
 export class ObjectNotFoundError extends Error {
   constructor() {

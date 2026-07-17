@@ -15,7 +15,7 @@ import {
   buildProjectCompleteCustomerEmail,
 } from "./email";
 import { sendSms } from "./sms";
-import { buildSmtpConfig, buildSmsCreds, buildBrandConfig } from "./settingsHelpers";
+import { buildSmtpConfig, buildSmsCreds, buildBrandConfig, buildObjectUrl } from "./settingsHelpers";
 import { logger } from "./logger";
 
 export type NotificationEvent =
@@ -153,7 +153,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             existingSurface: ctx.existingSurface,
             desiredFinish: ctx.desiredFinish,
             timeframe: ctx.timeframe,
-            photoUrls: ctx.photoUrls,
+            photoUrls: ctx.photoUrls?.map(u => buildObjectUrl(u, tenant.customDomain)),
             preferredContactMethod: ctx.preferredContactMethod,
             bestTimeToContact: ctx.bestTimeToContact,
             areaToRender: ctx.areaToRender,
