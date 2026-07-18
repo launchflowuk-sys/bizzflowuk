@@ -11,7 +11,7 @@ const useSiteBase = () => useContext(SiteBaseCtx);
 const SiteOriginCtx = createContext('');
 const useSiteOrigin = () => useContext(SiteOriginCtx);
 
-const BLUE = "#1F8CFF";
+const BLUE = "#1973D1"; // darkened from #1F8CFF to clear WCAG AA 4.5:1 contrast on white/light backgrounds
 const NAVY = "#0A121C";
 const LIGHT_BG = "#F6F8FB";
 const TEXT = "#26323F";
@@ -145,7 +145,7 @@ function Spinner() {
   return (
     <div className="flex min-h-[300px] items-center justify-center">
       <div className="relative w-24 h-24 flex items-center justify-center">
-        <img src="/amo-logo-icon.png" alt="Loading" className="w-16 h-16 object-contain" />
+        <img src="/amo-logo-icon.webp" alt="Loading" width={64} height={64} className="w-16 h-16 object-contain" />
         <svg className="absolute inset-0 w-24 h-24 animate-spin" viewBox="0 0 96 96" fill="none">
           <circle cx="48" cy="48" r="44" stroke="#1F8CFF" strokeWidth="4" strokeLinecap="round" strokeDasharray="69 207"/>
         </svg>
@@ -347,9 +347,9 @@ function MultiFileUpload({ tenantSlug, onChange, label = "Upload photos or docum
         <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
           {files.map(f => (
             <div key={f.name} className="relative rounded-lg border border-slate-200 bg-white p-2 text-xs">
-              <button type="button" onClick={() => removeFile(f.name)} className="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-white/90 border border-slate-200 text-slate-500 hover:text-red-500 flex items-center justify-center">✕</button>
+              <button type="button" aria-label={`Remove ${f.name}`} onClick={() => removeFile(f.name)} className="absolute top-1 right-1 z-10 w-5 h-5 rounded-full bg-white/90 border border-slate-200 text-slate-500 hover:text-red-500 flex items-center justify-center"><span aria-hidden="true">✕</span></button>
               {f.previewUrl ? (
-                <img src={f.previewUrl} alt={f.name} className="w-full h-20 object-cover rounded"/>
+                <img src={f.previewUrl} alt={f.name} width={80} height={80} className="w-full h-20 object-cover rounded"/>
               ) : (
                 <div className="w-full h-20 rounded bg-slate-50 flex items-center justify-center">
                   <svg className="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
@@ -455,8 +455,8 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
             )}
             <BlueBtn href={`${siteBase}/quote`}>Get Quote</BlueBtn>
           </div>
-          <button className={`xl:hidden p-2 rounded-md ${burgerHover} transition-colors`} onClick={() => setOpen(!open)}>
-            <svg className="w-6 h-6" style={{ color: burgerColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <button type="button" aria-label={open ? "Close menu" : "Open menu"} aria-expanded={open} className={`xl:hidden p-2 rounded-md ${burgerHover} transition-colors`} onClick={() => setOpen(!open)}>
+            <svg className="w-6 h-6" aria-hidden="true" style={{ color: burgerColor }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={open ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"}/>
             </svg>
           </button>
@@ -527,7 +527,7 @@ function SiteFooter({ tenant, settings }: any) {
         {/* Brand */}
         <div className="col-span-2 lg:col-span-1 space-y-4">
           {logoUrl ? (
-            <img src={logoUrl} alt={tenantName} className="h-16 w-auto object-contain" />
+            <img src={logoUrl} alt={tenantName} width={200} height={64} className="h-16 w-auto object-contain" />
           ) : (
             <p className="text-white font-bold text-xl">{tenantName}</p>
           )}
@@ -606,7 +606,7 @@ function SiteFooter({ tenant, settings }: any) {
       </div>
 
       {/* Bottom bar */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-8 border-t border-slate-800 flex flex-wrap gap-3 items-center justify-between text-xs text-slate-600">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-6 pb-8 border-t border-slate-800 flex flex-wrap gap-3 items-center justify-between text-xs text-slate-400">
         <span>&copy; {new Date().getFullYear()} {tenantName}. All rights reserved.</span>
         <div className="flex gap-5">
           <a href={`${siteBase}/faqs`} className="hover:text-slate-400 transition-colors">FAQs</a>
@@ -916,7 +916,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 >
                   {/* Image */}
                   {cs.heroImageUrl
-                    ? <img src={cs.heroImageUrl} alt={cs.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                    ? <img src={cs.heroImageUrl} alt={cs.title} loading="lazy" width={1200} height={800} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
                     : <div className="absolute inset-0" style={{ backgroundColor: NAVY }}/>
                   }
                   {/* Gradient overlay */}
@@ -1133,7 +1133,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="grid grid-cols-2 gap-3">
             {["/svc-silicone.webp", "/svc-monocouche.webp", "/svc-krend.webp", "/svc-pebbledash.webp"].map((src, i) => (
               <div key={i} className="rounded-xl overflow-hidden" style={{ height: 170 }}>
-                <img src={src} alt="AMO Rendering work" className="w-full h-full object-cover"/>
+                <img src={src} alt="AMO Rendering work" loading="lazy" width={1200} height={1200} className="w-full h-full object-cover"/>
               </div>
             ))}
           </div>
@@ -1416,7 +1416,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="grid grid-cols-2 gap-3">
             {["/gal-monocouche-grays.webp","/gal-romford.webp","/gal-krend-chelmsford.webp","/gal-brentwood-silicone.webp"].map((src, i) => (
               <div key={i} className="rounded-xl overflow-hidden" style={{ height: 180 }}>
-                <img src={src} alt="AMO Rendering local work" className="w-full h-full object-cover"/>
+                <img src={src} alt="AMO Rendering local work" loading="lazy" width={1200} height={1200} className="w-full h-full object-cover"/>
               </div>
             ))}
           </div>
@@ -1661,7 +1661,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
                 { src: "/ba-monocouche.webp", title: "Monocouche Render", tag: "Seamless. Low Maintenance." },
               ].map(({ src, title, tag }) => (
                 <div key={src} className="rounded-2xl overflow-hidden shadow-md border border-slate-200 group hover:shadow-xl transition-shadow duration-300">
-                  <img src={src} alt={title} className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"/>
+                  <img src={src} alt={title} loading="lazy" width={1200} height={800} className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"/>
                   <div className="px-4 py-3 flex items-center justify-between bg-white">
                     <p className="font-semibold text-sm" style={{ color: TEXT }}>{title}</p>
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{tag}</span>
@@ -1678,7 +1678,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
               { src: "/ba-ewi.webp", title: "EWI Systems", tag: "Insulate & Transform" },
             ].map(({ src, title, tag }) => (
               <div key={src} className="rounded-2xl overflow-hidden shadow-md border border-slate-200 group hover:shadow-xl transition-shadow duration-300">
-                <img src={src} alt={title} className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"/>
+                <img src={src} alt={title} loading="lazy" width={1200} height={800} className="w-full object-cover group-hover:scale-[1.02] transition-transform duration-500"/>
                 <div className="px-5 py-4 flex items-center justify-between bg-white">
                   <p className="font-bold" style={{ color: TEXT }}>{title}</p>
                   <span className="text-xs font-semibold px-3 py-1 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{tag}</span>
@@ -1760,7 +1760,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
                       {seg.regulars.map((img: any) => (
                         <div key={img.id} className="rounded-xl overflow-hidden border border-slate-100 shadow-sm group">
                           <div className="overflow-hidden">
-                            <img src={img.imageUrl} alt={img.altText || img.caption || "Rendering project"} className="w-full aspect-[4/3] object-cover group-hover:scale-[1.03] transition-transform duration-500"/>
+                            <img src={img.imageUrl} alt={img.altText || img.caption || "Rendering project"} loading="lazy" width={800} height={600} className="w-full aspect-[4/3] object-cover group-hover:scale-[1.03] transition-transform duration-500"/>
                           </div>
                           {img.caption && (
                             <div className="px-4 py-3 flex items-center gap-2">
@@ -1929,7 +1929,7 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
                   style={{ minHeight: "360px" }}
                 >
                   {cs.heroImageUrl
-                    ? <img src={cs.heroImageUrl} alt={cs.title} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                    ? <img src={cs.heroImageUrl} alt={cs.title} loading="lazy" width={1200} height={800} className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
                     : <div className="absolute inset-0" style={{ backgroundColor: NAVY }}/>
                   }
                   <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,22,40,0.92) 0%, rgba(10,22,40,0.35) 55%, transparent 100%)" }}/>
@@ -2332,7 +2332,7 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
               {(posts as any[])?.map((post: any) => (
                 <a key={post.id} href={`${siteBase}/blog/${post.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
                   {post.heroImageUrl
-                    ? <img src={post.heroImageUrl} alt={post.title} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
+                    ? <img src={post.heroImageUrl} alt={post.title} loading="lazy" width={400} height={208} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
                     : <div className="w-full h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "08" }}><svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg></div>
                   }
                   <div className="p-5 space-y-2">
@@ -2389,7 +2389,7 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
 
       {isLoading ? <Spinner/> : p ? (
         <>
-          {p.heroImageUrl && <img src={p.heroImageUrl} alt={p.title} className="w-full h-64 object-cover"/>}
+          {p.heroImageUrl && <img src={p.heroImageUrl} alt={p.title} width={1200} height={256} className="w-full h-64 object-cover"/>}
           <section className="py-16 bg-white">
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">

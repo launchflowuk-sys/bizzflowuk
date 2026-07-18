@@ -115,6 +115,64 @@ router.get("/public/sitemap.xml", async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+/**
+ * GET /public/llms.txt
+ *
+ * Follows the llmstxt.org spec (H1 title, blockquote summary, optional detail
+ * list, then ## sections of markdown links) so AI agents/crawlers get a
+ * concise, accurate map of the tenant's real services and key pages — same
+ * per-tenant Host-header resolution as robots.txt/sitemap.xml above, since a
+ * static file baked at build time can't reflect each tenant's actual content.
+ */
+router.get("/public/llms.txt", async (req, res) => {
+  try {
+    const host = (req.query.host as string) || (req.headers.host as string) || "";
+    const tenants = await db
+      .select()
+      .from(tenantsTable)
+      .where(and(eq(tenantsTable.customDomain, host), sql`${tenantsTable.suspended} = false`))
+      .limit(1);
+    if (!tenants.length) { res.status(404).json({ error: "Domain not found" }); return; }
+    const tenant = tenants[0];
+    const tid = tenant.id;
+    const base = `https://${tenant.customDomain}`;
+
+    const [settings] = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid)).limit(1);
+    const services = await db.select().from(servicesTable).where(and(eq(servicesTable.tenantId, tid), sql`${servicesTable.published} = true`)).orderBy(servicesTable.sortOrder);
+    const areas = await db.select().from(areasTable).where(and(eq(areasTable.tenantId, tid), sql`${areasTable.published} = true`)).orderBy(areasTable.sortOrder);
+
+    const areaNames = areas.map(a => a.name).join(", ");
+    const lines: string[] = [];
+    lines.push(`# ${tenant.name}`);
+    lines.push("");
+    lines.push(`> ${settings?.aboutText || tenant.description || `${tenant.name} provides ${tenant.industry} services.`}`);
+    lines.push("");
+    if (areaNames || settings?.phone) {
+      lines.push("Key details:");
+      if (areaNames) lines.push(`- Serves: ${areaNames}`);
+      if (settings?.phone) lines.push(`- Contact: ${settings.phone}${settings?.email ? ` / ${settings.email}` : ""}`);
+      lines.push("");
+    }
+    lines.push("## Services");
+    for (const s of services) lines.push(`- [${s.name}](${base}/services/${s.slug}): ${s.tagline || s.description || ""}`.trim());
+    lines.push("");
+    lines.push("## Key Pages");
+    lines.push(`- [Get a Quote](${base}/quote): Request a free, no-obligation quote.`);
+    lines.push(`- [Case Studies](${base}/case-studies): Completed project examples.`);
+    lines.push(`- [FAQs](${base}/faqs): Common questions answered.`);
+    lines.push(`- [Contact](${base}/contact): Get in touch.`);
+    lines.push("");
+    lines.push("## Optional");
+    lines.push(`- [Terms & Conditions](${base}/terms)`);
+    lines.push(`- [Privacy Policy](${base}/privacy)`);
+    lines.push("");
+
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(lines.join("\n"));
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 // Full public site data bundle
 router.get("/public/:tenantSlug/site", async (req, res) => {
   try {
