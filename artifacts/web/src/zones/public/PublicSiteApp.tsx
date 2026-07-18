@@ -1279,11 +1279,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote for {name}</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
                     <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
-                    <div className="space-y-2 pt-2">
-                      <a href={`${siteBase}/gallery`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>View Before &amp; After →</a>
-                      <a href={`${siteBase}/contact`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Contact AMO →</a>
-                      <a href={`${siteBase}/visualiser`} className="block text-sm font-semibold hover:text-[#1F8CFF] transition-colors" style={{ color: BLUE }}>Render Visualiser →</a>
-                    </div>
+                    <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>Other Services</h3>
@@ -1478,7 +1474,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
             <p className="text-slate-300 text-sm leading-relaxed">Tell AMO where you are and what you need. We'll review your photos, advise on the best render system and provide a clear price.</p>
             <div className="flex flex-wrap gap-3 pt-2">
               <BlueBtn href={`${siteBase}/quote`}>Request A Free Quote</BlueBtn>
-              <OutlineBtn href={`${siteBase}/contact`} dark>Call Us</OutlineBtn>
+              <OutlineBtn href={settings?.phone ? `tel:${settings.phone}` : `${siteBase}/contact`} dark>{settings?.phone ? "Call Us" : "Contact Us"}</OutlineBtn>
             </div>
           </div>
         </div>
@@ -1556,10 +1552,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote in {areaName}</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
                     <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
-                    <div className="space-y-2 pt-2">
-                      <a href={`${siteBase}/gallery`} className="block text-sm font-semibold" style={{ color: BLUE }}>View Before &amp; After →</a>
-                      <a href={`${siteBase}/contact`} className="block text-sm font-semibold" style={{ color: BLUE }}>Contact AMO →</a>
-                    </div>
+                    <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>Other Areas</h3>
@@ -2752,6 +2745,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
   const quoteSuccessRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (submitted) quoteSuccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -2848,34 +2842,14 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
 
-                  <SectionHeading>1. Your Details</SectionHeading>
+                  {/* Quick Quote — every field required to submit, kept up front so the form
+                      doesn't look longer than it has to be. Everything else (all optional) lives
+                      in the collapsible section below. */}
                   <div className={gridCls}>
                     <div id="qf-name"><label className={labelCls} style={{ color: MUTED }}>Full Name *</label><input className={inputCls} placeholder="Full name" value={form.firstName + (form.lastName ? ' ' + form.lastName : '')} onChange={e => { const parts = e.target.value.split(' '); setForm({ ...form, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') }); }}/><FieldError message={errors.name}/></div>
                     <div id="qf-phone"><label className={labelCls} style={{ color: MUTED }}>Phone Number *</label><input className={inputCls} placeholder="Phone number" value={form.phone} onChange={f('phone')}/><FieldError message={errors.phone}/></div>
                   </div>
-                  <div className={gridCls}>
-                    <div><label className={labelCls} style={{ color: MUTED }}>Email Address</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/></div>
-                    <div id="qf-postcode"><label className={labelCls} style={{ color: MUTED }}>Property Postcode *</label><input className={inputCls} placeholder="Postcode" value={form.postcode} onChange={f('postcode')}/><FieldError message={errors.postcode}/></div>
-                  </div>
-                  <div><label className={labelCls} style={{ color: MUTED }}>Property Address</label><input className={inputCls} placeholder="Street address" value={form.address} onChange={f('address')}/></div>
-                  <div className={gridCls}>
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Preferred Contact Method</label>
-                      <select className={inputCls} value={form.preferredContactMethod} onChange={f('preferredContactMethod')}>
-                        <option value="">Select...</option>
-                        {CONTACT_METHODS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Best Time to Contact</label>
-                      <select className={inputCls} value={form.bestTimeToContact} onChange={f('bestTimeToContact')}>
-                        <option value="">Select...</option>
-                        {BEST_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <SectionHeading>2. Property and Project</SectionHeading>
+                  <div id="qf-postcode"><label className={labelCls} style={{ color: MUTED }}>Property Postcode *</label><input className={inputCls} placeholder="Postcode" value={form.postcode} onChange={f('postcode')}/><FieldError message={errors.postcode}/></div>
                   <div className={gridCls}>
                     <div id="qf-propertyType">
                       <label className={labelCls} style={{ color: MUTED }}>Property Type *</label>
@@ -2903,25 +2877,14 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                   {isCommercial && (
                     <div><label className={labelCls} style={{ color: MUTED }}>Company Name</label><input className={inputCls} value={form.companyName} onChange={f('companyName')}/></div>
                   )}
-                  <div className={gridCls}>
-                    <div id="qf-numberOfStoreys">
-                      <label className={labelCls} style={{ color: MUTED }}>Number of Storeys *</label>
-                      <select className={inputCls} value={form.numberOfStoreys} onChange={f('numberOfStoreys')}>
-                        <option value="">Select...</option>
-                        {STOREYS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <FieldError message={errors.numberOfStoreys}/>
-                    </div>
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Approximate Wall Area</label>
-                      <select className={inputCls} value={form.wallArea} onChange={f('wallArea')}>
-                        <option value="">Select...</option>
-                        {WALL_AREAS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
+                  <div id="qf-numberOfStoreys">
+                    <label className={labelCls} style={{ color: MUTED }}>Number of Storeys *</label>
+                    <select className={inputCls} value={form.numberOfStoreys} onChange={f('numberOfStoreys')}>
+                      <option value="">Select...</option>
+                      {STOREYS.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <FieldError message={errors.numberOfStoreys}/>
                   </div>
-
-                  <SectionHeading>3. Rendering Requirements</SectionHeading>
                   <div className={gridCls}>
                     <div id="qf-serviceInterest">
                       <label className={labelCls} style={{ color: MUTED }}>Service Required *</label>
@@ -2940,103 +2903,132 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                       <FieldError message={errors.existingSurface}/>
                     </div>
                   </div>
-                  <div>
-                    <label className={labelCls} style={{ color: MUTED }}>Current Condition</label>
-                    <CheckboxGroup options={CONDITIONS} values={form.currentCondition} onChange={v => setForm({ ...form, currentCondition: v })}/>
+                  <div id="qf-timeframe">
+                    <label className={labelCls} style={{ color: MUTED }}>Preferred Timeframe *</label>
+                    <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
+                      <option value="">Select...</option>
+                      {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <FieldError message={errors.timeframe}/>
                   </div>
-                  <div className={gridCls}>
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Desired Finish</label>
-                      <select className={inputCls} value={form.desiredFinish} onChange={f('desiredFinish')}>
-                        <option value="">Select...</option>
-                        {FINISHES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Preferred Colour</label>
-                      <select className={inputCls} value={form.preferredColour} onChange={f('preferredColour')}>
-                        <option value="">Select...</option>
-                        {COLOURS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                  </div>
-                  {form.preferredColour === "Custom Colour" && (
-                    <div><label className={labelCls} style={{ color: MUTED }}>Please specify colour</label><input className={inputCls} value={form.preferredColourOther} onChange={f('preferredColourOther')}/></div>
-                  )}
 
-                  {isEwi && (
-                    <>
-                      <SectionHeading>4. External Wall Insulation</SectionHeading>
+                  <button type="button" onClick={() => setShowMoreDetails(v => !v)} className="text-sm font-semibold underline hover:no-underline text-left" style={{ color: BLUE }}>
+                    {showMoreDetails ? '− Hide extra details' : '+ Add more details for a more accurate quote (optional)'}
+                  </button>
+
+                  {showMoreDetails && (
+                    <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
+                      <div className={gridCls}>
+                        <div><label className={labelCls} style={{ color: MUTED }}>Email Address</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/></div>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Preferred Contact Method</label>
+                          <select className={inputCls} value={form.preferredContactMethod} onChange={f('preferredContactMethod')}>
+                            <option value="">Select...</option>
+                            {CONTACT_METHODS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div className={gridCls}>
+                        <div><label className={labelCls} style={{ color: MUTED }}>Property Address</label><input className={inputCls} placeholder="Street address" value={form.address} onChange={f('address')}/></div>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Best Time to Contact</label>
+                          <select className={inputCls} value={form.bestTimeToContact} onChange={f('bestTimeToContact')}>
+                            <option value="">Select...</option>
+                            {BEST_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
                       <div>
-                        <label className={labelCls} style={{ color: MUTED }}>Do You Require External Wall Insulation?</label>
-                        <select className={inputCls} value={form.requiresInsulation} onChange={f('requiresInsulation')}>
+                        <label className={labelCls} style={{ color: MUTED }}>Approximate Wall Area</label>
+                        <select className={inputCls} value={form.wallArea} onChange={f('wallArea')}>
                           <option value="">Select...</option>
-                          {YES_NO_NOTSURE.map(t => <option key={t} value={t}>{t}</option>)}
+                          {WALL_AREAS.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
+                      </div>
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>Current Condition</label>
+                        <CheckboxGroup options={CONDITIONS} values={form.currentCondition} onChange={v => setForm({ ...form, currentCondition: v })}/>
                       </div>
                       <div className={gridCls}>
                         <div>
-                          <label className={labelCls} style={{ color: MUTED }}>Preferred Insulation Thickness</label>
-                          <select className={inputCls} value={form.insulationThickness} onChange={f('insulationThickness')}>
+                          <label className={labelCls} style={{ color: MUTED }}>Desired Finish</label>
+                          <select className={inputCls} value={form.desiredFinish} onChange={f('desiredFinish')}>
                             <option value="">Select...</option>
-                            {INSULATION_THICKNESS.map(t => <option key={t} value={t}>{t}</option>)}
+                            {FINISHES.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className={labelCls} style={{ color: MUTED }}>Preferred Insulation Material</label>
-                          <select className={inputCls} value={form.insulationMaterial} onChange={f('insulationMaterial')}>
+                          <label className={labelCls} style={{ color: MUTED }}>Preferred Colour</label>
+                          <select className={inputCls} value={form.preferredColour} onChange={f('preferredColour')}>
                             <option value="">Select...</option>
-                            {INSULATION_MATERIAL.map(t => <option key={t} value={t}>{t}</option>)}
+                            {COLOURS.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
                       </div>
-                    </>
+                      {form.preferredColour === "Custom Colour" && (
+                        <div><label className={labelCls} style={{ color: MUTED }}>Please specify colour</label><input className={inputCls} value={form.preferredColourOther} onChange={f('preferredColourOther')}/></div>
+                      )}
+
+                      {isEwi && (
+                        <>
+                          <SectionHeading>External Wall Insulation</SectionHeading>
+                          <div>
+                            <label className={labelCls} style={{ color: MUTED }}>Do You Require External Wall Insulation?</label>
+                            <select className={inputCls} value={form.requiresInsulation} onChange={f('requiresInsulation')}>
+                              <option value="">Select...</option>
+                              {YES_NO_NOTSURE.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </div>
+                          <div className={gridCls}>
+                            <div>
+                              <label className={labelCls} style={{ color: MUTED }}>Preferred Insulation Thickness</label>
+                              <select className={inputCls} value={form.insulationThickness} onChange={f('insulationThickness')}>
+                                <option value="">Select...</option>
+                                {INSULATION_THICKNESS.map(t => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                            </div>
+                            <div>
+                              <label className={labelCls} style={{ color: MUTED }}>Preferred Insulation Material</label>
+                              <select className={inputCls} value={form.insulationMaterial} onChange={f('insulationMaterial')}>
+                                <option value="">Select...</option>
+                                {INSULATION_MATERIAL.map(t => <option key={t} value={t}>{t}</option>)}
+                              </select>
+                            </div>
+                          </div>
+                        </>
+                      )}
+
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>Access Conditions</label>
+                        <CheckboxGroup options={ACCESS_CONDITIONS} values={form.accessConditions} onChange={v => setForm({ ...form, accessConditions: v })}/>
+                      </div>
+                      <div className={gridCls}>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Property Status</label>
+                          <select className={inputCls} value={form.propertyStatus} onChange={f('propertyStatus')}>
+                            <option value="">Select...</option>
+                            {PROPERTY_STATUSES.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Optional Budget Range</label>
+                          <select className={inputCls} value={form.budget} onChange={f('budget')}>
+                            <option value="">Select...</option>
+                            {BUDGETS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Tell us anything else about your property, existing walls, access or the work required…" value={form.notes} onChange={f('notes')}/></div>
+
+                      <MultiFileUpload
+                        tenantSlug={tenantSlug}
+                        label="Upload photos or documents"
+                        hint="Upload clear photos of the front, rear, sides and any damaged areas. Photos help us provide a faster and more accurate quotation. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
+                        onChange={urls => setForm({ ...form, photoUrls: urls })}
+                      />
+                    </div>
                   )}
 
-                  <SectionHeading>5. Access and Site Conditions</SectionHeading>
-                  <div>
-                    <label className={labelCls} style={{ color: MUTED }}>Access Conditions</label>
-                    <CheckboxGroup options={ACCESS_CONDITIONS} values={form.accessConditions} onChange={v => setForm({ ...form, accessConditions: v })}/>
-                  </div>
-                  <div>
-                    <label className={labelCls} style={{ color: MUTED }}>Property Status</label>
-                    <select className={inputCls} value={form.propertyStatus} onChange={f('propertyStatus')}>
-                      <option value="">Select...</option>
-                      {PROPERTY_STATUSES.map(t => <option key={t} value={t}>{t}</option>)}
-                    </select>
-                  </div>
-
-                  <SectionHeading>6. Project Timing</SectionHeading>
-                  <div className={gridCls}>
-                    <div id="qf-timeframe">
-                      <label className={labelCls} style={{ color: MUTED }}>Preferred Timeframe *</label>
-                      <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
-                        <option value="">Select...</option>
-                        {TIMEFRAMES.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                      <FieldError message={errors.timeframe}/>
-                    </div>
-                    <div>
-                      <label className={labelCls} style={{ color: MUTED }}>Optional Budget Range</label>
-                      <select className={inputCls} value={form.budget} onChange={f('budget')}>
-                        <option value="">Select...</option>
-                        {BUDGETS.map(t => <option key={t} value={t}>{t}</option>)}
-                      </select>
-                    </div>
-                  </div>
-
-                  <SectionHeading>7. Additional Information</SectionHeading>
-                  <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Tell us anything else about your property, existing walls, access or the work required…" value={form.notes} onChange={f('notes')}/></div>
-
-                  <SectionHeading>8. Property Photos</SectionHeading>
-                  <MultiFileUpload
-                    tenantSlug={tenantSlug}
-                    label="Upload photos or documents"
-                    hint="Upload clear photos of the front, rear, sides and any damaged areas. Photos help us provide a faster and more accurate quotation. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
-                    onChange={urls => setForm({ ...form, photoUrls: urls })}
-                  />
-
-                  <SectionHeading>9. Consent</SectionHeading>
                   <div id="qf-consentAgreed">
                     <label className="flex items-start gap-2 text-sm" style={{ color: TEXT }}>
                       <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1F8CFF] focus:ring-[#1F8CFF]" checked={form.consentAgreed} onChange={e => setForm({ ...form, consentAgreed: e.target.checked })}/>
@@ -3048,6 +3040,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                     <FieldError message={errors.consentAgreed}/>
                   </div>
 
+                  <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
                   <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
                     {mutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
                   </button>

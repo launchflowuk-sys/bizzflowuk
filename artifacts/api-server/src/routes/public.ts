@@ -123,7 +123,13 @@ router.get("/public/:tenantSlug/site", async (req, res) => {
     const tid = tenant.id;
     const [settings] = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tid)).limit(1);
     const services = await db.select().from(servicesTable).where(and(eq(servicesTable.tenantId, tid), sql`${servicesTable.published} = true`)).orderBy(servicesTable.sortOrder);
-    const reviews = await db.select().from(reviewsTable).where(and(eq(reviewsTable.tenantId, tid), sql`${reviewsTable.featured} = true`, sql`${reviewsTable.published} = true`)).limit(6);
+    // Prefer reviews marked "featured", but a tenant with published reviews and none flagged
+    // as featured yet would otherwise show zero social proof on the homepage — fall back to
+    // the most recent published ones so cold ad traffic never lands on an empty trust section.
+    let reviews = await db.select().from(reviewsTable).where(and(eq(reviewsTable.tenantId, tid), sql`${reviewsTable.featured} = true`, sql`${reviewsTable.published} = true`)).limit(6);
+    if (!reviews.length) {
+      reviews = await db.select().from(reviewsTable).where(and(eq(reviewsTable.tenantId, tid), sql`${reviewsTable.published} = true`)).orderBy(sql`${reviewsTable.createdAt} desc`).limit(6);
+    }
     const caseStudies = await db.select().from(caseStudiesTable).where(and(eq(caseStudiesTable.tenantId, tid), sql`${caseStudiesTable.published} = true`)).limit(3);
     const beforeAfter = await db.select().from(beforeAfterTable).where(eq(beforeAfterTable.tenantId, tid)).limit(4);
     const faqs = await db.select().from(faqsTable).where(and(eq(faqsTable.tenantId, tid), sql`${faqsTable.global} = true`)).orderBy(faqsTable.sortOrder).limit(10);
