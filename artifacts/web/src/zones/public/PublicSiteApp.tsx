@@ -2761,6 +2761,8 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
     const e: Record<string, string> = {};
     if (!form.firstName.trim()) e.name = "Full name is required";
     if (!form.phone.trim()) e.phone = "Phone number is required";
+    if (!form.email.trim()) e.email = "Email address is required";
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Please enter a valid email address";
     if (!form.postcode.trim()) e.postcode = "Postcode is required";
     if (!form.propertyType) e.propertyType = "Please select a property type";
     if (!form.areaToRender) e.areaToRender = "Please select the area to be rendered";
@@ -2849,6 +2851,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                     <div id="qf-name"><label className={labelCls} style={{ color: MUTED }}>Full Name *</label><input className={inputCls} placeholder="Full name" value={form.firstName + (form.lastName ? ' ' + form.lastName : '')} onChange={e => { const parts = e.target.value.split(' '); setForm({ ...form, firstName: parts[0] || '', lastName: parts.slice(1).join(' ') }); }}/><FieldError message={errors.name}/></div>
                     <div id="qf-phone"><label className={labelCls} style={{ color: MUTED }}>Phone Number *</label><input className={inputCls} placeholder="Phone number" value={form.phone} onChange={f('phone')}/><FieldError message={errors.phone}/></div>
                   </div>
+                  <div id="qf-email"><label className={labelCls} style={{ color: MUTED }}>Email Address *</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/><FieldError message={errors.email}/></div>
                   <div id="qf-postcode"><label className={labelCls} style={{ color: MUTED }}>Property Postcode *</label><input className={inputCls} placeholder="Postcode" value={form.postcode} onChange={f('postcode')}/><FieldError message={errors.postcode}/></div>
                   <div className={gridCls}>
                     <div id="qf-propertyType">
@@ -2919,7 +2922,6 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                   {showMoreDetails && (
                     <div className="space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-5">
                       <div className={gridCls}>
-                        <div><label className={labelCls} style={{ color: MUTED }}>Email Address</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/></div>
                         <div>
                           <label className={labelCls} style={{ color: MUTED }}>Preferred Contact Method</label>
                           <select className={inputCls} value={form.preferredContactMethod} onChange={f('preferredContactMethod')}>
@@ -2927,16 +2929,14 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                             {CONTACT_METHODS.map(t => <option key={t} value={t}>{t}</option>)}
                           </select>
                         </div>
-                      </div>
-                      <div className={gridCls}>
                         <div><label className={labelCls} style={{ color: MUTED }}>Property Address</label><input className={inputCls} placeholder="Street address" value={form.address} onChange={f('address')}/></div>
-                        <div>
-                          <label className={labelCls} style={{ color: MUTED }}>Best Time to Contact</label>
-                          <select className={inputCls} value={form.bestTimeToContact} onChange={f('bestTimeToContact')}>
-                            <option value="">Select...</option>
-                            {BEST_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
-                          </select>
-                        </div>
+                      </div>
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>Best Time to Contact</label>
+                        <select className={inputCls} value={form.bestTimeToContact} onChange={f('bestTimeToContact')}>
+                          <option value="">Select...</option>
+                          {BEST_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
                       </div>
                       <div>
                         <label className={labelCls} style={{ color: MUTED }}>Approximate Wall Area</label>
