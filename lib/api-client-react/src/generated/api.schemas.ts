@@ -84,6 +84,13 @@ export const UserRole = {
   CUSTOMER: 'CUSTOMER',
 } as const;
 
+export interface UserBusiness {
+  tenantId: number;
+  name: string;
+  slug: string;
+  role: string;
+}
+
 export interface User {
   id: number;
   clerkId: string;
@@ -95,7 +102,13 @@ export interface User {
   role: UserRole;
   /** @nullable */
   tenantId?: number | null;
+  /** Businesses this user can access (for the dashboard switcher). One entry = no switcher. */
+  businesses?: UserBusiness[];
   createdAt?: string;
+}
+
+export interface SwitchTenantInput {
+  tenantId: number;
 }
 
 export interface UserSync {

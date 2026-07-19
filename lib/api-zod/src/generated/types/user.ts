@@ -5,6 +5,7 @@
  * LaunchFlow multi-tenant SaaS platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { UserBusiness } from './userBusiness';
 import type { UserRole } from './userRole';
 
 export interface User {
@@ -18,5 +19,7 @@ export interface User {
   role: UserRole;
   /** @nullable */
   tenantId?: number | null;
+  /** Businesses this user can access (for the dashboard switcher). One entry = no switcher. */
+  businesses?: UserBusiness[];
   createdAt?: Date;
 }

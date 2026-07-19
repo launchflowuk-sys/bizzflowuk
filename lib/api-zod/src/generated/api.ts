@@ -27,6 +27,37 @@ export const GetMeResponse = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "businesses": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.string()
+})).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
+  "createdAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Switch the caller's active business
+ */
+export const SwitchTenantBody = zod.object({
+  "tenantId": zod.number()
+})
+
+export const SwitchTenantResponse = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string(),
+  "email": zod.string(),
+  "firstName": zod.string().nullish(),
+  "lastName": zod.string().nullish(),
+  "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
+  "tenantId": zod.number().nullish(),
+  "businesses": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.string()
+})).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })
 
@@ -50,6 +81,12 @@ export const SyncUserResponse = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "businesses": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.string()
+})).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })
 
@@ -65,6 +102,12 @@ export const ListUsersResponseItem = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "businesses": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.string()
+})).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })
 export const ListUsersResponse = zod.array(ListUsersResponseItem)
@@ -90,6 +133,12 @@ export const UpdateUserResponse = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "businesses": zod.array(zod.object({
+  "tenantId": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "role": zod.string()
+})).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })
 

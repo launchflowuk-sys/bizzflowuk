@@ -104,6 +104,7 @@ import type {
   SquareChargeRequest,
   SquareChargeResponse,
   SubmitPublicQuoteAction200,
+  SwitchTenantInput,
   TeamMember,
   TeamMemberInput,
   TeamMemberUpdate,
@@ -288,6 +289,77 @@ export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Err
 
 
 
+
+export const getSwitchTenantUrl = () => {
+
+
+
+
+  return `/api/auth/switch-tenant`
+}
+
+/**
+ * @summary Switch the caller's active business
+ */
+export const switchTenant = async (switchTenantInput: SwitchTenantInput, options?: RequestInit): Promise<User> => {
+
+  return customFetch<User>(getSwitchTenantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      switchTenantInput,)
+  }
+);}
+
+
+
+
+export const getSwitchTenantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchTenant>>, TError,{data: BodyType<SwitchTenantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof switchTenant>>, TError,{data: BodyType<SwitchTenantInput>}, TContext> => {
+
+const mutationKey = ['switchTenant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof switchTenant>>, {data: BodyType<SwitchTenantInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  switchTenant(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SwitchTenantMutationResult = NonNullable<Awaited<ReturnType<typeof switchTenant>>>
+    export type SwitchTenantMutationBody = BodyType<SwitchTenantInput>
+    export type SwitchTenantMutationError = ErrorType<void>
+
+    /**
+ * @summary Switch the caller's active business
+ */
+export const useSwitchTenant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof switchTenant>>, TError,{data: BodyType<SwitchTenantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof switchTenant>>,
+        TError,
+        {data: BodyType<SwitchTenantInput>},
+        TContext
+      > => {
+      return useMutation(getSwitchTenantMutationOptions(options));
+    }
 
 export const getSyncUserUrl = () => {
 

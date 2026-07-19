@@ -3,7 +3,7 @@ import { useAuthCtx } from "@/lib/auth";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import {
-  useGetMe, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
+  useGetMe, useSwitchTenant, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
   useListLeads, useGetLead, useCreateLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
   useConvertLeadToQuote, useConvertLeadToProject,
   useListQuotes, useGetQuote, useCreateQuote, useUpdateQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
@@ -173,6 +173,47 @@ const NAV_ITEMS = [
   { path: "/dashboard/settings", label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" },
 ];
 
+/**
+ * Business switcher — shown only when the logged-in user belongs to more than one business
+ * (a row per business in user_tenants). Switching flips the active business server-side, then
+ * we invalidate every query so the whole dashboard re-scopes to the newly selected business.
+ * Single-business users never see this.
+ */
+function BusinessSwitcher() {
+  const { data: me } = useGetMe();
+  const businesses = ((me as any)?.businesses || []) as Array<{ tenantId: number; name: string; slug: string }>;
+  const activeTenantId = (me as any)?.tenantId;
+  const switchMutation = useSwitchTenant();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  if (businesses.length < 2) return null;
+
+  const handleSwitch = async (tenantId: number) => {
+    if (tenantId === activeTenantId || switchMutation.isPending) return;
+    try {
+      await switchMutation.mutateAsync({ data: { tenantId } } as any);
+      await qc.invalidateQueries(); // re-scope every query (leads, quotes, pricing, me, …)
+      const name = businesses.find(b => b.tenantId === tenantId)?.name;
+      showToast(name ? `Switched to ${name}` : "Business switched");
+    } catch (err: any) { showToast(err?.message || "Could not switch business", "error"); }
+  };
+
+  return (
+    <div className="px-3 pt-3 pb-1 border-b border-slate-800 flex-shrink-0">
+      <p className="text-[10px] uppercase tracking-wider text-slate-500 px-1 mb-1.5">Business</p>
+      <div className="space-y-1">
+        {businesses.map(b => (
+          <button key={b.tenantId} onClick={() => handleSwitch(b.tenantId)} disabled={switchMutation.isPending}
+            className={`w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-between gap-2 disabled:opacity-60 ${b.tenantId === activeTenantId ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800/60 hover:text-white"}`}>
+            <span className="truncate">{b.name}</span>
+            {b.tenantId === activeTenantId && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNavClick?: () => void }) {
   const { data: me } = useGetMe();
   return (
@@ -182,6 +223,7 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
         <div className="text-xs text-slate-400 mt-0.5 truncate">{(me as any)?.email}</div>
         <div className="text-xs text-orange-400 font-medium mt-0.5">{(me as any)?.role?.replace("_", " ")}</div>
       </div>
+      <BusinessSwitcher />
       <nav className="flex-1 p-3 overflow-y-auto">
         {NAV_ITEMS.map((item, i) =>
           item === null ? <div key={i} className="my-2 border-t border-slate-800" /> : (

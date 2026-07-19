@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, usersTable } from "@workspace/db";
+import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, usersTable, userTenantsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { logger } from "./logger";
@@ -131,33 +131,52 @@ const AMO_SERVICES: ServiceSeed[] = [
  * 2011" is the only age/number claim, from Companies House incorporation).
  */
 /**
- * Ensures the AMO Services tenant-admin account exists. Runs on EVERY boot
- * (not just first tenant seed) so the account can still be created if the
- * password env var is added to Coolify after the tenant already seeded.
- * Never modifies an existing user — same safety rule as ensurePlatformUsers.
- * Password comes from AMO_ADMIN_PASSWORD (set once in Coolify); no credential
- * ships in source.
+ * Consolidates Mark onto a single login (mark@amorendering.co.uk) that can access BOTH his
+ * businesses via the dashboard business switcher. Runs every boot, idempotent, safe:
+ *  - ensures mark@amorendering.co.uk exists (created with AMO_ADMIN_PASSWORD only if missing;
+ *    an existing account's password is never touched — same rule as ensurePlatformUsers)
+ *  - grants it TENANT_ADMIN membership of both AMO Rendering and AMO Services
+ *  - retires the now-redundant mark@amoservices.co.uk login (deleted only if it has no
+ *    dependent data; otherwise left untouched and logged)
+ * Requires both tenants to exist; otherwise it no-ops and tries again next boot.
  */
-async function ensureAmoServicesAdmin(tenantId: number): Promise<void> {
-  const password = process.env["AMO_ADMIN_PASSWORD"];
-  if (!password) {
-    logger.warn("AMO_ADMIN_PASSWORD not set — skipping AMO Services admin bootstrap (existing users never modified regardless)");
-    return;
+async function ensureMarkMultiTenant(): Promise<void> {
+  const [rendering] = await db.select({ id: tenantsTable.id }).from(tenantsTable).where(eq(tenantsTable.slug, "amo-rendering")).limit(1);
+  const [services] = await db.select({ id: tenantsTable.id }).from(tenantsTable).where(eq(tenantsTable.slug, SLUG)).limit(1);
+  if (!rendering || !services) return;
+
+  let [mark] = await db.select().from(usersTable).where(eq(usersTable.email, "mark@amorendering.co.uk")).limit(1);
+  if (!mark) {
+    const password = process.env["AMO_ADMIN_PASSWORD"];
+    if (!password) { logger.warn("mark@amorendering.co.uk missing and AMO_ADMIN_PASSWORD unset — skipping Mark multi-tenant setup"); return; }
+    const hash = await bcrypt.hash(password, 12);
+    await db.insert(usersTable).values({ email: "mark@amorendering.co.uk", firstName: "Mark", lastName: "", role: "TENANT_ADMIN" as const, tenantId: rendering.id, passwordHash: hash }).onConflictDoNothing({ target: usersTable.email });
+    [mark] = await db.select().from(usersTable).where(eq(usersTable.email, "mark@amorendering.co.uk")).limit(1);
+    if (mark) logger.info("mark@amorendering.co.uk created as Mark's unified login");
   }
-  const hash = await bcrypt.hash(password, 12);
-  const inserted = await db
-    .insert(usersTable)
-    .values({
-      email: "mark@amoservices.co.uk",
-      firstName: "Mark",
-      lastName: "",
-      role: "TENANT_ADMIN" as const,
-      tenantId,
-      passwordHash: hash,
-    })
-    .onConflictDoNothing({ target: usersTable.email })
-    .returning({ email: usersTable.email });
-  if (inserted.length) logger.info({ email: inserted[0].email }, "AMO Services tenant admin bootstrapped (new account)");
+  if (!mark) return;
+
+  await db.insert(userTenantsTable).values([
+    { userId: mark.id, tenantId: rendering.id, role: "TENANT_ADMIN" as const },
+    { userId: mark.id, tenantId: services.id, role: "TENANT_ADMIN" as const },
+  ]).onConflictDoNothing();
+
+  // Default his active business to rendering, unless he's already on one of the two.
+  if (mark.tenantId !== rendering.id && mark.tenantId !== services.id) {
+    await db.update(usersTable).set({ tenantId: rendering.id }).where(eq(usersTable.id, mark.id));
+  }
+
+  // Retire the redundant services-only login. Delete only if it has no dependent data.
+  const [old] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, "mark@amoservices.co.uk")).limit(1);
+  if (old && old.id !== mark.id) {
+    try {
+      await db.delete(userTenantsTable).where(eq(userTenantsTable.userId, old.id));
+      await db.delete(usersTable).where(eq(usersTable.id, old.id));
+      logger.info("Retired redundant mark@amoservices.co.uk login (Mark now uses mark@amorendering.co.uk for both businesses)");
+    } catch (e) {
+      logger.warn({ err: e }, "Could not delete mark@amoservices.co.uk (has dependent data) — left in place");
+    }
+  }
 }
 
 /**
@@ -193,7 +212,7 @@ export async function seedAmoServicesIfMissing(): Promise<void> {
       .where(eq(tenantsTable.slug, SLUG))
       .limit(1);
     if (existing.length) {
-      await ensureAmoServicesAdmin(existing[0].id);
+      await ensureMarkMultiTenant();
       await ensureAmoServicesContent(existing[0].id);
       return;
     }
@@ -259,7 +278,7 @@ export async function seedAmoServicesIfMissing(): Promise<void> {
       areas.map((a, i) => ({ tenantId, ...a, published: true, sortOrder: (i + 1) * 10 })),
     );
 
-    await ensureAmoServicesAdmin(tenantId);
+    await ensureMarkMultiTenant();
 
     logger.info({ tenantId }, "AMO Services tenant seeded (tenant, settings, 7 services, 4 areas)");
   } catch (err) {

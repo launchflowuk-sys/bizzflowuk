@@ -82,6 +82,27 @@ paths:
         "401":
           description: Unauthenticated
 
+  /auth/switch-tenant:
+    post:
+      operationId: switchTenant
+      tags: [auth]
+      summary: Switch the caller's active business
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SwitchTenantInput"
+      responses:
+        "200":
+          description: Active business switched; returns the updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "403":
+          description: User is not a member of that business
+
   /auth/sync:
     post:
       operationId: syncUser
@@ -2868,9 +2889,34 @@ components:
           enum: [SUPER_ADMIN, TENANT_ADMIN, STAFF, CUSTOMER]
         tenantId:
           type: ["integer", "null"]
+        businesses:
+          type: array
+          description: Businesses this user can access (for the dashboard switcher). One entry = no switcher.
+          items:
+            $ref: "#/components/schemas/UserBusiness"
         createdAt:
           type: string
           format: date-time
+
+    UserBusiness:
+      type: object
+      required: [tenantId, name, slug, role]
+      properties:
+        tenantId:
+          type: integer
+        name:
+          type: string
+        slug:
+          type: string
+        role:
+          type: string
+
+    SwitchTenantInput:
+      type: object
+      required: [tenantId]
+      properties:
+        tenantId:
+          type: integer
 
     UserSync:
       type: object
