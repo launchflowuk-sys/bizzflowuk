@@ -224,21 +224,25 @@ const AMO_RENDERING_DEMO_PRICES: Array<{ category: string; name: string; descrip
 
 /**
  * Seeds the AMO Rendering cost calculator with demo pricing so it works end-to-end immediately.
- * Runs every boot but only acts if the rendering tenant has ZERO price items — so it never
- * overwrites real prices the tenant has entered (or clobbers their edits).
+ * Adds each demo item only if an item of the same name isn't already present — so it never
+ * duplicates, never touches items the tenant added or edited, and still populates even if the
+ * tenant already has a stray item. (Deleting a demo item will re-add it on the next deploy; once
+ * real prices are in, the demo seeder can be removed.)
  */
 async function ensureRenderingDemoPrices(): Promise<void> {
   const [rendering] = await db.select({ id: tenantsTable.id }).from(tenantsTable).where(eq(tenantsTable.slug, "amo-rendering")).limit(1);
   if (!rendering) return;
-  const existing = await db.select({ id: priceItemsTable.id }).from(priceItemsTable).where(eq(priceItemsTable.tenantId, rendering.id)).limit(1);
-  if (existing.length) return; // tenant already has price items — leave them alone
+  const existing = await db.select({ name: priceItemsTable.name }).from(priceItemsTable).where(eq(priceItemsTable.tenantId, rendering.id));
+  const existingNames = new Set(existing.map(e => e.name));
+  const toInsert = AMO_RENDERING_DEMO_PRICES.filter(p => !existingNames.has(p.name));
+  if (!toInsert.length) return;
   await db.insert(priceItemsTable).values(
-    AMO_RENDERING_DEMO_PRICES.map((p, i) => ({
+    toInsert.map((p, i) => ({
       tenantId: rendering.id, category: p.category, name: p.name, description: p.description,
-      unit: p.unit, unitPrice: p.unitPrice, fixed: !!p.fixed, published: true, sortOrder: (i + 1) * 10,
+      unit: p.unit, unitPrice: p.unitPrice, fixed: !!p.fixed, published: true, sortOrder: 100 + (i + 1) * 10,
     })),
   );
-  logger.info({ tenantId: rendering.id, count: AMO_RENDERING_DEMO_PRICES.length }, "Seeded AMO Rendering demo price items");
+  logger.info({ tenantId: rendering.id, count: toInsert.length }, "Seeded AMO Rendering demo price items");
 }
 
 export async function seedAmoServicesIfMissing(): Promise<void> {
