@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   tenantsTable, tenantSettingsTable, servicesTable, areasTable,
   galleryImagesTable, beforeAfterTable, reviewsTable, caseStudiesTable,
-  faqsTable, blogPostsTable, blogCategoriesTable
+  faqsTable, blogPostsTable, blogCategoriesTable, priceItemsTable
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { publicSettingsOnly } from "../lib/settingsHelpers";
@@ -202,6 +202,16 @@ router.get("/public/:tenantSlug/services", async (req, res) => {
     if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return; }
     const services = await db.select().from(servicesTable).where(and(eq(servicesTable.tenantId, tenant.id), sql`${servicesTable.published} = true`)).orderBy(servicesTable.sortOrder);
     res.json(services);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// Price items — powers the public cost calculator (published only, ordered)
+router.get("/public/:tenantSlug/price-items", async (req, res) => {
+  try {
+    const tenant = await getTenantBySlug(req.params.tenantSlug);
+    if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return; }
+    const items = await db.select().from(priceItemsTable).where(and(eq(priceItemsTable.tenantId, tenant.id), sql`${priceItemsTable.published} = true`)).orderBy(priceItemsTable.sortOrder);
+    res.json(items);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

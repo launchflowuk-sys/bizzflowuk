@@ -70,7 +70,10 @@ async function handleQuoteRequest(req: any, res: any, slug: string) {
     const { tenant } = ts;
     const { tenantSlug: _slug, ...rest } = req.body;
     const reference = `ENQ-${Date.now()}`;
-    const lead = await db.insert(leadsTable).values({ ...rest, reference, tenantId: tenant.id, status: "New", source: "Website" }).returning();
+    // Respect an explicit source (e.g. "Cost Calculator") so leads are attributable in the
+    // dashboard; the standard quote form sends none, so those still default to "Website".
+    const source = (rest as any).source || "Website";
+    const lead = await db.insert(leadsTable).values({ ...rest, reference, tenantId: tenant.id, status: "New", source }).returning();
     res.status(201).json(lead[0]);
 
     // Fire through unified helper — respects per-channel toggles and sends admin alert + customer ack

@@ -7,6 +7,7 @@ export * from "./quotes";
 export * from "./payment_links";
 export * from "./projects";
 export * from "./services";
+export * from "./price_items";
 export * from "./areas";
 export * from "./gallery";
 export * from "./reviews";

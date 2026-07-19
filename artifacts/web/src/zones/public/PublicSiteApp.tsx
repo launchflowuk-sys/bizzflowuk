@@ -1,7 +1,8 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
-import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl, useGetPublicPaymentPage, useChargePublicPaymentLink, useSubmitPublicQuoteAction } from "@workspace/api-client-react";
+import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl, useGetPublicPaymentPage, useChargePublicPaymentLink, useSubmitPublicQuoteAction, useListPublicPriceItems } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { initGoogleTag, updateConsent, fireQuoteRequestConversion } from "./analytics";
+import { PriceCalculatorSection } from "./PriceCalculator";
 export const SiteBaseCtx = createContext('');
 export const useSiteBase = () => useContext(SiteBaseCtx);
 
@@ -410,12 +411,18 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  // The calculator link only appears once the tenant has published price items — otherwise
+  // the page would be an empty shell. Cached/prefetched query, so this adds no real cost.
+  const { data: priceItems } = useListPublicPriceItems(tenantSlug);
+  const hasCalculator = ((priceItems as any[]) || []).length > 0;
+
   const links = [
     { label: "Services", href: "/services" },
     { label: "Before & After", href: "/gallery" },
     { label: "Areas", href: "/areas" },
     { label: "Case Studies", href: "/case-studies" },
     { label: "Reviews", href: "/reviews" },
+    ...(hasCalculator ? [{ label: "Cost Calculator", href: "/calculator" }] : []),
     { label: "Contact", href: "/contact" },
   ];
 
@@ -3176,6 +3183,22 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   );
 }
 
+function CalculatorPage({ tenantSlug }: { tenantSlug: string }) {
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  return (
+    <div>
+      <PageSEO title={`Cost Calculator | ${tenant?.name || "Get an Instant Estimate"}`} description={`Build an instant, indicative estimate for your project with ${tenant?.name || "our team"} and get it emailed to you.`}/>
+      <TopBar tenant={tenant} settings={settings}/>
+      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Cost Calculator" title="Instant Cost Calculator" subtitle="Build a quick, indicative estimate for your project and we'll email it to you — no obligation."/>
+      <PriceCalculatorSection tenantSlug={tenantSlug} accent={BLUE} panel={NAVY}/>
+      <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
+    </div>
+  );
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CONTACT PAGE
 // ─────────────────────────────────────────────────────────────────────────────
@@ -3496,6 +3519,7 @@ export default function PublicSiteApp({ forcedSlug, forcedBase, forcedOrigin, ss
         <Route path="/blog">{() => <BlogListPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/blog/:slug">{(p: any) => <BlogPostPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/calculator">{() => <CalculatorPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/pay/:token">{(p: any) => <PayQuotePage tenantSlug={tenantSlug} token={p.token}/>}</Route>
         <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/visualiser">{() => <VisualiserPage tenantSlug={tenantSlug}/>}</Route>

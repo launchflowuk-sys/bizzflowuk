@@ -15,6 +15,7 @@ import {
   getListPublicFaqsQueryOptions,
   getBrowsePublicBlogQueryOptions,
   getGetPublicBlogPostQueryOptions,
+  getListPublicPriceItemsQueryOptions,
 } from "@workspace/api-client-react";
 import TenantSiteRouter from "./zones/public/TenantSiteRouter";
 
@@ -64,7 +65,13 @@ export async function renderPublicPage(opts: {
   });
 
   const pathOnly = path.split("?")[0];
-  const prefetches: Promise<unknown>[] = [queryClient.prefetchQuery(getGetPublicSiteQueryOptions(tenantSlug))];
+  // Site query + price-items are prefetched for every route: the nav renders a calculator link
+  // whenever the tenant has published price items, so both templates read price-items on all
+  // pages — prefetching everywhere keeps the SSR nav identical to the hydrated one.
+  const prefetches: Promise<unknown>[] = [
+    queryClient.prefetchQuery(getGetPublicSiteQueryOptions(tenantSlug)),
+    queryClient.prefetchQuery(getListPublicPriceItemsQueryOptions(tenantSlug)),
+  ];
   for (const route of ROUTE_PREFETCHERS) {
     const match = pathOnly.match(route.pattern);
     if (match) {

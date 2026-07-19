@@ -14,6 +14,7 @@ import {
   useListReviews, useCreateReview, useUpdateReview, useDeleteReview,
   useListCaseStudies, useCreateCaseStudy, useUpdateCaseStudy, useDeleteCaseStudy,
   useListServices, useCreateService, useUpdateService, useDeleteService,
+  useListPriceItems, useCreatePriceItem, useUpdatePriceItem, useDeletePriceItem,
   useListAreas, useCreateArea, useUpdateArea, useDeleteArea,
   useListFaqs, useCreateFaq, useUpdateFaq, useDeleteFaq,
   useListBlogPosts, useCreateBlogPost, useUpdateBlogPost, useDeleteBlogPost,
@@ -27,7 +28,7 @@ import {
   getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
   getListQuoteItemsQueryKey, getListQuotePaymentLinksQueryKey, getListPaymentLinksQueryKey, getListProjectUpdatesQueryKey,
   getListGalleryImagesQueryKey, getListReviewsQueryKey, getListCaseStudiesQueryKey,
-  getListServicesQueryKey, getListAreasQueryKey, getListFaqsQueryKey,
+  getListServicesQueryKey, getListPriceItemsQueryKey, getListAreasQueryKey, getListFaqsQueryKey,
   getListBlogPostsQueryKey, getListTeamMembersQueryKey, getListSentEmailsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -161,6 +162,7 @@ const NAV_ITEMS = [
   { path: "/dashboard/reviews", label: "Reviews", icon: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" },
   { path: "/dashboard/case-studies", label: "Case Studies", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
   { path: "/dashboard/services", label: "Services", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
+  { path: "/dashboard/pricing", label: "Pricing", icon: "M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-9l3-3M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" },
   { path: "/dashboard/areas", label: "Areas", icon: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" },
   { path: "/dashboard/faqs", label: "FAQs", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { path: "/dashboard/blog", label: "Blog", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
@@ -2023,6 +2025,102 @@ function CaseStudiesPage() {
   );
 }
 
+// ─── CMS: Pricing (powers the public cost calculator) ───────────────────────────
+function PricingPage() {
+  const { data, isLoading } = useListPriceItems();
+  const createMutation = useCreatePriceItem();
+  const updateMutation = useUpdatePriceItem();
+  const deleteMutation = useDeletePriceItem();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const rows = (data as any[] || []).slice().sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0));
+  const [modal, setModal] = useState<{ mode: "add" | "edit" | "delete"; item?: any } | null>(null);
+  const [form, setForm] = useState<any>({});
+
+  const openAdd = () => { setForm({ unit: "each", unitPrice: "0", fixed: false, published: true, sortOrder: rows.length * 10 }); setModal({ mode: "add" }); };
+  const openEdit = (item: any) => { setForm({ ...item }); setModal({ mode: "edit", item }); };
+  const openDelete = (item: any) => setModal({ mode: "delete", item });
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const payload = { ...form, unitPrice: String(form.unitPrice ?? "0"), sortOrder: Number(form.sortOrder ?? 0), minQuantity: Number(form.minQuantity ?? 0) };
+      if (modal?.mode === "add") await createMutation.mutateAsync({ data: payload } as any);
+      else await updateMutation.mutateAsync({ id: modal!.item.id, data: payload } as any);
+      qc.invalidateQueries({ queryKey: getListPriceItemsQueryKey() });
+      showToast(modal?.mode === "add" ? "Price item added" : "Price item updated");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Save failed", "error"); }
+  };
+  const handleDelete = async () => {
+    try {
+      await deleteMutation.mutateAsync({ id: modal!.item.id } as any);
+      qc.invalidateQueries({ queryKey: getListPriceItemsQueryKey() });
+      showToast("Price item deleted");
+      setModal(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
+
+  return (
+    <div className="p-4 sm:p-6 space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Pricing</h1>
+          <p className="text-sm text-slate-500 mt-0.5">These items power the public cost calculator. Add at least one to make the calculator live on your site.</p>
+        </div>
+        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 flex-shrink-0">+ Add</button>
+      </div>
+      {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
+        <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
+          {!rows.length ? <div className="p-8 text-center text-slate-400">No price items yet — the calculator stays hidden until you add some.</div> : (
+            <div className="divide-y divide-slate-100">
+              {rows.map((item: any) => (
+                <div key={item.id} className="flex items-center gap-3 px-4 py-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
+                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                      {item.category && <span className="text-xs text-slate-400">{item.category}</span>}
+                      <span className="text-xs font-semibold text-slate-600">£{item.unitPrice} {item.fixed ? "fixed" : `per ${item.unit}`}</span>
+                      {!item.published && <span className="text-xs text-amber-600 font-medium">Hidden</span>}
+                    </div>
+                  </div>
+                  <div className="flex gap-1 flex-shrink-0">
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+      {modal && (
+        <Modal title={modal.mode === "delete" ? "Delete Price Item" : modal.mode === "add" ? "Add Price Item" : "Edit Price Item"} onClose={() => setModal(null)}>
+          {modal.mode === "delete" ? (
+            <DeleteConfirm label={modal.item?.name || "this item"} onConfirm={handleDelete} onCancel={() => setModal(null)} isPending={deleteMutation.isPending} />
+          ) : (
+            <form onSubmit={handleSave} className="space-y-4">
+              <FField label="Item Name *" value={form.name || ""} onChange={v => setForm({ ...form, name: v })} hint="e.g. Silicone render, Loft conversion, Call-out charge" />
+              <FField label="Category" value={form.category || ""} onChange={v => setForm({ ...form, category: v })} hint="Groups items on the calculator, e.g. Rendering, Extras, Delivery" />
+              <FField label="Description" value={form.description || ""} onChange={v => setForm({ ...form, description: v })} />
+              <div className="grid grid-cols-2 gap-3">
+                <FField label="Unit Price (£) *" value={form.unitPrice ?? "0"} onChange={v => setForm({ ...form, unitPrice: v })} hint="Number only, e.g. 45.00" />
+                <FField label="Unit" value={form.unit || "each"} onChange={v => setForm({ ...form, unit: v })} hint="each, m², day, hour, linear m" />
+              </div>
+              <FField label="Sort Order" type="number" value={form.sortOrder ?? 0} onChange={v => setForm({ ...form, sortOrder: Number(v) })} />
+              <div className="flex gap-4">
+                <FCheck label="Fixed add-on (checkbox, no quantity)" checked={!!form.fixed} onChange={v => setForm({ ...form, fixed: v })} />
+                <FCheck label="Published" checked={form.published !== false} onChange={v => setForm({ ...form, published: v })} />
+              </div>
+              <SaveCancelBar onCancel={() => setModal(null)} isPending={createMutation.isPending || updateMutation.isPending} />
+            </form>
+          )}
+        </Modal>
+      )}
+    </div>
+  );
+}
+
 // ─── CMS: Services ─────────────────────────────────────────────────────────────
 function ServicesPage() {
   const { data, isLoading } = useListServices();
@@ -2893,6 +2991,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/reviews" component={ReviewsPage} />
               <Route path="/dashboard/case-studies" component={CaseStudiesPage} />
               <Route path="/dashboard/services" component={ServicesPage} />
+              <Route path="/dashboard/pricing" component={PricingPage} />
               <Route path="/dashboard/areas" component={AreasPage} />
               <Route path="/dashboard/faqs" component={FaqsPage} />
               <Route path="/dashboard/blog" component={BlogPage} />

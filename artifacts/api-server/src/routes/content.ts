@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   servicesTable, areasTable, galleryImagesTable, beforeAfterTable,
-  reviewsTable, caseStudiesTable, faqsTable, teamMembersTable, tenantSettingsTable, tenantsTable
+  reviewsTable, caseStudiesTable, faqsTable, teamMembersTable, tenantSettingsTable, tenantsTable, priceItemsTable
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
@@ -60,6 +60,7 @@ crud(reviewsTable, "reviews");
 crud(caseStudiesTable, "case-studies");
 crud(faqsTable, "faqs");
 crud(teamMembersTable, "team");
+crud(priceItemsTable, "price-items");
 
 // Settings — single record per tenant (also reads/writes customDomain from tenants table)
 router.get("/settings", requireTenantAccess, async (req, res) => {

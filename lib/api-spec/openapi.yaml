@@ -1203,6 +1203,97 @@ paths:
         "204":
           description: Deleted
 
+  /price-items:
+    get:
+      operationId: listPriceItems
+      tags: [price-items]
+      summary: List price items for current tenant
+      responses:
+        "200":
+          description: List of price items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceItem"
+    post:
+      operationId: createPriceItem
+      tags: [price-items]
+      summary: Create a price item
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceItemInput"
+      responses:
+        "201":
+          description: Created price item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceItem"
+
+  /price-items/{id}:
+    patch:
+      operationId: updatePriceItem
+      tags: [price-items]
+      summary: Update price item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PriceItemUpdate"
+      responses:
+        "200":
+          description: Updated price item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PriceItem"
+    delete:
+      operationId: deletePriceItem
+      tags: [price-items]
+      summary: Delete price item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /public/{tenantSlug}/price-items:
+    get:
+      operationId: listPublicPriceItems
+      tags: [price-items]
+      summary: List published price items for a tenant (public)
+      parameters:
+        - name: tenantSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Published price items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PriceItem"
+
   /public/{tenantSlug}/services:
     get:
       operationId: listPublicServices
@@ -4189,6 +4280,82 @@ components:
           minLength: 1
 
     # ─── Service ──────────────────────────────────────────────────────────
+    PriceItem:
+      type: object
+      required: [id, tenantId, name, unit, unitPrice]
+      properties:
+        id:
+          type: integer
+        tenantId:
+          type: integer
+        category:
+          type: ["string", "null"]
+        name:
+          type: string
+        description:
+          type: ["string", "null"]
+        unit:
+          type: string
+        unitPrice:
+          type: string
+        fixed:
+          type: boolean
+        minQuantity:
+          type: integer
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+
+    PriceItemInput:
+      type: object
+      required: [name, unitPrice]
+      properties:
+        category:
+          type: string
+        name:
+          type: string
+          minLength: 1
+        description:
+          type: string
+        unit:
+          type: string
+        unitPrice:
+          type: string
+        fixed:
+          type: boolean
+        minQuantity:
+          type: integer
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+
+    PriceItemUpdate:
+      type: object
+      properties:
+        category:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        unit:
+          type: string
+        unitPrice:
+          type: string
+        fixed:
+          type: boolean
+        minQuantity:
+          type: integer
+        published:
+          type: boolean
+        sortOrder:
+          type: integer
+
     Service:
       type: object
       required: [id, tenantId, name, slug, published]

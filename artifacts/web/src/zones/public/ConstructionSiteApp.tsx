@@ -1,8 +1,9 @@
 import { Switch, Route, useParams, Router as WouterRouter, Link as WouterLink } from "wouter";
-import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useListPublicReviews, useSubmitContact } from "@workspace/api-client-react";
+import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useListPublicReviews, useSubmitContact, useListPublicPriceItems } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
+import { PriceCalculatorSection } from "./PriceCalculator";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CONSTRUCTION SITE TEMPLATE (tenant.industry === 'construction')
@@ -57,11 +58,16 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact Us" },
 ];
 
-function CNav({ tenant, settings }: { tenant: any; settings: any }) {
+function CNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; tenantSlug?: string }) {
   const siteBase = useSiteBase();
   const [open, setOpen] = useState(false);
   const logo = settings?.logoUrl || tenant?.logoUrl;
   const phone = settings?.phone || tenant?.phone;
+  // Calculator link only when the tenant has published price items (cached/prefetched query).
+  const { data: priceItems } = useListPublicPriceItems(tenantSlug || "");
+  const navLinks = ((priceItems as any[]) || []).length > 0
+    ? [...NAV_LINKS.slice(0, 3), { href: "/calculator", label: "Cost Calculator" }, ...NAV_LINKS.slice(3)]
+    : NAV_LINKS;
   return (
     <header className="sticky top-0 z-40 bg-white/95 backdrop-blur border-b border-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between h-20 gap-4">
@@ -71,7 +77,7 @@ function CNav({ tenant, settings }: { tenant: any; settings: any }) {
             : <span className="text-xl font-extrabold" style={{ color: TEXT }}>{tenant?.name || ""}</span>}
         </a>
         <nav className="hidden lg:flex items-center gap-8">
-          {NAV_LINKS.map(l => (
+          {navLinks.map(l => (
             <a key={l.href} href={`${siteBase}${l.href}`} className="text-sm font-semibold transition-colors hover:opacity-70" style={{ color: TEXT }}>{l.label}</a>
           ))}
         </nav>
@@ -89,7 +95,7 @@ function CNav({ tenant, settings }: { tenant: any; settings: any }) {
       </div>
       {open && (
         <div className="lg:hidden border-t border-slate-100 bg-white px-4 sm:px-6 py-4 space-y-1">
-          {NAV_LINKS.map(l => (
+          {navLinks.map(l => (
             <WouterLink key={l.href} href={l.href} className="block py-2.5 text-sm font-semibold" style={{ color: TEXT }} onClick={() => setOpen(false)}>{l.label}</WouterLink>
           ))}
           <WouterLink href="/quote" className="block py-2.5 text-sm font-bold" style={{ color: GREEN_DEEP }} onClick={() => setOpen(false)}>Get A Quote</WouterLink>
@@ -171,7 +177,7 @@ function CShell({ tenantSlug, title, crumb, subtitle, children }: { tenantSlug: 
   const { tenant, settings } = (siteData as any) || {};
   return (
     <div className="bg-white">
-      <CNav tenant={tenant} settings={settings}/>
+      <CNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <section style={{ backgroundColor: INK }} className="relative overflow-hidden">
         <div className="absolute -right-24 -top-24 w-96 h-96 rounded-full opacity-10" style={{ backgroundColor: GREEN }}/>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16 relative">
@@ -238,7 +244,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         url: tenant?.website || undefined,
         foundingDate: "2011",
       }}/>
-      <CNav tenant={tenant} settings={settings}/>
+      <CNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {/* Hero — white left, house photo right (image carries its own white fade) */}
       <section className="relative overflow-hidden bg-white">
@@ -688,6 +694,18 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   );
 }
 
+function CalculatorPage({ tenantSlug }: { tenantSlug: string }) {
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { tenant } = (siteData as any) || {};
+  return (
+    <CShell tenantSlug={tenantSlug} title="Instant Cost Calculator" crumb="Cost Calculator"
+      subtitle={`Build a quick, indicative estimate for your project and ${tenant?.name || "we"}'ll email it to you — no obligation.`}>
+      <PageSEO title={`Cost Calculator | ${tenant?.name || ""}`} description={`Build an instant, indicative estimate for your project with ${tenant?.name || "us"} and get it emailed to you.`}/>
+      <PriceCalculatorSection tenantSlug={tenantSlug} accent={GREEN_DEEP} panel={INK}/>
+    </CShell>
+  );
+}
+
 function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "privacy" }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -767,6 +785,7 @@ export default function ConstructionSiteApp({ forcedSlug, forcedBase, forcedOrig
         <Route path="/services/:slug">{(p: any) => <ServiceDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/about">{() => <AboutPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/calculator">{() => <CalculatorPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/terms">{() => <LegalPage tenantSlug={tenantSlug} kind="terms"/>}</Route>
         <Route path="/privacy">{() => <LegalPage tenantSlug={tenantSlug} kind="privacy"/>}</Route>

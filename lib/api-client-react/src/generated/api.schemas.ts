@@ -1163,6 +1163,48 @@ export interface CustomerMessageInput {
   content: string;
 }
 
+export interface PriceItem {
+  id: number;
+  tenantId: number;
+  /** @nullable */
+  category?: string | null;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  unit: string;
+  unitPrice: string;
+  fixed?: boolean;
+  minQuantity?: number;
+  published?: boolean;
+  sortOrder?: number;
+  createdAt?: string;
+}
+
+export interface PriceItemInput {
+  category?: string;
+  /** @minLength 1 */
+  name: string;
+  description?: string;
+  unit?: string;
+  unitPrice: string;
+  fixed?: boolean;
+  minQuantity?: number;
+  published?: boolean;
+  sortOrder?: number;
+}
+
+export interface PriceItemUpdate {
+  category?: string;
+  name?: string;
+  description?: string;
+  unit?: string;
+  unitPrice?: string;
+  fixed?: boolean;
+  minQuantity?: number;
+  published?: boolean;
+  sortOrder?: number;
+}
+
 export interface ServiceInput {
   /** @minLength 1 */
   name: string;

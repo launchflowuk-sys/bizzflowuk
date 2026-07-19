@@ -1620,6 +1620,112 @@ export const DeleteServiceParams = zod.object({
 
 
 /**
+ * @summary List price items for current tenant
+ */
+export const ListPriceItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "category": zod.string().nullish(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "fixed": zod.boolean().optional(),
+  "minQuantity": zod.number().optional(),
+  "published": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "createdAt": zod.coerce.date().optional()
+})
+export const ListPriceItemsResponse = zod.array(ListPriceItemsResponseItem)
+
+
+/**
+ * @summary Create a price item
+ */
+
+
+
+export const CreatePriceItemBody = zod.object({
+  "category": zod.string().optional(),
+  "name": zod.string().min(1),
+  "description": zod.string().optional(),
+  "unit": zod.string().optional(),
+  "unitPrice": zod.string(),
+  "fixed": zod.boolean().optional(),
+  "minQuantity": zod.number().optional(),
+  "published": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+
+/**
+ * @summary Update price item
+ */
+export const UpdatePriceItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const UpdatePriceItemBody = zod.object({
+  "category": zod.string().optional(),
+  "name": zod.string().optional(),
+  "description": zod.string().optional(),
+  "unit": zod.string().optional(),
+  "unitPrice": zod.string().optional(),
+  "fixed": zod.boolean().optional(),
+  "minQuantity": zod.number().optional(),
+  "published": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdatePriceItemResponse = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "category": zod.string().nullish(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "fixed": zod.boolean().optional(),
+  "minQuantity": zod.number().optional(),
+  "published": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "createdAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Delete price item
+ */
+export const DeletePriceItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary List published price items for a tenant (public)
+ */
+export const ListPublicPriceItemsParams = zod.object({
+  "tenantSlug": zod.coerce.string()
+})
+
+export const ListPublicPriceItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "category": zod.string().nullish(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "fixed": zod.boolean().optional(),
+  "minQuantity": zod.number().optional(),
+  "published": zod.boolean().optional(),
+  "sortOrder": zod.number().optional(),
+  "createdAt": zod.coerce.date().optional()
+})
+export const ListPublicPriceItemsResponse = zod.array(ListPublicPriceItemsResponseItem)
+
+
+/**
  * @summary List published services for a tenant (public)
  */
 export const ListPublicServicesParams = zod.object({
