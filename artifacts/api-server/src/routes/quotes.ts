@@ -94,7 +94,10 @@ router.delete("/quotes/:id", requireTenantAccess, async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
-router.post("/quotes/:id/convert-to-project", requireTenantAccess, async (req, res) => {
+// Path matches the OpenAPI spec (/quotes/{id}/convert-project) — this was originally
+// registered as "convert-to-project", so the generated client 404'd on every call and
+// the dashboard's quote-level "Convert to Project" button had never actually worked.
+router.post("/quotes/:id/convert-project", requireTenantAccess, async (req, res) => {
   try {
     const q = await db.select().from(quotesTable)
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
