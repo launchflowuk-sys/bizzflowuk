@@ -427,8 +427,8 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
   const burgerColor = isOpaque ? TEXT : "#ffffff";
   const burgerHover = isOpaque ? "hover:bg-slate-100" : "hover:bg-white/10";
   const logoSrc = isOpaque
-    ? (settings?.logoUrl || "/amo-logo-dark.png")
-    : "/amo-logo-icon.png";
+    ? (settings?.logoUrl || "/amo-logo-dark.webp")
+    : "/amo-logo-icon.webp";
 
   return (
     <nav className={navClass}>
