@@ -7,6 +7,120 @@ import { logger } from "./logger";
 const SLUG = "amo-services";
 const BRAND_GREEN = "#7DB93F"; // sampled from the client's logo
 
+interface ServiceSeed {
+  name: string;
+  slug: string;
+  tagline: string;
+  description: string;
+  content: string;
+  benefits: string[];
+  processSteps: Array<{ title: string; description: string }>;
+  heroImageUrl: string;
+}
+
+// The client's real 7 service categories (verbatim names from amoservices.co.uk),
+// with grounded professional copy — no invented stats, guarantees or accreditations.
+const AMO_SERVICES: ServiceSeed[] = [
+  {
+    name: "New Builds", slug: "new-builds",
+    tagline: "Complete new-build construction from groundworks to handover",
+    description: "Full new-build projects managed end to end — foundations, structure, roofing, first and second fix, through to a finished, ready-to-occupy property.",
+    content: "A new build is the biggest project most people ever commission, and it lives or dies on how well the trades are coordinated. AMO Services takes on new-build construction as a single, managed job — from setting out and groundworks through to the final coat of paint — so you have one team accountable for the whole property rather than a dozen separate contractors to chase.\n\nWe work from your architect's drawings and the approved planning and building-regulations details, keeping the structure, the services and the finishes moving in the right order. That means fewer delays, fewer surprises, and a build that stays true to the design you signed off.\n\nWhether it's a single home, a replacement dwelling or a small development, the process is the same: a clear programme, regular updates, and a property handed over finished, tested and ready to live in.",
+    benefits: ["Groundworks, foundations and drainage", "Structural build, roofing and weathering", "First and second fix across all trades", "Built to your approved drawings and building regs", "One team accountable from start to handover"],
+    processSteps: [
+      { title: "Drawings & Programme", description: "We review your architect's plans and approved details and set out a clear build programme." },
+      { title: "Groundworks & Structure", description: "Foundations, drainage and the structural shell are built and made weathertight." },
+      { title: "First & Second Fix", description: "Electrics, plumbing, plastering, joinery and finishes are coordinated in the right order." },
+      { title: "Snag & Handover", description: "Everything is tested, snagged and cleaned before the property is handed over to you." },
+    ],
+    heroImageUrl: "/amo-services/amo-services-new-builds-uk.webp",
+  },
+  {
+    name: "Commercial", slug: "commercial",
+    tagline: "Commercial construction and fit-out works",
+    description: "Construction, refurbishment and fit-out works for commercial premises — delivered around your business with clear programmes and minimal disruption.",
+    content: "Commercial work has a different pressure to domestic projects: every day the space isn't finished is a day it isn't earning. AMO Services plans commercial construction and fit-out around that reality — working to fixed programmes, out-of-hours where it helps, and in phases so parts of your premises can stay open while the rest is worked on.\n\nWe handle office refurbishments, retail and unit fit-outs, structural alterations and full commercial builds. The scope is agreed in writing up front, so you know exactly what's being delivered, to what standard, and by when.\n\nFrom a single-room refit to a whole-building refurbishment, the aim is the same — a professional finish, delivered on programme, with the disruption to your business kept to the minimum.",
+    benefits: ["Office, retail and unit fit-outs", "Structural alterations and refurbishment", "Phased works to keep premises operating", "Fixed programmes and written scope", "Out-of-hours working where it reduces disruption"],
+    processSteps: [
+      { title: "Site Survey & Scope", description: "We assess the premises and agree a written scope, programme and phasing plan." },
+      { title: "Strip-Out & Structure", description: "Existing fit-out is removed and any structural alterations are carried out safely." },
+      { title: "Fit-Out & Services", description: "Partitions, electrics, finishes and fittings are installed to specification." },
+      { title: "Completion & Handover", description: "The space is finished, tested and handed back ready to trade." },
+    ],
+    heroImageUrl: "/amo-services/amo-services-commercial-construction-uk.webp",
+  },
+  {
+    name: "Home Renovations", slug: "home-renovations",
+    tagline: "Full and partial home renovations, managed by one team",
+    description: "Whole-house refurbishments, extensions and structural alterations — one team handling the trades, the schedule and the finish so the project stays on track.",
+    content: "Renovating a home you're living in — or about to move into — is as much about managing disruption as it is about the building work. AMO Services runs renovations as one coordinated project: builders, electricians, plumbers, plasterers and decorators all working to the same programme, so you're not left project-managing a string of separate trades.\n\nWe take on everything from a single reconfigured room to a full refurbishment with structural changes, extensions and re-servicing. Where walls are coming down or layouts are changing, we handle the structural details and building-regulations side so the work is signed off correctly.\n\nYou get one point of contact, a clear schedule, and a home that's been brought up to the standard you pictured — finished properly, not left with the last ten percent undone.",
+    benefits: ["Whole-house and single-room refurbishment", "Structural alterations and knock-throughs", "Re-wiring, re-plumbing and re-plastering", "Extensions tied into the existing property", "One managed schedule across every trade"],
+    processSteps: [
+      { title: "Walkthrough & Plan", description: "We walk the property with you, agree the scope and set a realistic schedule." },
+      { title: "Strip-Out & Structure", description: "Removals, structural changes and any extension shell are completed first." },
+      { title: "Services & Finishes", description: "Electrics, plumbing, plastering and decoration are brought together room by room." },
+      { title: "Final Snag & Clean", description: "We snag, finish and clean so the home is ready to move straight into." },
+    ],
+    heroImageUrl: "/amo-services/amo-services-home-renovations-uk.webp",
+  },
+  {
+    name: "Loft Conversions", slug: "loft-conversions",
+    tagline: "Turn unused loft space into a bedroom, office or bathroom",
+    description: "Dormer, hip-to-gable and Velux loft conversions — structural work, staircases, insulation, electrics and plastering, all completed to building regulations.",
+    content: "A loft conversion is one of the most cost-effective ways to add a proper room to a house — an extra bedroom, a home office, or a bedroom with an en-suite — without giving up any garden or footprint. AMO Services takes on the whole conversion, from the structural steelwork and floor right through to the finished, decorated room.\n\nWe handle dormer, hip-to-gable and Velux (rooflight) conversions, matching the approach to your roof type and what you want from the space. That includes the staircase, insulation, electrics, plumbing for an en-suite, and the plastering and decoration — all completed to building regulations and signed off.\n\nBecause it's managed as one job, the messy structural work and the fine finishing are sequenced properly, and you're left with a room that feels like it was always part of the house.",
+    benefits: ["Dormer, hip-to-gable and Velux conversions", "Structural steels, floor and staircase", "Insulation to building-regs standard", "En-suite plumbing and full electrics", "Plastered, decorated and ready to use"],
+    processSteps: [
+      { title: "Design & Feasibility", description: "We assess your roof, confirm what's achievable and agree the layout and finish." },
+      { title: "Structure & Access", description: "Steels, floor joists and the new staircase are installed to open up the space." },
+      { title: "Insulate & Service", description: "Insulation, electrics and any en-suite plumbing are fitted to regulations." },
+      { title: "Finish & Sign-Off", description: "Plastering, decoration and building-control sign-off complete the room." },
+    ],
+    heroImageUrl: "/amo-services/amo-services-loft-conversions-uk.webp",
+  },
+  {
+    name: "Electrical Services", slug: "electrical-services",
+    tagline: "Domestic and commercial electrical work, planned or urgent",
+    description: "Rewires, consumer unit upgrades, new circuits, lighting and fault-finding — for both planned projects and urgent call-outs.",
+    content: "Having electrical work in-house means AMO Services can wire its own builds and renovations properly — and take on standalone electrical jobs for customers who just need the electrics sorted. From a full rewire to a single new circuit, the work is carried out safely and to current wiring standards.\n\nWe cover consumer unit (fuse board) upgrades, rewires, additional sockets and circuits, indoor and outdoor lighting, and fault-finding when something isn't working as it should. Because we also build, electrical work on a renovation is coordinated with the rest of the job rather than bolted on at the end.\n\nWork is split between planned projects, booked in around you, and more urgent issues where something needs looking at quickly — tell us which it is on the quote form and we'll respond accordingly.",
+    benefits: ["Full and partial rewires", "Consumer unit / fuse board upgrades", "New sockets, circuits and lighting", "Fault-finding and repairs", "Planned projects or urgent call-outs"],
+    processSteps: [
+      { title: "Assess & Quote", description: "We establish what's needed — planned upgrade or urgent fault — and quote clearly." },
+      { title: "Isolate & Prepare", description: "Circuits are safely isolated and the work area prepared before any work begins." },
+      { title: "Install & Wire", description: "New wiring, boards, circuits or fittings are installed to current standards." },
+      { title: "Test & Certify", description: "Everything is tested, and the relevant certification is provided on completion." },
+    ],
+    heroImageUrl: "/amo-services/amo-services-electrical-services-uk.webp",
+  },
+  {
+    name: "Kitchens", slug: "kitchens",
+    tagline: "Kitchen design, supply and full installation",
+    description: "Complete kitchen installations — strip-out, first-fix alterations, fitting, worktops, tiling and finishing, coordinated as a single project.",
+    content: "A new kitchen touches almost every trade — joinery, electrics, plumbing, gas, tiling, plastering and decorating — which is exactly why it's worth having one team run the whole thing. AMO Services takes a kitchen from the old units coming out to the new one fully fitted, working and finished.\n\nWe handle the strip-out, any first-fix moves to plumbing and electrics for a new layout, the fitting of units and worktops, and the tiling, splashbacks and decoration that finish it off. If you're changing the layout — moving the sink, adding an island, knocking through — that's coordinated as part of the same job.\n\nThe result is a kitchen installed properly and finished to a high standard, without you having to line up and manage separate fitters, electricians and plumbers yourself.",
+    benefits: ["Strip-out of the existing kitchen", "First-fix plumbing and electrical changes", "Unit, worktop and appliance installation", "Tiling, splashbacks and finishing", "Layout changes handled as one project"],
+    processSteps: [
+      { title: "Design & Measure", description: "We confirm the layout, measure up and agree the specification and finishes." },
+      { title: "Strip-Out & First Fix", description: "The old kitchen is removed and plumbing/electrics adjusted for the new layout." },
+      { title: "Fit Units & Worktops", description: "Units, worktops and appliances are installed and levelled precisely." },
+      { title: "Tile & Finish", description: "Tiling, splashbacks and decoration complete the room, ready to use." },
+    ],
+    heroImageUrl: "/amo-services/amo-services-kitchen-installation-uk.webp",
+  },
+  {
+    name: "Bricklaying", slug: "bricklaying",
+    tagline: "Brickwork for extensions, garden walls and structural work",
+    description: "Skilled bricklaying for extensions, boundary and garden walls, repairs and structural work — clean lines, correct bonds and properly finished joints.",
+    content: "Good brickwork is the difference between a wall that looks right for decades and one that's an eyesore from day one. AMO Services provides skilled bricklaying for everything from garden and boundary walls to the structural brickwork of extensions and new builds.\n\nWe work to the correct bonds and coursing, keep lines true and joints consistent, and match existing brick and mortar on repairs and extensions so new work blends with old. That covers piers, garden and retaining walls, extension skins, and structural brickwork built to the engineer's details where required.\n\nWhether it's a standalone wall or the brickwork element of a larger project, the standard is the same — clean, level, properly pointed brickwork that's built to last.",
+    benefits: ["Extension and new-build brickwork", "Garden, boundary and retaining walls", "Brick matching on repairs and extensions", "Correct bonds, coursing and pointing", "Structural brickwork to engineer's details"],
+    processSteps: [
+      { title: "Assess & Match", description: "We check the job, and match brick and mortar where the work meets existing walls." },
+      { title: "Set Out & Foundation", description: "The work is set out accurately on a suitable, level foundation." },
+      { title: "Lay & Course", description: "Brickwork is laid to the correct bond, kept level and true throughout." },
+      { title: "Point & Finish", description: "Joints are pointed and finished cleanly for a lasting, tidy result." },
+    ],
+    heroImageUrl: "/amo-services/amo-services-bricklaying-uk.webp",
+  },
+];
+
 /**
  * One-time bootstrap for the AMO Services tenant (construction industry, tenant #2).
  * Idempotent: keyed on the tenant slug — if the tenant row exists, nothing runs, so
@@ -46,6 +160,31 @@ async function ensureAmoServicesAdmin(tenantId: number): Promise<void> {
   if (inserted.length) logger.info({ email: inserted[0].email }, "AMO Services tenant admin bootstrapped (new account)");
 }
 
+/**
+ * Backfills the rich service copy (content, benefits, process steps) onto the AMO Services
+ * tenant's service rows. Runs every boot so tenants seeded by an earlier, thinner version of
+ * this file get the fuller content — but only fills a row whose `content` is still empty, so a
+ * later dashboard edit is never overwritten. Matched by slug.
+ */
+async function ensureAmoServicesContent(tenantId: number): Promise<void> {
+  const rows = await db
+    .select({ id: servicesTable.id, slug: servicesTable.slug, content: servicesTable.content })
+    .from(servicesTable)
+    .where(eq(servicesTable.tenantId, tenantId));
+  const bySlug = new Map(rows.map(r => [r.slug, r]));
+  let filled = 0;
+  for (const s of AMO_SERVICES) {
+    const row = bySlug.get(s.slug);
+    if (!row || (row.content && row.content.trim().length > 0)) continue; // never clobber edits
+    await db
+      .update(servicesTable)
+      .set({ content: s.content, benefits: s.benefits, processSteps: s.processSteps, tagline: s.tagline, description: s.description })
+      .where(eq(servicesTable.id, row.id));
+    filled++;
+  }
+  if (filled) logger.info({ tenantId, filled }, "AMO Services service content backfilled");
+}
+
 export async function seedAmoServicesIfMissing(): Promise<void> {
   try {
     const existing = await db
@@ -55,6 +194,7 @@ export async function seedAmoServicesIfMissing(): Promise<void> {
       .limit(1);
     if (existing.length) {
       await ensureAmoServicesAdmin(existing[0].id);
+      await ensureAmoServicesContent(existing[0].id);
       return;
     }
 
@@ -104,53 +244,8 @@ export async function seedAmoServicesIfMissing(): Promise<void> {
       ctaText: "Get a Free Quote",
     });
 
-    // The client's real 7 service categories (verbatim from amoservices.co.uk)
-    const services = [
-      {
-        name: "New Builds", slug: "new-builds",
-        tagline: "Complete new-build construction from groundworks to handover",
-        description: "Full new-build projects managed end to end — foundations, structure, roofing, first and second fix, through to a finished, ready-to-occupy property.",
-        heroImageUrl: "/amo-services/amo-services-new-builds-uk.webp",
-      },
-      {
-        name: "Commercial", slug: "commercial",
-        tagline: "Commercial construction and fit-out works",
-        description: "Construction, refurbishment and fit-out works for commercial premises — delivered around your business with clear programmes and minimal disruption.",
-        heroImageUrl: "/amo-services/amo-services-commercial-construction-uk.webp",
-      },
-      {
-        name: "Home Renovations", slug: "home-renovations",
-        tagline: "Full and partial home renovations, managed by one team",
-        description: "Whole-house refurbishments, extensions and structural alterations — one team handling the trades, the schedule and the finish so the project stays on track.",
-        heroImageUrl: "/amo-services/amo-services-home-renovations-uk.webp",
-      },
-      {
-        name: "Loft Conversions", slug: "loft-conversions",
-        tagline: "Turn unused loft space into a bedroom, office or bathroom",
-        description: "Dormer, hip-to-gable and Velux loft conversions — structural work, staircases, insulation, electrics and plastering, all completed to building regulations.",
-        heroImageUrl: "/amo-services/amo-services-loft-conversions-uk.webp",
-      },
-      {
-        name: "Electrical Services", slug: "electrical-services",
-        tagline: "Domestic and commercial electrical work, planned or urgent",
-        description: "Rewires, consumer unit upgrades, new circuits, lighting and fault-finding — for both planned projects and urgent call-outs.",
-        heroImageUrl: "/amo-services/amo-services-electrical-services-uk.webp",
-      },
-      {
-        name: "Kitchens", slug: "kitchens",
-        tagline: "Kitchen design, supply and full installation",
-        description: "Complete kitchen installations — strip-out, first-fix alterations, fitting, worktops, tiling and finishing, coordinated as a single project.",
-        heroImageUrl: "/amo-services/amo-services-kitchen-installation-uk.webp",
-      },
-      {
-        name: "Bricklaying", slug: "bricklaying",
-        tagline: "Brickwork for extensions, garden walls and structural work",
-        description: "Skilled bricklaying for extensions, boundary and garden walls, repairs and structural work — clean lines, correct bonds and properly finished joints.",
-        heroImageUrl: "/amo-services/amo-services-bricklaying-uk.webp",
-      },
-    ];
     await db.insert(servicesTable).values(
-      services.map((s, i) => ({ tenantId, ...s, published: true, featured: true, sortOrder: (i + 1) * 10 })),
+      AMO_SERVICES.map((s, i) => ({ tenantId, ...s, published: true, featured: true, sortOrder: (i + 1) * 10 })),
     );
 
     // Service areas — mirrors the business's Essex/London coverage; client can edit in the dashboard

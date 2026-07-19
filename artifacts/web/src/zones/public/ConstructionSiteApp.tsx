@@ -243,8 +243,13 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* Hero — white left, house photo right (image carries its own white fade) */}
       <section className="relative overflow-hidden bg-white">
         {settings?.heroImageUrl && (
-          <img src={settings.heroImageUrl} alt="" aria-hidden="true" fetchPriority="high"
-            className="absolute inset-y-0 right-0 h-full w-full lg:w-[65%] object-cover object-right opacity-30 lg:opacity-100"/>
+          <>
+            <img src={settings.heroImageUrl} alt="" aria-hidden="true" fetchPriority="high"
+              className="absolute inset-y-0 right-0 h-full w-full lg:w-[68%] object-cover object-right opacity-25 lg:opacity-100"/>
+            {/* White fade so the text side stays clean and the image seam blends — the hero
+                photo is full-bleed (no baked-in gradient), so this overlay does the blending. */}
+            <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10 lg:via-white/45 lg:to-transparent"/>
+          </>
         )}
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-40 sm:pb-44 lg:pt-24 lg:pb-52">
           <div className="max-w-xl">
@@ -500,11 +505,25 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
             {Array.isArray(s.benefits) && s.benefits.length > 0 && (
               <div className="rounded-2xl p-7" style={{ backgroundColor: LIGHT }}>
                 <h2 className="font-bold mb-4" style={{ color: TEXT }}>What's Included</h2>
-                <div className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-3">
                   {s.benefits.map((b: string) => (
                     <div key={b} className="flex items-start gap-3">
                       <CheckCircle className="w-5 h-5 flex-shrink-0 mt-0.5" color={GREEN_DEEP}/>
                       <p className="text-sm font-medium" style={{ color: TEXT }}>{b}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {Array.isArray(s.processSteps) && s.processSteps.length > 0 && (
+              <div>
+                <h2 className="font-bold text-xl mb-6" style={{ color: TEXT }}>How We Approach {s.name}</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {s.processSteps.map((step: { title: string; description: string }, i: number) => (
+                    <div key={i} className="rounded-2xl border border-slate-100 p-6" style={{ backgroundColor: LIGHT }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center font-extrabold mb-3" style={{ backgroundColor: GREEN, color: INK }}>{i + 1}</div>
+                      <h3 className="font-bold text-sm" style={{ color: TEXT }}>{step.title}</h3>
+                      <p className="mt-1.5 text-sm leading-relaxed" style={{ color: MUTED }}>{step.description}</p>
                     </div>
                   ))}
                 </div>
