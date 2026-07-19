@@ -3338,6 +3338,16 @@ components:
           type: ["string", "null"]
         companyName:
           type: ["string", "null"]
+        clientType:
+          type: ["string", "null"]
+        projectDescription:
+          type: ["string", "null"]
+        planningStatus:
+          type: ["string", "null"]
+        hasDrawings:
+          type: ["string", "null"]
+        urgency:
+          type: ["string", "null"]
         consentAgreed:
           type: boolean
         createdAt:
@@ -3426,6 +3436,16 @@ components:
           type: string
         companyName:
           type: string
+        clientType:
+          type: string
+        projectDescription:
+          type: string
+        planningStatus:
+          type: string
+        hasDrawings:
+          type: string
+        urgency:
+          type: string
         consentAgreed:
           type: boolean
 
@@ -3503,6 +3523,16 @@ components:
         propertyStatus:
           type: string
         companyName:
+          type: string
+        clientType:
+          type: string
+        projectDescription:
+          type: string
+        planningStatus:
+          type: string
+        hasDrawings:
+          type: string
+        urgency:
           type: string
         consentAgreed:
           type: boolean
@@ -3594,6 +3624,16 @@ components:
         propertyStatus:
           type: string
         companyName:
+          type: string
+        clientType:
+          type: string
+        projectDescription:
+          type: string
+        planningStatus:
+          type: string
+        hasDrawings:
+          type: string
+        urgency:
           type: string
         timeframe:
           type: string

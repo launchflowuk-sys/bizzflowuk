@@ -16,7 +16,7 @@ import {
   getBrowsePublicBlogQueryOptions,
   getGetPublicBlogPostQueryOptions,
 } from "@workspace/api-client-react";
-import PublicSiteApp from "./zones/public/PublicSiteApp";
+import TenantSiteRouter from "./zones/public/TenantSiteRouter";
 
 export interface RenderResult {
   html: string;
@@ -77,7 +77,7 @@ export async function renderPublicPage(opts: {
   const tree = (
     <QueryClientProvider client={queryClient}>
       <WouterRouter ssrPath={path}>
-        <PublicSiteApp forcedSlug={tenantSlug} forcedBase="" forcedOrigin={origin} ssrPath={path} />
+        <TenantSiteRouter forcedSlug={tenantSlug} forcedBase="" forcedOrigin={origin} ssrPath={path} />
       </WouterRouter>
     </QueryClientProvider>
   );

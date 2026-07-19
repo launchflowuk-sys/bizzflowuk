@@ -504,6 +504,11 @@ export const ListLeadsResponseItem = zod.object({
   "accessConditions": zod.array(zod.string()).optional(),
   "propertyStatus": zod.string().nullish(),
   "companyName": zod.string().nullish(),
+  "clientType": zod.string().nullish(),
+  "projectDescription": zod.string().nullish(),
+  "planningStatus": zod.string().nullish(),
+  "hasDrawings": zod.string().nullish(),
+  "urgency": zod.string().nullish(),
   "consentAgreed": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
@@ -552,6 +557,11 @@ export const CreateLeadBody = zod.object({
   "accessConditions": zod.array(zod.string()).optional(),
   "propertyStatus": zod.string().optional(),
   "companyName": zod.string().optional(),
+  "clientType": zod.string().optional(),
+  "projectDescription": zod.string().optional(),
+  "planningStatus": zod.string().optional(),
+  "hasDrawings": zod.string().optional(),
+  "urgency": zod.string().optional(),
   "consentAgreed": zod.boolean().optional()
 })
 
@@ -601,6 +611,11 @@ export const GetLeadResponse = zod.object({
   "accessConditions": zod.array(zod.string()).optional(),
   "propertyStatus": zod.string().nullish(),
   "companyName": zod.string().nullish(),
+  "clientType": zod.string().nullish(),
+  "projectDescription": zod.string().nullish(),
+  "planningStatus": zod.string().nullish(),
+  "hasDrawings": zod.string().nullish(),
+  "urgency": zod.string().nullish(),
   "consentAgreed": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
@@ -648,6 +663,11 @@ export const UpdateLeadBody = zod.object({
   "accessConditions": zod.array(zod.string()).optional(),
   "propertyStatus": zod.string().optional(),
   "companyName": zod.string().optional(),
+  "clientType": zod.string().optional(),
+  "projectDescription": zod.string().optional(),
+  "planningStatus": zod.string().optional(),
+  "hasDrawings": zod.string().optional(),
+  "urgency": zod.string().optional(),
   "consentAgreed": zod.boolean().optional()
 })
 
@@ -689,6 +709,11 @@ export const UpdateLeadResponse = zod.object({
   "accessConditions": zod.array(zod.string()).optional(),
   "propertyStatus": zod.string().nullish(),
   "companyName": zod.string().nullish(),
+  "clientType": zod.string().nullish(),
+  "projectDescription": zod.string().nullish(),
+  "planningStatus": zod.string().nullish(),
+  "hasDrawings": zod.string().nullish(),
+  "urgency": zod.string().nullish(),
   "consentAgreed": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
@@ -2913,6 +2938,11 @@ export const SubmitQuoteRequestBody = zod.object({
   "accessConditions": zod.array(zod.string()).optional(),
   "propertyStatus": zod.string().optional(),
   "companyName": zod.string().optional(),
+  "clientType": zod.string().optional(),
+  "projectDescription": zod.string().optional(),
+  "planningStatus": zod.string().optional(),
+  "hasDrawings": zod.string().optional(),
+  "urgency": zod.string().optional(),
   "timeframe": zod.string().optional(),
   "budget": zod.string().optional(),
   "notes": zod.string().optional(),

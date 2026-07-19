@@ -81,6 +81,12 @@ export function buildLeadNewAdminEmail(opts: {
   accessConditions?: string[];
   propertyStatus?: string;
   companyName?: string;
+  // Construction (AMO Services) fields
+  clientType?: string;
+  projectDescription?: string;
+  planningStatus?: string;
+  hasDrawings?: string;
+  urgency?: string;
 }): EmailPayload {
   const name = `${opts.firstName} ${opts.lastName}`.trim();
   const accent = opts.brand.primaryColor || "#f97316";
@@ -100,6 +106,11 @@ export function buildLeadNewAdminEmail(opts: {
     ["Number of Storeys", opts.numberOfStoreys],
     ["Approximate Wall Area", opts.wallArea],
     ["Service Required", opts.serviceInterest],
+    ["Client Type", opts.clientType],
+    ["Project Description", opts.projectDescription],
+    ["Planning / Building Regs", opts.planningStatus],
+    ["Has Drawings / Plans", opts.hasDrawings],
+    ["Urgency", opts.urgency],
     ["Existing Surface", opts.existingSurface],
     ["Current Condition", opts.currentCondition?.length ? opts.currentCondition.join(", ") : undefined],
     ["Desired Finish", opts.desiredFinish],

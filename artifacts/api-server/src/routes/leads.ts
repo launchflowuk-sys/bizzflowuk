@@ -61,6 +61,12 @@ router.post("/leads", requireTenantAccess, async (req, res) => {
       accessConditions: (lead[0].accessConditions as string[] | null) ?? undefined,
       propertyStatus: lead[0].propertyStatus ?? undefined,
       companyName: lead[0].companyName ?? undefined,
+      // Construction (AMO Services) fields
+      clientType: lead[0].clientType ?? undefined,
+      projectDescription: lead[0].projectDescription ?? undefined,
+      planningStatus: lead[0].planningStatus ?? undefined,
+      hasDrawings: lead[0].hasDrawings ?? undefined,
+      urgency: lead[0].urgency ?? undefined,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

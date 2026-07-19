@@ -40,6 +40,12 @@ export const leadsTable = pgTable("leads", {
   accessConditions: jsonb("access_conditions").$type<string[]>().default([]),
   propertyStatus: text("property_status"),
   companyName: text("company_name"),
+  // Construction (AMO Services) fields — nullable, populated only for construction-industry tenants.
+  clientType: text("client_type"),                 // Residential | Commercial | Institutional
+  projectDescription: text("project_description"), // free-text description of the works
+  planningStatus: text("planning_status"),          // planning / building-regs status
+  hasDrawings: text("has_drawings"),                // Yes | No | Not sure
+  urgency: text("urgency"),                          // Emergency | Planned (electrical work)
   consentAgreed: boolean("consent_agreed").notNull().default(false),
   status: leadStatusEnum("status").notNull().default("New"),
   source: leadSourceEnum("source").default("Website"),

@@ -42,5 +42,10 @@ export interface LeadInput {
   accessConditions?: string[];
   propertyStatus?: string;
   companyName?: string;
+  clientType?: string;
+  projectDescription?: string;
+  planningStatus?: string;
+  hasDrawings?: string;
+  urgency?: string;
   consentAgreed?: boolean;
 }

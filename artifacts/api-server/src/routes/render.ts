@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from "express";
 import fs from "node:fs";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { db } from "@workspace/db";
 import { tenantsTable, pageRenderCacheTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
@@ -16,7 +17,9 @@ type SsrModule = {
 
 let ssrModulePromise: Promise<SsrModule> | null = null;
 function loadSsrModule(): Promise<SsrModule> {
-  if (!ssrModulePromise) ssrModulePromise = import(SSR_ENTRY_PATH) as Promise<SsrModule>;
+  // pathToFileURL: a bare absolute path works on Linux but breaks Node's ESM loader on
+  // Windows (drive letter parsed as a URL scheme) — file:// URLs work on both.
+  if (!ssrModulePromise) ssrModulePromise = import(pathToFileURL(SSR_ENTRY_PATH).href) as Promise<SsrModule>;
   return ssrModulePromise;
 }
 

@@ -2,14 +2,14 @@ import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as 
 import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl, useGetPublicPaymentPage, useChargePublicPaymentLink, useSubmitPublicQuoteAction } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { initGoogleTag, updateConsent, fireQuoteRequestConversion } from "./analytics";
-const SiteBaseCtx = createContext('');
-const useSiteBase = () => useContext(SiteBaseCtx);
+export const SiteBaseCtx = createContext('');
+export const useSiteBase = () => useContext(SiteBaseCtx);
 
 // Absolute origin (scheme+host) for the current tenant site. Read from context rather than
 // window.location directly so PageSEO's canonical tag can be provided correctly by a future
 // server-side renderer (which has no `window`) without changing PageSEO itself.
-const SiteOriginCtx = createContext('');
-const useSiteOrigin = () => useContext(SiteOriginCtx);
+export const SiteOriginCtx = createContext('');
+export const useSiteOrigin = () => useContext(SiteOriginCtx);
 
 const BLUE = "#1973D1"; // darkened from #1F8CFF to clear WCAG AA 4.5:1 contrast on white/light backgrounds
 const NAVY = "#0A121C";
@@ -82,7 +82,7 @@ const WHY_POINTS = [
 // Renders <title>/<meta>/<link> as plain JSX — React 19 hoists these into <head> automatically
 // no matter where in the tree they render, in both client and server rendering, so this needs
 // no DOM manipulation and produces real tags in a server-rendered HTML snapshot too.
-function PageSEO({ title, description, image, siteName }: { title: string; description: string; image?: string; siteName?: string }) {
+export function PageSEO({ title, description, image, siteName }: { title: string; description: string; image?: string; siteName?: string }) {
   const siteBase = useSiteBase();
   const origin = useSiteOrigin();
   const [location] = useLocation();
@@ -112,7 +112,7 @@ function PageSEO({ title, description, image, siteName }: { title: string; descr
 }
 
 /** Renders a JSON-LD structured-data block. `data` should be a plain schema.org object (or array of them). */
-function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
+export function JsonLd({ data }: { data: Record<string, unknown> | Record<string, unknown>[] }) {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
 }
 
@@ -272,7 +272,7 @@ const MULTI_UPLOAD_ACCEPT = "image/jpeg,image/png,image/webp,image/gif,image/hei
 
 interface UploadedFile { url: string; name: string; state: "uploading" | "done" | "error"; previewUrl?: string; }
 
-function MultiFileUpload({ tenantSlug, onChange, label = "Upload photos or documents", hint }: { tenantSlug: string; onChange: (urls: string[]) => void; label?: string; hint?: string }) {
+export function MultiFileUpload({ tenantSlug, onChange, label = "Upload photos or documents", hint }: { tenantSlug: string; onChange: (urls: string[]) => void; label?: string; hint?: string }) {
   const requestUrl = useRequestUploadUrl();
   const inputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<UploadedFile[]>([]);
@@ -2278,7 +2278,7 @@ function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "
 
 const COOKIE_CONSENT_KEY = "bizzflow_cookie_consent";
 
-function CookieBanner({ siteBase }: { siteBase: string }) {
+export function CookieBanner({ siteBase }: { siteBase: string }) {
   const [choice, setChoice] = useState<string | null>(() => {
     try { return window.localStorage.getItem(COOKIE_CONSENT_KEY); } catch { return "accepted"; }
   });
@@ -2697,6 +2697,14 @@ const CONTACT_METHODS = ["Phone","WhatsApp","Email"];
 const BEST_TIMES = ["Morning","Afternoon","Evening","Anytime"];
 const YES_NO_NOTSURE = ["Yes","No","Not Sure"];
 
+// Construction-industry quote options (tenant.industry === 'construction', e.g. AMO Services).
+// Service list is the client's real 7 categories — do not invent extras.
+const CONSTRUCTION_SERVICES = ["New Builds","Commercial","Home Renovations","Loft Conversions","Electrical Services","Kitchens","Bricklaying","Not Sure"];
+const CLIENT_TYPES = ["Residential","Commercial","Institutional"];
+const PLANNING_STATUSES = ["Planning Approved","Planning Application Submitted","Building Regs Only","No Planning Needed","Not Sure Yet"];
+const URGENCY_OPTIONS = ["Emergency","Planned Work"];
+const CONSTRUCTION_BUDGETS = ["Under £10,000","£10,000–£25,000","£25,000–£50,000","£50,000–£100,000","More Than £100,000","Not Sure"];
+
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return <h2 className="font-bold text-base pt-2 first:pt-0 border-t border-slate-100 first:border-t-0 mt-2 first:mt-0" style={{ color: TEXT }}>{children}</h2>;
 }
@@ -2732,11 +2740,19 @@ const QUOTE_FORM_DEFAULTS = {
   requiresInsulation: '', insulationThickness: '', insulationMaterial: '',
   accessConditions: [] as string[], propertyStatus: '',
   timeframe: '', budget: '', notes: '',
+  // Construction-industry fields (unused for rendering tenants)
+  clientType: '', projectDescription: '', planningStatus: '', hasDrawings: '', urgency: '',
   photoUrls: [] as string[],
   consentAgreed: false,
 };
 
-function QuotePage({ tenantSlug }: { tenantSlug: string }) {
+/**
+ * The quote form (intro aside + full form) without any page chrome, so both site templates
+ * can embed it: the rendering template wraps it in TopBar/SiteNav/PageHero, the construction
+ * template (ConstructionSiteApp) in its own shell. `accent`/`panel` re-theme the buttons,
+ * links and dark aside per template; field content branches on tenant.industry internally.
+ */
+export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { tenantSlug: string; accent?: string; panel?: string }) {
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -2751,11 +2767,14 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
     if (submitted) quoteSuccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [submitted]);
   const f = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [field]: e.target.value });
-  const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#1F8CFF] focus:border-[#1F8CFF] transition";
+  const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--qf-accent)] focus:border-[var(--qf-accent)] transition";
   const labelCls = "block text-xs font-semibold uppercase tracking-wide mb-1";
   const gridCls = "grid grid-cols-1 sm:grid-cols-2 gap-4";
-  const isEwi = form.serviceInterest === "External Wall Insulation";
+  const isConstruction = tenant?.industry === 'construction';
+  const isEwi = !isConstruction && form.serviceInterest === "External Wall Insulation";
   const isCommercial = form.propertyType === "Commercial Property";
+  const isElectrical = isConstruction && form.serviceInterest === "Electrical Services";
+  const isBusinessClient = form.clientType === "Commercial" || form.clientType === "Institutional";
 
   const validate = (): Record<string, string> => {
     const e: Record<string, string> = {};
@@ -2764,11 +2783,17 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
     if (!form.email.trim()) e.email = "Email address is required";
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) e.email = "Please enter a valid email address";
     if (!form.postcode.trim()) e.postcode = "Postcode is required";
-    if (!form.propertyType) e.propertyType = "Please select a property type";
-    if (!form.areaToRender) e.areaToRender = "Please select the area to be rendered";
-    if (!form.numberOfStoreys) e.numberOfStoreys = "Please select the number of storeys";
-    if (!form.serviceInterest) e.serviceInterest = "Please select a service";
-    if (!form.existingSurface) e.existingSurface = "Please select the existing surface";
+    if (isConstruction) {
+      if (!form.clientType) e.clientType = "Please select a client type";
+      if (!form.serviceInterest) e.serviceInterest = "Please select a service";
+      if (!form.projectDescription.trim()) e.projectDescription = "Please tell us about the project";
+    } else {
+      if (!form.propertyType) e.propertyType = "Please select a property type";
+      if (!form.areaToRender) e.areaToRender = "Please select the area to be rendered";
+      if (!form.numberOfStoreys) e.numberOfStoreys = "Please select the number of storeys";
+      if (!form.serviceInterest) e.serviceInterest = "Please select a service";
+      if (!form.existingSurface) e.existingSurface = "Please select the existing surface";
+    }
     if (!form.timeframe) e.timeframe = "Please select a preferred timeframe";
     if (!form.consentAgreed) e.consentAgreed = "Please confirm you agree before submitting";
     return e;
@@ -2792,13 +2817,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   };
 
   return (
-    <div>
-      <PageSEO title="Get a Free Rendering Quote | AMO Rendering — Essex & London" description="Request a free rendering quote from AMO Rendering. Upload photos of your property and we'll recommend the right render system."/>
-      <TopBar tenant={tenant} settings={settings}/>
-      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Request A Rendering Quote" title="Request A Rendering Quote" subtitle="Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system."/>
-
-      <section className="py-16 bg-white">
+      <section className="py-16 bg-white" style={{ ['--qf-accent' as any]: accent }}>
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
 
@@ -2806,22 +2825,28 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
             <aside className="lg:col-span-2 space-y-6">
               <div className="rounded-2xl border border-slate-200 p-7 space-y-5 bg-white shadow-sm">
                 <h2 className="text-xl font-bold" style={{ color: TEXT }}>Get A Clearer Starting Point</h2>
-                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>The more detail you provide, the easier it is for AMO to understand your exterior walls, current surface and desired finish.</p>
+                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{isConstruction
+                  ? `The more detail you provide, the easier it is for ${tenant?.name || "our team"} to understand the scope of the works and give you an accurate price.`
+                  : "The more detail you provide, the easier it is for AMO to understand your exterior walls, current surface and desired finish."}</p>
                 <ul className="space-y-3">
-                  {["Upload front, side and rear photos","Tell us your existing surface","Select the service you are interested in","Add your postcode and timeframe"].map(b => (
+                  {(isConstruction
+                    ? ["Describe the project and works required","Tell us your planning status if you know it","Upload photos, sketches or drawings","Add your postcode and timeframe"]
+                    : ["Upload front, side and rear photos","Tell us your existing surface","Select the service you are interested in","Add your postcode and timeframe"]).map(b => (
                     <li key={b} className="flex items-start gap-2">
-                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: accent }}><CheckIcon color="white"/></div>
                       <span className="text-sm" style={{ color: TEXT }}>{b}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: NAVY }}>
+              <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: panel }}>
                 <h3 className="font-bold">What Happens Next?</h3>
                 <div className="space-y-3">
-                  {[{ n: 1, text: "AMO reviews your photos and property details." },{ n: 2, text: "A suitable rendering option is recommended." },{ n: 3, text: "You receive a quote based on the work required." }].map(s => (
+                  {(isConstruction
+                    ? [{ n: 1, text: "Your project details and any drawings are reviewed." },{ n: 2, text: "We may call you to clarify the scope of the works." },{ n: 3, text: "You receive a quote based on the work required." }]
+                    : [{ n: 1, text: "AMO reviews your photos and property details." },{ n: 2, text: "A suitable rendering option is recommended." },{ n: 3, text: "You receive a quote based on the work required." }]).map(s => (
                     <div key={s.n} className="flex items-start gap-3">
-                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: BLUE }}>{s.n}</div>
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: accent }}>{s.n}</div>
                       <p className="text-sm text-slate-300">{s.text}</p>
                     </div>
                   ))}
@@ -2833,13 +2858,13 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
             <div className="lg:col-span-3">
               {submitted ? (
                 <div ref={quoteSuccessRef} className="text-center space-y-5 py-16">
-                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE + "20" }}>
-                    <svg className="w-8 h-8" style={{ color: BLUE }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
+                  <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: accent + "20" }}>
+                    <svg className="w-8 h-8" style={{ color: accent }} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7"/></svg>
                   </div>
                   <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Quote Request Received</h2>
                   <p style={{ color: MUTED }}>Thank you. We'll review your request and be in touch within 24 hours.</p>
                   {reference && <p className="text-sm font-mono" style={{ color: MUTED }}>Reference: <span className="font-bold" style={{ color: TEXT }}>{reference}</span></p>}
-                  <BlueBtn href={siteBase || '/'}>Back to Home</BlueBtn>
+                  <a href={siteBase || '/'} style={{ backgroundColor: accent }} className="inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity">Back to Home</a>
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
@@ -2853,6 +2878,45 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                   </div>
                   <div id="qf-email"><label className={labelCls} style={{ color: MUTED }}>Email Address *</label><input type="email" className={inputCls} placeholder="Email address" value={form.email} onChange={f('email')}/><FieldError message={errors.email}/></div>
                   <div id="qf-postcode"><label className={labelCls} style={{ color: MUTED }}>Property Postcode *</label><input className={inputCls} placeholder="Postcode" value={form.postcode} onChange={f('postcode')}/><FieldError message={errors.postcode}/></div>
+                  {isConstruction && (<>
+                    <div className={gridCls}>
+                      <div id="qf-clientType">
+                        <label className={labelCls} style={{ color: MUTED }}>Client Type *</label>
+                        <select className={inputCls} value={form.clientType} onChange={f('clientType')}>
+                          <option value="">Select...</option>
+                          {CLIENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                        <FieldError message={errors.clientType}/>
+                      </div>
+                      <div id="qf-serviceInterest">
+                        <label className={labelCls} style={{ color: MUTED }}>Service Required *</label>
+                        <select className={inputCls} value={form.serviceInterest} onChange={f('serviceInterest')}>
+                          <option value="">Select service...</option>
+                          {CONSTRUCTION_SERVICES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                        <FieldError message={errors.serviceInterest}/>
+                      </div>
+                    </div>
+                    {isBusinessClient && (
+                      <div><label className={labelCls} style={{ color: MUTED }}>Company / Organisation Name</label><input className={inputCls} value={form.companyName} onChange={f('companyName')}/></div>
+                    )}
+                    {isElectrical && (
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>How Urgent Is the Work?</label>
+                        <select className={inputCls} value={form.urgency} onChange={f('urgency')}>
+                          <option value="">Select...</option>
+                          {URGENCY_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                    )}
+                    <div id="qf-projectDescription">
+                      <label className={labelCls} style={{ color: MUTED }}>Tell Us About the Project *</label>
+                      <textarea rows={4} className={inputCls} placeholder="Describe the works — e.g. a rear extension, loft conversion, full renovation, rewire…" value={form.projectDescription} onChange={f('projectDescription')}/>
+                      <FieldError message={errors.projectDescription}/>
+                    </div>
+                  </>)}
+
+                  {!isConstruction && (<>
                   <div className={gridCls}>
                     <div id="qf-propertyType">
                       <label className={labelCls} style={{ color: MUTED }}>Property Type *</label>
@@ -2906,6 +2970,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                       <FieldError message={errors.existingSurface}/>
                     </div>
                   </div>
+                  </>)}
                   <div id="qf-timeframe">
                     <label className={labelCls} style={{ color: MUTED }}>Preferred Timeframe *</label>
                     <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
@@ -2915,7 +2980,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                     <FieldError message={errors.timeframe}/>
                   </div>
 
-                  <button type="button" onClick={() => setShowMoreDetails(v => !v)} className="text-sm font-semibold underline hover:no-underline text-left" style={{ color: BLUE }}>
+                  <button type="button" onClick={() => setShowMoreDetails(v => !v)} className="text-sm font-semibold underline hover:no-underline text-left" style={{ color: accent }}>
                     {showMoreDetails ? '− Hide extra details' : '+ Add more details for a more accurate quote (optional)'}
                   </button>
 
@@ -2938,6 +3003,34 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                           {BEST_TIMES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
+                      {isConstruction && (<>
+                        <div className={gridCls}>
+                          <div>
+                            <label className={labelCls} style={{ color: MUTED }}>Planning / Building Regs Status</label>
+                            <select className={inputCls} value={form.planningStatus} onChange={f('planningStatus')}>
+                              <option value="">Select...</option>
+                              {PLANNING_STATUSES.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className={labelCls} style={{ color: MUTED }}>Do You Have Drawings or Plans?</label>
+                            <select className={inputCls} value={form.hasDrawings} onChange={f('hasDrawings')}>
+                              <option value="">Select...</option>
+                              {YES_NO_NOTSURE.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                          </div>
+                        </div>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Optional Budget Range</label>
+                          <select className={inputCls} value={form.budget} onChange={f('budget')}>
+                            <option value="">Select...</option>
+                            {CONSTRUCTION_BUDGETS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Anything else about the property, site access or timings…" value={form.notes} onChange={f('notes')}/></div>
+                      </>)}
+
+                      {!isConstruction && (<>
                       <div>
                         <label className={labelCls} style={{ color: MUTED }}>Approximate Wall Area</label>
                         <select className={inputCls} value={form.wallArea} onChange={f('wallArea')}>
@@ -3019,11 +3112,14 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
                         </div>
                       </div>
                       <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Tell us anything else about your property, existing walls, access or the work required…" value={form.notes} onChange={f('notes')}/></div>
+                      </>)}
 
                       <MultiFileUpload
                         tenantSlug={tenantSlug}
                         label="Upload photos or documents"
-                        hint="Upload clear photos of the front, rear, sides and any damaged areas. Photos help us provide a faster and more accurate quotation. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
+                        hint={isConstruction
+                          ? "Upload site photos, sketches, drawings or plans — anything that helps us understand the project. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
+                          : "Upload clear photos of the front, rear, sides and any damaged areas. Photos help us provide a faster and more accurate quotation. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"}
                         onChange={urls => setForm({ ...form, photoUrls: urls })}
                       />
                     </div>
@@ -3031,17 +3127,17 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
 
                   <div id="qf-consentAgreed">
                     <label className="flex items-start gap-2 text-sm" style={{ color: TEXT }}>
-                      <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[#1F8CFF] focus:ring-[#1F8CFF]" checked={form.consentAgreed} onChange={e => setForm({ ...form, consentAgreed: e.target.checked })}/>
+                      <input type="checkbox" className="mt-0.5 h-4 w-4 rounded border-slate-300 text-[var(--qf-accent)] focus:ring-[var(--qf-accent)]" checked={form.consentAgreed} onChange={e => setForm({ ...form, consentAgreed: e.target.checked })}/>
                       <span>
-                        I agree to the <a href={`${siteBase}/terms`} target="_blank" rel="noreferrer" className="underline hover:no-underline" style={{ color: BLUE }}>Terms &amp; Conditions</a> and{" "}
-                        <a href={`${siteBase}/privacy`} target="_blank" rel="noreferrer" className="underline hover:no-underline" style={{ color: BLUE }}>Privacy Policy</a>, and consent to {tenant?.name || "this business"} contacting me about this quotation request.
+                        I agree to the <a href={`${siteBase}/terms`} target="_blank" rel="noreferrer" className="underline hover:no-underline" style={{ color: accent }}>Terms &amp; Conditions</a> and{" "}
+                        <a href={`${siteBase}/privacy`} target="_blank" rel="noreferrer" className="underline hover:no-underline" style={{ color: accent }}>Privacy Policy</a>, and consent to {tenant?.name || "this business"} contacting me about this quotation request.
                       </span>
                     </label>
                     <FieldError message={errors.consentAgreed}/>
                   </div>
 
                   <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
-                  <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
+                  <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: accent }}>
                     {mutation.isPending ? 'Submitting...' : 'Submit Quote Request'}
                   </button>
                   {mutation.isError && <p className="text-sm text-red-600 text-center">Something went wrong. Please try again or call us directly.</p>}
@@ -3051,7 +3147,29 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
           </div>
         </div>
       </section>
+  );
+}
 
+function QuotePage({ tenantSlug }: { tenantSlug: string }) {
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  const isConstruction = tenant?.industry === 'construction';
+  return (
+    <div>
+      <PageSEO
+        title={isConstruction ? `Request A Free Quote | ${tenant?.name || "Get In Touch"}` : "Get a Free Rendering Quote | AMO Rendering — Essex & London"}
+        description={isConstruction
+          ? `Request a free quote from ${tenant?.name || "our team"}. Tell us about your project — from new builds to renovations — and we'll come back with a detailed quotation.`
+          : "Request a free rendering quote from AMO Rendering. Upload photos of your property and we'll recommend the right render system."}/>
+      <TopBar tenant={tenant} settings={settings}/>
+      <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant}
+        crumb={isConstruction ? "Request A Quote" : "Request A Rendering Quote"}
+        title={isConstruction ? "Request A Free Quote" : "Request A Rendering Quote"}
+        subtitle={isConstruction
+          ? `Tell us about your project and ${tenant?.name || "our team"} will assess the works and come back with a detailed quotation.`
+          : "Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system."}/>
+      <QuoteFormSection tenantSlug={tenantSlug}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>

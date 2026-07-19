@@ -382,6 +382,10 @@ function LeadDetailPage({ id }: { id: number }) {
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
   if (!l) return <div className="p-8 text-center text-slate-500">Lead not found</div>;
 
+  // Construction-tenant leads populate clientType/projectDescription instead of the
+  // rendering-specific survey fields — hide the rendering rows for those to avoid a wall of "-".
+  const isConstructionLead = !!(l.clientType || l.projectDescription);
+
   const handleStatusChange = async (status: string) => {
     try {
       await updateMutation.mutateAsync({ id, data: { status } } as any);
@@ -444,12 +448,21 @@ function LeadDetailPage({ id }: { id: number }) {
               <div><span className="text-slate-500">City: </span><span className="text-slate-900">{l.city || "-"}</span></div>
               <div><span className="text-slate-500">Postcode: </span><span className="text-slate-900">{l.postcode || "-"}</span></div>
               <div className="sm:col-span-2"><span className="text-slate-500">Address: </span><span className="text-slate-900">{l.address || "-"}</span></div>
-              <div><span className="text-slate-500">Property Type: </span><span className="text-slate-900">{l.propertyType === "Other" && l.propertyTypeOther ? `Other — ${l.propertyTypeOther}` : (l.propertyType || "-")}</span></div>
+              {!isConstructionLead && <div><span className="text-slate-500">Property Type: </span><span className="text-slate-900">{l.propertyType === "Other" && l.propertyTypeOther ? `Other — ${l.propertyTypeOther}` : (l.propertyType || "-")}</span></div>}
               {l.companyName && <div><span className="text-slate-500">Company Name: </span><span className="text-slate-900">{l.companyName}</span></div>}
+              {/* Construction-industry lead fields — present only when the lead came from a construction tenant's form */}
+              {l.clientType && <div><span className="text-slate-500">Client Type: </span><span className="text-slate-900">{l.clientType}</span></div>}
+              {l.urgency && <div><span className="text-slate-500">Urgency: </span><span className="text-slate-900">{l.urgency}</span></div>}
+              {l.planningStatus && <div><span className="text-slate-500">Planning / Building Regs: </span><span className="text-slate-900">{l.planningStatus}</span></div>}
+              {l.hasDrawings && <div><span className="text-slate-500">Has Drawings / Plans: </span><span className="text-slate-900">{l.hasDrawings}</span></div>}
+              {l.projectDescription && <div className="sm:col-span-2"><span className="text-slate-500">Project Description: </span><span className="text-slate-900 whitespace-pre-wrap">{l.projectDescription}</span></div>}
+              {!isConstructionLead && (<>
               <div><span className="text-slate-500">Area to Be Rendered: </span><span className="text-slate-900">{l.areaToRender === "Other" && l.areaToRenderOther ? `Other — ${l.areaToRenderOther}` : (l.areaToRender || "-")}</span></div>
               <div><span className="text-slate-500">Number of Storeys: </span><span className="text-slate-900">{l.numberOfStoreys || "-"}</span></div>
               <div><span className="text-slate-500">Approx. Wall Area: </span><span className="text-slate-900">{l.wallArea || "-"}</span></div>
+              </>)}
               <div><span className="text-slate-500">Service: </span><span className="text-slate-900">{l.serviceInterest || "-"}</span></div>
+              {!isConstructionLead && (<>
               <div><span className="text-slate-500">Existing Surface: </span><span className="text-slate-900">{l.existingSurface || "-"}</span></div>
               <div className="sm:col-span-2"><span className="text-slate-500">Current Condition: </span><span className="text-slate-900">{(l.currentCondition as string[] | undefined)?.length ? (l.currentCondition as string[]).join(", ") : "-"}</span></div>
               <div><span className="text-slate-500">Desired Finish: </span><span className="text-slate-900">{l.desiredFinish || "-"}</span></div>
@@ -463,6 +476,7 @@ function LeadDetailPage({ id }: { id: number }) {
               )}
               <div className="sm:col-span-2"><span className="text-slate-500">Access Conditions: </span><span className="text-slate-900">{(l.accessConditions as string[] | undefined)?.length ? (l.accessConditions as string[]).join(", ") : "-"}</span></div>
               <div><span className="text-slate-500">Property Status: </span><span className="text-slate-900">{l.propertyStatus || "-"}</span></div>
+              </>)}
               <div><span className="text-slate-500">Timeframe: </span><span className="text-slate-900">{l.timeframe || "-"}</span></div>
               <div><span className="text-slate-500">Source: </span><span className="text-slate-900">{l.source || "-"}</span></div>
               <div><span className="text-slate-500">Budget: </span><span className="text-slate-900">{l.budget || "-"}</span></div>

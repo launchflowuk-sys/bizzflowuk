@@ -618,6 +618,16 @@ export interface Lead {
   propertyStatus?: string | null;
   /** @nullable */
   companyName?: string | null;
+  /** @nullable */
+  clientType?: string | null;
+  /** @nullable */
+  projectDescription?: string | null;
+  /** @nullable */
+  planningStatus?: string | null;
+  /** @nullable */
+  hasDrawings?: string | null;
+  /** @nullable */
+  urgency?: string | null;
   consentAgreed?: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -659,6 +669,11 @@ export interface LeadInput {
   accessConditions?: string[];
   propertyStatus?: string;
   companyName?: string;
+  clientType?: string;
+  projectDescription?: string;
+  planningStatus?: string;
+  hasDrawings?: string;
+  urgency?: string;
   consentAgreed?: boolean;
 }
 
@@ -697,6 +712,11 @@ export interface LeadUpdate {
   accessConditions?: string[];
   propertyStatus?: string;
   companyName?: string;
+  clientType?: string;
+  projectDescription?: string;
+  planningStatus?: string;
+  hasDrawings?: string;
+  urgency?: string;
   consentAgreed?: boolean;
 }
 
@@ -743,6 +763,11 @@ export interface QuoteRequestInput {
   accessConditions?: string[];
   propertyStatus?: string;
   companyName?: string;
+  clientType?: string;
+  projectDescription?: string;
+  planningStatus?: string;
+  hasDrawings?: string;
+  urgency?: string;
   timeframe?: string;
   budget?: string;
   notes?: string;

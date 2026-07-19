@@ -138,7 +138,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 const DashboardApp = lazy(() => import("@/zones/dashboard/DashboardApp"));
 const PortalApp = lazy(() => import("@/zones/portal/PortalApp"));
 const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
-const PublicSiteApp = lazy(() => import("@/zones/public/PublicSiteApp"));
+const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
 
 function ZoneLoader() {
   return (

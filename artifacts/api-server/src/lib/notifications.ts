@@ -67,6 +67,12 @@ export interface NotificationContext {
   accessConditions?: string[];
   propertyStatus?: string;
   companyName?: string;
+  // Construction (AMO Services) fields
+  clientType?: string;
+  projectDescription?: string;
+  planningStatus?: string;
+  hasDrawings?: string;
+  urgency?: string;
 }
 
 async function getTenantAndSettings(tenantId: number) {
@@ -169,6 +175,11 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             accessConditions: ctx.accessConditions,
             propertyStatus: ctx.propertyStatus,
             companyName: ctx.companyName,
+            clientType: ctx.clientType,
+            projectDescription: ctx.projectDescription,
+            planningStatus: ctx.planningStatus,
+            hasDrawings: ctx.hasDrawings,
+            urgency: ctx.urgency,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new admin email failed"));
         }
         if (doAdminSms) {

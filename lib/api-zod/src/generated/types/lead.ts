@@ -74,6 +74,16 @@ export interface Lead {
   propertyStatus?: string | null;
   /** @nullable */
   companyName?: string | null;
+  /** @nullable */
+  clientType?: string | null;
+  /** @nullable */
+  projectDescription?: string | null;
+  /** @nullable */
+  planningStatus?: string | null;
+  /** @nullable */
+  hasDrawings?: string | null;
+  /** @nullable */
+  urgency?: string | null;
   consentAgreed?: boolean;
   createdAt: Date;
   updatedAt?: Date;
