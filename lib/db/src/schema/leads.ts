@@ -5,7 +5,7 @@ import { tenantsTable } from "./tenants";
 import { usersTable } from "./users";
 
 export const leadStatusEnum = pgEnum("lead_status", ["New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"]);
-export const leadSourceEnum = pgEnum("lead_source", ["Website", "Referral", "Google", "Facebook", "Instagram", "Other", "Cost Calculator"]);
+export const leadSourceEnum = pgEnum("lead_source", ["Website", "Referral", "Google", "Facebook", "Instagram", "Other"]);
 
 /** A single line the visitor picked in the public cost calculator, stored on the lead so
  *  "Convert to Quote" can pre-fill the quote's line items without any re-keying. */

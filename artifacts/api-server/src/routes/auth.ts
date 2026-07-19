@@ -20,7 +20,14 @@ async function getUserBusinesses(userId: number) {
 
 router.get("/me", requireAuth, async (req, res) => {
   const { id, email, role, firstName, lastName, tenantId, clerkId } = req.authUser as any;
-  const businesses = await getUserBusinesses(id);
+  // Never let the business list break /me — the dashboard calls this on load, so a failure here
+  // (e.g. user_tenants not yet migrated) would lock everyone out. Degrade to no switcher instead.
+  let businesses: unknown[] = [];
+  try {
+    businesses = await getUserBusinesses(id);
+  } catch (err) {
+    req.log.error({ err }, "getUserBusinesses failed (user_tenants may be missing) — returning no businesses");
+  }
   res.json({ id, email, role, firstName, lastName, tenantId, clerkId, businesses });
 });
 
