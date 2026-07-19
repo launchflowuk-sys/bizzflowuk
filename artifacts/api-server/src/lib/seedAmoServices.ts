@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, usersTable, userTenantsTable } from "@workspace/db";
+import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, usersTable, userTenantsTable, priceItemsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import bcrypt from "bcryptjs";
 import { logger } from "./logger";
@@ -204,6 +204,43 @@ async function ensureAmoServicesContent(tenantId: number): Promise<void> {
   if (filled) logger.info({ tenantId, filled }, "AMO Services service content backfilled");
 }
 
+// Demo pricing for the AMO Rendering cost calculator — plausible UK rates so the calculator is
+// live and usable out of the box. These are placeholders the tenant edits in Dashboard → Pricing;
+// they're only inserted if the tenant has NO price items yet, so real prices are never overwritten.
+const AMO_RENDERING_DEMO_PRICES: Array<{ category: string; name: string; description: string; unit: string; unitPrice: string; fixed?: boolean }> = [
+  { category: "Render Systems", name: "Silicone Thin-Coat Render", description: "Flexible, breathable, self-cleaning — the most popular modern finish", unit: "m²", unitPrice: "48.00" },
+  { category: "Render Systems", name: "Monocouche Render", description: "Through-coloured one-coat render", unit: "m²", unitPrice: "42.00" },
+  { category: "Render Systems", name: "K Rend Silicone System", description: "Premium silicone render with superior colour retention", unit: "m²", unitPrice: "52.00" },
+  { category: "Render Systems", name: "Traditional Sand & Cement", description: "Sand and cement render, ready to paint", unit: "m²", unitPrice: "34.00" },
+  { category: "Render Systems", name: "External Wall Insulation (EWI)", description: "Insulation boards plus silicone render — improves EPC rating", unit: "m²", unitPrice: "95.00" },
+  { category: "Preparation", name: "Pebbledash Removal", description: "Hacking off old pebbledash and preparing the surface", unit: "m²", unitPrice: "18.00" },
+  { category: "Preparation", name: "Old Render Removal", description: "Removing cracked or failed existing render", unit: "m²", unitPrice: "14.00" },
+  { category: "Preparation", name: "Crack & Damage Repair", description: "Repairing cracks and damaged masonry before rendering", unit: "m²", unitPrice: "12.00" },
+  { category: "Access & Waste", name: "Scaffolding (full project)", description: "Scaffold hire and erection for the property", unit: "fixed", unitPrice: "1200.00", fixed: true },
+  { category: "Access & Waste", name: "Skip Hire", description: "Waste removal skip", unit: "fixed", unitPrice: "280.00", fixed: true },
+  { category: "Finishing & Extras", name: "Corner & Stop Beads", description: "Bellcast, stop and corner beads", unit: "linear m", unitPrice: "7.00" },
+  { category: "Finishing & Extras", name: "Custom Colour Upgrade", description: "Premium or bespoke colour surcharge", unit: "m²", unitPrice: "4.00" },
+];
+
+/**
+ * Seeds the AMO Rendering cost calculator with demo pricing so it works end-to-end immediately.
+ * Runs every boot but only acts if the rendering tenant has ZERO price items — so it never
+ * overwrites real prices the tenant has entered (or clobbers their edits).
+ */
+async function ensureRenderingDemoPrices(): Promise<void> {
+  const [rendering] = await db.select({ id: tenantsTable.id }).from(tenantsTable).where(eq(tenantsTable.slug, "amo-rendering")).limit(1);
+  if (!rendering) return;
+  const existing = await db.select({ id: priceItemsTable.id }).from(priceItemsTable).where(eq(priceItemsTable.tenantId, rendering.id)).limit(1);
+  if (existing.length) return; // tenant already has price items — leave them alone
+  await db.insert(priceItemsTable).values(
+    AMO_RENDERING_DEMO_PRICES.map((p, i) => ({
+      tenantId: rendering.id, category: p.category, name: p.name, description: p.description,
+      unit: p.unit, unitPrice: p.unitPrice, fixed: !!p.fixed, published: true, sortOrder: (i + 1) * 10,
+    })),
+  );
+  logger.info({ tenantId: rendering.id, count: AMO_RENDERING_DEMO_PRICES.length }, "Seeded AMO Rendering demo price items");
+}
+
 export async function seedAmoServicesIfMissing(): Promise<void> {
   try {
     const existing = await db
@@ -214,6 +251,7 @@ export async function seedAmoServicesIfMissing(): Promise<void> {
     if (existing.length) {
       await ensureMarkMultiTenant();
       await ensureAmoServicesContent(existing[0].id);
+      await ensureRenderingDemoPrices();
       return;
     }
 
@@ -279,6 +317,7 @@ export async function seedAmoServicesIfMissing(): Promise<void> {
     );
 
     await ensureMarkMultiTenant();
+    await ensureRenderingDemoPrices();
 
     logger.info({ tenantId }, "AMO Services tenant seeded (tenant, settings, 7 services, 4 areas)");
   } catch (err) {

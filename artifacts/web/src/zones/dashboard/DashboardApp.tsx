@@ -184,7 +184,6 @@ function BusinessSwitcher() {
   const businesses = ((me as any)?.businesses || []) as Array<{ tenantId: number; name: string; slug: string }>;
   const activeTenantId = (me as any)?.tenantId;
   const switchMutation = useSwitchTenant();
-  const qc = useQueryClient();
   const showToast = useToast();
   if (businesses.length < 2) return null;
 
@@ -192,9 +191,12 @@ function BusinessSwitcher() {
     if (tenantId === activeTenantId || switchMutation.isPending) return;
     try {
       await switchMutation.mutateAsync({ data: { tenantId } } as any);
-      await qc.invalidateQueries(); // re-scope every query (leads, quotes, pricing, me, …)
-      const name = businesses.find(b => b.tenantId === tenantId)?.name;
-      showToast(name ? `Switched to ${name}` : "Business switched");
+      // Hard-reload the dashboard so the WHOLE app re-initialises for the newly active business.
+      // Invalidating the cache alone raced: the active-business highlight (from /me) and the page
+      // data refetch independently, so you could end up with one business highlighted while the
+      // other's data was still on screen — which looked like the switch was reversed. A full
+      // reload makes the highlight and the data always reflect the same server-side active tenant.
+      window.location.assign("/dashboard");
     } catch (err: any) { showToast(err?.message || "Could not switch business", "error"); }
   };
 
