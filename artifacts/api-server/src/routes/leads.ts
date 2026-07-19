@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { leadsTable, leadNotesTable, quotesTable, projectsTable } from "@workspace/db";
+import { leadsTable, leadNotesTable, quotesTable, quoteItemsTable, projectsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
@@ -166,10 +166,34 @@ router.post("/leads/:id/convert-quote", requireTenantAccess, async (req, res) =>
       .limit(1);
     if (!lead.length) { res.status(404).json({ error: "Not found" }); return; }
     const ref = `QUO-${Date.now()}`;
-    const quote = await db.insert(quotesTable).values({ tenantId: lead[0].tenantId, reference: ref, leadId: lead[0].id }).returning();
+
+    // If the lead came from the cost calculator, pre-fill the quote's line items and totals from
+    // its stored estimate so Mark doesn't re-key anything — he just reviews, tweaks and sends.
+    // VAT is deliberately set to 0 here so the draft total equals exactly what the customer saw
+    // in the calculator (the estimate showed no VAT); Mark can add VAT in the editor if his
+    // prices are ex-VAT. Everything is still a Draft — nothing is emailed on conversion.
+    const estimate = (lead[0].estimateItems as Array<{ name: string; quantity: number; unit: string; unitPrice: string; lineTotal: string }> | null) ?? [];
+    const subtotal = estimate.reduce((s, it) => s + (parseFloat(it.lineTotal) || 0), 0);
+
+    const quote = await db.insert(quotesTable).values({
+      tenantId: lead[0].tenantId, reference: ref, leadId: lead[0].id,
+      ...(estimate.length ? { subtotal: subtotal.toFixed(2), vatRate: "0", vatAmount: "0", total: subtotal.toFixed(2) } : {}),
+    }).returning();
+
+    if (estimate.length) {
+      await db.insert(quoteItemsTable).values(estimate.map((it, i) => ({
+        quoteId: quote[0].id,
+        description: `${it.name}${it.unit && it.unit !== "each" && it.unit !== "fixed" ? ` (per ${it.unit})` : ""}`,
+        quantity: String(it.quantity),
+        unitPrice: parseFloat(it.unitPrice || "0").toFixed(2),
+        total: (parseFloat(it.lineTotal) || 0).toFixed(2),
+        sortOrder: (i + 1) * 10,
+      })));
+    }
+
     // Note: converting a lead to a quote just creates the draft — it does not email the customer.
-    // Mark still needs to add line items and generate/send a payment link before anything goes
-    // out; auto-firing here produced a content-less "quote is ready" email with no pay link.
+    // Mark still generates/sends a payment link before anything goes out; auto-firing here
+    // produced a content-less "quote is ready" email with no pay link.
     await db.update(leadsTable).set({ status: "Quote Sent" }).where(eq(leadsTable.id, lead[0].id));
     res.status(201).json(quote[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

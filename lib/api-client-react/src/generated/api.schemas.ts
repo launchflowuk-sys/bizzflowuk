@@ -551,6 +551,14 @@ export const LeadStatus = {
   Lost: 'Lost',
 } as const;
 
+export interface EstimateItem {
+  name: string;
+  quantity: number;
+  unit: string;
+  unitPrice: string;
+  lineTotal: string;
+}
+
 export interface Lead {
   id: number;
   tenantId: number;
@@ -628,6 +636,10 @@ export interface Lead {
   hasDrawings?: string | null;
   /** @nullable */
   urgency?: string | null;
+  /** @nullable */
+  estimateItems?: EstimateItem[] | null;
+  /** @nullable */
+  estimateTotal?: string | null;
   consentAgreed?: boolean;
   createdAt: string;
   updatedAt?: string;
@@ -674,6 +686,8 @@ export interface LeadInput {
   planningStatus?: string;
   hasDrawings?: string;
   urgency?: string;
+  estimateItems?: EstimateItem[];
+  estimateTotal?: string;
   consentAgreed?: boolean;
 }
 
@@ -717,6 +731,8 @@ export interface LeadUpdate {
   planningStatus?: string;
   hasDrawings?: string;
   urgency?: string;
+  estimateItems?: EstimateItem[];
+  estimateTotal?: string;
   consentAgreed?: boolean;
 }
 
@@ -768,6 +784,8 @@ export interface QuoteRequestInput {
   planningStatus?: string;
   hasDrawings?: string;
   urgency?: string;
+  estimateItems?: EstimateItem[];
+  estimateTotal?: string;
   timeframe?: string;
   budget?: string;
   notes?: string;

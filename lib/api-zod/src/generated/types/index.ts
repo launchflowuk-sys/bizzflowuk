@@ -36,6 +36,7 @@ export * from './dashboardUploadUrlRequest';
 export * from './dashboardUploadUrlRequestContentType';
 export * from './domainResolution';
 export * from './errorEnvelope';
+export * from './estimateItem';
 export * from './faq';
 export * from './fAQInput';
 export * from './fAQUpdate';

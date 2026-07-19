@@ -5,6 +5,7 @@
  * LaunchFlow multi-tenant SaaS platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { EstimateItem } from './estimateItem';
 import type { LeadStatus } from './leadStatus';
 
 export interface Lead {
@@ -84,6 +85,10 @@ export interface Lead {
   hasDrawings?: string | null;
   /** @nullable */
   urgency?: string | null;
+  /** @nullable */
+  estimateItems?: EstimateItem[] | null;
+  /** @nullable */
+  estimateTotal?: string | null;
   consentAgreed?: boolean;
   createdAt: Date;
   updatedAt?: Date;

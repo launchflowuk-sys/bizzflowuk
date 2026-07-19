@@ -1,11 +1,15 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum, jsonb, boolean, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, jsonb, boolean, numeric, index } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
 import { usersTable } from "./users";
 
 export const leadStatusEnum = pgEnum("lead_status", ["New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"]);
-export const leadSourceEnum = pgEnum("lead_source", ["Website", "Referral", "Google", "Facebook", "Instagram", "Other"]);
+export const leadSourceEnum = pgEnum("lead_source", ["Website", "Referral", "Google", "Facebook", "Instagram", "Other", "Cost Calculator"]);
+
+/** A single line the visitor picked in the public cost calculator, stored on the lead so
+ *  "Convert to Quote" can pre-fill the quote's line items without any re-keying. */
+export type EstimateItem = { name: string; quantity: number; unit: string; unitPrice: string; lineTotal: string };
 
 export const leadsTable = pgTable("leads", {
   id: serial("id").primaryKey(),
@@ -47,6 +51,10 @@ export const leadsTable = pgTable("leads", {
   hasDrawings: text("has_drawings"),                // Yes | No | Not sure
   urgency: text("urgency"),                          // Emergency | Planned (electrical work)
   consentAgreed: boolean("consent_agreed").notNull().default(false),
+  // Cost-calculator output — structured line items + total, so a lead from the calculator
+  // converts straight into a quote with its items pre-filled (see /leads/:id/convert-quote).
+  estimateItems: jsonb("estimate_items").$type<EstimateItem[]>(),
+  estimateTotal: numeric("estimate_total", { precision: 10, scale: 2 }),
   status: leadStatusEnum("status").notNull().default("New"),
   source: leadSourceEnum("source").default("Website"),
   assignedToId: integer("assigned_to_id").references(() => usersTable.id),

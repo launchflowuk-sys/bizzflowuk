@@ -5,6 +5,7 @@
  * LaunchFlow multi-tenant SaaS platform API
  * OpenAPI spec version: 0.1.0
  */
+import type { EstimateItem } from './estimateItem';
 
 export interface QuoteRequestInput {
   tenantSlug: string;
@@ -40,6 +41,8 @@ export interface QuoteRequestInput {
   planningStatus?: string;
   hasDrawings?: string;
   urgency?: string;
+  estimateItems?: EstimateItem[];
+  estimateTotal?: string;
   timeframe?: string;
   budget?: string;
   notes?: string;

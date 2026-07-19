@@ -3439,6 +3439,12 @@ components:
           type: ["string", "null"]
         urgency:
           type: ["string", "null"]
+        estimateItems:
+          type: ["array", "null"]
+          items:
+            $ref: "#/components/schemas/EstimateItem"
+        estimateTotal:
+          type: ["string", "null"]
         consentAgreed:
           type: boolean
         createdAt:
@@ -3537,6 +3543,12 @@ components:
           type: string
         urgency:
           type: string
+        estimateItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/EstimateItem"
+        estimateTotal:
+          type: string
         consentAgreed:
           type: boolean
 
@@ -3624,6 +3636,12 @@ components:
         hasDrawings:
           type: string
         urgency:
+          type: string
+        estimateItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/EstimateItem"
+        estimateTotal:
           type: string
         consentAgreed:
           type: boolean
@@ -3725,6 +3743,12 @@ components:
         hasDrawings:
           type: string
         urgency:
+          type: string
+        estimateItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/EstimateItem"
+        estimateTotal:
           type: string
         timeframe:
           type: string
@@ -4280,6 +4304,21 @@ components:
           minLength: 1
 
     # ─── Service ──────────────────────────────────────────────────────────
+    EstimateItem:
+      type: object
+      required: [name, quantity, unit, unitPrice, lineTotal]
+      properties:
+        name:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        unitPrice:
+          type: string
+        lineTotal:
+          type: string
+
     PriceItem:
       type: object
       required: [id, tenantId, name, unit, unitPrice]

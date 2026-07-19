@@ -93,9 +93,11 @@ export function PriceCalculatorSection({ tenantSlug, accent, panel }: { tenantSl
     const v = validate();
     setErrors(v);
     if (Object.keys(v).length) return;
-    // Build a readable breakdown so the lead lands with the full estimate in the dashboard.
+    // Human-readable breakdown for the lead body...
     const breakdown = lines.map(l => `${l.it.name} — ${l.q} ${l.it.unit} @ ${money(parseFloat(l.it.unitPrice))} = ${money(l.line)}`).join("\n");
     const projectDescription = `Cost calculator estimate:\n${breakdown}\n\nEstimated total: ${money(total)} (indicative)`;
+    // ...plus a structured version so "Convert to Quote" can pre-fill the quote's line items.
+    const estimateItems = lines.map(l => ({ name: l.it.name, quantity: l.q, unit: l.it.unit, unitPrice: parseFloat(l.it.unitPrice || "0").toFixed(2), lineTotal: l.line.toFixed(2) }));
     try {
       const result = await mutation.mutateAsync({ data: {
         ...contact, tenantSlug,
@@ -104,6 +106,8 @@ export function PriceCalculatorSection({ tenantSlug, accent, panel }: { tenantSl
         projectDescription,
         notes: projectDescription,
         source: "Cost Calculator",
+        estimateItems,
+        estimateTotal: total.toFixed(2),
       } } as any) as any;
       setReference(result?.reference ?? null);
       setSubmitted(true);

@@ -532,6 +532,9 @@ function LeadDetailPage({ id }: { id: number }) {
             ) : (
               <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
                 <p className="text-xs text-slate-700 font-medium">Convert this lead to a quote?</p>
+                {Array.isArray(l.estimateItems) && l.estimateItems.length > 0 && (
+                  <p className="text-xs text-green-700">The {l.estimateItems.length} line item{l.estimateItems.length > 1 ? "s" : ""} from this calculator estimate will be pre-filled into the quote.</p>
+                )}
                 <div className="flex gap-2">
                   <button onClick={handleConvertToQuote} disabled={convertToQuote.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">
                     {convertToQuote.isPending ? "Converting..." : "Yes, Convert"}

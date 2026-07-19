@@ -71,8 +71,11 @@ async function handleQuoteRequest(req: any, res: any, slug: string) {
     const { tenantSlug: _slug, ...rest } = req.body;
     const reference = `ENQ-${Date.now()}`;
     // Respect an explicit source (e.g. "Cost Calculator") so leads are attributable in the
-    // dashboard; the standard quote form sends none, so those still default to "Website".
-    const source = (rest as any).source || "Website";
+    // dashboard — but only if it's a valid lead_source enum value, otherwise the insert would
+    // throw on the enum constraint and silently lose the lead. Anything unknown falls back to
+    // "Website". The standard quote form sends none, so those default to "Website" too.
+    const VALID_SOURCES = ["Website", "Referral", "Google", "Facebook", "Instagram", "Other", "Cost Calculator"];
+    const source = VALID_SOURCES.includes((rest as any).source) ? (rest as any).source : "Website";
     const lead = await db.insert(leadsTable).values({ ...rest, reference, tenantId: tenant.id, status: "New", source }).returning();
     res.status(201).json(lead[0]);
 

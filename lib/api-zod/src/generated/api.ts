@@ -509,6 +509,14 @@ export const ListLeadsResponseItem = zod.object({
   "planningStatus": zod.string().nullish(),
   "hasDrawings": zod.string().nullish(),
   "urgency": zod.string().nullish(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).nullish(),
+  "estimateTotal": zod.string().nullish(),
   "consentAgreed": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
@@ -562,6 +570,14 @@ export const CreateLeadBody = zod.object({
   "planningStatus": zod.string().optional(),
   "hasDrawings": zod.string().optional(),
   "urgency": zod.string().optional(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).optional(),
+  "estimateTotal": zod.string().optional(),
   "consentAgreed": zod.boolean().optional()
 })
 
@@ -616,6 +632,14 @@ export const GetLeadResponse = zod.object({
   "planningStatus": zod.string().nullish(),
   "hasDrawings": zod.string().nullish(),
   "urgency": zod.string().nullish(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).nullish(),
+  "estimateTotal": zod.string().nullish(),
   "consentAgreed": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
@@ -668,6 +692,14 @@ export const UpdateLeadBody = zod.object({
   "planningStatus": zod.string().optional(),
   "hasDrawings": zod.string().optional(),
   "urgency": zod.string().optional(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).optional(),
+  "estimateTotal": zod.string().optional(),
   "consentAgreed": zod.boolean().optional()
 })
 
@@ -714,6 +746,14 @@ export const UpdateLeadResponse = zod.object({
   "planningStatus": zod.string().nullish(),
   "hasDrawings": zod.string().nullish(),
   "urgency": zod.string().nullish(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).nullish(),
+  "estimateTotal": zod.string().nullish(),
   "consentAgreed": zod.boolean().optional(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date().optional()
@@ -3049,6 +3089,14 @@ export const SubmitQuoteRequestBody = zod.object({
   "planningStatus": zod.string().optional(),
   "hasDrawings": zod.string().optional(),
   "urgency": zod.string().optional(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).optional(),
+  "estimateTotal": zod.string().optional(),
   "timeframe": zod.string().optional(),
   "budget": zod.string().optional(),
   "notes": zod.string().optional(),
