@@ -207,14 +207,43 @@ function UserAvatar({ size = 36 }: { size?: number }) {
   const m = me as any;
   const name = [m?.firstName, m?.lastName].filter(Boolean).join(" ") || m?.email || "";
   const initials = ((name.trim()[0]) || (m?.email?.[0]) || "?").toUpperCase();
+  // If the stored photo can't be rendered (e.g. an older broken/HEIC upload) fall back to the
+  // initials chip instead of leaving the browser's broken-image "?" glyph on screen. Reset the
+  // failed flag whenever the avatar URL changes so a fresh upload gets a clean attempt.
+  const [failed, setFailed] = useState(false);
+  useEffect(() => setFailed(false), [m?.avatarUrl]);
+  const showPhoto = !!m?.avatarUrl && !failed;
   return (
     <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
-      {m?.avatarUrl
-        ? <img src={m.avatarUrl} alt={name} className="w-full h-full rounded-full object-cover ring-2" style={{ ["--tw-ring-color" as any]: "var(--brand)" }} />
+      {showPhoto
+        ? <img src={m.avatarUrl} alt={name} onError={() => setFailed(true)} className="w-full h-full rounded-full object-cover ring-2" style={{ ["--tw-ring-color" as any]: "var(--brand)" }} />
         : <div className="w-full h-full rounded-full flex items-center justify-center font-bold text-white ring-2" style={{ backgroundColor: "var(--brand-ink)", ["--tw-ring-color" as any]: "var(--brand)", fontSize: size * 0.4 }}>{initials}</div>}
       <span className="absolute bottom-0 right-0 block w-3 h-3 rounded-full bg-green-500 ring-2 ring-white animate-pulse" title="Online" />
     </div>
   );
+}
+
+/**
+ * Normalise any picked image into a small, always-renderable JPEG before upload.
+ * iPhone photos arrive as HEIC, which uploads fine but CANNOT be shown in an <img> on most
+ * browsers — that's what produced the broken "?" avatar. Decoding to a canvas and re-encoding
+ * to JPEG both fixes that and shrinks a multi-MB camera photo to a ~tens-of-KB avatar.
+ */
+const AVATAR_MAX_DIM = 512;
+async function toAvatarJpeg(file: File): Promise<Blob> {
+  const bitmap = await createImageBitmap(file, { imageOrientation: "from-image" } as ImageBitmapOptions)
+    .catch(() => { throw new Error("That image couldn't be read. Try a JPEG or PNG."); });
+  const scale = Math.min(1, AVATAR_MAX_DIM / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Couldn't process the image on this device.");
+  ctx.drawImage(bitmap, 0, 0, w, h);
+  bitmap.close?.();
+  return new Promise<Blob>((resolve, reject) =>
+    canvas.toBlob(b => b ? resolve(b) : reject(new Error("Couldn't process the image.")), "image/jpeg", 0.9));
 }
 
 // ─── Top bar: page title + active business, avatar menu with photo upload ────────
@@ -235,12 +264,26 @@ function TopBar({ location, onMenu, activeName }: { location: string; onMenu: ()
   const upload = async (file: File) => {
     setUploading(true);
     try {
-      const r = await requestUrl.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type as any } }) as any;
-      await fetch(r.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      // Always re-encode to a small JPEG first — normalises HEIC/large camera photos into
+      // something every browser can actually display (see toAvatarJpeg).
+      const blob = await toAvatarJpeg(file);
+      const r = await requestUrl.mutateAsync({ data: { name: "avatar.jpg", size: blob.size, contentType: "image/jpeg" as any } }) as any;
+      const put = await fetch(r.uploadURL, { method: "PUT", body: blob, headers: { "Content-Type": "image/jpeg" } });
+      // Never point the avatar at a file that didn't actually save — that's what left dangling,
+      // permanently-broken avatars behind. Only persist the path once the bytes are on disk.
+      if (!put.ok) throw new Error("The photo didn't save. Please try again.");
       await setAvatar.mutateAsync({ data: { avatarUrl: r.objectPath } } as any);
       await qc.invalidateQueries();
       showToast("Photo updated");
-    } catch { showToast("Upload failed", "error"); } finally { setUploading(false); setOpen(false); }
+    } catch (e: any) { showToast(e?.message || "Upload failed", "error"); } finally { setUploading(false); setOpen(false); }
+  };
+
+  const removePhoto = async () => {
+    try {
+      await setAvatar.mutateAsync({ data: { avatarUrl: null } } as any);
+      await qc.invalidateQueries();
+      showToast("Photo removed");
+    } catch { showToast("Couldn't remove photo", "error"); } finally { setOpen(false); }
   };
 
   return (
@@ -272,6 +315,12 @@ function TopBar({ location, onMenu, activeName }: { location: string; onMenu: ()
               <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
               {uploading ? "Uploading…" : (m?.avatarUrl ? "Change photo" : "Upload photo")}
             </button>
+            {m?.avatarUrl && !uploading && (
+              <button onClick={removePhoto} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5">
+                <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                Remove photo
+              </button>
+            )}
             <button onClick={signOut} className="w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2.5 border-t border-slate-100">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
               Sign out
