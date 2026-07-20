@@ -783,6 +783,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/PaymentLink"
 
+  /payment-links/{id}:
+    delete:
+      operationId: deletePaymentLink
+      tags: [quotes]
+      summary: Delete a payment link
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /payment-links/{id}/send:
     post:
       operationId: sendPaymentLink

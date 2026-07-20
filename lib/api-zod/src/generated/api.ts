@@ -1155,6 +1155,14 @@ export const CreateStandalonePaymentLinkBody = zod.object({
 
 
 /**
+ * @summary Delete a payment link
+ */
+export const DeletePaymentLinkParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Email the customer a payment link (quote-linked or standalone)
  */
 export const SendPaymentLinkParams = zod.object({

@@ -2960,6 +2960,76 @@ export const useCreateStandalonePaymentLink = <TError = ErrorType<unknown>,
       return useMutation(getCreateStandalonePaymentLinkMutationOptions(options));
     }
 
+export const getDeletePaymentLinkUrl = (id: number,) => {
+
+
+
+
+  return `/api/payment-links/${id}`
+}
+
+/**
+ * @summary Delete a payment link
+ */
+export const deletePaymentLink = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePaymentLinkUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePaymentLinkMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePaymentLink>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePaymentLink>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deletePaymentLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePaymentLink>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePaymentLink(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePaymentLinkMutationResult = NonNullable<Awaited<ReturnType<typeof deletePaymentLink>>>
+
+    export type DeletePaymentLinkMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Delete a payment link
+ */
+export const useDeletePaymentLink = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePaymentLink>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePaymentLink>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeletePaymentLinkMutationOptions(options));
+    }
+
 export const getSendPaymentLinkUrl = (id: number,) => {
 
 

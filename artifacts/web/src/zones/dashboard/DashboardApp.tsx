@@ -6,10 +6,10 @@ import {
   useGetMe, useSwitchTenant, useSetAvatar, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
   useListLeads, useGetLead, useCreateLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
   useConvertLeadToQuote, useConvertLeadToProject,
-  useListQuotes, useGetQuote, useCreateQuote, useUpdateQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
-  useListQuotePaymentLinks, useCreateQuotePaymentLink, useSendPaymentLink, useListPaymentLinks, useCreateStandalonePaymentLink,
-  useListProjects, useGetProject, useCreateProject, useUpdateProject, useListProjectUpdates, useCreateProjectUpdate,
-  useListCustomers, useGetCustomer, useCreateCustomer,
+  useListQuotes, useGetQuote, useCreateQuote, useUpdateQuote, useDeleteQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
+  useListQuotePaymentLinks, useCreateQuotePaymentLink, useSendPaymentLink, useListPaymentLinks, useCreateStandalonePaymentLink, useDeletePaymentLink,
+  useListProjects, useGetProject, useCreateProject, useUpdateProject, useDeleteProject, useListProjectUpdates, useCreateProjectUpdate,
+  useListCustomers, useGetCustomer, useCreateCustomer, useDeleteCustomer,
   useListGalleryImages, useCreateGalleryImage, useUpdateGalleryImage, useDeleteGalleryImage,
   useListReviews, useCreateReview, useUpdateReview, useDeleteReview,
   useListCaseStudies, useCreateCaseStudy, useUpdateCaseStudy, useDeleteCaseStudy,
@@ -535,8 +535,35 @@ function LeadsPage() {
   );
 }
 
+// Reusable delete control for detail pages: click → inline confirm → delete → back to the list.
+function DeleteEntityButton({ onDelete, label, redirect }: { onDelete: () => Promise<unknown>; label: string; redirect: string }) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [, navigate] = useLocation();
+  const showToast = useToast();
+  const run = async () => {
+    setBusy(true);
+    try { await onDelete(); showToast(`${label} deleted`); navigate(redirect); }
+    catch (e: any) { showToast(e?.message || "Delete failed", "error"); setBusy(false); }
+  };
+  if (confirming) return (
+    <div className="flex items-center gap-2 ml-auto">
+      <span className="text-xs text-slate-500 hidden sm:inline">Delete this {label}?</span>
+      <button onClick={run} disabled={busy} className="rounded-lg bg-red-600 text-white px-3 py-1.5 text-xs font-semibold hover:bg-red-500 disabled:opacity-50">{busy ? "Deleting…" : "Yes, delete"}</button>
+      <button onClick={() => setConfirming(false)} className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50">Cancel</button>
+    </div>
+  );
+  return (
+    <button onClick={() => setConfirming(true)} className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-red-200 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-50 transition-colors">
+      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+      Delete
+    </button>
+  );
+}
+
 function LeadDetailPage({ id }: { id: number }) {
   const [, navigate] = useWouterLocation();
+  const deleteLead = useDeleteLead();
   const { data: lead, isLoading } = useGetLead(id);
   const { data: notes } = useListLeadNotes(id);
   const updateMutation = useUpdateLead();
@@ -602,6 +629,7 @@ function LeadDetailPage({ id }: { id: number }) {
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/dashboard/leads" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Leads</Link>
+        <DeleteEntityButton onDelete={() => deleteLead.mutateAsync({ id } as any)} label="lead" redirect="/dashboard/leads" />
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{l.firstName} {l.lastName}</h1>
         <Badge status={l.status} />
       </div>
@@ -908,6 +936,12 @@ function PaymentLinksPage() {
   const { data: links, isLoading } = useListPaymentLinks();
   const createLink = useCreateStandalonePaymentLink();
   const sendPaymentLink = useSendPaymentLink();
+  const deleteLink = useDeletePaymentLink();
+  const handleDeleteLink = async (id: number) => {
+    if (!window.confirm("Delete this payment link? This cannot be undone.")) return;
+    try { await deleteLink.mutateAsync({ id } as any); qc.invalidateQueries({ queryKey: getListPaymentLinksQueryKey() }); showToast("Payment link deleted"); }
+    catch (e: any) { showToast(e?.message || "Delete failed", "error"); }
+  };
   const qc = useQueryClient();
   const showToast = useToast();
   const [showNew, setShowNew] = useState(false);
@@ -1021,6 +1055,7 @@ function PaymentLinksPage() {
                     </div>
                   </>
                 )}
+                <button onClick={() => handleDeleteLink(l.id)} className="w-full text-xs text-red-600 hover:bg-red-50 rounded-lg py-1.5 font-semibold border-t border-slate-100 mt-1">Delete</button>
               </div>
             ))}
           </div>
@@ -1046,6 +1081,7 @@ function PaymentLinksPage() {
                             <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="text-xs text-[var(--brand-ink)] hover:text-[var(--brand-ink)] font-medium disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
                           </div>
                         )}
+                        <button onClick={() => handleDeleteLink(l.id)} className="text-xs text-red-600 hover:text-red-700 font-semibold mt-1">Delete</button>
                       </td>
                     </tr>
                   ))}
@@ -1344,6 +1380,7 @@ function QuoteDetailPage({ id }: { id: number }) {
   const updateMutation = useUpdateQuote();
   const createItem = useCreateQuoteItem();
   const deleteItem = useDeleteQuoteItem();
+  const deleteQuote = useDeleteQuote();
   const convertToProject = useConvertQuoteToProject();
   const createPaymentLink = useCreateQuotePaymentLink();
   const sendPaymentLink = useSendPaymentLink();
@@ -1451,6 +1488,7 @@ function QuoteDetailPage({ id }: { id: number }) {
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/dashboard/quotes" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Quotes</Link>
+        <DeleteEntityButton onDelete={() => deleteQuote.mutateAsync({ id } as any)} label="quote" redirect="/dashboard/quotes" />
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{q.reference}</h1>
         <Badge status={q.status} />
       </div>
@@ -1710,6 +1748,7 @@ function ProjectsPage() {
 
 function ProjectDetailPage({ id }: { id: number }) {
   const { data: project, isLoading } = useGetProject(id);
+  const deleteProject = useDeleteProject();
   const { data: updates } = useListProjectUpdates(id);
   const updateMutation = useUpdateProject();
   const createUpdate = useCreateProjectUpdate();
@@ -1744,6 +1783,7 @@ function ProjectDetailPage({ id }: { id: number }) {
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/dashboard/projects" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Projects</Link>
+        <DeleteEntityButton onDelete={() => deleteProject.mutateAsync({ id } as any)} label="project" redirect="/dashboard/projects" />
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{p.title}</h1>
         <Badge status={p.status} />
       </div>
@@ -1904,6 +1944,7 @@ function CustomersPage() {
 
 function CustomerDetailPage({ id }: { id: number }) {
   const { data: customer, isLoading } = useGetCustomer(id);
+  const deleteCustomer = useDeleteCustomer();
   const c = customer as any;
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand)]" /></div>;
   if (!c) return <div className="p-8 text-center text-slate-500">Customer not found</div>;
@@ -1911,6 +1952,7 @@ function CustomerDetailPage({ id }: { id: number }) {
     <div className="p-4 sm:p-6 space-y-5 max-w-3xl">
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/dashboard/customers" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Customers</Link>
+        <DeleteEntityButton onDelete={() => deleteCustomer.mutateAsync({ id } as any)} label="customer" redirect="/dashboard/customers" />
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{c.firstName} {c.lastName}</h1>
         {c.portalEnabled && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Portal Active</span>}
       </div>

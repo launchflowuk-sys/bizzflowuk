@@ -89,6 +89,14 @@ router.post("/payment-links", requireTenantAccess, async (req, res) => {
 
 // ─── Unified send — emails the customer, works for quote-linked or standalone ──
 
+router.delete("/payment-links/:id", requireTenantAccess, async (req, res) => {
+  try {
+    await db.delete(paymentLinksTable)
+      .where(and(eq(paymentLinksTable.id, Number(req.params.id)), tenantFilter(req, paymentLinksTable.tenantId)));
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 router.post("/payment-links/:id/send", requireTenantAccess, async (req, res) => {
   try {
     const rows = await db.select().from(paymentLinksTable)
