@@ -1,19 +1,34 @@
 import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
-import { usersTable, userTenantsTable, tenantsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { usersTable, userTenantsTable, tenantsTable, tenantSettingsTable } from "@workspace/db";
+import { eq, and, sql } from "drizzle-orm";
 import { requireAuth, signAuthToken } from "../middlewares/auth";
 import { loginRateLimiter } from "../middlewares/rateLimit";
+import { buildRelativeObjectUrl } from "../lib/objectStorage";
 
 const router = Router();
 
+/** Uploaded avatars are stored as raw object paths (/objects/..); turn them into a signed,
+ *  servable URL for display. Anything else (already a URL) passes through unchanged. */
+function avatarDisplay(url: string | null | undefined): string | null {
+  if (!url) return null;
+  return url.startsWith("/objects/") ? buildRelativeObjectUrl(url) : url;
+}
+
 /** The businesses a user can access, for the dashboard's business switcher. */
 async function getUserBusinesses(userId: number) {
+  // Brand colour comes from tenant_settings.primaryColor (what the Settings page edits), falling
+  // back to tenants.primaryColor — so the admin themes to the colour the tenant actually set.
   return db
-    .select({ tenantId: userTenantsTable.tenantId, role: userTenantsTable.role, name: tenantsTable.name, slug: tenantsTable.slug, primaryColor: tenantsTable.primaryColor, industry: tenantsTable.industry })
+    .select({
+      tenantId: userTenantsTable.tenantId, role: userTenantsTable.role, name: tenantsTable.name, slug: tenantsTable.slug,
+      primaryColor: sql<string | null>`COALESCE(${tenantSettingsTable.primaryColor}, ${tenantsTable.primaryColor})`,
+      industry: tenantsTable.industry,
+    })
     .from(userTenantsTable)
     .innerJoin(tenantsTable, eq(userTenantsTable.tenantId, tenantsTable.id))
+    .leftJoin(tenantSettingsTable, eq(tenantSettingsTable.tenantId, tenantsTable.id))
     .where(eq(userTenantsTable.userId, userId))
     .orderBy(tenantsTable.name);
 }
@@ -28,7 +43,7 @@ router.get("/me", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "getUserBusinesses failed (user_tenants may be missing) — returning no businesses");
   }
-  res.json({ id, email, role, firstName, lastName, tenantId, clerkId, avatarUrl: avatarUrl ?? null, businesses });
+  res.json({ id, email, role, firstName, lastName, tenantId, clerkId, avatarUrl: avatarDisplay(avatarUrl), businesses });
 });
 
 /** Set the current user's avatar image (relative object path from the dashboard upload flow). */
