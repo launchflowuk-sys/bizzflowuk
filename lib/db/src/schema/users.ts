@@ -12,6 +12,7 @@ export const usersTable = pgTable("users", {
   passwordHash: text("password_hash"),
   firstName: text("first_name"),
   lastName: text("last_name"),
+  avatarUrl: text("avatar_url"),
   role: userRoleEnum("role").notNull().default("CUSTOMER"),
   tenantId: integer("tenant_id").references(() => tenantsTable.id),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

@@ -3,7 +3,7 @@ import { useAuthCtx } from "@/lib/auth";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import {
-  useGetMe, useSwitchTenant, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
+  useGetMe, useSwitchTenant, useSetAvatar, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
   useListLeads, useGetLead, useCreateLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
   useConvertLeadToQuote, useConvertLeadToProject,
   useListQuotes, useGetQuote, useCreateQuote, useUpdateQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
@@ -87,7 +87,7 @@ function DeleteConfirm({ label, onConfirm, onCancel, isPending }: { label: strin
 }
 
 // ─── Shared helpers ─────────────────────────────────────────────────────────────
-const inputCls = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500";
+const inputCls = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]";
 const labelCls = "block text-sm font-medium text-slate-700 mb-1";
 
 function FField({ label, value, onChange, type = "text", hint }: { label: string; value: string | number; onChange: (v: string) => void; type?: string; hint?: string }) {
@@ -110,7 +110,7 @@ function FTextarea({ label, value, onChange, rows = 3 }: { label: string; value:
 function FCheck({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
     <label className="flex items-center gap-2 cursor-pointer select-none">
-      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!checked} onChange={e => onChange(e.target.checked)} />
+      <input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!checked} onChange={e => onChange(e.target.checked)} />
       <span className="text-sm text-slate-700">{label}</span>
     </label>
   );
@@ -118,7 +118,7 @@ function FCheck({ label, checked, onChange }: { label: string; checked: boolean;
 function SaveCancelBar({ onCancel, isPending, label = "Save" }: { onCancel: () => void; isPending: boolean; label?: string }) {
   return (
     <div className="flex gap-2 pt-2">
-      <button type="submit" disabled={isPending} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-5 text-sm font-semibold text-white hover:bg-orange-400 disabled:opacity-50">
+      <button type="submit" disabled={isPending} className="inline-flex h-9 items-center rounded-xl bg-[var(--brand)] shadow-sm px-5 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50">
         {isPending ? "Saving..." : label}
       </button>
       <button type="button" onClick={onCancel} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
@@ -173,6 +173,117 @@ const NAV_ITEMS = [
   { path: "/dashboard/settings", label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" },
 ];
 
+// ─── Brand theming ─────────────────────────────────────────────────────────────
+// Derives a readable on-white "ink" and a light "tint" from the active business's brand colour,
+// exposed as CSS variables so the WHOLE admin re-themes when you switch business.
+function hexToRgb(hex: string): [number, number, number] {
+  const h = (hex || "").replace("#", "");
+  const v = h.length === 3 ? h.split("").map(c => c + c).join("") : h;
+  return [parseInt(v.slice(0, 2), 16) || 0, parseInt(v.slice(2, 4), 16) || 0, parseInt(v.slice(4, 6), 16) || 0];
+}
+function mixHex(rgb: [number, number, number], target: [number, number, number], amt: number): string {
+  const m = (a: number, b: number) => Math.round(a + (b - a) * amt);
+  return "#" + [m(rgb[0], target[0]), m(rgb[1], target[1]), m(rgb[2], target[2])].map(x => x.toString(16).padStart(2, "0")).join("");
+}
+function brandVars(color?: string | null): React.CSSProperties {
+  const brand = color || "#f97316";
+  const rgb = hexToRgb(brand);
+  const lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
+  const ink = mixHex(rgb, [0, 0, 0], lum > 0.5 ? 0.48 : 0.28);   // darken more for light brands (e.g. green) → readable on white
+  const tint = mixHex(rgb, [255, 255, 255], 0.9);
+  return { ["--brand" as any]: brand, ["--brand-ink" as any]: ink, ["--brand-tint" as any]: tint };
+}
+function useActiveBrand() {
+  const { data: me } = useGetMe();
+  const m = me as any;
+  const businesses = (m?.businesses || []) as Array<any>;
+  const active = businesses.find(b => b.tenantId === m?.tenantId) || businesses[0];
+  return { color: active?.primaryColor as string | undefined, name: active?.name as string | undefined, me: m };
+}
+
+// ─── Avatar (photo or initials, brand ring, live-presence dot) ───────────────────
+function UserAvatar({ size = 36 }: { size?: number }) {
+  const { data: me } = useGetMe();
+  const m = me as any;
+  const name = [m?.firstName, m?.lastName].filter(Boolean).join(" ") || m?.email || "";
+  const initials = ((name.trim()[0]) || (m?.email?.[0]) || "?").toUpperCase();
+  return (
+    <div className="relative flex-shrink-0" style={{ width: size, height: size }}>
+      {m?.avatarUrl
+        ? <img src={m.avatarUrl} alt={name} className="w-full h-full rounded-full object-cover ring-2" style={{ ["--tw-ring-color" as any]: "var(--brand)" }} />
+        : <div className="w-full h-full rounded-full flex items-center justify-center font-bold text-white ring-2" style={{ backgroundColor: "var(--brand-ink)", ["--tw-ring-color" as any]: "var(--brand)", fontSize: size * 0.4 }}>{initials}</div>}
+      <span className="absolute bottom-0 right-0 block w-3 h-3 rounded-full bg-green-500 ring-2 ring-white animate-pulse" title="Online" />
+    </div>
+  );
+}
+
+// ─── Top bar: page title + active business, avatar menu with photo upload ────────
+function TopBar({ location, onMenu, activeName }: { location: string; onMenu: () => void; activeName?: string }) {
+  const { data: me } = useGetMe();
+  const m = me as any;
+  const { signOut } = useAuthCtx();
+  const [open, setOpen] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+  const requestUrl = useRequestDashboardUploadUrl();
+  const setAvatar = useSetAvatar();
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const title = NAV_ITEMS.find(n => n && (location === n.path || (location.startsWith(n.path + "/") && n.path !== "/dashboard")))?.label || "Dashboard";
+  const name = [m?.firstName, m?.lastName].filter(Boolean).join(" ") || m?.email || "";
+
+  const upload = async (file: File) => {
+    setUploading(true);
+    try {
+      const r = await requestUrl.mutateAsync({ data: { name: file.name, size: file.size, contentType: file.type as any } }) as any;
+      await fetch(r.uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      await setAvatar.mutateAsync({ data: { avatarUrl: r.objectPath } } as any);
+      await qc.invalidateQueries();
+      showToast("Photo updated");
+    } catch { showToast("Upload failed", "error"); } finally { setUploading(false); setOpen(false); }
+  };
+
+  return (
+    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 h-16 flex-shrink-0">
+      <div className="flex items-center gap-3 min-w-0">
+        <button onClick={onMenu} className="md:hidden p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <div className="min-w-0">
+          <h1 className="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">{title}</h1>
+          {activeName && <p className="text-[11px] font-medium leading-tight truncate" style={{ color: "var(--brand-ink)" }}>{activeName}</p>}
+        </div>
+      </div>
+      <div className="relative">
+        <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 rounded-full hover:bg-slate-100 pl-1 pr-1.5 py-1 transition-colors">
+          <UserAvatar />
+          <svg className="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+        </button>
+        {open && (<>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="absolute right-0 mt-2 w-64 rounded-2xl border border-slate-200 bg-white shadow-xl z-50 overflow-hidden">
+            <div className="p-4 flex items-center gap-3 border-b border-slate-100">
+              <UserAvatar size={44} />
+              <div className="min-w-0">
+                <p className="font-semibold text-slate-900 text-sm truncate">{name}</p>
+                <p className="text-xs text-slate-500 truncate">{m?.email}</p>
+              </div>
+            </div>
+            {activeName && <div className="px-4 py-2.5 text-xs text-slate-500 border-b border-slate-100">Viewing <span className="font-semibold text-slate-700">{activeName}</span></div>}
+            <button onClick={() => fileRef.current?.click()} disabled={uploading} className="w-full text-left px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2.5 disabled:opacity-50">
+              <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              {uploading ? "Uploading…" : (m?.avatarUrl ? "Change photo" : "Upload photo")}
+            </button>
+            <button onClick={signOut} className="w-full text-left px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 flex items-center gap-2.5 border-t border-slate-100">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+              Sign out
+            </button>
+          </div>
+        </>)}
+        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) upload(f); e.target.value = ""; }} />
+      </div>
+    </header>
+  );
+}
+
 /**
  * Business switcher — shown only when the logged-in user belongs to more than one business
  * (a row per business in user_tenants). Switching flips the active business server-side, then
@@ -208,7 +319,7 @@ function BusinessSwitcher() {
           <button key={b.tenantId} onClick={() => handleSwitch(b.tenantId)} disabled={switchMutation.isPending}
             className={`w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-between gap-2 disabled:opacity-60 ${b.tenantId === activeTenantId ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800/60 hover:text-white"}`}>
             <span className="truncate">{b.name}</span>
-            {b.tenantId === activeTenantId && <span className="w-1.5 h-1.5 rounded-full bg-orange-400 flex-shrink-0" />}
+            {b.tenantId === activeTenantId && <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] flex-shrink-0" />}
           </button>
         ))}
       </div>
@@ -223,7 +334,7 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
       <div className="p-4 border-b border-slate-800 flex-shrink-0">
         <div className="font-bold text-white text-sm">BizzFlow</div>
         <div className="text-xs text-slate-400 mt-0.5 truncate">{(me as any)?.email}</div>
-        <div className="text-xs text-orange-400 font-medium mt-0.5">{(me as any)?.role?.replace("_", " ")}</div>
+        <div className="text-xs text-[var(--brand-ink)] font-medium mt-0.5">{(me as any)?.role?.replace("_", " ")}</div>
       </div>
       <BusinessSwitcher />
       <nav className="flex-1 p-3 overflow-y-auto">
@@ -235,7 +346,7 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
               onClick={onNavClick}
               className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md text-xs font-medium mb-0.5 transition-colors ${
                 currentPath === item.path || (currentPath.startsWith(item.path + "/") && item.path !== "/dashboard")
-                  ? "bg-orange-500 text-white"
+                  ? "bg-[var(--brand)] text-white"
                   : "text-slate-400 hover:bg-slate-800 hover:text-white"
               }`}
             >
@@ -262,22 +373,37 @@ function DashboardHome() {
   const s = stats as any;
   const p = pipeline as unknown as any[];
   const maxCount = p ? Math.max(...p.map((x: any) => Number(x.count)), 1) : 1;
+  const { data: leadsData } = useListLeads();
+  const { data: quotesData } = useListQuotes();
+  const { name: bizName } = useActiveBrand();
+  const leadArr = (leadsData as any[]) || [];
+  const quoteArr = (quotesData as any[]) || [];
+  const pipelineValue = quoteArr.filter(q => ["Draft", "Sent"].includes(q.status)).reduce((sum, q) => sum + (parseFloat(q.total || "0") || 0), 0);
+  const calcCount = leadArr.filter(l => l.serviceInterest === "Cost Calculator Estimate").length;
+  const money = (n: number) => "£" + Math.round(n).toLocaleString("en-GB");
 
-  const statCards = [
-    { label: "Total Leads", value: s?.totalLeads, color: "text-blue-600", bg: "bg-blue-50", border: "border-blue-100", href: "/dashboard/leads" },
-    { label: "New Leads", value: s?.newLeads, color: "text-orange-600", bg: "bg-orange-50", border: "border-orange-100", href: "/dashboard/leads" },
-    { label: "Active Projects", value: s?.activeProjects, color: "text-indigo-600", bg: "bg-indigo-50", border: "border-indigo-100", href: "/dashboard/projects" },
-    { label: "Completed", value: s?.completedProjects, color: "text-green-600", bg: "bg-green-50", border: "border-green-100", href: "/dashboard/projects" },
+  const kpis = [
+    { label: "New Leads", value: s?.newLeads ?? "-", sub: "awaiting action", href: "/dashboard/leads", icon: "M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z" },
+    { label: "Pipeline Value", value: money(pipelineValue), sub: "in open quotes", href: "/dashboard/quotes", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
+    { label: "Calculator Estimates", value: calcCount, sub: "from your calculator", href: "/dashboard/leads", icon: "M9 7h6m-6 4h6m-6 4h4M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" },
+    { label: "Active Projects", value: s?.activeProjects ?? "-", sub: "in progress", href: "/dashboard/projects", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-5">
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Dashboard</h1>
+    <div className="p-4 sm:p-6 space-y-6 max-w-6xl">
+      <div>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Overview</h1>
+        {bizName && <p className="text-sm text-slate-500 mt-0.5">{bizName}</p>}
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {statCards.map(card => (
-          <Link key={card.label} href={card.href} className={`rounded-xl ${card.bg} p-4 sm:p-5 border ${card.border} block hover:shadow-md transition-shadow active:scale-95`}>
-            <div className={`text-2xl sm:text-3xl font-bold ${card.color}`}>{card.value ?? "-"}</div>
-            <div className="text-xs text-slate-600 mt-1 font-medium">{card.label}</div>
+        {kpis.map(k => (
+          <Link key={k.label} href={k.href} className="group rounded-2xl bg-white p-4 sm:p-5 border border-slate-200 block hover:shadow-lg hover:-translate-y-0.5 transition-all">
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: "var(--brand-tint)" }}>
+              <svg className="w-5 h-5" style={{ color: "var(--brand-ink)" }} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={k.icon} /></svg>
+            </div>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums tracking-tight">{k.value}</div>
+            <div className="text-xs font-semibold text-slate-700 mt-1">{k.label}</div>
+            <div className="text-[11px] text-slate-400">{k.sub}</div>
           </Link>
         ))}
       </div>
@@ -288,9 +414,9 @@ function DashboardHome() {
             <div className="space-y-2.5">
               {p.map((stage: any) => (
                 <Link key={stage.status} href="/dashboard/leads" className="flex items-center gap-3 group">
-                  <div className="text-xs text-slate-600 w-24 sm:w-28 flex-shrink-0 group-hover:text-orange-600 transition-colors">{stage.status}</div>
+                  <div className="text-xs text-slate-600 w-24 sm:w-28 flex-shrink-0 group-hover:text-[var(--brand-ink)] transition-colors">{stage.status}</div>
                   <div className="flex-1 bg-slate-100 rounded-full h-4 sm:h-5 relative overflow-hidden">
-                    <div className="h-full bg-orange-500 rounded-full transition-all" style={{ width: `${(Number(stage.count) / maxCount) * 100}%` }} />
+                    <div className="h-full bg-[var(--brand)] rounded-full transition-all" style={{ width: `${(Number(stage.count) / maxCount) * 100}%` }} />
                   </div>
                   <div className="text-xs font-semibold text-slate-700 w-6 text-right">{stage.count}</div>
                 </Link>
@@ -348,18 +474,18 @@ function LeadsPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Leads</h1>
-        <Link href="/dashboard/leads/new" className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New</Link>
+        <Link href="/dashboard/leads/new" className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New</Link>
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {["", "New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
+          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
         ))}
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
           <div className="md:hidden space-y-2">
             {filtered?.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No leads found</div> : filtered?.map((l: any) => (
-              <Link key={l.id} href={`/dashboard/leads/${l.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
+              <Link key={l.id} href={`/dashboard/leads/${l.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-[var(--brand)]/50 transition-colors active:bg-slate-50">
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <div className="font-medium text-slate-900">{l.firstName} {l.lastName}</div>
                   <Badge status={l.status} />
@@ -381,7 +507,7 @@ function LeadsPage() {
                 <tbody>
                   {filtered?.length === 0 ? <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No leads found</td></tr> : filtered?.map((l: any) => (
                     <tr key={l.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
-                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/leads/${l.id}`} className="hover:text-orange-600">{l.firstName} {l.lastName}</Link></td>
+                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/leads/${l.id}`} className="hover:text-[var(--brand-ink)]">{l.firstName} {l.lastName}</Link></td>
                       <td className="px-4 py-3 text-slate-600">{l.phone || l.email || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{l.serviceInterest || "-"}</td>
                       <td className="px-4 py-3"><Badge status={l.status} /></td>
@@ -425,7 +551,7 @@ function LeadDetailPage({ id }: { id: number }) {
   const [showCompose, setShowCompose] = useState(false);
   const l = lead as any;
 
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand)]" /></div>;
   if (!l) return <div className="p-8 text-center text-slate-500">Lead not found</div>;
 
   // Construction-tenant leads populate clientType/projectDescription instead of the
@@ -475,7 +601,7 @@ function LeadDetailPage({ id }: { id: number }) {
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard/leads" className="text-sm text-slate-500 hover:text-orange-500">&larr; Leads</Link>
+        <Link href="/dashboard/leads" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Leads</Link>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{l.firstName} {l.lastName}</h1>
         <Badge status={l.status} />
       </div>
@@ -487,8 +613,8 @@ function LeadDetailPage({ id }: { id: number }) {
               {l.reference && <span className="text-xs font-mono text-slate-400">{l.reference}</span>}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div><span className="text-slate-500">Email: </span><a href={`mailto:${l.email}`} className="text-orange-600 hover:underline break-all">{l.email || "-"}</a></div>
-              <div><span className="text-slate-500">Phone: </span><a href={`tel:${l.phone}`} className="text-orange-600 hover:underline">{l.phone || "-"}</a></div>
+              <div><span className="text-slate-500">Email: </span><a href={`mailto:${l.email}`} className="text-[var(--brand-ink)] hover:underline break-all">{l.email || "-"}</a></div>
+              <div><span className="text-slate-500">Phone: </span><a href={`tel:${l.phone}`} className="text-[var(--brand-ink)] hover:underline">{l.phone || "-"}</a></div>
               <div><span className="text-slate-500">Preferred Contact Method: </span><span className="text-slate-900">{l.preferredContactMethod || "-"}</span></div>
               <div><span className="text-slate-500">Best Time to Contact: </span><span className="text-slate-900">{l.bestTimeToContact || "-"}</span></div>
               <div><span className="text-slate-500">City: </span><span className="text-slate-900">{l.city || "-"}</span></div>
@@ -533,7 +659,7 @@ function LeadDetailPage({ id }: { id: number }) {
                   <span className="text-slate-500">Attachments: </span>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {(l.photoUrls as string[]).map((u, i) => (
-                      <a key={u} href={u} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-orange-600 hover:bg-orange-50">Attachment {i + 1}</a>
+                      <a key={u} href={u} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-[var(--brand-ink)] hover:bg-[var(--brand-tint)]">Attachment {i + 1}</a>
                     ))}
                   </div>
                 </div>
@@ -543,8 +669,8 @@ function LeadDetailPage({ id }: { id: number }) {
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
             <h2 className="font-semibold text-slate-900">Notes</h2>
             <form onSubmit={handleNoteSubmit} className="flex gap-2">
-              <input value={noteContent} onChange={e => setNoteContent(e.target.value)} placeholder="Add a note..." className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500" />
-              <button type="submit" disabled={noteMutation.isPending} className="inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">Add</button>
+              <input value={noteContent} onChange={e => setNoteContent(e.target.value)} placeholder="Add a note..." className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]" />
+              <button type="submit" disabled={noteMutation.isPending} className="inline-flex items-center rounded-xl bg-[var(--brand)] shadow-sm px-5 py-2.5 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50">Add</button>
             </form>
             <div className="space-y-3">
               {(notes as any[])?.map((n: any) => (
@@ -561,7 +687,7 @@ function LeadDetailPage({ id }: { id: number }) {
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <h2 className="font-semibold text-slate-900">Update Status</h2>
             {["New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"].map(s => (
-              <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${l.status === s ? "bg-orange-500 text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
+              <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${l.status === s ? "bg-[var(--brand)] text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
             ))}
           </div>
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
@@ -570,17 +696,17 @@ function LeadDetailPage({ id }: { id: number }) {
               ✉ Send Email / Request More Info
             </button>
             {!confirmQuote ? (
-              <button onClick={() => setConfirmQuote(true)} className="w-full rounded-md border border-orange-500 text-orange-600 px-3 py-2.5 text-sm font-medium hover:bg-orange-50">
+              <button onClick={() => setConfirmQuote(true)} className="w-full rounded-md border border-[var(--brand)] text-[var(--brand-ink)] px-3 py-2.5 text-sm font-medium hover:bg-[var(--brand-tint)]">
                 → Convert to Quote
               </button>
             ) : (
-              <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
+              <div className="rounded-md border border-[var(--brand)]/40 bg-[var(--brand-tint)] p-3 space-y-2">
                 <p className="text-xs text-slate-700 font-medium">Convert this lead to a quote?</p>
                 {Array.isArray(l.estimateItems) && l.estimateItems.length > 0 && (
                   <p className="text-xs text-green-700">The {l.estimateItems.length} line item{l.estimateItems.length > 1 ? "s" : ""} from this calculator estimate will be pre-filled into the quote.</p>
                 )}
                 <div className="flex gap-2">
-                  <button onClick={handleConvertToQuote} disabled={convertToQuote.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">
+                  <button onClick={handleConvertToQuote} disabled={convertToQuote.isPending} className="flex-1 rounded bg-[var(--brand)] text-white py-1.5 text-xs font-medium hover:brightness-110 disabled:opacity-50">
                     {convertToQuote.isPending ? "Converting..." : "Yes, Convert"}
                   </button>
                   <button onClick={() => setConfirmQuote(false)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Cancel</button>
@@ -640,12 +766,12 @@ function NewLeadPage() {
     } catch (err: any) { showToast(err?.message || "Failed to create lead", "error"); }
   };
 
-  const fieldCls = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500";
+  const fieldCls = "w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]";
 
   return (
     <div className="p-4 sm:p-6 max-w-2xl space-y-5">
       <div className="flex items-center gap-3">
-        <Link href="/dashboard/leads" className="text-sm text-slate-500 hover:text-orange-500">← Leads</Link>
+        <Link href="/dashboard/leads" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">← Leads</Link>
         <h1 className="text-xl font-bold text-slate-900">New Lead</h1>
       </div>
       <form onSubmit={handleSubmit} className="rounded-xl border border-slate-200 bg-white p-5 sm:p-6 space-y-4">
@@ -679,7 +805,7 @@ function NewLeadPage() {
           <div className="sm:col-span-2"><label className="block text-xs font-medium text-slate-700 mb-1">Notes</label><textarea rows={3} value={form.notes} onChange={set("notes")} className={fieldCls} /></div>
         </div>
         <div className="flex gap-3 pt-1">
-          <button type="submit" disabled={createMutation.isPending} className="rounded-md bg-orange-500 px-5 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Saving..." : "Create Lead"}</button>
+          <button type="submit" disabled={createMutation.isPending} className="rounded-xl bg-[var(--brand)] shadow-sm px-5 py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Saving..." : "Create Lead"}</button>
           <Link href="/dashboard/leads" className="rounded-md border border-slate-300 px-5 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</Link>
         </div>
       </form>
@@ -714,7 +840,7 @@ function QuotesPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Quotes</h1>
-        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New</button>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New</button>
       </div>
       {showNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
@@ -723,10 +849,10 @@ function QuotesPage() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Reference <span className="font-normal text-slate-400">(leave blank to auto-generate)</span></label>
-                <input value={newRef} onChange={e => setNewRef(e.target.value)} placeholder="e.g. QUO-001" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input value={newRef} onChange={e => setNewRef(e.target.value)} placeholder="e.g. QUO-001" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Quote"}</button>
+                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Quote"}</button>
                 <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
               </div>
             </form>
@@ -737,7 +863,7 @@ function QuotesPage() {
         <>
           <div className="md:hidden space-y-2">
             {!(quotes as any[])?.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No quotes yet</div> : (quotes as any[]).map((q: any) => (
-              <Link key={q.id} href={`/dashboard/quotes/${q.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
+              <Link key={q.id} href={`/dashboard/quotes/${q.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-[var(--brand)]/50 transition-colors active:bg-slate-50">
                 <div className="flex items-start justify-between gap-2 mb-1.5">
                   <div className="font-medium text-slate-900">{q.reference}</div>
                   <Badge status={q.status} />
@@ -759,12 +885,12 @@ function QuotesPage() {
                 <tbody>
                   {!(quotes as any[])?.length ? <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No quotes yet</td></tr> : (quotes as any[])?.map((q: any) => (
                     <tr key={q.id} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/quotes/${q.id}`} className="hover:text-orange-600">{q.reference}</Link></td>
+                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/quotes/${q.id}`} className="hover:text-[var(--brand-ink)]">{q.reference}</Link></td>
                       <td className="px-4 py-3"><Badge status={q.status} /></td>
                       <td className="px-4 py-3 text-slate-700">£{Number(q.total || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-slate-500">{q.validUntil ? new Date(q.validUntil).toLocaleDateString("en-GB") : "-"}</td>
                       <td className="px-4 py-3 text-slate-500">{q.createdAt ? new Date(q.createdAt).toLocaleDateString("en-GB") : "-"}</td>
-                      <td className="px-4 py-3 text-right"><Link href={`/dashboard/quotes/${q.id}`} className="text-xs text-orange-500 hover:text-orange-600">View</Link></td>
+                      <td className="px-4 py-3 text-right"><Link href={`/dashboard/quotes/${q.id}`} className="text-xs text-[var(--brand-ink)] hover:text-[var(--brand-ink)]">View</Link></td>
                     </tr>
                   ))}
                 </tbody>
@@ -835,7 +961,7 @@ function PaymentLinksPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Payment Links</h1>
           <p className="text-sm text-slate-500">Create and send one-off payment requests for phone or in-person sales — no quote required.</p>
         </div>
-        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 whitespace-nowrap">+ New</button>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110 whitespace-nowrap">+ New</button>
       </div>
 
       {showNew && (
@@ -845,26 +971,26 @@ function PaymentLinksPage() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Customer Name *</label>
-                <input value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Address</label>
-                <input value={form.customerAddress} onChange={e => setForm({ ...form, customerAddress: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input value={form.customerAddress} onChange={e => setForm({ ...form, customerAddress: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Phone Number</label>
-                <input value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Email *</label>
-                <input type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Amount to request (£) *</label>
-                <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={createLink.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createLink.isPending ? "Creating..." : "Create Payment Link"}</button>
+                <button type="submit" disabled={createLink.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createLink.isPending ? "Creating..." : "Create Payment Link"}</button>
                 <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
               </div>
             </form>
@@ -891,7 +1017,7 @@ function PaymentLinksPage() {
                     {l.sentAt && <div className="text-[11px] text-green-700 font-medium">✓ Sent {new Date(l.sentAt).toLocaleDateString("en-GB")}</div>}
                     <div className="flex gap-2 pt-1">
                       <button onClick={() => copyLink(l.url)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Copy link</button>
-                      <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
+                      <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="flex-1 rounded bg-[var(--brand)] text-white py-1.5 text-xs font-medium hover:brightness-110 disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
                     </div>
                   </>
                 )}
@@ -908,7 +1034,7 @@ function PaymentLinksPage() {
                   {!rows.length ? <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No payment links yet</td></tr> : rows.map((l: any) => (
                     <tr key={l.id} className="border-b border-slate-50 hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-900">{l.customerName || "—"}<div className="text-xs font-normal text-slate-400">{l.customerEmail}</div></td>
-                      <td className="px-4 py-3 text-slate-500">{l.quoteId ? <Link href={`/dashboard/quotes/${l.quoteId}`} className="text-orange-500 hover:text-orange-600">Quote-linked</Link> : "Standalone"}</td>
+                      <td className="px-4 py-3 text-slate-500">{l.quoteId ? <Link href={`/dashboard/quotes/${l.quoteId}`} className="text-[var(--brand-ink)] hover:text-[var(--brand-ink)]">Quote-linked</Link> : "Standalone"}</td>
                       <td className="px-4 py-3 text-slate-700">£{Number(l.amount).toFixed(2)}</td>
                       <td className="px-4 py-3"><span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${l.status === "Paid" ? "bg-green-100 text-green-700" : l.status === "Failed" ? "bg-red-100 text-red-700" : l.status === "Cancelled" ? "bg-slate-200 text-slate-500" : "bg-amber-100 text-amber-700"}`}>{l.status}</span></td>
                       <td className="px-4 py-3 text-slate-500">{new Date(l.createdAt).toLocaleDateString("en-GB")}</td>
@@ -917,7 +1043,7 @@ function PaymentLinksPage() {
                           <div className="flex items-center justify-end gap-3">
                             {l.sentAt && <span className="text-[11px] text-green-700 font-medium">✓ Sent {new Date(l.sentAt).toLocaleDateString("en-GB")}</span>}
                             <button onClick={() => copyLink(l.url)} className="text-xs text-slate-500 hover:text-slate-700 font-medium">Copy link</button>
-                            <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="text-xs text-orange-500 hover:text-orange-600 font-medium disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
+                            <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="text-xs text-[var(--brand-ink)] hover:text-[var(--brand-ink)] font-medium disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
                           </div>
                         )}
                       </td>
@@ -961,7 +1087,7 @@ function RichTextEditor({ onChange }: { onChange: (html: string) => void }) {
     if (url) exec("createLink", url);
   };
   return (
-    <div className="rounded-md border border-slate-300 overflow-hidden focus-within:ring-1 focus-within:ring-orange-500 focus-within:border-orange-500">
+    <div className="rounded-md border border-slate-300 overflow-hidden focus-within:ring-1 focus-within:ring-[var(--brand)] focus-within:border-[var(--brand)]">
       <div className="flex items-center gap-0.5 flex-wrap border-b border-slate-200 bg-slate-50 px-2 py-1.5">
         <ToolbarBtn onClick={() => exec("formatBlock", "<h2>")} title="Heading"><span className="text-sm font-bold">H</span></ToolbarBtn>
         <ToolbarBtn onClick={() => exec("formatBlock", "<p>")} title="Paragraph"><span className="text-sm">¶</span></ToolbarBtn>
@@ -1121,16 +1247,16 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">To Email *</label>
-              <input type="email" value={form.toEmail} onChange={e => setForm({ ...form, toEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input type="email" value={form.toEmail} onChange={e => setForm({ ...form, toEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">To Name</label>
-              <input value={form.toName} onChange={e => setForm({ ...form, toName: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input value={form.toName} onChange={e => setForm({ ...form, toName: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
             </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Subject *</label>
-            <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+            <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Message *</label>
@@ -1142,7 +1268,7 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
           </div>
           <p className="text-[11px] text-slate-400">Sent in your business's branded email design automatically — no need to add a signature.</p>
           <div className="flex gap-2 pt-1">
-            <button type="submit" disabled={composeEmail.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{composeEmail.isPending ? "Sending..." : "Send Email"}</button>
+            <button type="submit" disabled={composeEmail.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{composeEmail.isPending ? "Sending..." : "Send Email"}</button>
             <button type="button" onClick={onClose} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
           </div>
         </form>
@@ -1165,7 +1291,7 @@ function EmailsPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Emails</h1>
           <p className="text-sm text-slate-500">Send a one-off branded email to a lead or customer, and keep a record of what was sent.</p>
         </div>
-        <button onClick={() => setShowCompose(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 whitespace-nowrap">+ Compose</button>
+        <button onClick={() => setShowCompose(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110 whitespace-nowrap">+ Compose</button>
       </div>
 
       {showCompose && <ComposeEmailModal onClose={() => setShowCompose(false)} />}
@@ -1242,7 +1368,7 @@ function QuoteDetailPage({ id }: { id: number }) {
     }
   }, [q, vatInitialized]);
 
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand)]" /></div>;
   if (!q) return <div className="p-8 text-center text-slate-500">Quote not found</div>;
 
   const subtotal = lineItems.reduce((s: number, i: any) => s + Number(i.total || 0), 0);
@@ -1324,7 +1450,7 @@ function QuoteDetailPage({ id }: { id: number }) {
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard/quotes" className="text-sm text-slate-500 hover:text-orange-500">&larr; Quotes</Link>
+        <Link href="/dashboard/quotes" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Quotes</Link>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{q.reference}</h1>
         <Badge status={q.status} />
       </div>
@@ -1352,14 +1478,14 @@ function QuoteDetailPage({ id }: { id: number }) {
               </table>
             </div>
             <form onSubmit={handleAddItem} className="flex flex-wrap gap-2 pt-2 border-t border-slate-100">
-              <input placeholder="Description" value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="flex-1 min-w-[120px] rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-              <input type="number" placeholder="Qty" value={newItem.quantity} onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })} className="w-14 rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-              <input type="number" placeholder="£ Unit" value={newItem.unitPrice} onChange={e => setNewItem({ ...newItem, unitPrice: e.target.value })} className="w-20 rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-              <button type="submit" className="rounded bg-orange-500 px-3 py-1.5 text-sm text-white font-medium hover:bg-orange-400">Add</button>
+              <input placeholder="Description" value={newItem.description} onChange={e => setNewItem({ ...newItem, description: e.target.value })} className="flex-1 min-w-[120px] rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <input type="number" placeholder="Qty" value={newItem.quantity} onChange={e => setNewItem({ ...newItem, quantity: Number(e.target.value) })} className="w-14 rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <input type="number" placeholder="£ Unit" value={newItem.unitPrice} onChange={e => setNewItem({ ...newItem, unitPrice: e.target.value })} className="w-20 rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <button type="submit" className="rounded bg-[var(--brand)] px-3 py-1.5 text-sm text-white font-medium hover:brightness-110">Add</button>
             </form>
             <div className="border-t border-slate-100 pt-3 space-y-2">
               <label className="flex items-center gap-2 text-sm text-slate-700">
-                <input type="checkbox" checked={applyVat} onChange={e => setApplyVat(e.target.checked)} className="rounded border-slate-300 text-orange-500 focus:ring-orange-500" />
+                <input type="checkbox" checked={applyVat} onChange={e => setApplyVat(e.target.checked)} className="rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" />
                 Apply VAT (20%)
               </label>
               <div className="text-sm text-right space-y-1">
@@ -1367,7 +1493,7 @@ function QuoteDetailPage({ id }: { id: number }) {
                 {applyVat && <div className="text-slate-600">VAT (20%): <span className="font-medium text-slate-900">£{vat.toFixed(2)}</span></div>}
                 <div className="text-base font-bold text-slate-900">Total: £{total.toFixed(2)}</div>
               </div>
-              <button onClick={handleSaveQuote} disabled={updateMutation.isPending} className="w-full rounded-md bg-orange-500 text-white py-2 text-sm font-medium hover:bg-orange-400 disabled:opacity-50">
+              <button onClick={handleSaveQuote} disabled={updateMutation.isPending} className="w-full rounded-md bg-[var(--brand)] text-white py-2 text-sm font-medium hover:brightness-110 disabled:opacity-50">
                 {updateMutation.isPending ? "Saving..." : "Save Quote"}
               </button>
             </div>
@@ -1378,18 +1504,18 @@ function QuoteDetailPage({ id }: { id: number }) {
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <h2 className="font-semibold text-slate-900">Update Status</h2>
             {["Draft", "Sent"].map(s => (
-              <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${q.status === s ? "bg-orange-500 text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
+              <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${q.status === s ? "bg-[var(--brand)] text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
             ))}
             {["Accepted", "Rejected"].map(s => (
-              <button key={s} onClick={() => setConfirmStatus(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${q.status === s ? "bg-orange-500 text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
+              <button key={s} onClick={() => setConfirmStatus(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${q.status === s ? "bg-[var(--brand)] text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
             ))}
             {confirmStatus && (
-              <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
+              <div className="rounded-md border border-[var(--brand)]/40 bg-[var(--brand-tint)] p-3 space-y-2">
                 <p className="text-xs font-medium text-slate-700">
                   Mark this quote as <strong>{confirmStatus}</strong>? {confirmStatus === "Rejected" ? "The customer's payment page will immediately show \"Quote Declined\"." : "This will notify your admin inbox."}
                 </p>
                 <div className="flex gap-2">
-                  <button onClick={() => handleStatusChange(confirmStatus)} disabled={updateMutation.isPending} className={`flex-1 rounded text-white py-1.5 text-xs font-medium disabled:opacity-50 ${confirmStatus === "Rejected" ? "bg-red-600 hover:bg-red-500" : "bg-orange-500 hover:bg-orange-400"}`}>
+                  <button onClick={() => handleStatusChange(confirmStatus)} disabled={updateMutation.isPending} className={`flex-1 rounded text-white py-1.5 text-xs font-medium disabled:opacity-50 ${confirmStatus === "Rejected" ? "bg-red-600 hover:bg-red-500" : "bg-[var(--brand)] hover:brightness-110"}`}>
                     {updateMutation.isPending ? "Saving..." : `Yes, mark as ${confirmStatus}`}
                   </button>
                   <button onClick={() => setConfirmStatus(null)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium hover:bg-slate-50">Cancel</button>
@@ -1401,12 +1527,12 @@ function QuoteDetailPage({ id }: { id: number }) {
             <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
               <h2 className="font-semibold text-slate-900 mb-3">Actions</h2>
               {!confirmProject ? (
-                <button onClick={() => setConfirmProject(true)} className="w-full rounded-md bg-orange-500 text-white px-3 py-2.5 text-sm font-medium hover:bg-orange-400">→ Convert to Project</button>
+                <button onClick={() => setConfirmProject(true)} className="w-full rounded-md bg-[var(--brand)] text-white px-3 py-2.5 text-sm font-medium hover:brightness-110">→ Convert to Project</button>
               ) : (
-                <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
+                <div className="rounded-md border border-[var(--brand)]/40 bg-[var(--brand-tint)] p-3 space-y-2">
                   <p className="text-xs font-medium text-slate-700">Convert this quote to a project?</p>
                   <div className="flex gap-2">
-                    <button onClick={handleConvertToProject} disabled={convertToProject.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">
+                    <button onClick={handleConvertToProject} disabled={convertToProject.isPending} className="flex-1 rounded bg-[var(--brand)] text-white py-1.5 text-xs font-medium hover:brightness-110 disabled:opacity-50">
                       {convertToProject.isPending ? "Converting..." : "Yes, Convert"}
                     </button>
                     <button onClick={() => setConfirmProject(false)} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium">Cancel</button>
@@ -1433,12 +1559,12 @@ function QuoteDetailPage({ id }: { id: number }) {
                           {l.sentAt ? (
                             <span className="flex items-center gap-1.5">
                               <span className="text-green-700 font-medium">✓ Sent {new Date(l.sentAt).toLocaleDateString("en-GB")}</span>
-                              <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendingLinkId === l.id} className="text-orange-600 hover:text-orange-500 font-medium disabled:opacity-50">
+                              <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendingLinkId === l.id} className="text-[var(--brand-ink)] hover:text-[var(--brand-ink)] font-medium disabled:opacity-50">
                                 {sendingLinkId === l.id ? "Resending..." : "Resend"}
                               </button>
                             </span>
                           ) : (
-                            <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendingLinkId === l.id} className="text-orange-600 hover:text-orange-500 font-medium disabled:opacity-50">
+                            <button onClick={() => handleSendPaymentLink(l.id)} disabled={sendingLinkId === l.id} className="text-[var(--brand-ink)] hover:text-[var(--brand-ink)] font-medium disabled:opacity-50">
                               {sendingLinkId === l.id ? "Sending..." : "Send Payment Link"}
                             </button>
                           )}
@@ -1452,17 +1578,17 @@ function QuoteDetailPage({ id }: { id: number }) {
             {!confirmPayment ? (
               <button onClick={() => { setConfirmPayment(true); setDepositMode(false); setPayAmount(total.toFixed(2)); }} className="w-full rounded-md border border-slate-300 text-slate-700 px-3 py-2 text-sm font-medium hover:bg-slate-50">+ Generate Payment Link</button>
             ) : (
-              <div className="rounded-md border border-orange-200 bg-orange-50 p-3 space-y-2">
+              <div className="rounded-md border border-[var(--brand)]/40 bg-[var(--brand-tint)] p-3 space-y-2">
                 <p className="text-xs font-medium text-slate-700">Amount to request:</p>
                 <div className="flex gap-2">
-                  <button type="button" onClick={() => { setDepositMode(false); setPayAmount(total.toFixed(2)); }} className={`flex-1 rounded px-2 py-1.5 text-xs font-medium transition-colors ${!depositMode ? "bg-orange-500 text-white" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"}`}>Full Amount (£{total.toFixed(2)})</button>
-                  <button type="button" onClick={() => { setDepositMode(true); setPayAmount(""); }} className={`flex-1 rounded px-2 py-1.5 text-xs font-medium transition-colors ${depositMode ? "bg-orange-500 text-white" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"}`}>Deposit</button>
+                  <button type="button" onClick={() => { setDepositMode(false); setPayAmount(total.toFixed(2)); }} className={`flex-1 rounded px-2 py-1.5 text-xs font-medium transition-colors ${!depositMode ? "bg-[var(--brand)] text-white" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"}`}>Full Amount (£{total.toFixed(2)})</button>
+                  <button type="button" onClick={() => { setDepositMode(true); setPayAmount(""); }} className={`flex-1 rounded px-2 py-1.5 text-xs font-medium transition-colors ${depositMode ? "bg-[var(--brand)] text-white" : "bg-white border border-slate-300 text-slate-700 hover:bg-slate-50"}`}>Deposit</button>
                 </div>
                 {depositMode && (
-                  <input type="number" min="0.01" step="0.01" value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="e.g. 500.00" autoFocus className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                  <input type="number" min="0.01" step="0.01" value={payAmount} onChange={e => setPayAmount(e.target.value)} placeholder="e.g. 500.00" autoFocus className="w-full rounded border border-slate-300 px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
                 )}
                 <div className="flex gap-2">
-                  <button onClick={handleGeneratePaymentLink} disabled={createPaymentLink.isPending} className="flex-1 rounded bg-orange-500 text-white py-1.5 text-xs font-medium hover:bg-orange-400 disabled:opacity-50">
+                  <button onClick={handleGeneratePaymentLink} disabled={createPaymentLink.isPending} className="flex-1 rounded bg-[var(--brand)] text-white py-1.5 text-xs font-medium hover:brightness-110 disabled:opacity-50">
                     {createPaymentLink.isPending ? "Generating..." : "Generate Link"}
                   </button>
                   <button onClick={() => { setConfirmPayment(false); setPayAmount(""); setDepositMode(false); }} className="flex-1 rounded border border-slate-300 text-slate-700 py-1.5 text-xs font-medium">Cancel</button>
@@ -1511,7 +1637,7 @@ function ProjectsPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Projects</h1>
-        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New</button>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New</button>
       </div>
       {showNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
@@ -1520,18 +1646,18 @@ function ProjectsPage() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Title <span className="text-red-400">*</span></label>
-                <input required value={newProj.title} onChange={e => setNewProj(p => ({ ...p, title: e.target.value }))} placeholder="e.g. John Smith — Silicone Render" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input required value={newProj.title} onChange={e => setNewProj(p => ({ ...p, title: e.target.value }))} placeholder="e.g. John Smith — Silicone Render" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
-                <input value={newProj.city} onChange={e => setNewProj(p => ({ ...p, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input value={newProj.city} onChange={e => setNewProj(p => ({ ...p, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
-                <textarea rows={2} value={newProj.description} onChange={e => setNewProj(p => ({ ...p, description: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <textarea rows={2} value={newProj.description} onChange={e => setNewProj(p => ({ ...p, description: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Project"}</button>
+                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Project"}</button>
                 <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
               </div>
             </form>
@@ -1540,14 +1666,14 @@ function ProjectsPage() {
       )}
       <div className="flex flex-wrap gap-2">
         {["", "Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? "bg-orange-500 text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
+          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
         ))}
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
           <div className="md:hidden space-y-2">
             {!filtered?.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No projects found</div> : filtered.map((p: any) => (
-              <Link key={p.id} href={`/dashboard/projects/${p.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
+              <Link key={p.id} href={`/dashboard/projects/${p.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-[var(--brand)]/50 transition-colors active:bg-slate-50">
                 <div className="flex items-start justify-between gap-2 mb-1.5"><div className="font-medium text-slate-900">{p.title}</div><Badge status={p.status} /></div>
                 <div className="text-xs text-slate-500 space-y-0.5">
                   {[p.city, p.postcode].filter(Boolean).join(", ") && <div>{[p.city, p.postcode].filter(Boolean).join(", ")}</div>}
@@ -1565,11 +1691,11 @@ function ProjectsPage() {
                 <tbody>
                   {!filtered?.length ? <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No projects found</td></tr> : filtered.map((p: any) => (
                     <tr key={p.id} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/projects/${p.id}`} className="hover:text-orange-600">{p.title}</Link></td>
+                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/projects/${p.id}`} className="hover:text-[var(--brand-ink)]">{p.title}</Link></td>
                       <td className="px-4 py-3"><Badge status={p.status} /></td>
                       <td className="px-4 py-3 text-slate-600">{[p.city, p.postcode].filter(Boolean).join(", ") || "-"}</td>
                       <td className="px-4 py-3 text-slate-500">{p.scheduledStart ? new Date(p.scheduledStart).toLocaleDateString("en-GB") : "-"}</td>
-                      <td className="px-4 py-3 text-right"><Link href={`/dashboard/projects/${p.id}`} className="text-xs text-orange-500">View</Link></td>
+                      <td className="px-4 py-3 text-right"><Link href={`/dashboard/projects/${p.id}`} className="text-xs text-[var(--brand-ink)]">View</Link></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1591,7 +1717,7 @@ function ProjectDetailPage({ id }: { id: number }) {
   const showToast = useToast();
   const [updateForm, setUpdateForm] = useState({ title: "", content: "", visibleToCustomer: true });
   const p = project as any;
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand)]" /></div>;
   if (!p) return <div className="p-8 text-center text-slate-500">Project not found</div>;
 
   const handleStatusChange = async (status: string) => {
@@ -1617,7 +1743,7 @@ function ProjectDetailPage({ id }: { id: number }) {
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard/projects" className="text-sm text-slate-500 hover:text-orange-500">&larr; Projects</Link>
+        <Link href="/dashboard/projects" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Projects</Link>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{p.title}</h1>
         <Badge status={p.status} />
       </div>
@@ -1637,19 +1763,19 @@ function ProjectDetailPage({ id }: { id: number }) {
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
             <h2 className="font-semibold text-slate-900">Timeline / Updates</h2>
             <form onSubmit={handleAddUpdate} className="space-y-2 border border-slate-200 rounded-lg p-4 bg-slate-50">
-              <input placeholder="Update title (optional)" value={updateForm.title} onChange={e => setUpdateForm({ ...updateForm, title: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
-              <textarea rows={3} placeholder="What happened / what was done..." value={updateForm.content} onChange={e => setUpdateForm({ ...updateForm, content: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+              <input placeholder="Update title (optional)" value={updateForm.title} onChange={e => setUpdateForm({ ...updateForm, title: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <textarea rows={3} placeholder="What happened / what was done..." value={updateForm.content} onChange={e => setUpdateForm({ ...updateForm, content: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
                   <input type="checkbox" checked={updateForm.visibleToCustomer} onChange={e => setUpdateForm({ ...updateForm, visibleToCustomer: e.target.checked })} className="rounded" />
                   Visible to customer
                 </label>
-                <button type="submit" disabled={createUpdate.isPending} className="rounded bg-orange-500 px-4 py-1.5 text-sm text-white font-medium hover:bg-orange-400 disabled:opacity-50">Post Update</button>
+                <button type="submit" disabled={createUpdate.isPending} className="rounded bg-[var(--brand)] px-4 py-1.5 text-sm text-white font-medium hover:brightness-110 disabled:opacity-50">Post Update</button>
               </div>
             </form>
             <div className="space-y-3">
               {(updates as any[])?.map((u: any) => (
-                <div key={u.id} className="border-l-4 border-orange-300 pl-4 py-1">
+                <div key={u.id} className="border-l-4 border-[var(--brand)]/50 pl-4 py-1">
                   {u.title && <p className="text-sm font-medium text-slate-800">{u.title}</p>}
                   <p className="text-sm text-slate-600">{u.content}</p>
                   <div className="flex items-center gap-3 mt-1 text-xs text-slate-400 flex-wrap">
@@ -1666,7 +1792,7 @@ function ProjectDetailPage({ id }: { id: number }) {
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <h2 className="font-semibold text-slate-900">Update Status</h2>
             {["Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"].map(s => (
-              <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${p.status === s ? "bg-orange-500 text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
+              <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${p.status === s ? "bg-[var(--brand)] text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
             ))}
           </div>
         </div>
@@ -1702,7 +1828,7 @@ function CustomersPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Customers</h1>
-        <button onClick={() => setShowNew(true)} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New</button>
+        <button onClick={() => setShowNew(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New</button>
       </div>
       {showNew && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
@@ -1712,27 +1838,27 @@ function CustomersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">First Name</label>
-                  <input value={newCust.firstName} onChange={e => setNewCust(c => ({ ...c, firstName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                  <input value={newCust.firstName} onChange={e => setNewCust(c => ({ ...c, firstName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Last Name</label>
-                  <input value={newCust.lastName} onChange={e => setNewCust(c => ({ ...c, lastName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                  <input value={newCust.lastName} onChange={e => setNewCust(c => ({ ...c, lastName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
-                <input type="email" value={newCust.email} onChange={e => setNewCust(c => ({ ...c, email: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input type="email" value={newCust.email} onChange={e => setNewCust(c => ({ ...c, email: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
-                <input type="tel" value={newCust.phone} onChange={e => setNewCust(c => ({ ...c, phone: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input type="tel" value={newCust.phone} onChange={e => setNewCust(c => ({ ...c, phone: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
-                <input value={newCust.city} onChange={e => setNewCust(c => ({ ...c, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                <input value={newCust.city} onChange={e => setNewCust(c => ({ ...c, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-orange-500 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Customer"}</button>
+                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Customer"}</button>
                 <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
               </div>
             </form>
@@ -1743,7 +1869,7 @@ function CustomersPage() {
         <>
           <div className="md:hidden space-y-2">
             {!(customers as any[])?.length ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No customers yet</div> : (customers as any[]).map((c: any) => (
-              <Link key={c.id} href={`/dashboard/customers/${c.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-orange-300 transition-colors active:bg-slate-50">
+              <Link key={c.id} href={`/dashboard/customers/${c.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-[var(--brand)]/50 transition-colors active:bg-slate-50">
                 <div className="flex items-start justify-between gap-2 mb-1"><div className="font-medium text-slate-900">{c.firstName} {c.lastName}</div>{c.portalEnabled && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Portal</span>}</div>
                 <div className="text-xs text-slate-500 space-y-0.5">{c.email && <div>{c.email}</div>}{c.phone && <div>{c.phone}</div>}{c.city && <div>{c.city}</div>}</div>
               </Link>
@@ -1758,12 +1884,12 @@ function CustomersPage() {
                 <tbody>
                   {!(customers as any[])?.length ? <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No customers yet</td></tr> : (customers as any[]).map((c: any) => (
                     <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/customers/${c.id}`} className="hover:text-orange-600">{c.firstName} {c.lastName}</Link></td>
+                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/customers/${c.id}`} className="hover:text-[var(--brand-ink)]">{c.firstName} {c.lastName}</Link></td>
                       <td className="px-4 py-3 text-slate-600">{c.email || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{c.phone || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{c.city || "-"}</td>
                       <td className="px-4 py-3">{c.portalEnabled ? <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Active</span> : <span className="text-xs text-slate-400">-</span>}</td>
-                      <td className="px-4 py-3 text-right"><Link href={`/dashboard/customers/${c.id}`} className="text-xs text-orange-500">View</Link></td>
+                      <td className="px-4 py-3 text-right"><Link href={`/dashboard/customers/${c.id}`} className="text-xs text-[var(--brand-ink)]">View</Link></td>
                     </tr>
                   ))}
                 </tbody>
@@ -1779,20 +1905,20 @@ function CustomersPage() {
 function CustomerDetailPage({ id }: { id: number }) {
   const { data: customer, isLoading } = useGetCustomer(id);
   const c = customer as any;
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand)]" /></div>;
   if (!c) return <div className="p-8 text-center text-slate-500">Customer not found</div>;
   return (
     <div className="p-4 sm:p-6 space-y-5 max-w-3xl">
       <div className="flex items-center gap-3 flex-wrap">
-        <Link href="/dashboard/customers" className="text-sm text-slate-500 hover:text-orange-500">&larr; Customers</Link>
+        <Link href="/dashboard/customers" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Customers</Link>
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{c.firstName} {c.lastName}</h1>
         {c.portalEnabled && <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Portal Active</span>}
       </div>
       <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
         <h2 className="font-semibold text-slate-900">Contact Details</h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div><span className="text-slate-500">Email: </span><a href={`mailto:${c.email}`} className="text-orange-600 hover:underline break-all">{c.email || "-"}</a></div>
-          <div><span className="text-slate-500">Phone: </span><a href={`tel:${c.phone}`} className="text-orange-600 hover:underline">{c.phone || "-"}</a></div>
+          <div><span className="text-slate-500">Email: </span><a href={`mailto:${c.email}`} className="text-[var(--brand-ink)] hover:underline break-all">{c.email || "-"}</a></div>
+          <div><span className="text-slate-500">Phone: </span><a href={`tel:${c.phone}`} className="text-[var(--brand-ink)] hover:underline">{c.phone || "-"}</a></div>
           <div><span className="text-slate-500">City: </span><span className="text-slate-900">{c.city || "-"}</span></div>
           <div><span className="text-slate-500">Postcode: </span><span className="text-slate-900">{c.postcode || "-"}</span></div>
           {c.address && <div className="sm:col-span-2"><span className="text-slate-500">Address: </span><span className="text-slate-900">{c.address}</span></div>}
@@ -1841,7 +1967,7 @@ function GalleryPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Gallery</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add Image</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ Add Image</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -1855,7 +1981,7 @@ function GalleryPage() {
                     <p className="text-xs text-slate-400">{item.featured ? "Featured · " : ""}{item.category || ""}</p>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -1924,7 +2050,7 @@ function ReviewsPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Reviews</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -1942,7 +2068,7 @@ function ReviewsPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2019,7 +2145,7 @@ function CaseStudiesPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Case Studies</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -2037,7 +2163,7 @@ function CaseStudiesPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2115,7 +2241,7 @@ function PricingPage() {
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Pricing</h1>
           <p className="text-sm text-slate-500 mt-0.5">These items power the public cost calculator. Add at least one to make the calculator live on your site.</p>
         </div>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400 flex-shrink-0">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110 flex-shrink-0">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -2132,7 +2258,7 @@ function PricingPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2207,7 +2333,7 @@ function ServicesPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Services</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -2224,7 +2350,7 @@ function ServicesPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2298,7 +2424,7 @@ function AreasPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Areas</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -2314,7 +2440,7 @@ function AreasPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2383,7 +2509,7 @@ function FaqsPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">FAQs</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ Add</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -2397,7 +2523,7 @@ function FaqsPage() {
                     {item.category && <span className="text-xs text-slate-400">{item.category}</span>}
                   </div>
                   <div className="flex gap-1 flex-shrink-0 mt-0.5">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2464,7 +2590,7 @@ function BlogPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Blog</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ New Post</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New Post</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -2481,7 +2607,7 @@ function BlogPage() {
                     </div>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2530,8 +2656,8 @@ function MessagesPage() {
             {m.subject && <div className="text-sm font-medium text-slate-700">{m.subject}</div>}
             <p className="text-sm text-slate-600">{m.message}</p>
             <div className="flex gap-4 text-xs text-slate-400 flex-wrap">
-              {(m.senderEmail || m.email) && <a href={`mailto:${m.senderEmail || m.email}`} className="text-orange-500 hover:underline">{m.senderEmail || m.email}</a>}
-              {(m.senderPhone || m.phone) && <a href={`tel:${m.senderPhone || m.phone}`} className="text-orange-500 hover:underline">{m.senderPhone || m.phone}</a>}
+              {(m.senderEmail || m.email) && <a href={`mailto:${m.senderEmail || m.email}`} className="text-[var(--brand-ink)] hover:underline">{m.senderEmail || m.email}</a>}
+              {(m.senderPhone || m.phone) && <a href={`tel:${m.senderPhone || m.phone}`} className="text-[var(--brand-ink)] hover:underline">{m.senderPhone || m.phone}</a>}
             </div>
           </div>
         ))}
@@ -2634,7 +2760,7 @@ function TeamPage() {
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Team</h1>
-        <button onClick={openAdd} className="inline-flex h-9 items-center rounded-md bg-orange-500 px-3 sm:px-4 text-sm font-medium text-white hover:bg-orange-400">+ Add Member</button>
+        <button onClick={openAdd} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ Add Member</button>
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
@@ -2642,15 +2768,15 @@ function TeamPage() {
             <div className="divide-y divide-slate-100">
               {rows.map((item: any) => (
                 <div key={item.id} className="flex items-center gap-3 px-4 py-3">
-                  <div className="w-9 h-9 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                    {item.photoUrl ? <img src={item.photoUrl} className="w-9 h-9 rounded-full object-cover" alt="" onError={e => { (e.target as HTMLImageElement).style.display="none"; }} /> : <span className="text-sm font-bold text-orange-600">{(item.name || "?")[0].toUpperCase()}</span>}
+                  <div className="w-9 h-9 rounded-full bg-[var(--brand-tint)] flex items-center justify-center flex-shrink-0">
+                    {item.photoUrl ? <img src={item.photoUrl} className="w-9 h-9 rounded-full object-cover" alt="" onError={e => { (e.target as HTMLImageElement).style.display="none"; }} /> : <span className="text-sm font-bold text-[var(--brand-ink)]">{(item.name || "?")[0].toUpperCase()}</span>}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-slate-800 truncate">{item.name}</p>
                     <p className="text-xs text-slate-400 truncate">{item.role || ""}{item.email ? ` · ${item.email}` : ""}</p>
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
-                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50">Edit</button>
+                    <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
                     <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
                   </div>
                 </div>
@@ -2738,7 +2864,7 @@ function SettingsPage() {
     }
   };
 
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500" /></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand)]" /></div>;
   if (!form) return null;
 
   const field = (key: string, lbl: string, type = "text", hint?: string) => (
@@ -2797,7 +2923,7 @@ function SettingsPage() {
               <p className="text-xs text-slate-400 mt-1">Usually 587 (STARTTLS) or 465 (SSL)</p>
             </div>
             <div className="flex items-center gap-3 sm:pt-6">
-              <input type="checkbox" id="smtpSecure" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form.smtpSecure} onChange={e => setForm({ ...form, smtpSecure: e.target.checked })} />
+              <input type="checkbox" id="smtpSecure" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form.smtpSecure} onChange={e => setForm({ ...form, smtpSecure: e.target.checked })} />
               <label htmlFor="smtpSecure" className="text-sm font-medium text-slate-700">Use SSL/TLS (port 465)</label>
             </div>
             <div>{field("smtpUser", "Username / Email", "email", "Usually your full email address")}</div>
@@ -2887,8 +3013,8 @@ function SettingsPage() {
                 ].map(row => (
                   <tr key={row.emailKey} className="text-sm">
                     <td className="py-2.5 pr-4 text-slate-700">{row.label}</td>
-                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form[row.emailKey]} onChange={e => setForm({ ...form, [row.emailKey]: e.target.checked })} /></td>
-                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form[row.smsKey]} onChange={e => setForm({ ...form, [row.smsKey]: e.target.checked })} /></td>
+                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form[row.emailKey]} onChange={e => setForm({ ...form, [row.emailKey]: e.target.checked })} /></td>
+                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form[row.smsKey]} onChange={e => setForm({ ...form, [row.smsKey]: e.target.checked })} /></td>
                     <td className="py-2.5 pl-3 text-slate-500 text-xs">{row.recipient}</td>
                   </tr>
                 ))}
@@ -2902,7 +3028,7 @@ function SettingsPage() {
             <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review after a project completes.</p>
           </div>
           <div className="flex items-center gap-3">
-            <input type="checkbox" id="reviewEnabled" className="h-4 w-4 rounded border-slate-300 text-orange-500 focus:ring-orange-500" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
+            <input type="checkbox" id="reviewEnabled" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
             <label htmlFor="reviewEnabled" className="text-sm font-medium text-slate-700">Enable automatic review requests</label>
           </div>
           {form.reviewRequestEnabled && (
@@ -2962,7 +3088,7 @@ function SettingsPage() {
           {field("googleAdsConversionLabel", "Google Ads Conversion Label", "text", "The conversion label from your Google Ads conversion action")}
         </div>
         <div className="flex items-center gap-4 pb-4">
-          <button type="submit" disabled={updateMutation.isPending} className="inline-flex h-10 items-center rounded-md bg-orange-500 px-6 text-sm font-semibold text-white hover:bg-orange-400 disabled:opacity-50">
+          <button type="submit" disabled={updateMutation.isPending} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] shadow-sm px-6 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50">
             {updateMutation.isPending ? "Saving..." : "Save Settings"}
           </button>
         </div>
@@ -2986,11 +3112,13 @@ export default function DashboardApp() {
   };
   const removeToast = (id: number) => setToasts(prev => prev.filter(t => t.id !== id));
 
+  const activeBrand = useActiveBrand();
+
   if (!isSignedIn) return <Redirect to="/sign-in" />;
 
   return (
     <ToastCtx.Provider value={showToast}>
-      <div className="flex min-h-screen bg-slate-50">
+      <div className="flex min-h-screen bg-slate-50 text-slate-800" style={brandVars(activeBrand.color)}>
         <aside className="hidden md:flex w-56 flex-shrink-0 bg-slate-900 min-h-screen flex-col">
           <SidebarContent currentPath={location} />
         </aside>
@@ -3011,14 +3139,7 @@ export default function DashboardApp() {
         )}
 
         <div className="flex-1 min-w-0 flex flex-col">
-          <header className="md:hidden sticky top-0 z-30 flex items-center gap-3 bg-white border-b border-slate-200 px-4 h-14 flex-shrink-0">
-            <button onClick={() => setSidebarOpen(true)} className="p-1.5 rounded-md text-slate-600 hover:bg-slate-100 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" /></svg>
-            </button>
-            <span className="font-semibold text-slate-800 text-sm">
-              {NAV_ITEMS.find(n => n && (location === n.path || (location.startsWith(n.path + "/") && n.path !== "/dashboard")))?.label || "Dashboard"}
-            </span>
-          </header>
+          <TopBar location={location} onMenu={() => setSidebarOpen(true)} activeName={activeBrand.name} />
 
           <main className="flex-1 overflow-auto">
             <Switch>

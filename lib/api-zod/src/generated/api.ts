@@ -27,13 +27,28 @@ export const GetMeResponse = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "avatarUrl": zod.string().nullish(),
   "businesses": zod.array(zod.object({
   "tenantId": zod.number(),
   "name": zod.string(),
   "slug": zod.string(),
-  "role": zod.string()
+  "role": zod.string(),
+  "primaryColor": zod.string().nullish(),
+  "industry": zod.string().nullish()
 })).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Set the current user's avatar image
+ */
+export const SetAvatarBody = zod.object({
+  "avatarUrl": zod.string().nullish()
+})
+
+export const SetAvatarResponse = zod.object({
+  "avatarUrl": zod.string().nullish()
 })
 
 
@@ -52,11 +67,14 @@ export const SwitchTenantResponse = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "avatarUrl": zod.string().nullish(),
   "businesses": zod.array(zod.object({
   "tenantId": zod.number(),
   "name": zod.string(),
   "slug": zod.string(),
-  "role": zod.string()
+  "role": zod.string(),
+  "primaryColor": zod.string().nullish(),
+  "industry": zod.string().nullish()
 })).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })
@@ -81,11 +99,14 @@ export const SyncUserResponse = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "avatarUrl": zod.string().nullish(),
   "businesses": zod.array(zod.object({
   "tenantId": zod.number(),
   "name": zod.string(),
   "slug": zod.string(),
-  "role": zod.string()
+  "role": zod.string(),
+  "primaryColor": zod.string().nullish(),
+  "industry": zod.string().nullish()
 })).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })
@@ -102,11 +123,14 @@ export const ListUsersResponseItem = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "avatarUrl": zod.string().nullish(),
   "businesses": zod.array(zod.object({
   "tenantId": zod.number(),
   "name": zod.string(),
   "slug": zod.string(),
-  "role": zod.string()
+  "role": zod.string(),
+  "primaryColor": zod.string().nullish(),
+  "industry": zod.string().nullish()
 })).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })
@@ -133,11 +157,14 @@ export const UpdateUserResponse = zod.object({
   "lastName": zod.string().nullish(),
   "role": zod.enum(['SUPER_ADMIN', 'TENANT_ADMIN', 'STAFF', 'CUSTOMER']),
   "tenantId": zod.number().nullish(),
+  "avatarUrl": zod.string().nullish(),
   "businesses": zod.array(zod.object({
   "tenantId": zod.number(),
   "name": zod.string(),
   "slug": zod.string(),
-  "role": zod.string()
+  "role": zod.string(),
+  "primaryColor": zod.string().nullish(),
+  "industry": zod.string().nullish()
 })).optional().describe('Businesses this user can access (for the dashboard switcher). One entry = no switcher.'),
   "createdAt": zod.coerce.date().optional()
 })

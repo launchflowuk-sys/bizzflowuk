@@ -103,6 +103,7 @@ export * from './sentEmailStatus';
 export * from './service';
 export * from './serviceInput';
 export * from './serviceUpdate';
+export * from './setAvatarInput';
 export * from './squareChargeRequest';
 export * from './squareChargeResponse';
 export * from './squareChargeResponseStatus';

@@ -19,6 +19,8 @@ export interface User {
   role: UserRole;
   /** @nullable */
   tenantId?: number | null;
+  /** @nullable */
+  avatarUrl?: string | null;
   /** Businesses this user can access (for the dashboard switcher). One entry = no switcher. */
   businesses?: UserBusiness[];
   createdAt?: Date;

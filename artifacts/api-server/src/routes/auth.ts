@@ -11,7 +11,7 @@ const router = Router();
 /** The businesses a user can access, for the dashboard's business switcher. */
 async function getUserBusinesses(userId: number) {
   return db
-    .select({ tenantId: userTenantsTable.tenantId, role: userTenantsTable.role, name: tenantsTable.name, slug: tenantsTable.slug })
+    .select({ tenantId: userTenantsTable.tenantId, role: userTenantsTable.role, name: tenantsTable.name, slug: tenantsTable.slug, primaryColor: tenantsTable.primaryColor, industry: tenantsTable.industry })
     .from(userTenantsTable)
     .innerJoin(tenantsTable, eq(userTenantsTable.tenantId, tenantsTable.id))
     .where(eq(userTenantsTable.userId, userId))
@@ -19,7 +19,7 @@ async function getUserBusinesses(userId: number) {
 }
 
 router.get("/me", requireAuth, async (req, res) => {
-  const { id, email, role, firstName, lastName, tenantId, clerkId } = req.authUser as any;
+  const { id, email, role, firstName, lastName, tenantId, clerkId, avatarUrl } = req.authUser as any;
   // Never let the business list break /me — the dashboard calls this on load, so a failure here
   // (e.g. user_tenants not yet migrated) would lock everyone out. Degrade to no switcher instead.
   let businesses: unknown[] = [];
@@ -28,7 +28,16 @@ router.get("/me", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "getUserBusinesses failed (user_tenants may be missing) — returning no businesses");
   }
-  res.json({ id, email, role, firstName, lastName, tenantId, clerkId, businesses });
+  res.json({ id, email, role, firstName, lastName, tenantId, clerkId, avatarUrl: avatarUrl ?? null, businesses });
+});
+
+/** Set the current user's avatar image (relative object path from the dashboard upload flow). */
+router.post("/avatar", requireAuth, async (req, res) => {
+  try {
+    const avatarUrl = typeof req.body?.avatarUrl === "string" ? req.body.avatarUrl : null;
+    await db.update(usersTable).set({ avatarUrl }).where(eq(usersTable.id, req.authUser!.id));
+    res.json({ avatarUrl });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 /**
@@ -55,7 +64,7 @@ router.post("/switch-tenant", requireAuth, async (req, res) => {
       .returning();
     const u = updated[0];
     const businesses = await getUserBusinesses(userId);
-    res.json({ id: u.id, email: u.email, role: u.role, firstName: u.firstName, lastName: u.lastName, tenantId: u.tenantId, clerkId: u.clerkId, businesses });
+    res.json({ id: u.id, email: u.email, role: u.role, firstName: u.firstName, lastName: u.lastName, tenantId: u.tenantId, clerkId: u.clerkId, avatarUrl: u.avatarUrl ?? null, businesses });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

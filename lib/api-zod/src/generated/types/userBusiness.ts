@@ -11,4 +11,8 @@ export interface UserBusiness {
   name: string;
   slug: string;
   role: string;
+  /** @nullable */
+  primaryColor?: string | null;
+  /** @nullable */
+  industry?: string | null;
 }

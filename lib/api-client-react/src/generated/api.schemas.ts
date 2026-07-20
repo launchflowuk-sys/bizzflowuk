@@ -89,6 +89,10 @@ export interface UserBusiness {
   name: string;
   slug: string;
   role: string;
+  /** @nullable */
+  primaryColor?: string | null;
+  /** @nullable */
+  industry?: string | null;
 }
 
 export interface User {
@@ -102,9 +106,16 @@ export interface User {
   role: UserRole;
   /** @nullable */
   tenantId?: number | null;
+  /** @nullable */
+  avatarUrl?: string | null;
   /** Businesses this user can access (for the dashboard switcher). One entry = no switcher. */
   businesses?: UserBusiness[];
   createdAt?: string;
+}
+
+export interface SetAvatarInput {
+  /** @nullable */
+  avatarUrl?: string | null;
 }
 
 export interface SwitchTenantInput {

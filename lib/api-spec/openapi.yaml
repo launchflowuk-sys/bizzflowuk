@@ -82,6 +82,25 @@ paths:
         "401":
           description: Unauthenticated
 
+  /auth/avatar:
+    post:
+      operationId: setAvatar
+      tags: [auth]
+      summary: Set the current user's avatar image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetAvatarInput"
+      responses:
+        "200":
+          description: Avatar updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SetAvatarInput"
+
   /auth/switch-tenant:
     post:
       operationId: switchTenant
@@ -2889,6 +2908,8 @@ components:
           enum: [SUPER_ADMIN, TENANT_ADMIN, STAFF, CUSTOMER]
         tenantId:
           type: ["integer", "null"]
+        avatarUrl:
+          type: ["string", "null"]
         businesses:
           type: array
           description: Businesses this user can access (for the dashboard switcher). One entry = no switcher.
@@ -2910,6 +2931,16 @@ components:
           type: string
         role:
           type: string
+        primaryColor:
+          type: ["string", "null"]
+        industry:
+          type: ["string", "null"]
+
+    SetAvatarInput:
+      type: object
+      properties:
+        avatarUrl:
+          type: ["string", "null"]
 
     SwitchTenantInput:
       type: object

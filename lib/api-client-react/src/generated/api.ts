@@ -101,6 +101,7 @@ import type {
   Service,
   ServiceInput,
   ServiceUpdate,
+  SetAvatarInput,
   SquareChargeRequest,
   SquareChargeResponse,
   SubmitPublicQuoteAction200,
@@ -289,6 +290,77 @@ export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Err
 
 
 
+
+export const getSetAvatarUrl = () => {
+
+
+
+
+  return `/api/auth/avatar`
+}
+
+/**
+ * @summary Set the current user's avatar image
+ */
+export const setAvatar = async (setAvatarInput: SetAvatarInput, options?: RequestInit): Promise<SetAvatarInput> => {
+
+  return customFetch<SetAvatarInput>(getSetAvatarUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      setAvatarInput,)
+  }
+);}
+
+
+
+
+export const getSetAvatarMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAvatar>>, TError,{data: BodyType<SetAvatarInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setAvatar>>, TError,{data: BodyType<SetAvatarInput>}, TContext> => {
+
+const mutationKey = ['setAvatar'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setAvatar>>, {data: BodyType<SetAvatarInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setAvatar(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetAvatarMutationResult = NonNullable<Awaited<ReturnType<typeof setAvatar>>>
+    export type SetAvatarMutationBody = BodyType<SetAvatarInput>
+    export type SetAvatarMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Set the current user's avatar image
+ */
+export const useSetAvatar = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setAvatar>>, TError,{data: BodyType<SetAvatarInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setAvatar>>,
+        TError,
+        {data: BodyType<SetAvatarInput>},
+        TContext
+      > => {
+      return useMutation(getSetAvatarMutationOptions(options));
+    }
 
 export const getSwitchTenantUrl = () => {
 
