@@ -64,7 +64,7 @@ function injectIntoShell(indexHtml: string, appHtml: string, dehydratedState: un
  */
 async function handleRender(req: Request, res: Response, requestPath: string) {
   try {
-    const host = (req.query.host as string) || (req.headers.host as string) || "";
+    const host = ((req.query.host as string) || (req.headers.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");
     const tenants = await db
       .select()
       .from(tenantsTable)

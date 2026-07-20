@@ -17,7 +17,7 @@ async function getTenantBySlug(slug: string) {
 
 router.get("/public/resolve-domain", async (req, res) => {
   try {
-    const host = req.query.host as string;
+    const host = ((req.query.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");
     if (!host) { res.status(400).json({ error: "host query param required" }); return; }
     const tenants = await db
       .select({ slug: tenantsTable.slug })
@@ -40,7 +40,7 @@ router.get("/public/resolve-domain", async (req, res) => {
  */
 router.get("/public/robots.txt", async (req, res) => {
   try {
-    const host = (req.query.host as string) || (req.headers.host as string) || "";
+    const host = ((req.query.host as string) || (req.headers.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");
     const tenants = await db
       .select({ customDomain: tenantsTable.customDomain })
       .from(tenantsTable)
@@ -72,7 +72,7 @@ function urlEntry(loc: string, lastmod?: Date | string | null): string {
  */
 router.get("/public/sitemap.xml", async (req, res) => {
   try {
-    const host = (req.query.host as string) || (req.headers.host as string) || "";
+    const host = ((req.query.host as string) || (req.headers.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");
     const tenants = await db
       .select()
       .from(tenantsTable)
@@ -126,7 +126,7 @@ router.get("/public/sitemap.xml", async (req, res) => {
  */
 router.get("/public/llms.txt", async (req, res) => {
   try {
-    const host = (req.query.host as string) || (req.headers.host as string) || "";
+    const host = ((req.query.host as string) || (req.headers.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");
     const tenants = await db
       .select()
       .from(tenantsTable)

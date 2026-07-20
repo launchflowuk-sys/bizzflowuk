@@ -21,6 +21,9 @@ services:
       # Only used for the one-time platform-admin bootstrap (see seedFix.ts) —
       # safe to remove from the environment after first successful deploy.
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
+      # One-time password recovery for mark@amorendering.co.uk. Set it in Coolify, deploy, log in,
+      # then remove it. Passed to the runtime container so the seed can reset the password.
+      MARK_LOGIN_PASSWORD: ${MARK_LOGIN_PASSWORD:-}
     volumes:
       - api-uploads:/data/uploads
     networks:

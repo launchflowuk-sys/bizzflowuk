@@ -145,6 +145,19 @@ async function ensureMarkMultiTenant(): Promise<void> {
   const [services] = await db.select({ id: tenantsTable.id }).from(tenantsTable).where(eq(tenantsTable.slug, SLUG)).limit(1);
   if (!rendering || !services) return;
 
+  // One-time password recovery for Mark's unified login: if MARK_LOGIN_PASSWORD is set in the
+  // environment, create-or-reset mark@amorendering.co.uk to that password. Lets the operator
+  // recover access with a password they choose (set the env in Coolify, deploy, log in, then
+  // remove the env). This is the ONLY place an existing password is deliberately overwritten.
+  const resetPw = process.env["MARK_LOGIN_PASSWORD"];
+  if (resetPw) {
+    const hash = await bcrypt.hash(resetPw, 12);
+    await db.insert(usersTable)
+      .values({ email: "mark@amorendering.co.uk", firstName: "Mark", lastName: "", role: "TENANT_ADMIN" as const, tenantId: rendering.id, passwordHash: hash })
+      .onConflictDoUpdate({ target: usersTable.email, set: { passwordHash: hash } });
+    logger.info("mark@amorendering.co.uk password set from MARK_LOGIN_PASSWORD");
+  }
+
   let [mark] = await db.select().from(usersTable).where(eq(usersTable.email, "mark@amorendering.co.uk")).limit(1);
   if (!mark) {
     const password = process.env["AMO_ADMIN_PASSWORD"];
