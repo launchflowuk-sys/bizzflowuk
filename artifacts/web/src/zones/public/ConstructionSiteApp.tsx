@@ -257,7 +257,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             <div aria-hidden="true" className="absolute inset-0 bg-gradient-to-r from-white via-white/85 to-white/10 lg:via-white/45 lg:to-transparent"/>
           </>
         )}
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-40 sm:pb-44 lg:pt-24 lg:pb-52">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 pt-16 pb-14 sm:pb-16 lg:pt-24 lg:pb-52">
           <div className="max-w-xl">
             <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.18em] mb-5" style={{ color: GREEN_DEEP }}>Construction &amp; Building Services</p>
             <h1 className="text-4xl sm:text-5xl xl:text-6xl font-extrabold leading-[1.05] tracking-tight" style={{ color: TEXT }}>
@@ -277,8 +277,9 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </div>
           </div>
         </div>
-        {/* Trust bar */}
-        <div className="absolute bottom-6 inset-x-0 px-4 sm:px-6">
+        {/* Trust bar — in normal flow on mobile (a natural gap under the CTAs, never overlapping
+            them), pinned to the bottom of the hero only on large screens where there's room. */}
+        <div className="relative lg:absolute lg:bottom-6 inset-x-0 px-4 sm:px-6 pb-12 lg:pb-0">
           <div className="max-w-7xl mx-auto">
             <div className="rounded-2xl px-6 py-5 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-5 lg:divide-x lg:divide-white/10 shadow-xl" style={{ backgroundColor: "rgba(22,27,18,0.94)" }}>
               {TRUST_ITEMS.map(t => (

@@ -7,6 +7,15 @@ import { buildSquareConfig } from "../lib/settingsHelpers";
 import { createSquarePayment, SquarePaymentError } from "../lib/square";
 import { fireNotification } from "../lib/notifications";
 import { resolveQuoteRecipient } from "./quotes";
+import { ensureCustomerForQuote, upsertCustomer } from "../lib/customerSync";
+
+/** Split a single "First Last" name field (payment links store one name) into first/last. */
+function splitName(full?: string | null): { firstName: string | null; lastName: string | null } {
+  const parts = (full ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { firstName: null, lastName: null };
+  if (parts.length === 1) return { firstName: parts[0], lastName: null };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
+}
 
 const router = Router();
 
@@ -105,6 +114,8 @@ router.post("/public/pay/:token/charge", paymentLinkRateLimiter, async (req, res
       res.json({ status: "Paid", quoteStatus });
 
       if (quote) {
+        // Paid in full → they're a customer now (best-effort, never block the payment response).
+        ensureCustomerForQuote(quote.id).catch(e => req.log.error({ err: e }, "ensureCustomerForQuote failed after payment"));
         const recipient = await resolveQuoteRecipient(quote);
         fireNotification({
           tenantId: link.tenantId,
@@ -114,6 +125,11 @@ router.post("/public/pay/:token/charge", paymentLinkRateLimiter, async (req, res
           amount: `${link.currency} ${Number(link.amount).toFixed(2)}`,
         });
       } else if (link.customerEmail || link.customerPhone) {
+        // Standalone (no-quote) link paid → still capture the payer as a customer.
+        upsertCustomer(link.tenantId, {
+          ...splitName(link.customerName),
+          email: link.customerEmail, phone: link.customerPhone, address: link.customerAddress,
+        }).catch(e => req.log.error({ err: e }, "upsertCustomer failed for standalone payment"));
         fireNotification({
           tenantId: link.tenantId,
           event: "payment_received",
@@ -159,6 +175,7 @@ router.post("/public/pay/:token/action", paymentLinkRateLimiter, async (req, res
     res.json({ status: newStatus });
 
     if (newStatus === "Accepted") {
+      ensureCustomerForQuote(quote.id).catch(e => req.log.error({ err: e }, "ensureCustomerForQuote failed after public accept"));
       const recipient = await resolveQuoteRecipient(quote);
       fireNotification({ tenantId: quote.tenantId, event: "quote_accepted", ...recipient, reference: quote.reference });
     }

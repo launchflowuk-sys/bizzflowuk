@@ -6,6 +6,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { ensureCustomerForQuote } from "../lib/customerSync";
 
 const router = Router();
 
@@ -79,6 +80,9 @@ router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
       // and pay link. Firing a "quote sent" email from a bare status change produced a duplicate,
       // content-less email with no payment link, since this handler has no amount to attach.
       if (newStatus === "Accepted") {
+        // Deal closed → make sure this person is a saved customer (see customerSync). Best-effort:
+        // a hiccup here must never fail the status update the tenant just made.
+        ensureCustomerForQuote(q[0].id).catch(e => req.log.error({ err: e }, "ensureCustomerForQuote failed"));
         const recipient = await resolveQuoteRecipient(q[0]);
         fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", ...recipient, reference: q[0].reference });
       }
@@ -103,10 +107,15 @@ router.post("/quotes/:id/convert-project", requireTenantAccess, async (req, res)
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
       .limit(1);
     if (!q.length) { res.status(404).json({ error: "Not found" }); return; }
+    // Closing the quote into a project means it's accepted → ensure the customer exists and hang
+    // both the quote and the new project off them. Tolerant: if this fails we still make the project.
+    let customerId = q[0].customerId ?? undefined;
+    try { customerId = (await ensureCustomerForQuote(q[0].id)) ?? customerId; }
+    catch (e) { req.log.error({ err: e }, "ensureCustomerForQuote failed during convert-project"); }
     const project = await db.insert(projectsTable).values({
       tenantId: q[0].tenantId,
       quoteId: q[0].id,
-      customerId: q[0].customerId ?? undefined,
+      customerId: customerId ?? undefined,
       title: `Project from ${q[0].reference}`,
     }).returning();
     await db.update(quotesTable).set({ status: "Accepted" }).where(eq(quotesTable.id, q[0].id));

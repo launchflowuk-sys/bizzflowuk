@@ -1898,7 +1898,8 @@ function CustomersPage() {
   const qc = useQueryClient();
   const showToast = useToast();
   const [showNew, setShowNew] = useState(false);
-  const [newCust, setNewCust] = useState({ firstName: "", lastName: "", email: "", phone: "", city: "" });
+  const emptyCust = { firstName: "", lastName: "", email: "", phone: "", address: "", city: "", postcode: "", notes: "" };
+  const [newCust, setNewCust] = useState(emptyCust);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1908,7 +1909,7 @@ function CustomersPage() {
       qc.invalidateQueries({ queryKey: getListCustomersQueryKey() });
       showToast("Customer created");
       setShowNew(false);
-      setNewCust({ firstName: "", lastName: "", email: "", phone: "", city: "" });
+      setNewCust(emptyCust);
       navigate(`/dashboard/customers/${c.id}`);
     } catch (err: any) { showToast(err?.message || "Failed to create customer", "error"); }
   };
@@ -1920,8 +1921,8 @@ function CustomersPage() {
         <button onClick={() => setShowNew(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New</button>
       </div>
       {showNew && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 overflow-y-auto" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
+          <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4 my-8">
             <h2 className="font-semibold text-slate-900">New Customer</h2>
             <form onSubmit={handleCreate} className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
@@ -1943,8 +1944,22 @@ function CustomersPage() {
                 <input type="tel" value={newCust.phone} onChange={e => setNewCust(c => ({ ...c, phone: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
-                <input value={newCust.city} onChange={e => setNewCust(c => ({ ...c, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <label className="block text-xs font-medium text-slate-700 mb-1">Address</label>
+                <input value={newCust.address} onChange={e => setNewCust(c => ({ ...c, address: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
+                  <input value={newCust.city} onChange={e => setNewCust(c => ({ ...c, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-slate-700 mb-1">Postcode</label>
+                  <input value={newCust.postcode} onChange={e => setNewCust(c => ({ ...c, postcode: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-slate-700 mb-1">Notes</label>
+                <textarea value={newCust.notes} onChange={e => setNewCust(c => ({ ...c, notes: e.target.value }))} rows={2} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div className="flex gap-2 pt-1">
                 <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Customer"}</button>
