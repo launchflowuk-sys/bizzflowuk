@@ -96,12 +96,14 @@ import type {
   Review,
   ReviewInput,
   ReviewUpdate,
+  SendSmsInput,
   SentEmail,
   SentEmailInput,
   Service,
   ServiceInput,
   ServiceUpdate,
   SetAvatarInput,
+  SmsSendResult,
   SquareChargeRequest,
   SquareChargeResponse,
   SubmitPublicQuoteAction200,
@@ -3246,6 +3248,77 @@ export const useComposeEmail = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getComposeEmailMutationOptions(options));
+    }
+
+export const getSendSmsUrl = () => {
+
+
+
+
+  return `/api/sms/send`
+}
+
+/**
+ * @summary Send a one-off SMS to a customer using the tenant's Twilio credentials
+ */
+export const sendSms = async (sendSmsInput: SendSmsInput, options?: RequestInit): Promise<SmsSendResult> => {
+
+  return customFetch<SmsSendResult>(getSendSmsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sendSmsInput,)
+  }
+);}
+
+
+
+
+export const getSendSmsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendSms>>, TError,{data: BodyType<SendSmsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendSms>>, TError,{data: BodyType<SendSmsInput>}, TContext> => {
+
+const mutationKey = ['sendSms'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendSms>>, {data: BodyType<SendSmsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendSms(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendSmsMutationResult = NonNullable<Awaited<ReturnType<typeof sendSms>>>
+    export type SendSmsMutationBody = BodyType<SendSmsInput>
+    export type SendSmsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a one-off SMS to a customer using the tenant's Twilio credentials
+ */
+export const useSendSms = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendSms>>, TError,{data: BodyType<SendSmsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendSms>>,
+        TError,
+        {data: BodyType<SendSmsInput>},
+        TContext
+      > => {
+      return useMutation(getSendSmsMutationOptions(options));
     }
 
 export const getUpdateQuoteItemUrl = (id: number,) => {

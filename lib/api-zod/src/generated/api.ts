@@ -1224,6 +1224,19 @@ export const ComposeEmailBody = zod.object({
 
 
 /**
+ * @summary Send a one-off SMS to a customer using the tenant's Twilio credentials
+ */
+export const SendSmsBody = zod.object({
+  "to": zod.string(),
+  "body": zod.string()
+})
+
+export const SendSmsResponse = zod.object({
+  "ok": zod.boolean().optional()
+})
+
+
+/**
  * @summary Update quote item
  */
 export const UpdateQuoteItemParams = zod.object({

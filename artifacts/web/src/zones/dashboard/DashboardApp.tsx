@@ -22,7 +22,7 @@ import {
   useListContactMessages,
   useListTeamMembers, useCreateTeamMember, useUpdateTeamMember, useDeleteTeamMember,
   useGetSettings, useUpdateSettings, useTestEmailSettings, useTestSmsSettings,
-  useListSentEmails, useComposeEmail, useRequestDashboardUploadUrl,
+  useListSentEmails, useComposeEmail, useSendSms, useRequestDashboardUploadUrl,
 } from "@workspace/api-client-react";
 import {
   getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
@@ -376,6 +376,17 @@ function BusinessSwitcher() {
   );
 }
 
+// Friendly role label for the sidebar. Deliberately never surfaces the internal "TENANT_ADMIN"
+// wording — the admin shouldn't be shown the underlying multi-business ("tenant") plumbing.
+function roleLabel(role?: string | null): string {
+  switch (role) {
+    case "SUPER_ADMIN": return "Administrator";
+    case "TENANT_ADMIN": return "Administrator";
+    case "STAFF": return "Staff";
+    default: return "Admin";
+  }
+}
+
 function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNavClick?: () => void }) {
   const { data: me } = useGetMe();
   return (
@@ -383,7 +394,7 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
       <div className="p-4 border-b border-slate-800 flex-shrink-0">
         <div className="font-bold text-white text-sm">BizzFlow</div>
         <div className="text-xs text-slate-400 mt-0.5 truncate">{(me as any)?.email}</div>
-        <div className="text-xs text-[var(--brand-ink)] font-medium mt-0.5">{(me as any)?.role?.replace("_", " ")}</div>
+        <div className="text-xs text-[var(--brand-ink)] font-medium mt-0.5">{roleLabel((me as any)?.role)}</div>
       </div>
       <BusinessSwitcher />
       <nav className="flex-1 p-3 overflow-y-auto">
@@ -2745,8 +2756,16 @@ function BlogPage() {
 }
 
 // ─── Messages ──────────────────────────────────────────────────────────────────
+const msgEmail = (m: any): string | null => m?.senderEmail || m?.email || null;
+const msgPhone = (m: any): string | null => m?.senderPhone || m?.phone || null;
+const msgName = (m: any): string => m?.senderName || m?.name || "Unknown";
+
 function MessagesPage() {
   const { data: messages, isLoading } = useListContactMessages();
+  const [selected, setSelected] = useState<any>(null);       // open detail pane
+  const [emailReply, setEmailReply] = useState<any>(null);   // reply-by-email modal
+  const [smsReply, setSmsReply] = useState<any>(null);       // reply-by-text modal
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Messages</h1>
@@ -2754,19 +2773,111 @@ function MessagesPage() {
         {isLoading ? <div className="text-center py-12 text-slate-400">Loading...</div> : (messages as any[])?.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No messages yet</div>
         ) : (messages as any[]).map((m: any) => (
-          <div key={m.id} className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-2">
+          <button key={m.id} onClick={() => setSelected(m)} className="w-full text-left rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-1.5 hover:border-[var(--brand)]/60 hover:shadow-sm transition-all">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="font-medium text-slate-900">{m.senderName || m.name || "Unknown"}</div>
+              <div className="font-medium text-slate-900">{msgName(m)}</div>
               <div className="text-xs text-slate-400">{m.createdAt ? new Date(m.createdAt).toLocaleString("en-GB") : ""}</div>
             </div>
             {m.subject && <div className="text-sm font-medium text-slate-700">{m.subject}</div>}
-            <p className="text-sm text-slate-600">{m.message}</p>
-            <div className="flex gap-4 text-xs text-slate-400 flex-wrap">
-              {(m.senderEmail || m.email) && <a href={`mailto:${m.senderEmail || m.email}`} className="text-[var(--brand-ink)] hover:underline">{m.senderEmail || m.email}</a>}
-              {(m.senderPhone || m.phone) && <a href={`tel:${m.senderPhone || m.phone}`} className="text-[var(--brand-ink)] hover:underline">{m.senderPhone || m.phone}</a>}
+            <p className="text-sm text-slate-600 line-clamp-2">{m.message}</p>
+            <div className="flex items-center gap-3 text-xs text-slate-400 pt-0.5">
+              {msgEmail(m) && <span className="truncate">{msgEmail(m)}</span>}
+              {msgPhone(m) && <span>{msgPhone(m)}</span>}
+              <span className="ml-auto font-medium text-[var(--brand-ink)]">Open &amp; reply →</span>
             </div>
-          </div>
+          </button>
         ))}
+      </div>
+
+      {selected && (
+        <MessageDetailModal
+          message={selected}
+          onClose={() => setSelected(null)}
+          onReplyEmail={() => { setEmailReply(selected); setSelected(null); }}
+          onReplyText={() => { setSmsReply(selected); setSelected(null); }}
+        />
+      )}
+      {emailReply && (
+        <ComposeEmailModal
+          initialTo={msgEmail(emailReply) || ""}
+          initialToName={msgName(emailReply)}
+          initialSubject={emailReply.subject ? `Re: ${emailReply.subject}` : ""}
+          onClose={() => setEmailReply(null)}
+        />
+      )}
+      {smsReply && <SmsReplyModal message={smsReply} onClose={() => setSmsReply(null)} />}
+    </div>
+  );
+}
+
+/** Message detail pane with the two reply channels — each disabled if we don't have that contact. */
+function MessageDetailModal({ message: m, onClose, onReplyEmail, onReplyText }: { message: any; onClose: () => void; onReplyEmail: () => void; onReplyText: () => void }) {
+  const email = msgEmail(m);
+  const phone = msgPhone(m);
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-lg rounded-2xl bg-white shadow-2xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-semibold text-slate-900 truncate">{msgName(m)}</h2>
+            <p className="text-xs text-slate-400">{m.createdAt ? new Date(m.createdAt).toLocaleString("en-GB") : ""}</p>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-lg leading-none flex-shrink-0">✕</button>
+        </div>
+        {m.subject && <div className="text-sm font-semibold text-slate-700">{m.subject}</div>}
+        <p className="text-sm text-slate-600 whitespace-pre-wrap">{m.message}</p>
+        <div className="flex flex-col gap-1 text-xs text-slate-500 border-t border-slate-100 pt-3">
+          {email && <div>Email: <span className="text-slate-700">{email}</span></div>}
+          {phone && <div>Phone: <span className="text-slate-700">{phone}</span></div>}
+          {!email && !phone && <div className="text-slate-400">No contact details on file for this message.</div>}
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button onClick={onReplyEmail} disabled={!email} title={!email ? "This message has no email address" : undefined}
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl bg-[var(--brand)] py-2.5 text-sm font-semibold text-white shadow-sm hover:brightness-110 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+            Reply by Email
+          </button>
+          <button onClick={onReplyText} disabled={!phone} title={!phone ? "This message has no phone number" : undefined}
+            className="flex-1 inline-flex items-center justify-center gap-2 rounded-xl border border-slate-300 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M21 12a9 9 0 01-9 9 8.96 8.96 0 01-4.24-1.06L3 21l1.06-4.76A8.96 8.96 0 013 12a9 9 0 1118 0z"/></svg>
+            Reply by Text
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/** Reply-by-text composer — sends via the tenant's own Twilio number (POST /sms/send). */
+function SmsReplyModal({ message: m, onClose }: { message: any; onClose: () => void }) {
+  const sendSms = useSendSms();
+  const showToast = useToast();
+  const phone = msgPhone(m) || "";
+  const [body, setBody] = useState("");
+
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!body.trim()) { showToast("Type a message first", "error"); return; }
+    try {
+      await sendSms.mutateAsync({ data: { to: phone, body: body.trim() } } as any);
+      showToast("Text sent");
+      onClose();
+    } catch (err: any) { showToast(err?.message || "Failed to send text", "error"); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl p-6 space-y-4">
+        <h2 className="font-semibold text-slate-900">Reply by Text</h2>
+        <p className="text-xs text-slate-500">To {msgName(m)} · <span className="text-slate-700">{phone}</span></p>
+        <form onSubmit={handleSend} className="space-y-3">
+          <textarea value={body} onChange={e => setBody(e.target.value)} rows={4} maxLength={480} autoFocus placeholder="Type your reply…" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+          <p className="text-[11px] text-slate-400">{body.length}/480 · Sent from your business's SMS number.</p>
+          <div className="flex gap-2">
+            <button type="submit" disabled={sendSms.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{sendSms.isPending ? "Sending…" : "Send Text"}</button>
+            <button type="button" onClick={onClose} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+          </div>
+        </form>
       </div>
     </div>
   );

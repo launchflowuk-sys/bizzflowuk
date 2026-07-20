@@ -118,6 +118,15 @@ export interface SetAvatarInput {
   avatarUrl?: string | null;
 }
 
+export interface SendSmsInput {
+  to: string;
+  body: string;
+}
+
+export interface SmsSendResult {
+  ok?: boolean;
+}
+
 export interface SwitchTenantInput {
   tenantId: number;
 }

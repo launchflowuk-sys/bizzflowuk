@@ -6,10 +6,35 @@ import { sentEmailsTable, tenantsTable, tenantSettingsTable } from "@workspace/d
 import { eq, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { sendEmail, buildComposedEmail, type EmailAttachment } from "../lib/email";
-import { buildSmtpConfig, buildBrandConfig } from "../lib/settingsHelpers";
+import { buildSmtpConfig, buildBrandConfig, buildSmsCreds } from "../lib/settingsHelpers";
+import { sendSms } from "../lib/sms";
 import { ObjectStorageService } from "../lib/objectStorage";
 
 const router = Router();
+
+/**
+ * POST /sms/send — send a one-off SMS to a customer using the tenant's own Twilio credentials
+ * (the same creds the automated notifications use). Powers the "reply by text" action on the
+ * Messages page. 400s clearly if the tenant hasn't set Twilio up yet.
+ */
+router.post("/sms/send", requireTenantAccess, async (req, res) => {
+  try {
+    const to = typeof req.body?.to === "string" ? req.body.to.trim() : "";
+    const body = typeof req.body?.body === "string" ? req.body.body.trim() : "";
+    if (!to || !body) { res.status(400).json({ error: "to and body are required" }); return; }
+
+    const tenantId = req.authUser?.tenantId ?? -1;
+    const settingsRows = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
+    const creds = buildSmsCreds(settingsRows[0] as any);
+    if (!creds) { res.status(400).json({ error: "SMS isn't set up yet — add your Twilio details in Settings first." }); return; }
+
+    await sendSms(to, body, creds);
+    res.json({ ok: true });
+  } catch (err: any) {
+    req.log.error({ err }, "Failed to send SMS");
+    res.status(502).json({ error: err?.message || "Failed to send SMS" });
+  }
+});
 const objectStorageService = new ObjectStorageService();
 
 router.get("/emails", requireTenantAccess, async (req, res) => {

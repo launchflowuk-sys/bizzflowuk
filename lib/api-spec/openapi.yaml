@@ -851,6 +851,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/SentEmail"
 
+  /sms/send:
+    post:
+      operationId: sendSms
+      tags: [emails]
+      summary: Send a one-off SMS to a customer using the tenant's Twilio credentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendSmsInput"
+      responses:
+        "200":
+          description: SMS sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SmsSendResult"
+
   /quote-items/{id}:
     patch:
       operationId: updateQuoteItem
@@ -2956,6 +2975,21 @@ components:
       properties:
         avatarUrl:
           type: ["string", "null"]
+
+    SendSmsInput:
+      type: object
+      required: [to, body]
+      properties:
+        to:
+          type: string
+        body:
+          type: string
+
+    SmsSendResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
 
     SwitchTenantInput:
       type: object
