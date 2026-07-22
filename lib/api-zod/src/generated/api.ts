@@ -1211,6 +1211,17 @@ export const ListSentEmailsResponse = zod.array(ListSentEmailsResponseItem)
 
 
 /**
+ * @summary Send a support request from the Help Centre to LaunchFlow support
+ */
+export const SendSupportRequestBody = zod.object({
+  "subject": zod.string(),
+  "message": zod.string(),
+  "urgency": zod.enum(['Low', 'Normal', 'High', 'Urgent']).optional(),
+  "page": zod.string().optional()
+})
+
+
+/**
  * @summary Delete a sent-email log entry
  */
 export const DeleteEmailParams = zod.object({

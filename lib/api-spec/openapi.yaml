@@ -832,6 +832,28 @@ paths:
                 items:
                   $ref: "#/components/schemas/SentEmail"
 
+  /support-request:
+    post:
+      operationId: sendSupportRequest
+      tags: [support]
+      summary: Send a support request from the Help Centre to LaunchFlow support
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SupportRequestInput"
+      responses:
+        "201":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok:
+                    type: boolean
+
   /emails/{id}:
     delete:
       operationId: deleteEmail
@@ -4114,6 +4136,20 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    SupportRequestInput:
+      type: object
+      required: [subject, message]
+      properties:
+        subject:
+          type: string
+        message:
+          type: string
+        urgency:
+          type: string
+          enum: [Low, Normal, High, Urgent]
+        page:
+          type: string
 
     SentEmailInput:
       type: object

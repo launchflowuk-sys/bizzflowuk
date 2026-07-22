@@ -23,6 +23,7 @@ import {
   useListTeamMembers, useCreateTeamMember, useUpdateTeamMember, useDeleteTeamMember,
   useGetSettings, useUpdateSettings, useTestEmailSettings, useTestSmsSettings,
   useListSentEmails, useComposeEmail, useDeleteEmail, useSendSms, useRequestDashboardUploadUrl,
+  useSendSupportRequest,
 } from "@workspace/api-client-react";
 import {
   getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
@@ -219,6 +220,7 @@ const NAV_ITEMS = [
   { path: "/dashboard/messages", label: "Messages", icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" },
   { path: "/dashboard/visualiser", label: "Visualiser", icon: "M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.893L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" },
   { path: "/dashboard/team", label: "Team", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" },
+  { path: "/dashboard/help", label: "Help & Support", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { path: "/dashboard/settings", label: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" },
 ];
 
@@ -2874,6 +2876,280 @@ function BlogPage() {
   );
 }
 
+// ─── Help & Support ────────────────────────────────────────────────────────────
+type HelpTopic = { q: string; a: string };
+type HelpSection = { id: string; title: string; icon: string; intro: string; topics: HelpTopic[] };
+
+const HELP_SECTIONS: HelpSection[] = [
+  {
+    id: "getting-started", title: "Getting Started", icon: "M13 10V3L4 14h7v7l9-11h-9z",
+    intro: "How your business flows through the system, end to end.",
+    topics: [
+      { q: "What is this dashboard?", a: "It runs your whole business pipeline in one place: enquiries come in as Leads, you survey and quote them, take payment, deliver the work as a Project, and everything on your public website is managed from here too." },
+      { q: "What's the journey of a typical job?", a: "Lead comes in → you make contact → book a survey visit → send a Quote → the customer accepts and pays through a Payment Link → the job becomes a Project → when it's complete, ask for a Review. Each step updates automatically where it can." },
+      { q: "Will my customer get emails automatically?", a: "Yes — when you book a survey, send a quote, receive a payment, or start/complete a project, the customer gets a branded email (and text, if enabled). You control every one of these in Settings → Notifications." },
+    ],
+  },
+  {
+    id: "dashboard", title: "Dashboard Home", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+    intro: "Your at-a-glance overview.",
+    topics: [
+      { q: "What do the four cards mean?", a: "New Leads = enquiries still waiting for action. Pipeline Value = the total £ of all open quotes. Calculator Estimates = leads that came via your website's price calculator. Active Projects = jobs currently in progress. Click any card to jump to that page." },
+      { q: "What is Recent Activity?", a: "A live feed of the latest things that happened — new leads, quotes sent, payments received — so you can catch up in seconds." },
+    ],
+  },
+  {
+    id: "leads", title: "Leads", icon: "M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z",
+    intro: "Every enquiry, from first contact to won or lost.",
+    topics: [
+      { q: "Where do leads come from?", a: "Your website's contact and quote forms, the price calculator, and any you add yourself with + New. The Source column tells you which." },
+      { q: "What do the statuses mean?", a: "New = untouched. Contacted = you've spoken to them. Survey Booked = a site visit is arranged (the customer gets a confirmation email). Quote Sent = they have your price. Won = they went ahead. Lost = they didn't. Update the status on the lead's page as you go — it keeps your pipeline numbers honest." },
+      { q: "How do I add notes?", a: "Open the lead and use the Notes panel — every note is timestamped. Use it for call summaries, measurements, anything the next person should know." },
+      { q: "How do I turn a lead into a quote?", a: "Open the lead and press Convert to Quote — it creates a quote pre-linked to that lead so the pipeline tracks itself." },
+      { q: "How do I delete leads?", a: "Each row has a Delete button (with a confirm step). To clear several at once, tick the checkboxes — or the top checkbox for all — and use the Delete Selected bar that appears at the bottom." },
+    ],
+  },
+  {
+    id: "quotes", title: "Quotes", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    intro: "Price up the job and get a decision.",
+    topics: [
+      { q: "How do I build a quote?", a: "Create it (reference is auto-generated if you leave it blank), then open it and add line items — description, quantity, unit price. Subtotal, VAT and total calculate themselves." },
+      { q: "How does the customer accept and pay?", a: "From the quote, create and send a Payment Link. The customer gets a branded email with a secure page where they can accept the quote, pay by card, or decline — and you're notified either way." },
+      { q: "Can they accept without paying online?", a: "Yes — the payment page has Accept / Decline buttons that work on their own, so customers who prefer bank transfer or cash can still confirm the job." },
+      { q: "What happens when it's accepted?", a: "The quote flips to Accepted, the person is added to Customers automatically, and you can convert the quote into a Project with one click." },
+    ],
+  },
+  {
+    id: "payments", title: "Payment Links", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+    intro: "Card payments without invoicing software.",
+    topics: [
+      { q: "What is a payment link?", a: "A secure, single-purpose page where a customer pays a set amount by card. Links can be attached to a quote (deposit or full amount) or standalone for ad-hoc charges." },
+      { q: "Why does it say payments aren't set up?", a: "Card payments run through your Square account. In Settings → Payments you need all three: Application ID, Location ID and the Access Token, with the environment set to Production. Until then, links show a 'contact us to pay' message instead of a card form." },
+      { q: "What do the statuses mean?", a: "Pending = waiting for payment. Paid = money received (you get notified and a receipt goes to the customer). Failed = the card was declined — the customer can simply try again. Cancelled = you withdrew it." },
+    ],
+  },
+  {
+    id: "emails", title: "Emails", icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z",
+    intro: "One-off branded emails, with a full record.",
+    topics: [
+      { q: "How do I send an email?", a: "Press + Compose, fill in the recipient, subject and message (attachments optional) and send. It goes out in your business's branded template automatically — no need to add a signature." },
+      { q: "Where can I see what was sent?", a: "The list on this page logs every composed email with its status. Delete single entries or tick several and delete in bulk." },
+    ],
+  },
+  {
+    id: "projects", title: "Projects", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+    intro: "Delivering the job after the quote is won.",
+    topics: [
+      { q: "How does a project start?", a: "Usually by converting an accepted quote (one click on the quote page), or create one manually. It carries the customer and value across." },
+      { q: "What are project updates?", a: "Progress posts with optional photos. Anything marked visible to customer appears in their portal — great for keeping clients happy without phone calls. Starting and completing a project can also email the customer automatically." },
+    ],
+  },
+  {
+    id: "customers", title: "Customers", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z",
+    intro: "Everyone who has done business with you.",
+    topics: [
+      { q: "Where do customers come from?", a: "They're created automatically the moment a quote is accepted or a payment is made — you can also add or edit them by hand, including address and notes." },
+      { q: "What is the customer portal?", a: "A login where your customer can see their projects, progress updates and messages. Their portal messages arrive in your Messages page." },
+    ],
+  },
+  {
+    id: "website", title: "Website Content", icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z",
+    intro: "Gallery, Reviews, Case Studies, Services, Pricing, Areas, FAQs and Blog — these pages ARE your public website.",
+    topics: [
+      { q: "How do edits go live?", a: "Instantly. Add a gallery photo, publish a blog post or edit a service here and it appears on your website straight away — no web developer needed." },
+      { q: "What are Case Studies vs Gallery?", a: "Gallery is quick before/after photos. Case Studies are full project write-ups with multiple photos and a story — the strongest sales tool you have, so add one for every impressive job." },
+      { q: "How do Reviews work?", a: "Add reviews you've received, and completed projects can trigger an automatic review request email to the customer. Only reviews you approve are shown publicly." },
+    ],
+  },
+  {
+    id: "messages", title: "Messages", icon: "M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z",
+    intro: "Your website contact form and customer portal messages.",
+    topics: [
+      { q: "How do I reply?", a: "Open a message and choose Reply by Email or Reply by Text. Buttons are greyed out if the sender didn't leave that contact method." },
+      { q: "Can I tidy up old messages?", a: "Yes — Delete on each card, or tick several (or Select All) and use the bulk delete bar." },
+    ],
+  },
+  {
+    id: "visualiser", title: "Visualiser", icon: "M15 10l4.553-2.069A1 1 0 0121 8.82v6.36a1 1 0 01-1.447.893L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z",
+    intro: "AI previews requested from your website.",
+    topics: [
+      { q: "What is it?", a: "Visitors upload a photo of their property on your website and the AI shows it transformed with your service applied. Each request lands here with their contact details — treat them as warm leads." },
+    ],
+  },
+  {
+    id: "team", title: "Team", icon: "M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z",
+    intro: "Who can log in and what they can do.",
+    topics: [
+      { q: "How do I add staff?", a: "Add a team member with their email and role. Administrators can do everything; Staff can work the day-to-day without touching Settings." },
+    ],
+  },
+  {
+    id: "settings", title: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
+    intro: "Branding, contact details, and the three service connections.",
+    topics: [
+      { q: "Branding & website text", a: "Logo, colours, homepage headlines, about text, footer, social links, terms & privacy — all here, all live on your site the moment you save." },
+      { q: "Email (SMTP)", a: "Powers every automated email and the composer. Enter your mail server details and use Send Test Email to confirm it works. Saved passwords show as blank for security — leaving them blank keeps the stored value." },
+      { q: "Text messages (Twilio)", a: "Optional. With Twilio connected, customers can also get key updates by SMS and you can reply to messages by text." },
+      { q: "Card payments (Square)", a: "Application ID + Location ID + Access Token, environment set to Production for real cards. This is what makes payment links show a card form." },
+      { q: "Notifications", a: "Per event (new lead, survey booked, quote sent, payment received…) choose whether an email and/or a text goes out, and to whom. Sensible defaults are already on." },
+    ],
+  },
+];
+
+const URGENCY_STYLES: Record<string, string> = {
+  Low: "border-slate-300 text-slate-600 data-[on=true]:bg-slate-600 data-[on=true]:text-white data-[on=true]:border-slate-600",
+  Normal: "border-slate-300 text-slate-600 data-[on=true]:bg-[var(--brand)] data-[on=true]:text-white data-[on=true]:border-[var(--brand)]",
+  High: "border-slate-300 text-slate-600 data-[on=true]:bg-amber-500 data-[on=true]:text-white data-[on=true]:border-amber-500",
+  Urgent: "border-slate-300 text-slate-600 data-[on=true]:bg-red-600 data-[on=true]:text-white data-[on=true]:border-red-600",
+};
+
+/** Support request form → emails support@launchflow.co.uk tagged with business, user and urgency. */
+function SupportRequestModal({ onClose }: { onClose: () => void }) {
+  const send = useSendSupportRequest();
+  const showToast = useToast();
+  const [subject, setSubject] = useState("");
+  const [message, setMessage] = useState("");
+  const [urgency, setUrgency] = useState("Normal");
+  const [page, setPage] = useState("");
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!subject.trim() || !message.trim()) { showToast("Add a subject and a message first", "error"); return; }
+    try {
+      await send.mutateAsync({ data: { subject: subject.trim(), message: message.trim(), urgency, page: page || undefined } } as any);
+      showToast("Support request sent — we'll get back to you");
+      onClose();
+    } catch (err: any) {
+      showToast(err?.message || "Couldn't send — please email support@launchflow.co.uk", "error");
+    }
+  };
+
+  return (
+    <Modal title="Contact Support" onClose={onClose}>
+      <form onSubmit={submit} className="space-y-4">
+        <p className="text-sm text-slate-500 -mt-1">Tell us what you need — it goes straight to the LaunchFlow support team with your business details attached.</p>
+        <div>
+          <label className={labelCls}>Subject *</label>
+          <input value={subject} onChange={e => setSubject(e.target.value)} placeholder="e.g. Payment link showing an error" className={inputCls} />
+        </div>
+        <div>
+          <label className={labelCls}>How urgent is it?</label>
+          <div className="flex flex-wrap gap-2">
+            {["Low", "Normal", "High", "Urgent"].map(u => (
+              <button key={u} type="button" data-on={urgency === u} onClick={() => setUrgency(u)}
+                className={`rounded-lg border px-4 py-2 text-sm font-semibold transition-colors ${URGENCY_STYLES[u]}`}>{u}</button>
+            ))}
+          </div>
+        </div>
+        <div>
+          <label className={labelCls}>Which part does it relate to? <span className="font-normal text-slate-400">(optional)</span></label>
+          <select value={page} onChange={e => setPage(e.target.value)} className={inputCls}>
+            <option value="">General / not sure</option>
+            {HELP_SECTIONS.map(s => <option key={s.id} value={s.title}>{s.title}</option>)}
+          </select>
+        </div>
+        <div>
+          <label className={labelCls}>What's happening? *</label>
+          <textarea value={message} onChange={e => setMessage(e.target.value)} rows={5} placeholder="Describe the issue or question — the more detail, the faster we can help." className={inputCls} />
+        </div>
+        <div className="flex gap-2 pt-1">
+          <button type="submit" disabled={send.isPending} className="flex-1 inline-flex h-11 items-center justify-center rounded-lg bg-[var(--brand)] px-5 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50 transition-colors">
+            {send.isPending ? "Sending..." : "Send Support Request"}
+          </button>
+          <button type="button" onClick={onClose} className="flex-1 inline-flex h-11 items-center justify-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+/** The Help Centre: a searchable handbook covering every panel, plus the support request flow. */
+function HelpPage() {
+  const [query, setQuery] = useState("");
+  const [showSupport, setShowSupport] = useState(false);
+  const q = query.trim().toLowerCase();
+
+  const sections = HELP_SECTIONS.map(s => ({
+    ...s,
+    topics: q ? s.topics.filter(t => (t.q + " " + t.a).toLowerCase().includes(q)) : s.topics,
+  })).filter(s => !q || s.topics.length > 0 || s.title.toLowerCase().includes(q));
+
+  const jump = (id: string) => document.getElementById(`help-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+
+  return (
+    <div className="p-4 sm:p-6 space-y-5">
+      <div className="rounded-2xl bg-gradient-to-r from-[var(--brand)] to-[var(--brand)]/80 p-6 sm:p-8 text-white">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold">Help &amp; Handbook</h1>
+            <p className="mt-1 text-sm text-white/85 max-w-xl">Plain-English guides to every part of your dashboard. Can't find it? We're one click away.</p>
+          </div>
+          <button onClick={() => setShowSupport(true)} className="inline-flex h-11 items-center rounded-lg bg-white px-5 text-sm font-bold text-slate-900 shadow-sm hover:bg-slate-100 transition-colors">
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+            Contact Support
+          </button>
+        </div>
+        <div className="relative mt-5 max-w-lg">
+          <svg className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+          <input value={query} onChange={e => setQuery(e.target.value)} placeholder="Search the handbook… e.g. payments, survey, reviews"
+            className="w-full rounded-xl border-0 bg-white py-3 pl-10 pr-4 text-sm text-slate-900 shadow-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-white/60" />
+        </div>
+      </div>
+
+      <div className="lg:grid lg:grid-cols-[230px_1fr] lg:gap-6 lg:items-start">
+        <nav className="hidden lg:block sticky top-6 rounded-xl border border-slate-200 bg-white p-2">
+          {HELP_SECTIONS.map(s => (
+            <button key={s.id} onClick={() => jump(s.id)} className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-sm font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors">
+              <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.icon}/></svg>
+              {s.title}
+            </button>
+          ))}
+        </nav>
+
+        <div className="space-y-4">
+          {sections.length === 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-10 text-center">
+              <p className="font-medium text-slate-700">Nothing found for “{query}”.</p>
+              <p className="mt-1 text-sm text-slate-500">Try another word — or ask us directly.</p>
+              <button onClick={() => setShowSupport(true)} className="mt-4 inline-flex h-10 items-center rounded-lg bg-[var(--brand)] px-5 text-sm font-semibold text-white hover:brightness-110">Contact Support</button>
+            </div>
+          )}
+          {sections.map(s => (
+            <section key={s.id} id={`help-${s.id}`} className="scroll-mt-6 rounded-xl border border-slate-200 bg-white p-5 sm:p-6">
+              <div className="mb-1.5 flex items-center gap-3">
+                <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--brand)]/10">
+                  <svg className="h-5 w-5 text-[var(--brand-ink)]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={s.icon}/></svg>
+                </span>
+                <h2 className="text-lg font-bold text-slate-900">{s.title}</h2>
+              </div>
+              <p className="mb-3 text-sm text-slate-500">{s.intro}</p>
+              <div className="space-y-2">
+                {s.topics.map(t => (
+                  <details key={t.q} open={!!q} className="group rounded-lg border border-slate-200 open:border-[var(--brand)]/40 open:bg-slate-50/60 transition-colors">
+                    <summary className="flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-slate-800 [&::-webkit-details-marker]:hidden">
+                      {t.q}
+                      <svg className="h-4 w-4 shrink-0 text-slate-400 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
+                    </summary>
+                    <p className="px-4 pb-4 text-sm leading-relaxed text-slate-600">{t.a}</p>
+                  </details>
+                ))}
+              </div>
+            </section>
+          ))}
+
+          <div className="rounded-xl border border-dashed border-slate-300 bg-white p-6 text-center">
+            <p className="font-semibold text-slate-800">Still stuck?</p>
+            <p className="mt-1 text-sm text-slate-500">Send us a support request and we'll take it from there.</p>
+            <button onClick={() => setShowSupport(true)} className="mt-4 inline-flex h-11 items-center rounded-lg bg-[var(--brand)] px-6 text-sm font-semibold text-white hover:brightness-110 transition-colors">Contact Support</button>
+          </div>
+        </div>
+      </div>
+
+      {showSupport && <SupportRequestModal onClose={() => setShowSupport(false)} />}
+    </div>
+  );
+}
+
 // ─── Messages ──────────────────────────────────────────────────────────────────
 const msgEmail = (m: any): string | null => m?.senderEmail || m?.email || null;
 const msgPhone = (m: any): string | null => m?.senderPhone || m?.phone || null;
@@ -3529,6 +3805,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/projects" component={ProjectsPage} />
               <Route path="/dashboard/projects/:id" component={({ params: p }) => <ProjectDetailPage id={Number(p.id)} />} />
               <Route path="/dashboard/customers" component={CustomersPage} />
+              <Route path="/dashboard/help" component={HelpPage} />
               <Route path="/dashboard/customers/:id" component={({ params: p }) => <CustomerDetailPage id={Number(p.id)} />} />
               <Route path="/dashboard/gallery" component={GalleryPage} />
               <Route path="/dashboard/reviews" component={ReviewsPage} />

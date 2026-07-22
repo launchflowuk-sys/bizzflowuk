@@ -97,6 +97,7 @@ import type {
   ReviewInput,
   ReviewUpdate,
   SendSmsInput,
+  SendSupportRequest201,
   SentEmail,
   SentEmailInput,
   Service,
@@ -107,6 +108,7 @@ import type {
   SquareChargeRequest,
   SquareChargeResponse,
   SubmitPublicQuoteAction200,
+  SupportRequestInput,
   SwitchTenantInput,
   TeamMember,
   TeamMemberInput,
@@ -3178,6 +3180,77 @@ export function useListSentEmails<TData = Awaited<ReturnType<typeof listSentEmai
 
 
 
+
+export const getSendSupportRequestUrl = () => {
+
+
+
+
+  return `/api/support-request`
+}
+
+/**
+ * @summary Send a support request from the Help Centre to LaunchFlow support
+ */
+export const sendSupportRequest = async (supportRequestInput: SupportRequestInput, options?: RequestInit): Promise<SendSupportRequest201> => {
+
+  return customFetch<SendSupportRequest201>(getSendSupportRequestUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      supportRequestInput,)
+  }
+);}
+
+
+
+
+export const getSendSupportRequestMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendSupportRequest>>, TError,{data: BodyType<SupportRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendSupportRequest>>, TError,{data: BodyType<SupportRequestInput>}, TContext> => {
+
+const mutationKey = ['sendSupportRequest'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendSupportRequest>>, {data: BodyType<SupportRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendSupportRequest(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendSupportRequestMutationResult = NonNullable<Awaited<ReturnType<typeof sendSupportRequest>>>
+    export type SendSupportRequestMutationBody = BodyType<SupportRequestInput>
+    export type SendSupportRequestMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a support request from the Help Centre to LaunchFlow support
+ */
+export const useSendSupportRequest = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendSupportRequest>>, TError,{data: BodyType<SupportRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendSupportRequest>>,
+        TError,
+        {data: BodyType<SupportRequestInput>},
+        TContext
+      > => {
+      return useMutation(getSendSupportRequestMutationOptions(options));
+    }
 
 export const getDeleteEmailUrl = (id: number,) => {
 

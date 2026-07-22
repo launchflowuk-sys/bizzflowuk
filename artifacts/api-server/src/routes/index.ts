@@ -19,6 +19,7 @@ import publicPaymentsRouter from "./publicPayments";
 import usersRouter from "./users";
 import settingsRouter from "./settings";
 import emailsRouter from "./emails";
+import supportRouter from "./support";
 
 const router: IRouter = Router();
 
@@ -42,5 +43,6 @@ router.use(publicPaymentsRouter);
 router.use(usersRouter);
 router.use(settingsRouter);
 router.use(emailsRouter);
+router.use(supportRouter);
 
 export default router;

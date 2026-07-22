@@ -978,6 +978,23 @@ export interface SentEmail {
   createdAt: string;
 }
 
+export type SupportRequestInputUrgency = typeof SupportRequestInputUrgency[keyof typeof SupportRequestInputUrgency];
+
+
+export const SupportRequestInputUrgency = {
+  Low: 'Low',
+  Normal: 'Normal',
+  High: 'High',
+  Urgent: 'Urgent',
+} as const;
+
+export interface SupportRequestInput {
+  subject: string;
+  message: string;
+  urgency?: SupportRequestInputUrgency;
+  page?: string;
+}
+
 export interface SentEmailInput {
   toEmail: string;
   toName?: string;
@@ -1741,6 +1758,10 @@ assignedTo?: number | null;
 
 export type ListQuotesParams = {
 status?: string;
+};
+
+export type SendSupportRequest201 = {
+  ok?: boolean;
 };
 
 export type ListProjectsParams = {
