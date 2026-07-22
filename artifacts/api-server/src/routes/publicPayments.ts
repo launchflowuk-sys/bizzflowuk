@@ -53,6 +53,10 @@ router.get("/public/pay/:token", paymentLinkRateLimiter, async (req, res) => {
         squareApplicationId: ctx.settings?.squareApplicationId ?? null,
         squareLocationId: ctx.settings?.squareLocationId ?? null,
         squareEnvironment: ctx.settings?.squareEnvironment ?? "sandbox",
+        // True only when the FULL Square config exists server-side — including the secret access
+        // token, which the charge needs but is never exposed here. Without this flag the card form
+        // renders on app-id/location-id alone and every Pay attempt 400s ("not configured").
+        paymentsReady: !!buildSquareConfig(ctx.settings as any),
         primaryColor: ctx.settings?.primaryColor ?? null,
       },
       quote: ctx.quote ? {

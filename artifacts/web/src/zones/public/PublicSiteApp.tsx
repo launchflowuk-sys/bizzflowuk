@@ -2476,7 +2476,10 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
   const quote = d.quote ?? null;
   const link = d.paymentLink || {};
   const items: any[] = quote?.items || [];
-  const paymentsConfigured = !!(paySettings.squareApplicationId && paySettings.squareLocationId);
+  // paymentsReady is the server's word that the FULL Square config (incl. the secret access token)
+  // exists — app id + location id alone render a form whose every charge would 400. Fall back to the
+  // old id-based check only if the API predates the flag.
+  const paymentsConfigured = (paySettings.paymentsReady ?? true) && !!(paySettings.squareApplicationId && paySettings.squareLocationId);
   const remainingBalance = quote && Number(link.amount) < Number(quote.total) ? Number(quote.total) - Number(link.amount) : null;
 
   useEffect(() => {
