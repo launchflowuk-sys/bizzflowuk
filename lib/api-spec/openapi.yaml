@@ -469,6 +469,56 @@ paths:
         "204":
           description: Deleted
 
+  /leads/{id}/survey:
+    post:
+      operationId: bookLeadSurvey
+      tags: [leads]
+      summary: Book (or rebook) a survey visit for a lead — flips status and notifies the customer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SurveyBookInput"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
+  /leads/{id}/survey/complete:
+    post:
+      operationId: completeLeadSurvey
+      tags: [leads]
+      summary: Mark a lead's survey as done and record the findings
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SurveyCompleteInput"
+      responses:
+        "200":
+          description: Updated lead
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lead"
+
   /leads/{id}/notes:
     get:
       operationId: listLeadNotes
@@ -3515,6 +3565,12 @@ components:
           type: integer
         tenantId:
           type: integer
+        surveyScheduledAt:
+          type: ["string", "null"]
+        surveyCompletedAt:
+          type: ["string", "null"]
+        surveyNotes:
+          type: ["string", "null"]
         reference:
           type: ["string", "null"]
         firstName:
@@ -4136,6 +4192,21 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    SurveyBookInput:
+      type: object
+      required: [scheduledAt]
+      properties:
+        scheduledAt:
+          type: string
+          description: ISO date-time of the survey appointment
+
+    SurveyCompleteInput:
+      type: object
+      properties:
+        notes:
+          type: string
+          description: What was found on site — feeds the quote
 
     SupportRequestInput:
       type: object

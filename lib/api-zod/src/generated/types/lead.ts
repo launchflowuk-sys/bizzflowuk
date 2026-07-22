@@ -12,6 +12,12 @@ export interface Lead {
   id: number;
   tenantId: number;
   /** @nullable */
+  surveyScheduledAt?: string | null;
+  /** @nullable */
+  surveyCompletedAt?: string | null;
+  /** @nullable */
+  surveyNotes?: string | null;
+  /** @nullable */
   reference?: string | null;
   firstName: string;
   lastName: string;

@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useRef, useState } from "react";
 import {
   useGetMe, useSwitchTenant, useSetAvatar, useGetDashboardStats, useGetRecentActivity, useGetLeadPipeline,
   useListLeads, useGetLead, useCreateLead, useUpdateLead, useDeleteLead, useListLeadNotes, useCreateLeadNote,
+  useBookLeadSurvey, useCompleteLeadSurvey,
   useConvertLeadToQuote, useConvertLeadToProject,
   useListQuotes, useGetQuote, useCreateQuote, useUpdateQuote, useDeleteQuote, useListQuoteItems, useCreateQuoteItem, useUpdateQuoteItem, useDeleteQuoteItem, useConvertQuoteToProject,
   useListQuotePaymentLinks, useCreateQuotePaymentLink, useSendPaymentLink, useListPaymentLinks, useCreateStandalonePaymentLink, useDeletePaymentLink,
@@ -492,6 +493,12 @@ function DashboardHome() {
   const pipelineValue = quoteArr.filter(q => ["Draft", "Sent"].includes(q.status)).reduce((sum, q) => sum + (parseFloat(q.total || "0") || 0), 0);
   const calcCount = leadArr.filter(l => l.serviceInterest === "Cost Calculator Estimate").length;
   const money = (n: number) => "£" + Math.round(n).toLocaleString("en-GB");
+  // Surveys booked but not yet done, soonest first (kept for a day past due so missed ones surface).
+  const upcomingSurveys = leadArr
+    .filter(l => l.surveyScheduledAt && !l.surveyCompletedAt && new Date(l.surveyScheduledAt).getTime() > Date.now() - 24 * 60 * 60 * 1000)
+    .sort((a, b) => new Date(a.surveyScheduledAt).getTime() - new Date(b.surveyScheduledAt).getTime())
+    .slice(0, 5);
+  const fmtSurvey = (d: string) => new Date(d).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
   const kpis = [
     { label: "New Leads", value: s?.newLeads ?? "-", sub: "awaiting action", href: "/dashboard/leads", icon: "M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z" },
@@ -518,6 +525,25 @@ function DashboardHome() {
           </Link>
         ))}
       </div>
+      {upcomingSurveys.length > 0 && (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 className="font-semibold text-slate-900">Upcoming Surveys</h2>
+            <Link href="/dashboard/leads" className="text-xs font-semibold text-[var(--brand-ink)] hover:underline">All leads →</Link>
+          </div>
+          <div className="divide-y divide-slate-100">
+            {upcomingSurveys.map((l: any) => (
+              <Link key={l.id} href={`/dashboard/leads/${l.id}`} className="-mx-2 flex items-center justify-between gap-3 rounded-lg px-2 py-2.5 transition-colors hover:bg-slate-50">
+                <div className="min-w-0">
+                  <div className="truncate text-sm font-medium text-slate-900">{l.firstName} {l.lastName}</div>
+                  <div className="truncate text-xs text-slate-500">{[l.address, l.postcode].filter(Boolean).join(", ") || l.serviceInterest || "—"}</div>
+                </div>
+                <div className="whitespace-nowrap text-xs font-semibold text-[var(--brand-ink)]">{fmtSurvey(l.surveyScheduledAt)}</div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
           <h2 className="font-semibold text-slate-900 mb-4">Lead Pipeline</h2>
@@ -680,6 +706,126 @@ function DeleteEntityButton({ onDelete, label, redirect }: { onDelete: () => Pro
   );
 }
 
+/**
+ * The survey step (sits between lead and quote): book the site visit — the customer is notified with
+ * the actual date/time — then record what was found, and quote straight from those findings.
+ */
+function LeadSurveyCard({ lead, onCreateQuote, converting }: { lead: any; onCreateQuote: () => void; converting: boolean }) {
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const bookSurvey = useBookLeadSurvey();
+  const completeSurvey = useCompleteLeadSurvey();
+  const [booking, setBooking] = useState(false);
+  const [completing, setCompleting] = useState(false);
+  const [when, setWhen] = useState("");
+  const [findings, setFindings] = useState<string>(lead.surveyNotes || "");
+
+  const booked = !!lead.surveyScheduledAt;
+  const done = !!lead.surveyCompletedAt;
+  const fmt = (d: string) => new Date(d).toLocaleString("en-GB", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit" });
+
+  const book = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!when) { showToast("Pick a date and time first", "error"); return; }
+    try {
+      await bookSurvey.mutateAsync({ id: lead.id, data: { scheduledAt: new Date(when).toISOString() } } as any);
+      qc.invalidateQueries();
+      showToast("Survey booked — customer notified");
+      setBooking(false); setWhen("");
+    } catch (err: any) { showToast(err?.message || "Booking failed", "error"); }
+  };
+
+  const complete = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await completeSurvey.mutateAsync({ id: lead.id, data: { notes: findings } } as any);
+      qc.invalidateQueries();
+      showToast("Survey findings saved");
+      setCompleting(false);
+    } catch (err: any) { showToast(err?.message || "Failed to save", "error"); }
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h2 className="flex items-center gap-2 font-semibold text-slate-900">
+          <svg className="h-4.5 w-4.5 text-[var(--brand-ink)]" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Survey
+        </h2>
+        <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${done ? "bg-green-100 text-green-700" : booked ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-500"}`}>
+          {done ? "Completed" : booked ? "Booked" : "Not booked"}
+        </span>
+      </div>
+
+      {!booked && !booking && (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-slate-500">Book the site visit — you can't price the job properly until you've seen it.</p>
+          <button onClick={() => setBooking(true)} className="inline-flex h-10 items-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white hover:brightness-110 transition-colors">Book Survey</button>
+        </div>
+      )}
+
+      {booking && (
+        <form onSubmit={book} className="flex flex-wrap items-end gap-3">
+          <div>
+            <label className={labelCls}>Survey date &amp; time</label>
+            <input type="datetime-local" value={when} onChange={e => setWhen(e.target.value)} className={inputCls} />
+          </div>
+          <button type="submit" disabled={bookSurvey.isPending} className="inline-flex h-10 items-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50 transition-colors">
+            {bookSurvey.isPending ? "Booking..." : booked ? "Save New Time" : "Confirm & Notify Customer"}
+          </button>
+          <button type="button" onClick={() => setBooking(false)} className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+        </form>
+      )}
+
+      {booked && !booking && (
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-1 text-sm">
+            <div><span className="text-slate-500">Appointment: </span><span className="font-semibold text-slate-900">{fmt(lead.surveyScheduledAt)}</span></div>
+            {done && <div><span className="text-slate-500">Surveyed: </span><span className="font-semibold text-slate-900">{fmt(lead.surveyCompletedAt)}</span></div>}
+          </div>
+
+          {done && !completing && (
+            <div className="rounded-lg bg-slate-50 p-3">
+              <div className="mb-1 text-xs font-semibold uppercase tracking-wide text-slate-400">Survey findings</div>
+              <p className="whitespace-pre-wrap text-sm text-slate-700">{lead.surveyNotes || "No findings recorded."}</p>
+            </div>
+          )}
+
+          {completing && (
+            <form onSubmit={complete} className="space-y-2">
+              <label className={labelCls}>What did you find on site?</label>
+              <textarea value={findings} onChange={e => setFindings(e.target.value)} rows={4} placeholder="Measurements, condition, access, anything that affects the price…" className={inputCls} />
+              <div className="flex gap-2">
+                <button type="submit" disabled={completeSurvey.isPending} className="inline-flex h-10 items-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50 transition-colors">
+                  {completeSurvey.isPending ? "Saving..." : "Save Findings"}
+                </button>
+                <button type="button" onClick={() => setCompleting(false)} className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+              </div>
+            </form>
+          )}
+
+          {!completing && (
+            <div className="flex flex-wrap gap-2">
+              {!done && (
+                <button onClick={() => { setFindings(lead.surveyNotes || ""); setCompleting(true); }} className="inline-flex h-10 items-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white hover:brightness-110 transition-colors">Mark as Surveyed</button>
+              )}
+              {done && (
+                <>
+                  <button onClick={onCreateQuote} disabled={converting} className="inline-flex h-10 items-center rounded-lg bg-[var(--brand)] px-4 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50 transition-colors">
+                    {converting ? "Creating..." : "Create Quote from Survey"}
+                  </button>
+                  <button onClick={() => { setFindings(lead.surveyNotes || ""); setCompleting(true); }} className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Edit Findings</button>
+                </>
+              )}
+              <button onClick={() => { setWhen(""); setBooking(true); }} className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Rebook</button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function LeadDetailPage({ id }: { id: number }) {
   const [, navigate] = useWouterLocation();
   const deleteLead = useDeleteLead();
@@ -754,6 +900,7 @@ function LeadDetailPage({ id }: { id: number }) {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 space-y-4">
+          <LeadSurveyCard lead={l} onCreateQuote={handleConvertToQuote} converting={convertToQuote.isPending} />
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="font-semibold text-slate-900">Contact Details</h2>

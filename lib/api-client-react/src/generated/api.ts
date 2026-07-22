@@ -109,6 +109,8 @@ import type {
   SquareChargeResponse,
   SubmitPublicQuoteAction200,
   SupportRequestInput,
+  SurveyBookInput,
+  SurveyCompleteInput,
   SwitchTenantInput,
   TeamMember,
   TeamMemberInput,
@@ -1783,6 +1785,150 @@ export const useDeleteLead = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteLeadMutationOptions(options));
+    }
+
+export const getBookLeadSurveyUrl = (id: number,) => {
+
+
+
+
+  return `/api/leads/${id}/survey`
+}
+
+/**
+ * @summary Book (or rebook) a survey visit for a lead — flips status and notifies the customer
+ */
+export const bookLeadSurvey = async (id: number,
+    surveyBookInput: SurveyBookInput, options?: RequestInit): Promise<Lead> => {
+
+  return customFetch<Lead>(getBookLeadSurveyUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      surveyBookInput,)
+  }
+);}
+
+
+
+
+export const getBookLeadSurveyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookLeadSurvey>>, TError,{id: number;data: BodyType<SurveyBookInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof bookLeadSurvey>>, TError,{id: number;data: BodyType<SurveyBookInput>}, TContext> => {
+
+const mutationKey = ['bookLeadSurvey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof bookLeadSurvey>>, {id: number;data: BodyType<SurveyBookInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  bookLeadSurvey(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BookLeadSurveyMutationResult = NonNullable<Awaited<ReturnType<typeof bookLeadSurvey>>>
+    export type BookLeadSurveyMutationBody = BodyType<SurveyBookInput>
+    export type BookLeadSurveyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Book (or rebook) a survey visit for a lead — flips status and notifies the customer
+ */
+export const useBookLeadSurvey = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof bookLeadSurvey>>, TError,{id: number;data: BodyType<SurveyBookInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof bookLeadSurvey>>,
+        TError,
+        {id: number;data: BodyType<SurveyBookInput>},
+        TContext
+      > => {
+      return useMutation(getBookLeadSurveyMutationOptions(options));
+    }
+
+export const getCompleteLeadSurveyUrl = (id: number,) => {
+
+
+
+
+  return `/api/leads/${id}/survey/complete`
+}
+
+/**
+ * @summary Mark a lead's survey as done and record the findings
+ */
+export const completeLeadSurvey = async (id: number,
+    surveyCompleteInput: SurveyCompleteInput, options?: RequestInit): Promise<Lead> => {
+
+  return customFetch<Lead>(getCompleteLeadSurveyUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      surveyCompleteInput,)
+  }
+);}
+
+
+
+
+export const getCompleteLeadSurveyMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeLeadSurvey>>, TError,{id: number;data: BodyType<SurveyCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeLeadSurvey>>, TError,{id: number;data: BodyType<SurveyCompleteInput>}, TContext> => {
+
+const mutationKey = ['completeLeadSurvey'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeLeadSurvey>>, {id: number;data: BodyType<SurveyCompleteInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  completeLeadSurvey(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteLeadSurveyMutationResult = NonNullable<Awaited<ReturnType<typeof completeLeadSurvey>>>
+    export type CompleteLeadSurveyMutationBody = BodyType<SurveyCompleteInput>
+    export type CompleteLeadSurveyMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Mark a lead's survey as done and record the findings
+ */
+export const useCompleteLeadSurvey = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeLeadSurvey>>, TError,{id: number;data: BodyType<SurveyCompleteInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeLeadSurvey>>,
+        TError,
+        {id: number;data: BodyType<SurveyCompleteInput>},
+        TContext
+      > => {
+      return useMutation(getCompleteLeadSurveyMutationOptions(options));
     }
 
 export const getListLeadNotesUrl = (id: number,) => {

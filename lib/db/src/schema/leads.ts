@@ -55,6 +55,11 @@ export const leadsTable = pgTable("leads", {
   // converts straight into a quote with its items pre-filled (see /leads/:id/convert-quote).
   estimateItems: jsonb("estimate_items").$type<EstimateItem[]>(),
   estimateTotal: numeric("estimate_total", { precision: 10, scale: 2 }),
+  // Survey step (sits between lead and quote): when the site visit is booked, when it happened,
+  // and what was found — the findings feed straight into quoting.
+  surveyScheduledAt: timestamp("survey_scheduled_at", { withTimezone: true }),
+  surveyCompletedAt: timestamp("survey_completed_at", { withTimezone: true }),
+  surveyNotes: text("survey_notes"),
   status: leadStatusEnum("status").notNull().default("New"),
   source: leadSourceEnum("source").default("Website"),
   assignedToId: integer("assigned_to_id").references(() => usersTable.id),

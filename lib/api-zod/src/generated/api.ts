@@ -545,6 +545,9 @@ export const ListLeadsQueryParams = zod.object({
 export const ListLeadsResponseItem = zod.object({
   "id": zod.number(),
   "tenantId": zod.number(),
+  "surveyScheduledAt": zod.string().nullish(),
+  "surveyCompletedAt": zod.string().nullish(),
+  "surveyNotes": zod.string().nullish(),
   "reference": zod.string().nullish(),
   "firstName": zod.string(),
   "lastName": zod.string(),
@@ -668,6 +671,9 @@ export const GetLeadParams = zod.object({
 export const GetLeadResponse = zod.object({
   "id": zod.number(),
   "tenantId": zod.number(),
+  "surveyScheduledAt": zod.string().nullish(),
+  "surveyCompletedAt": zod.string().nullish(),
+  "surveyNotes": zod.string().nullish(),
   "reference": zod.string().nullish(),
   "firstName": zod.string(),
   "lastName": zod.string(),
@@ -782,6 +788,9 @@ export const UpdateLeadBody = zod.object({
 export const UpdateLeadResponse = zod.object({
   "id": zod.number(),
   "tenantId": zod.number(),
+  "surveyScheduledAt": zod.string().nullish(),
+  "surveyCompletedAt": zod.string().nullish(),
+  "surveyNotes": zod.string().nullish(),
   "reference": zod.string().nullish(),
   "firstName": zod.string(),
   "lastName": zod.string(),
@@ -841,6 +850,148 @@ export const UpdateLeadResponse = zod.object({
  */
 export const DeleteLeadParams = zod.object({
   "id": zod.coerce.number()
+})
+
+
+/**
+ * @summary Book (or rebook) a survey visit for a lead — flips status and notifies the customer
+ */
+export const BookLeadSurveyParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const BookLeadSurveyBody = zod.object({
+  "scheduledAt": zod.string().describe('ISO date-time of the survey appointment')
+})
+
+export const BookLeadSurveyResponse = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "surveyScheduledAt": zod.string().nullish(),
+  "surveyCompletedAt": zod.string().nullish(),
+  "surveyNotes": zod.string().nullish(),
+  "reference": zod.string().nullish(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "postcode": zod.string().nullish(),
+  "serviceInterest": zod.string().nullish(),
+  "propertyType": zod.string().nullish(),
+  "propertyTypeOther": zod.string().nullish(),
+  "existingSurface": zod.string().nullish(),
+  "desiredFinish": zod.string().nullish(),
+  "timeframe": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "status": zod.enum(['New', 'Contacted', 'Survey Booked', 'Quote Sent', 'Won', 'Lost']),
+  "assignedToId": zod.number().nullish(),
+  "source": zod.string().nullish(),
+  "photoUrls": zod.array(zod.string()).optional(),
+  "preferredContactMethod": zod.string().nullish(),
+  "bestTimeToContact": zod.string().nullish(),
+  "areaToRender": zod.string().nullish(),
+  "areaToRenderOther": zod.string().nullish(),
+  "numberOfStoreys": zod.string().nullish(),
+  "wallArea": zod.string().nullish(),
+  "currentCondition": zod.array(zod.string()).optional(),
+  "preferredColour": zod.string().nullish(),
+  "preferredColourOther": zod.string().nullish(),
+  "requiresInsulation": zod.string().nullish(),
+  "insulationThickness": zod.string().nullish(),
+  "insulationMaterial": zod.string().nullish(),
+  "accessConditions": zod.array(zod.string()).optional(),
+  "propertyStatus": zod.string().nullish(),
+  "companyName": zod.string().nullish(),
+  "clientType": zod.string().nullish(),
+  "projectDescription": zod.string().nullish(),
+  "planningStatus": zod.string().nullish(),
+  "hasDrawings": zod.string().nullish(),
+  "urgency": zod.string().nullish(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).nullish(),
+  "estimateTotal": zod.string().nullish(),
+  "consentAgreed": zod.boolean().optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
+})
+
+
+/**
+ * @summary Mark a lead's survey as done and record the findings
+ */
+export const CompleteLeadSurveyParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CompleteLeadSurveyBody = zod.object({
+  "notes": zod.string().optional().describe('What was found on site — feeds the quote')
+})
+
+export const CompleteLeadSurveyResponse = zod.object({
+  "id": zod.number(),
+  "tenantId": zod.number(),
+  "surveyScheduledAt": zod.string().nullish(),
+  "surveyCompletedAt": zod.string().nullish(),
+  "surveyNotes": zod.string().nullish(),
+  "reference": zod.string().nullish(),
+  "firstName": zod.string(),
+  "lastName": zod.string(),
+  "email": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "address": zod.string().nullish(),
+  "city": zod.string().nullish(),
+  "postcode": zod.string().nullish(),
+  "serviceInterest": zod.string().nullish(),
+  "propertyType": zod.string().nullish(),
+  "propertyTypeOther": zod.string().nullish(),
+  "existingSurface": zod.string().nullish(),
+  "desiredFinish": zod.string().nullish(),
+  "timeframe": zod.string().nullish(),
+  "budget": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "status": zod.enum(['New', 'Contacted', 'Survey Booked', 'Quote Sent', 'Won', 'Lost']),
+  "assignedToId": zod.number().nullish(),
+  "source": zod.string().nullish(),
+  "photoUrls": zod.array(zod.string()).optional(),
+  "preferredContactMethod": zod.string().nullish(),
+  "bestTimeToContact": zod.string().nullish(),
+  "areaToRender": zod.string().nullish(),
+  "areaToRenderOther": zod.string().nullish(),
+  "numberOfStoreys": zod.string().nullish(),
+  "wallArea": zod.string().nullish(),
+  "currentCondition": zod.array(zod.string()).optional(),
+  "preferredColour": zod.string().nullish(),
+  "preferredColourOther": zod.string().nullish(),
+  "requiresInsulation": zod.string().nullish(),
+  "insulationThickness": zod.string().nullish(),
+  "insulationMaterial": zod.string().nullish(),
+  "accessConditions": zod.array(zod.string()).optional(),
+  "propertyStatus": zod.string().nullish(),
+  "companyName": zod.string().nullish(),
+  "clientType": zod.string().nullish(),
+  "projectDescription": zod.string().nullish(),
+  "planningStatus": zod.string().nullish(),
+  "hasDrawings": zod.string().nullish(),
+  "urgency": zod.string().nullish(),
+  "estimateItems": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.number(),
+  "unit": zod.string(),
+  "unitPrice": zod.string(),
+  "lineTotal": zod.string()
+})).nullish(),
+  "estimateTotal": zod.string().nullish(),
+  "consentAgreed": zod.boolean().optional(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date().optional()
 })
 
 

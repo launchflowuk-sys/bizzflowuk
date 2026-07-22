@@ -37,6 +37,8 @@ export interface NotificationContext {
   customerEmail?: string;
   customerPhone?: string;
   reference?: string;
+  /** Human-readable survey appointment time, e.g. "Friday 25 July, 2:00 pm". */
+  surveyDate?: string;
   projectTitle?: string;
   paymentLinkUrl?: string;
   amount?: string;
@@ -208,10 +210,14 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             brand,
             firstName,
             to: ctx.customerEmail!,
+            scheduledFor: ctx.surveyDate,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] survey_booked customer email failed"));
         }
         if (doCustomerSms) {
-          sendSms(ctx.customerPhone!, `Hi ${firstName}, your survey has been booked with ${tenant.name}! We'll confirm date/time shortly.`, smsCreds!)
+          const smsBody = ctx.surveyDate
+            ? `Hi ${firstName}, your survey with ${tenant.name} is booked for ${ctx.surveyDate}. Need to rearrange? Just reply or call us.`
+            : `Hi ${firstName}, your survey has been booked with ${tenant.name}! We'll confirm date/time shortly.`;
+          sendSms(ctx.customerPhone!, smsBody, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] survey_booked customer SMS failed"));
         }
         break;

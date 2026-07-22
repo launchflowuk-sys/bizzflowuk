@@ -596,6 +596,12 @@ export interface Lead {
   id: number;
   tenantId: number;
   /** @nullable */
+  surveyScheduledAt?: string | null;
+  /** @nullable */
+  surveyCompletedAt?: string | null;
+  /** @nullable */
+  surveyNotes?: string | null;
+  /** @nullable */
   reference?: string | null;
   firstName: string;
   lastName: string;
@@ -976,6 +982,16 @@ export interface SentEmail {
   /** @nullable */
   errorMessage?: string | null;
   createdAt: string;
+}
+
+export interface SurveyBookInput {
+  /** ISO date-time of the survey appointment */
+  scheduledAt: string;
+}
+
+export interface SurveyCompleteInput {
+  /** What was found on site — feeds the quote */
+  notes?: string;
 }
 
 export type SupportRequestInputUrgency = typeof SupportRequestInputUrgency[keyof typeof SupportRequestInputUrgency];

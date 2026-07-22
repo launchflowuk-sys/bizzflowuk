@@ -192,20 +192,30 @@ export function buildSurveyBookedCustomerEmail(opts: {
   brand: BrandConfig;
   firstName: string;
   to: string;
+  /** Human-readable appointment time (e.g. "Friday 25 July, 2:00 pm"). Omitted = "we'll confirm". */
+  scheduledFor?: string;
 }): EmailPayload {
   const accent = opts.brand.primaryColor || "#f97316";
   const phone = opts.brand.phone || undefined;
+  const intro = opts.scheduledFor
+    ? `Great news, ${opts.firstName}! Your survey is booked for <strong>${opts.scheduledFor}</strong>. If that time doesn't work, just get in touch and we'll rearrange.`
+    : `Great news, ${opts.firstName}! Your survey has been booked. We'll be in touch shortly to confirm the exact date and time.`;
   return {
     to: opts.to,
-    subject: `Survey booked — ${opts.brand.tenantName}`,
+    subject: opts.scheduledFor ? `Survey booked for ${opts.scheduledFor} — ${opts.brand.tenantName}` : `Survey booked — ${opts.brand.tenantName}`,
     html: renderEmailShell({
       brand: opts.brand,
-      preheader: "Your survey has been booked.",
+      preheader: opts.scheduledFor ? `Your survey is booked for ${opts.scheduledFor}.` : "Your survey has been booked.",
       heading: "Your Survey Is Booked",
-      intro: `Great news, ${opts.firstName}! Your survey has been booked. We'll be in touch shortly to confirm the exact date and time.`,
-      bodyHtml: phone ? emailButton(`Call Us — ${phone}`, telHref(phone), accent) : "",
+      intro,
+      bodyHtml: [
+        opts.scheduledFor ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">${emailInfoRow("📅", "Appointment", opts.scheduledFor, accent)}</table>` : "",
+        phone ? emailButton(`Call Us — ${phone}`, telHref(phone), accent) : "",
+      ].join(""),
     }),
-    text: `Hi ${opts.firstName}, your survey has been booked with ${opts.brand.tenantName}. We'll confirm the date/time shortly. Questions? Call ${phone || ""}.`,
+    text: opts.scheduledFor
+      ? `Hi ${opts.firstName}, your survey with ${opts.brand.tenantName} is booked for ${opts.scheduledFor}. Need to rearrange? Call ${phone || ""}.`
+      : `Hi ${opts.firstName}, your survey has been booked with ${opts.brand.tenantName}. We'll confirm the date/time shortly. Questions? Call ${phone || ""}.`,
   };
 }
 

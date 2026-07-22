@@ -113,6 +113,8 @@ export * from './squareChargeResponseStatus';
 export * from './submitPublicQuoteAction200';
 export * from './supportRequestInput';
 export * from './supportRequestInputUrgency';
+export * from './surveyBookInput';
+export * from './surveyCompleteInput';
 export * from './switchTenantInput';
 export * from './teamMember';
 export * from './teamMemberInput';

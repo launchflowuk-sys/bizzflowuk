@@ -127,6 +127,51 @@ router.delete("/leads/:id", requireTenantAccess, async (req, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// ─── Survey step (sits between lead and quote) ─────────────────────────────────
+// Booking a survey stamps the appointment, flips the status, and tells the customer the actual
+// date/time. Completing it records what was found on site — the findings the quote is built from.
+router.post("/leads/:id/survey", requireTenantAccess, async (req, res) => {
+  try {
+    const scheduledAtRaw = req.body?.scheduledAt;
+    const scheduledAt = scheduledAtRaw ? new Date(scheduledAtRaw) : null;
+    if (!scheduledAt || isNaN(scheduledAt.getTime())) { res.status(400).json({ error: "A valid scheduledAt date/time is required" }); return; }
+
+    const rows = await db.update(leadsTable)
+      .set({ surveyScheduledAt: scheduledAt, status: "Survey Booked" })
+      .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
+      .returning();
+    const lead = rows[0];
+    if (!lead) { res.status(404).json({ error: "Not found" }); return; }
+
+    const surveyDate = scheduledAt.toLocaleString("en-GB", {
+      weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: "Europe/London",
+    });
+    fireNotification({
+      tenantId: lead.tenantId,
+      event: "survey_booked",
+      firstName: lead.firstName ?? undefined,
+      lastName: lead.lastName ?? undefined,
+      customerEmail: lead.email ?? undefined,
+      customerPhone: lead.phone ?? undefined,
+      surveyDate,
+    });
+    res.json(lead);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.post("/leads/:id/survey/complete", requireTenantAccess, async (req, res) => {
+  try {
+    const notes = typeof req.body?.notes === "string" ? req.body.notes.trim() : "";
+    const rows = await db.update(leadsTable)
+      .set({ surveyCompletedAt: new Date(), surveyNotes: notes || null })
+      .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
+      .returning();
+    const lead = rows[0];
+    if (!lead) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(lead);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 /** Confirms :id refers to a lead the caller's tenant actually owns (or bypasses for SUPER_ADMIN). */
 async function requireOwnedLead(req: any, res: any): Promise<number | null> {
   const lead = await db.select({ id: leadsTable.id }).from(leadsTable)
