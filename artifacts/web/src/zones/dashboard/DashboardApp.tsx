@@ -77,10 +77,10 @@ function DeleteConfirm({ label, onConfirm, onCancel, isPending }: { label: strin
     <div className="space-y-4">
       <p className="text-sm text-slate-700">Are you sure you want to delete <strong>{label}</strong>? This cannot be undone.</p>
       <div className="flex gap-2">
-        <button onClick={onConfirm} disabled={isPending} className="inline-flex h-9 items-center rounded-md bg-red-600 px-4 text-sm font-medium text-white hover:bg-red-500 disabled:opacity-50">
+        <button onClick={onConfirm} disabled={isPending} className="inline-flex h-10 items-center rounded-lg bg-red-600 px-5 text-sm font-semibold text-white hover:bg-red-500 disabled:opacity-50 transition-colors">
           {isPending ? "Deleting..." : "Yes, Delete"}
         </button>
-        <button onClick={onCancel} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
+        <button onClick={onCancel} className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
       </div>
     </div>
   );
@@ -538,7 +538,7 @@ function LeadsPage() {
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {["", "New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
+          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
         ))}
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
@@ -580,7 +580,7 @@ function LeadsPage() {
                             <button onClick={() => setDeleteId(null)} className="text-xs text-slate-500 hover:text-slate-700 px-1">Cancel</button>
                           </span>
                         ) : (
-                          <button onClick={() => setDeleteId(l.id)} className="text-xs text-red-500 hover:text-red-700">Delete</button>
+                          <button onClick={() => setDeleteId(l.id)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                         )}
                       </td>
                     </tr>
@@ -1141,7 +1141,7 @@ function PaymentLinksPage() {
                             <button onClick={() => handleSend(l.id)} disabled={sendingLinkId === l.id} className="text-xs text-[var(--brand-ink)] hover:text-[var(--brand-ink)] font-medium disabled:opacity-50">{sendingLinkId === l.id ? (l.sentAt ? "Resending..." : "Sending...") : (l.sentAt ? "Resend" : "Send Payment Link")}</button>
                           </div>
                         )}
-                        <button onClick={() => handleDeleteLink(l.id)} className="text-xs text-red-600 hover:text-red-700 font-semibold mt-1">Delete</button>
+                        <button onClick={() => handleDeleteLink(l.id)} className="mt-1 inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                       </td>
                     </tr>
                   ))}
@@ -1764,7 +1764,7 @@ function ProjectsPage() {
       )}
       <div className="flex flex-wrap gap-2">
         {["", "Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
+          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
         ))}
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
@@ -2099,7 +2099,7 @@ function GalleryPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2186,7 +2186,7 @@ function ReviewsPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2281,7 +2281,7 @@ function CaseStudiesPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2376,7 +2376,7 @@ function PricingPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2468,7 +2468,7 @@ function ServicesPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2558,7 +2558,7 @@ function AreasPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2641,7 +2641,7 @@ function FaqsPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0 mt-0.5">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2725,7 +2725,7 @@ function BlogPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}
@@ -2925,7 +2925,7 @@ function VisualiserPage() {
                         <button onClick={() => setDeleteId(null)} className="text-xs text-slate-500 hover:text-slate-700 px-1">Cancel</button>
                       </>
                     ) : (
-                      <button onClick={() => setDeleteId(item.id)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                      <button onClick={() => setDeleteId(item.id)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                     )}
                   </div>
                 </div>
@@ -2994,7 +2994,7 @@ function TeamPage() {
                   </div>
                   <div className="flex gap-1 flex-shrink-0">
                     <button onClick={() => openEdit(item)} className="text-xs text-slate-500 hover:text-[var(--brand-ink)] px-2 py-1 rounded hover:bg-[var(--brand-tint)]">Edit</button>
-                    <button onClick={() => openDelete(item)} className="text-xs text-slate-500 hover:text-red-600 px-2 py-1 rounded hover:bg-red-50">Delete</button>
+                    <button onClick={() => openDelete(item)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
                   </div>
                 </div>
               ))}

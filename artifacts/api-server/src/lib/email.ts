@@ -35,6 +35,12 @@ export async function sendEmail(payload: EmailPayload, smtp: SmtpConfig | null |
     port: smtp.port ?? 587,
     secure: smtp.secure ?? false,
     auth: { user: smtp.user, pass: smtp.pass },
+    // Nodemailer's defaults allow a send to dangle for up to 10 MINUTES (socketTimeout), which held
+    // the compose HTTP request open with the UI stuck on "Sending…". Bound every phase so a slow
+    // SMTP server fails fast and the caller always gets a response.
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
   });
   await transporter.sendMail({
     from: smtp.from || smtp.user,
