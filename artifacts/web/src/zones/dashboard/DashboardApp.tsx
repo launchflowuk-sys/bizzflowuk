@@ -3708,6 +3708,14 @@ function TeamPage() {
   );
 }
 
+/** Badge for a masked secret field: the API returns "" when a secret is stored, null when not —
+ *  so the user can finally tell a saved token from an empty one (it never renders the value). */
+function SecretBadge({ stored }: { stored: unknown }) {
+  return stored === ""
+    ? <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-700"><svg className="h-3 w-3" fill="none" stroke="currentColor" strokeWidth={3} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>Saved</span>
+    : <span className="ml-2 rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-semibold text-slate-500">Not set</span>;
+}
+
 // ─── Settings ─────────────────────────────────────────────────────────────────
 function SettingsPage() {
   const { data: settings, isLoading } = useGetSettings();
@@ -3830,9 +3838,9 @@ function SettingsPage() {
             </div>
             <div>{field("smtpUser", "Username / Email", "email", "Usually your full email address")}</div>
             <div>
-              <label className={labelCls}>Password</label>
-              <input type="password" className={inputCls} placeholder="Leave blank to keep existing" value={smtpPass} onChange={e => setSmtpPass(e.target.value)} autoComplete="new-password" />
-              <p className="text-xs text-slate-400 mt-1">Leave blank to keep existing password</p>
+              <label className={labelCls}>Password<SecretBadge stored={s?.smtpPass} /></label>
+              <input type="password" className={inputCls} placeholder={s?.smtpPass === "" ? "•••••••• saved — leave blank to keep" : "Enter password"} value={smtpPass} onChange={e => setSmtpPass(e.target.value)} autoComplete="new-password" />
+              <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved password</p>
             </div>
             <div className="col-span-1 sm:col-span-2">{field("smtpFrom", "From Address", "text", `e.g. AMO Rendering <info@amorendering.co.uk>`)}</div>
           </div>
@@ -3854,9 +3862,9 @@ function SettingsPage() {
           </div>
           {field("twilioAccountSid", "Account SID")}
           <div>
-            <label className={labelCls}>Auth Token</label>
-            <input type="password" className={inputCls} placeholder="Leave blank to keep existing" value={twilioAuthToken} onChange={e => setTwilioAuthToken(e.target.value)} autoComplete="new-password" />
-            <p className="text-xs text-slate-400 mt-1">Leave blank to keep existing token</p>
+            <label className={labelCls}>Auth Token<SecretBadge stored={s?.twilioAuthToken} /></label>
+            <input type="password" className={inputCls} placeholder={s?.twilioAuthToken === "" ? "•••••••• saved — leave blank to keep" : "Enter auth token"} value={twilioAuthToken} onChange={e => setTwilioAuthToken(e.target.value)} autoComplete="new-password" />
+            <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved token</p>
           </div>
           {field("twilioFromNumber", "From Number", "text", "e.g. +447700000000")}
           {field("adminNotificationPhone", "Admin Notification Phone", "text", "Receives SMS when a lead/quote is submitted")}
@@ -3889,9 +3897,9 @@ function SettingsPage() {
           {field("squareApplicationId", "Application ID")}
           {field("squareLocationId", "Location ID")}
           <div>
-            <label className={labelCls}>Access Token</label>
-            <input type="password" className={inputCls} placeholder="Leave blank to keep existing" value={squareAccessToken} onChange={e => setSquareAccessToken(e.target.value)} autoComplete="new-password" />
-            <p className="text-xs text-slate-400 mt-1">Leave blank to keep existing token</p>
+            <label className={labelCls}>Access Token<SecretBadge stored={s?.squareAccessToken} /></label>
+            <input type="password" className={inputCls} placeholder={s?.squareAccessToken === "" ? "•••••••• saved — leave blank to keep" : "Enter access token"} value={squareAccessToken} onChange={e => setSquareAccessToken(e.target.value)} autoComplete="new-password" />
+            <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved token</p>
           </div>
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
