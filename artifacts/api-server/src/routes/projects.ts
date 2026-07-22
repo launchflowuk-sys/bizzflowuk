@@ -5,6 +5,7 @@ import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { deleteProjectsDeep } from "../lib/cascadeDelete";
 
 const router = Router();
 
@@ -82,8 +83,11 @@ router.patch("/projects/:id", requireTenantAccess, async (req, res) => {
 
 router.delete("/projects/:id", requireTenantAccess, async (req, res) => {
   try {
-    await db.delete(projectsTable)
-      .where(and(eq(projectsTable.id, Number(req.params.id)), tenantFilter(req, projectsTable.tenantId)));
+    // Verify ownership first, then deep-delete (project updates die with the project).
+    // A bare delete FK-violated (HTTP 500) on any project that had an update posted.
+    const owned = await db.select({ id: projectsTable.id }).from(projectsTable)
+      .where(and(eq(projectsTable.id, Number(req.params.id)), tenantFilter(req, projectsTable.tenantId))).limit(1);
+    if (owned.length) await deleteProjectsDeep([owned[0].id]);
     res.status(204).send();
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

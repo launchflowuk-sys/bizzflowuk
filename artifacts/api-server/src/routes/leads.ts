@@ -6,6 +6,7 @@ import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 import { buildRelativeObjectUrl } from "../lib/objectStorage";
+import { deleteLeadsDeep } from "../lib/cascadeDelete";
 
 const router = Router();
 
@@ -117,8 +118,11 @@ router.patch("/leads/:id", requireTenantAccess, async (req, res) => {
 
 router.delete("/leads/:id", requireTenantAccess, async (req, res) => {
   try {
-    await db.delete(leadsTable)
-      .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)));
+    // Verify ownership first, then deep-delete (notes die with the lead; quotes/emails unlink).
+    // A bare delete FK-violated (HTTP 500) on any lead that had notes or a converted quote.
+    const owned = await db.select({ id: leadsTable.id }).from(leadsTable)
+      .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId))).limit(1);
+    if (owned.length) await deleteLeadsDeep([owned[0].id]);
     res.status(204).send();
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

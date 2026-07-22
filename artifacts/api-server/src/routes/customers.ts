@@ -4,6 +4,7 @@ import { customersTable, portalMessagesTable, projectsTable, quotesTable } from 
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, requireAuth, tenantFilter } from "../middlewares/auth";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { deleteCustomersDeep } from "../lib/cascadeDelete";
 
 const router = Router();
 
@@ -45,8 +46,12 @@ router.patch("/customers/:id", requireTenantAccess, async (req, res) => {
 
 router.delete("/customers/:id", requireTenantAccess, async (req, res) => {
   try {
-    await db.delete(customersTable)
-      .where(and(eq(customersTable.id, Number(req.params.id)), tenantFilter(req, customersTable.tenantId)));
+    // Verify ownership first, then deep-delete (portal messages die with the customer; contact
+    // messages, quotes, projects and reviews unlink). A bare delete FK-violated (HTTP 500) on
+    // any customer with linked history — i.e. every real customer.
+    const owned = await db.select({ id: customersTable.id }).from(customersTable)
+      .where(and(eq(customersTable.id, Number(req.params.id)), tenantFilter(req, customersTable.tenantId))).limit(1);
+    if (owned.length) await deleteCustomersDeep([owned[0].id]);
     res.status(204).send();
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

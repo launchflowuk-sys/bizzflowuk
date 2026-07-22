@@ -7,6 +7,7 @@ import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 import { ensureCustomerForQuote } from "../lib/customerSync";
+import { deleteQuotesDeep } from "../lib/cascadeDelete";
 
 const router = Router();
 
@@ -92,8 +93,11 @@ router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
 
 router.delete("/quotes/:id", requireTenantAccess, async (req, res) => {
   try {
-    await db.delete(quotesTable)
-      .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)));
+    // Verify ownership first, then deep-delete (items die with the quote; payment links and any
+    // converted project unlink). A bare delete FK-violated (HTTP 500) on any quote with items.
+    const owned = await db.select({ id: quotesTable.id }).from(quotesTable)
+      .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId))).limit(1);
+    if (owned.length) await deleteQuotesDeep([owned[0].id]);
     res.status(204).send();
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
