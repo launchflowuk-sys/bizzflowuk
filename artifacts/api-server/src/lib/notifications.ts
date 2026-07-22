@@ -39,6 +39,9 @@ export interface NotificationContext {
   reference?: string;
   /** Human-readable survey appointment time, e.g. "Friday 25 July, 2:00 pm". */
   surveyDate?: string;
+  /** Cost-calculator line items, so the customer's acknowledgement can echo their estimate back. */
+  estimateItems?: Array<{ name: string; quantity: number; unit: string; unitPrice: string; lineTotal: string }>;
+  estimateTotal?: string;
   projectTitle?: string;
   paymentLinkUrl?: string;
   amount?: string;
@@ -194,6 +197,8 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             firstName,
             serviceInterest: ctx.serviceInterest,
             to: ctx.customerEmail!,
+            estimateItems: ctx.estimateItems,
+            estimateTotal: ctx.estimateTotal,
           }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new customer email failed"));
         }
         if (doCustomerSms) {

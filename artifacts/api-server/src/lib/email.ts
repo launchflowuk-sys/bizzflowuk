@@ -154,36 +154,57 @@ export function buildLeadNewCustomerEmail(opts: {
   firstName: string;
   serviceInterest?: string;
   to: string;
+  /** Cost-calculator lines: when present the ack echoes the customer's own estimate back to them. */
+  estimateItems?: Array<{ name: string; quantity: number; unit: string; unitPrice: string; lineTotal: string }>;
+  estimateTotal?: string;
 }): EmailPayload {
   const accent = opts.brand.primaryColor || "#f97316";
   const phone = opts.brand.phone || undefined;
+  const hasEstimate = !!(opts.estimateItems?.length && opts.estimateTotal);
   const infoRows = [
-    opts.serviceInterest ? emailInfoRow("&#9998;", "Service Requested", opts.serviceInterest, accent) : "",
+    opts.serviceInterest && !hasEstimate ? emailInfoRow("&#9998;", "Service Requested", opts.serviceInterest, accent) : "",
     phone ? emailInfoRow("&#9742;", "Call Us", phone, accent) : "",
     opts.brand.email ? emailInfoRow("&#9993;", "Email Us", opts.brand.email, accent) : "",
   ].filter(Boolean).join("");
 
+  const estimateHtml = hasEstimate
+    ? `
+    <h2 style="margin:24px 0 8px;font-family:Arial,sans-serif;font-size:16px;color:#0f172a">Your estimate</h2>
+    ${emailDataTable([
+      ...opts.estimateItems!.map((it): [string, string] => [`${it.name} (${it.quantity} ${it.unit})`, `£${it.lineTotal}`]),
+      ["Estimated Total", `£${opts.estimateTotal}`],
+    ])}
+    <p style="margin:10px 0 0;font-family:Arial,sans-serif;font-size:12px;color:#64748b">This is an indicative online estimate — we'll confirm the exact price after a free, no-obligation survey.</p>`
+    : "";
+
   const bodyHtml = `
-    ${infoRows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px">${infoRows}</table>` : ""}
+    ${estimateHtml}
+    ${infoRows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:${hasEstimate ? "20px" : "0"} 0 8px">${infoRows}</table>` : ""}
     <h2 style="margin:24px 0 8px;font-family:Arial,sans-serif;font-size:16px;color:#0f172a">What happens next</h2>
     ${emailStepsList([
-      "We'll review your enquiry and check the details you've provided.",
+      hasEstimate ? "We'll review your estimate and the details you've provided." : "We'll review your enquiry and check the details you've provided.",
       "A member of our team will call you within 24 hours to discuss your project.",
-      "We'll arrange a free, no-obligation survey at a time that suits you.",
+      hasEstimate ? "We'll arrange a free, no-obligation survey to confirm your exact price." : "We'll arrange a free, no-obligation survey at a time that suits you.",
     ], accent)}
     ${phone ? emailButton(`Call Us Now — ${phone}`, telHref(phone), accent) : ""}`;
 
   return {
     to: opts.to,
-    subject: `Thanks for your enquiry — ${opts.brand.tenantName}`,
+    subject: hasEstimate ? `Your estimate — ${opts.brand.tenantName}` : `Thanks for your enquiry — ${opts.brand.tenantName}`,
     html: renderEmailShell({
       brand: opts.brand,
-      preheader: `We've received your enquiry and will be in touch within 24 hours.`,
-      heading: "Thank You For Your Enquiry",
-      intro: `Hi ${opts.firstName}, thanks for getting in touch${opts.serviceInterest ? ` about <strong>${opts.serviceInterest}</strong>` : ""}! We've received your enquiry and will be in touch within 24 hours to arrange a free survey.`,
+      preheader: hasEstimate
+        ? `Your estimate of £${opts.estimateTotal} — we'll be in touch within 24 hours.`
+        : `We've received your enquiry and will be in touch within 24 hours.`,
+      heading: hasEstimate ? "Your Estimate Is In" : "Thank You For Your Enquiry",
+      intro: hasEstimate
+        ? `Hi ${opts.firstName}, thanks for using our cost calculator! Here's a copy of your estimate — we'll be in touch within 24 hours to arrange a free survey and confirm your exact price.`
+        : `Hi ${opts.firstName}, thanks for getting in touch${opts.serviceInterest ? ` about <strong>${opts.serviceInterest}</strong>` : ""}! We've received your enquiry and will be in touch within 24 hours to arrange a free survey.`,
       bodyHtml,
     }),
-    text: `Hi ${opts.firstName}, thanks for contacting ${opts.brand.tenantName}! We'll be in touch within 24 hours. Questions? Call ${phone || ""}.`,
+    text: hasEstimate
+      ? `Hi ${opts.firstName}, thanks for using our cost calculator! Your estimated total is £${opts.estimateTotal} (indicative — confirmed after a free survey). We'll be in touch within 24 hours. Questions? Call ${phone || ""}.`
+      : `Hi ${opts.firstName}, thanks for contacting ${opts.brand.tenantName}! We'll be in touch within 24 hours. Questions? Call ${phone || ""}.`,
   };
 }
 

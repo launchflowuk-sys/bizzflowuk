@@ -93,6 +93,8 @@ async function handleQuoteRequest(req: any, res: any, slug: string) {
       postcode: lead[0].postcode ?? undefined,
       budget: lead[0].budget ?? undefined,
       notes: lead[0].notes ?? undefined,
+      estimateItems: (lead[0].estimateItems as any[] | null) ?? undefined,
+      estimateTotal: lead[0].estimateTotal ?? undefined,
       propertyType: lead[0].propertyType ?? undefined,
       propertyTypeOther: lead[0].propertyTypeOther ?? undefined,
       existingSurface: lead[0].existingSurface ?? undefined,

@@ -901,6 +901,32 @@ function LeadDetailPage({ id }: { id: number }) {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div className="md:col-span-2 space-y-4">
           <LeadSurveyCard lead={l} onCreateQuote={handleConvertToQuote} converting={convertToQuote.isPending} />
+          {Array.isArray(l.estimateItems) && l.estimateItems.length > 0 && (
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <h2 className="font-semibold text-slate-900">Calculator Estimate</h2>
+                <span className="text-xs text-slate-400">submitted via your website's cost calculator</span>
+              </div>
+              <div className="overflow-x-auto rounded-lg border border-slate-100">
+                <table className="w-full text-sm">
+                  <tbody className="divide-y divide-slate-100">
+                    {l.estimateItems.map((it: any, i: number) => (
+                      <tr key={i} className={i % 2 === 0 ? "bg-slate-50/60" : ""}>
+                        <td className="px-3 py-2 text-slate-700">{it.name}</td>
+                        <td className="px-3 py-2 text-slate-500 whitespace-nowrap">{it.quantity} {it.unit} × £{it.unitPrice}</td>
+                        <td className="px-3 py-2 text-right font-medium text-slate-900 whitespace-nowrap">£{it.lineTotal}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <div className="flex items-center justify-between rounded-lg bg-[var(--brand-tint)] px-3 py-2.5">
+                <span className="text-sm font-semibold" style={{ color: "var(--brand-ink)" }}>Estimated Total (indicative)</span>
+                <span className="text-base font-bold" style={{ color: "var(--brand-ink)" }}>£{Number(l.estimateTotal || 0).toFixed(2)}</span>
+              </div>
+              <p className="text-xs text-slate-400">The customer received this same estimate by email. Book a survey to confirm the price, then Convert to Quote — these items pre-fill the quote automatically.</p>
+            </div>
+          )}
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
             <div className="flex items-center justify-between flex-wrap gap-2">
               <h2 className="font-semibold text-slate-900">Contact Details</h2>
