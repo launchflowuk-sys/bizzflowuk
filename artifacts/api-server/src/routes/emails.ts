@@ -3,7 +3,7 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { db } from "@workspace/db";
 import { sentEmailsTable, tenantsTable, tenantSettingsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { sendEmail, buildComposedEmail, type EmailAttachment } from "../lib/email";
 import { buildSmtpConfig, buildBrandConfig, buildSmsCreds } from "../lib/settingsHelpers";
@@ -62,6 +62,15 @@ async function resolveAttachments(objectPaths: string[], tenantId: number, log: 
   }
   return attachments;
 }
+
+// Sent emails are a leaf table (nothing references them), so a scoped delete is safe as-is.
+router.delete("/emails/:id", requireTenantAccess, async (req, res) => {
+  try {
+    await db.delete(sentEmailsTable)
+      .where(and(eq(sentEmailsTable.id, Number(req.params.id)), tenantFilter(req, sentEmailsTable.tenantId)));
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
 
 // Sends a Mark-composed email through the same branded shell as the automated notifications,
 // then logs it (outbound only — this is not a synced inbox, per the scoped-down request).

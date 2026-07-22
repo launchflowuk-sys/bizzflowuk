@@ -19,17 +19,17 @@ import {
   useListFaqs, useCreateFaq, useUpdateFaq, useDeleteFaq,
   useListBlogPosts, useCreateBlogPost, useUpdateBlogPost, useDeleteBlogPost,
   useListVisualiserRequests, useDeleteVisualiserRequest,
-  useListContactMessages,
+  useListContactMessages, useDeleteContactMessage,
   useListTeamMembers, useCreateTeamMember, useUpdateTeamMember, useDeleteTeamMember,
   useGetSettings, useUpdateSettings, useTestEmailSettings, useTestSmsSettings,
-  useListSentEmails, useComposeEmail, useSendSms, useRequestDashboardUploadUrl,
+  useListSentEmails, useComposeEmail, useDeleteEmail, useSendSms, useRequestDashboardUploadUrl,
 } from "@workspace/api-client-react";
 import {
   getListLeadsQueryKey, getListQuotesQueryKey, getListProjectsQueryKey, getListCustomersQueryKey,
   getListQuoteItemsQueryKey, getListQuotePaymentLinksQueryKey, getListPaymentLinksQueryKey, getListProjectUpdatesQueryKey,
   getListGalleryImagesQueryKey, getListReviewsQueryKey, getListCaseStudiesQueryKey,
   getListServicesQueryKey, getListPriceItemsQueryKey, getListAreasQueryKey, getListFaqsQueryKey,
-  getListBlogPostsQueryKey, getListTeamMembersQueryKey, getListSentEmailsQueryKey,
+  getListBlogPostsQueryKey, getListTeamMembersQueryKey, getListSentEmailsQueryKey, getListContactMessagesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -89,6 +89,55 @@ function DeleteConfirm({ label, onConfirm, onCancel, isPending }: { label: strin
 // ─── Shared helpers ─────────────────────────────────────────────────────────────
 const inputCls = "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]";
 const labelCls = "block text-sm font-medium text-slate-700 mb-1";
+const checkCls = "h-4 w-4 rounded border-slate-300 accent-[var(--brand)] cursor-pointer";
+
+/**
+ * Bulk row selection + fan-out delete over a page's single-delete mutation. One shared code path so
+ * every table gets identical select-all / delete-selected behaviour. Deletions run in parallel via
+ * Promise.allSettled — one failure never aborts the rest, and the toast reports the split.
+ */
+function useBulkSelect(allIds: number[], deleteOne: (id: number) => Promise<unknown>, invalidate: () => void, noun: string) {
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [deleting, setDeleting] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const showToast = useToast();
+  const toggle = (id: number) => setSelected(prev => { const n = new Set(prev); if (n.has(id)) n.delete(id); else n.add(id); return n; });
+  const toggleAll = () => setSelected(prev => (prev.size === allIds.length ? new Set<number>() : new Set(allIds)));
+  const clear = () => { setSelected(new Set()); setConfirming(false); };
+  const run = async () => {
+    setDeleting(true);
+    const ids = [...selected];
+    const results = await Promise.allSettled(ids.map(id => deleteOne(id)));
+    const failed = results.filter(r => r.status === "rejected").length;
+    invalidate();
+    if (failed) showToast(`Deleted ${ids.length - failed} of ${ids.length} — ${failed} failed`, "error");
+    else showToast(`${ids.length} ${noun}${ids.length === 1 ? "" : "s"} deleted`);
+    setDeleting(false);
+    clear();
+  };
+  return { selected, toggle, toggleAll, clear, run, deleting, confirming, setConfirming, allSelected: allIds.length > 0 && selected.size === allIds.length };
+}
+
+/** Floating action bar shown while rows are selected: count → confirm → delete selected. */
+function BulkBar({ bulk, noun }: { bulk: ReturnType<typeof useBulkSelect>; noun: string }) {
+  if (bulk.selected.size === 0) return null;
+  return (
+    <div className="sticky bottom-4 z-30 mx-auto flex w-fit items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-2.5 shadow-xl">
+      <span className="text-sm font-semibold text-slate-700">{bulk.selected.size} selected</span>
+      {bulk.confirming ? (
+        <>
+          <button onClick={bulk.run} disabled={bulk.deleting} className="inline-flex h-9 items-center rounded-lg bg-red-600 px-4 text-xs font-semibold text-white hover:bg-red-500 disabled:opacity-50 transition-colors">
+            {bulk.deleting ? "Deleting..." : `Yes, delete ${bulk.selected.size}`}
+          </button>
+          <button onClick={() => bulk.setConfirming(false)} className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-4 text-xs font-semibold text-slate-700 hover:bg-slate-50 transition-colors">Cancel</button>
+        </>
+      ) : (
+        <button onClick={() => bulk.setConfirming(true)} className="inline-flex h-9 items-center rounded-lg bg-red-600 px-4 text-xs font-semibold text-white hover:bg-red-500 transition-colors">Delete selected</button>
+      )}
+      <button onClick={bulk.clear} className="text-xs font-medium text-slate-500 hover:text-slate-700">Clear</button>
+    </div>
+  );
+}
 
 function FField({ label, value, onChange, type = "text", hint }: { label: string; value: string | number; onChange: (v: string) => void; type?: string; hint?: string }) {
   return (
@@ -518,6 +567,12 @@ function LeadsPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const filtered = (leads as any[])?.filter((l: any) => !statusFilter || l.status === statusFilter);
+  const bulk = useBulkSelect(
+    (filtered ?? []).map((l: any) => l.id),
+    (id) => deleteMutation.mutateAsync({ id } as any),
+    () => qc.invalidateQueries({ queryKey: getListLeadsQueryKey() }),
+    "lead",
+  );
 
   const handleDelete = async (id: number) => {
     try {
@@ -562,11 +617,12 @@ function LeadsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Contact</th><th className="text-left px-4 py-3">Service</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Source</th><th className="text-left px-4 py-3">Created</th><th className="px-4 py-3" />
+                  <th className="px-4 py-3 w-10"><input type="checkbox" className={checkCls} checked={bulk.allSelected} onChange={bulk.toggleAll} title="Select all" /></th><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Contact</th><th className="text-left px-4 py-3">Service</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Source</th><th className="text-left px-4 py-3">Created</th><th className="px-4 py-3" />
                 </tr></thead>
                 <tbody>
-                  {filtered?.length === 0 ? <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No leads found</td></tr> : filtered?.map((l: any) => (
+                  {filtered?.length === 0 ? <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">No leads found</td></tr> : filtered?.map((l: any) => (
                     <tr key={l.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                      <td className="px-4 py-3"><input type="checkbox" className={checkCls} checked={bulk.selected.has(l.id)} onChange={() => bulk.toggle(l.id)} /></td>
                       <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/leads/${l.id}`} className="hover:text-[var(--brand-ink)]">{l.firstName} {l.lastName}</Link></td>
                       <td className="px-4 py-3 text-slate-600">{l.phone || l.email || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{l.serviceInterest || "-"}</td>
@@ -589,6 +645,7 @@ function LeadsPage() {
               </table>
             </div>
           </div>
+          <BulkBar bulk={bulk} noun="lead" />
         </>
       )}
     </div>
@@ -910,6 +967,23 @@ function QuotesPage() {
   const showToast = useToast();
   const [showNew, setShowNew] = useState(false);
   const [newRef, setNewRef] = useState("");
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const deleteQuote = useDeleteQuote();
+  const bulk = useBulkSelect(
+    ((quotes as any[]) ?? []).map((q: any) => q.id),
+    (id) => deleteQuote.mutateAsync({ id } as any),
+    () => qc.invalidateQueries({ queryKey: getListQuotesQueryKey() }),
+    "quote",
+  );
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteQuote.mutateAsync({ id } as any);
+      qc.invalidateQueries({ queryKey: getListQuotesQueryKey() });
+      showToast("Quote deleted");
+      setDeleteId(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -968,23 +1042,37 @@ function QuotesPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">Reference</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Total</th><th className="text-left px-4 py-3">Valid Until</th><th className="text-left px-4 py-3">Created</th><th className="px-4 py-3" />
+                  <th className="px-4 py-3 w-10"><input type="checkbox" className={checkCls} checked={bulk.allSelected} onChange={bulk.toggleAll} title="Select all" /></th><th className="text-left px-4 py-3">Reference</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Total</th><th className="text-left px-4 py-3">Valid Until</th><th className="text-left px-4 py-3">Created</th><th className="px-4 py-3" />
                 </tr></thead>
                 <tbody>
-                  {!(quotes as any[])?.length ? <tr><td colSpan={6} className="px-4 py-8 text-center text-slate-400">No quotes yet</td></tr> : (quotes as any[])?.map((q: any) => (
+                  {!(quotes as any[])?.length ? <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No quotes yet</td></tr> : (quotes as any[])?.map((q: any) => (
                     <tr key={q.id} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="px-4 py-3"><input type="checkbox" className={checkCls} checked={bulk.selected.has(q.id)} onChange={() => bulk.toggle(q.id)} /></td>
                       <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/quotes/${q.id}`} className="hover:text-[var(--brand-ink)]">{q.reference}</Link></td>
                       <td className="px-4 py-3"><Badge status={q.status} /></td>
                       <td className="px-4 py-3 text-slate-700">£{Number(q.total || 0).toFixed(2)}</td>
                       <td className="px-4 py-3 text-slate-500">{q.validUntil ? new Date(q.validUntil).toLocaleDateString("en-GB") : "-"}</td>
                       <td className="px-4 py-3 text-slate-500">{q.createdAt ? new Date(q.createdAt).toLocaleDateString("en-GB") : "-"}</td>
-                      <td className="px-4 py-3 text-right"><Link href={`/dashboard/quotes/${q.id}`} className="text-xs text-[var(--brand-ink)] hover:text-[var(--brand-ink)]">View</Link></td>
+                      <td className="px-4 py-3 text-right">
+                        <span className="flex items-center gap-2 justify-end">
+                          <Link href={`/dashboard/quotes/${q.id}`} className="inline-flex items-center rounded-lg bg-slate-100 text-slate-700 px-3 py-1.5 text-xs font-semibold hover:bg-slate-200 transition-colors">View</Link>
+                          {deleteId === q.id ? (
+                            <>
+                              <button onClick={() => handleDelete(q.id)} className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded">Confirm</button>
+                              <button onClick={() => setDeleteId(null)} className="text-xs text-slate-500 hover:text-slate-700 px-1">Cancel</button>
+                            </>
+                          ) : (
+                            <button onClick={() => setDeleteId(q.id)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
+                          )}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+          <BulkBar bulk={bulk} noun="quote" />
         </>
       )}
     </div>
@@ -1377,8 +1465,27 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
 function EmailsPage() {
   const { data: emails, isLoading } = useListSentEmails();
   const [showCompose, setShowCompose] = useState(false);
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const deleteEmail = useDeleteEmail();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const rows = (emails as any[]) || [];
+  const bulk = useBulkSelect(
+    rows.map((m: any) => m.id),
+    (id) => deleteEmail.mutateAsync({ id } as any),
+    () => qc.invalidateQueries({ queryKey: getListSentEmailsQueryKey() }),
+    "email",
+  );
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteEmail.mutateAsync({ id } as any);
+      qc.invalidateQueries({ queryKey: getListSentEmailsQueryKey() });
+      showToast("Email deleted");
+      setDeleteId(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
@@ -1410,22 +1517,34 @@ function EmailsPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
-                  <th className="text-left px-4 py-3">Subject</th><th className="text-left px-4 py-3">To</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Attachments</th><th className="text-left px-4 py-3">Sent</th>
+                  <th className="px-4 py-3 w-10"><input type="checkbox" className={checkCls} checked={bulk.allSelected} onChange={bulk.toggleAll} title="Select all" /></th><th className="text-left px-4 py-3">Subject</th><th className="text-left px-4 py-3">To</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Attachments</th><th className="text-left px-4 py-3">Sent</th><th className="px-4 py-3" />
                 </tr></thead>
                 <tbody>
-                  {!rows.length ? <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-400">No emails sent yet</td></tr> : rows.map((m: any) => (
+                  {!rows.length ? <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No emails sent yet</td></tr> : rows.map((m: any) => (
                     <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50">
+                      <td className="px-4 py-3"><input type="checkbox" className={checkCls} checked={bulk.selected.has(m.id)} onChange={() => bulk.toggle(m.id)} /></td>
                       <td className="px-4 py-3 font-medium text-slate-900">{m.subject}</td>
                       <td className="px-4 py-3 text-slate-600">{m.toName ? `${m.toName} · ` : ""}{m.toEmail}</td>
                       <td className="px-4 py-3"><span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status}</span></td>
                       <td className="px-4 py-3 text-slate-500">{m.attachmentUrls?.length || "—"}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(m.createdAt).toLocaleString("en-GB")}</td>
+                      <td className="px-4 py-3 text-right">
+                        {deleteId === m.id ? (
+                          <span className="flex items-center gap-1 justify-end">
+                            <button onClick={() => handleDelete(m.id)} className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded">Confirm</button>
+                            <button onClick={() => setDeleteId(null)} className="text-xs text-slate-500 hover:text-slate-700 px-1">Cancel</button>
+                          </span>
+                        ) : (
+                          <button onClick={() => setDeleteId(m.id)} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
           </div>
+          <BulkBar bulk={bulk} noun="email" />
         </>
       )}
     </div>
@@ -2765,17 +2884,45 @@ function MessagesPage() {
   const [selected, setSelected] = useState<any>(null);       // open detail pane
   const [emailReply, setEmailReply] = useState<any>(null);   // reply-by-email modal
   const [smsReply, setSmsReply] = useState<any>(null);       // reply-by-text modal
+  const qc = useQueryClient();
+  const showToast = useToast();
+  const deleteMessage = useDeleteContactMessage();
+  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const rows = (messages as any[]) || [];
+  const bulk = useBulkSelect(
+    rows.map((m: any) => m.id),
+    (id) => deleteMessage.mutateAsync({ id } as any),
+    () => qc.invalidateQueries({ queryKey: getListContactMessagesQueryKey() }),
+    "message",
+  );
+
+  const handleDelete = async (id: number) => {
+    try {
+      await deleteMessage.mutateAsync({ id } as any);
+      qc.invalidateQueries({ queryKey: getListContactMessagesQueryKey() });
+      showToast("Message deleted");
+      setDeleteId(null);
+    } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
+  };
 
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Messages</h1>
+      {rows.length > 0 && (
+        <label className="flex w-fit cursor-pointer items-center gap-2 text-xs font-medium text-slate-500">
+          <input type="checkbox" className={checkCls} checked={bulk.allSelected} onChange={bulk.toggleAll} /> Select all
+        </label>
+      )}
       <div className="space-y-3">
-        {isLoading ? <div className="text-center py-12 text-slate-400">Loading...</div> : (messages as any[])?.length === 0 ? (
+        {isLoading ? <div className="text-center py-12 text-slate-400">Loading...</div> : rows.length === 0 ? (
           <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No messages yet</div>
-        ) : (messages as any[]).map((m: any) => (
-          <button key={m.id} onClick={() => setSelected(m)} className="w-full text-left rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-1.5 hover:border-[var(--brand)]/60 hover:shadow-sm transition-all">
+        ) : rows.map((m: any) => (
+          <div key={m.id} onClick={() => setSelected(m)} className="w-full cursor-pointer text-left rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-1.5 hover:border-[var(--brand)]/60 hover:shadow-sm transition-all">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <div className="font-medium text-slate-900">{msgName(m)}</div>
+              <div className="flex min-w-0 items-center gap-2.5">
+                <input type="checkbox" className={checkCls} checked={bulk.selected.has(m.id)} onClick={e => e.stopPropagation()} onChange={() => bulk.toggle(m.id)} />
+                <div className="font-medium text-slate-900">{msgName(m)}</div>
+              </div>
               <div className="text-xs text-slate-400">{m.createdAt ? new Date(m.createdAt).toLocaleString("en-GB") : ""}</div>
             </div>
             {m.subject && <div className="text-sm font-medium text-slate-700">{m.subject}</div>}
@@ -2783,11 +2930,22 @@ function MessagesPage() {
             <div className="flex items-center gap-3 text-xs text-slate-400 pt-0.5">
               {msgEmail(m) && <span className="truncate">{msgEmail(m)}</span>}
               {msgPhone(m) && <span>{msgPhone(m)}</span>}
-              <span className="ml-auto font-medium text-[var(--brand-ink)]">Open &amp; reply →</span>
+              <span className="ml-auto flex items-center gap-2">
+                {deleteId === m.id ? (
+                  <span className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                    <button onClick={() => handleDelete(m.id)} className="text-xs text-white bg-red-500 hover:bg-red-600 px-2 py-0.5 rounded">Confirm</button>
+                    <button onClick={() => setDeleteId(null)} className="text-xs text-slate-500 hover:text-slate-700 px-1">Cancel</button>
+                  </span>
+                ) : (
+                  <button onClick={e => { e.stopPropagation(); setDeleteId(m.id); }} className="inline-flex items-center rounded-lg bg-red-50 text-red-600 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">Delete</button>
+                )}
+                <span className="font-medium text-[var(--brand-ink)]">Open &amp; reply →</span>
+              </span>
             </div>
-          </button>
+          </div>
         ))}
       </div>
+      <BulkBar bulk={bulk} noun="message" />
 
       {selected && (
         <MessageDetailModal

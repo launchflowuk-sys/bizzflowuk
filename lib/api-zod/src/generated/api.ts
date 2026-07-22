@@ -1211,6 +1211,14 @@ export const ListSentEmailsResponse = zod.array(ListSentEmailsResponseItem)
 
 
 /**
+ * @summary Delete a sent-email log entry
+ */
+export const DeleteEmailParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+/**
  * @summary Compose and send a branded email to a lead or customer, and log it
  */
 export const ComposeEmailBody = zod.object({

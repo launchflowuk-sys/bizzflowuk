@@ -832,6 +832,21 @@ paths:
                 items:
                   $ref: "#/components/schemas/SentEmail"
 
+  /emails/{id}:
+    delete:
+      operationId: deleteEmail
+      tags: [emails]
+      summary: Delete a sent-email log entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
   /emails/compose:
     post:
       operationId: composeEmail
