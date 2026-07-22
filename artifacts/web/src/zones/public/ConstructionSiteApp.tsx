@@ -1,4 +1,4 @@
-import { Switch, Route, useParams, Router as WouterRouter, Link as WouterLink } from "wouter";
+import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
 import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useListPublicReviews, useSubmitContact, useListPublicPriceItems } from "@workspace/api-client-react";
 import { useState, useEffect } from "react";
 import { initGoogleTag } from "./analytics";
@@ -619,6 +619,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
     try {
       await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any);
       setSent(true);
+      window.scrollTo(0, 0); // confirmation replaces the form — land at the top, not the footer
     } catch {}
   };
   return (
@@ -740,6 +741,13 @@ function NotFoundPage({ tenantSlug }: { tenantSlug: string }) {
 
 // ── Root ─────────────────────────────────────────────────────────────────────
 
+/** SPA route changes keep the old scroll offset — reset to top on every navigation, like a normal site. */
+function ScrollToTopOnNavigate() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 export default function ConstructionSiteApp({ forcedSlug, forcedBase, forcedOrigin, ssrPath }: { forcedSlug?: string; forcedBase?: string; forcedOrigin?: string; ssrPath?: string } = {}) {
   const params = useParams<{ tenantSlug: string }>();
   const tenantSlug = forcedSlug || params.tenantSlug || "";
@@ -780,6 +788,7 @@ export default function ConstructionSiteApp({ forcedSlug, forcedBase, forcedOrig
     <SiteOriginCtx.Provider value={forcedOrigin ?? (typeof window !== "undefined" ? window.location.origin : "")}>
     <SiteBaseCtx.Provider value={siteBase}>
     <WouterRouter base={siteBase} ssrPath={ssrPath}>
+      <ScrollToTopOnNavigate />
       <Switch>
         <Route path="/">{() => <HomePage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/services">{() => <ServicesPage tenantSlug={tenantSlug}/>}</Route>

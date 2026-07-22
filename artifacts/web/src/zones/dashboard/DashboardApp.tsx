@@ -74,6 +74,13 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 // ─── Delete Confirm inside modal ────────────────────────────────────────────────
+/** SPA route changes keep the old scroll offset — reset to top on every navigation. */
+function ScrollToTopOnNavigate() {
+  const [location] = useWouterLocation();
+  useEffect(() => { document.querySelector("main")?.scrollTo(0, 0); window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 function DeleteConfirm({ label, onConfirm, onCancel, isPending }: { label: string; onConfirm: () => void; onCancel: () => void; isPending: boolean }) {
   return (
     <div className="space-y-4">
@@ -4037,6 +4044,7 @@ export default function DashboardApp() {
           <TopBar location={location} onMenu={() => setSidebarOpen(true)} activeName={activeBrand.name} />
 
           <main className="flex-1 overflow-auto">
+            <ScrollToTopOnNavigate />
             <Switch>
               <Route path="/dashboard" component={DashboardHome} />
               <Route path="/dashboard/leads" component={LeadsPage} />

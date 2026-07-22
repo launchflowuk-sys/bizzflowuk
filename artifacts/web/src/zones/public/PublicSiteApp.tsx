@@ -2822,6 +2822,7 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
       const result = await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any) as any;
       setReference(result?.reference ?? null);
       setSubmitted(true);
+      window.scrollTo(0, 0); // confirmation replaces a long form — land at the top, not the footer
       fireQuoteRequestConversion(settings?.googleAdsConversionId, settings?.googleAdsConversionLabel);
     } catch {}
   };
@@ -3224,6 +3225,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
     try {
       await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any);
       setSubmitted(true);
+      window.scrollTo(0, 0); // confirmation replaces the form — land at the top, not the footer
     } catch {}
   };
 
@@ -3345,6 +3347,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
     try {
       await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any);
       setSubmitted(true);
+      window.scrollTo(0, 0); // confirmation replaces the form — land at the top, not the footer
     } catch {}
   };
 
@@ -3464,6 +3467,14 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
 // ROUTER
 // ─────────────────────────────────────────────────────────────────────────────
 
+/** SPA route changes keep the old scroll offset, so a new page opened from the bottom of a long
+ *  form appeared "stuck at the footer". Reset to top on every navigation, like a normal site. */
+function ScrollToTopOnNavigate() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 export default function PublicSiteApp({ forcedSlug, forcedBase, forcedOrigin, ssrPath }: { forcedSlug?: string; forcedBase?: string; forcedOrigin?: string; ssrPath?: string } = {}) {
   const params = useParams<{ tenantSlug: string }>();
   const tenantSlug = forcedSlug || params.tenantSlug || '';
@@ -3508,6 +3519,7 @@ export default function PublicSiteApp({ forcedSlug, forcedBase, forcedOrigin, ss
     <SiteOriginCtx.Provider value={forcedOrigin ?? (typeof window !== 'undefined' ? window.location.origin : '')}>
     <SiteBaseCtx.Provider value={siteBase}>
     <WouterRouter base={siteBase} ssrPath={ssrPath}>
+      <ScrollToTopOnNavigate />
       <Switch>
         <Route path="/">{() => <HomePage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/services">{() => <ServicesPage tenantSlug={tenantSlug}/>}</Route>

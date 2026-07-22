@@ -45,7 +45,10 @@ export function PriceCalculatorSection({ tenantSlug, accent, panel }: { tenantSl
   const [submitted, setSubmitted] = useState(false);
   const [reference, setReference] = useState<string | null>(null);
   const successRef = useRef<HTMLDivElement>(null);
-  useEffect(() => { if (submitted) successRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }); }, [submitted]);
+  // Jump (not smooth-scroll) to the top when the confirmation replaces the calculator: the page
+  // height collapses at the same moment, and a smooth scroll racing that collapse landed users at
+  // the footer instead of the confirmation.
+  useEffect(() => { if (submitted) window.scrollTo(0, 0); }, [submitted]);
 
   const getQty = (it: PriceItem) => qty[it.id] ?? (it.fixed ? 0 : it.minQuantity || 0);
 
