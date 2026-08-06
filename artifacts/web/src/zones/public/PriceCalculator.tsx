@@ -1,6 +1,7 @@
 import { useState, useMemo, useRef, useEffect } from "react";
 import { useGetPublicSite, useListPublicPriceItems, useSubmitQuoteRequest } from "@workspace/api-client-react";
 import { useSiteBase } from "./PublicSiteApp";
+import { fireQuoteRequestConversion } from "./analytics";
 
 // Neutral palette (kept local so this component doesn't couple to either template's colours).
 const TEXT = "#26323F";
@@ -34,7 +35,7 @@ function money(n: number): string {
 export function PriceCalculatorSection({ tenantSlug, accent, panel }: { tenantSlug: string; accent: string; panel: string }) {
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
-  const { tenant } = (siteData as any) || {};
+  const { tenant, settings } = (siteData as any) || {};
   const { data: itemsData } = useListPublicPriceItems(tenantSlug);
   const items = ((itemsData as any[]) || []) as PriceItem[];
   const mutation = useSubmitQuoteRequest();
@@ -114,6 +115,8 @@ export function PriceCalculatorSection({ tenantSlug, accent, panel }: { tenantSl
       } } as any) as any;
       setReference(result?.reference ?? null);
       setSubmitted(true);
+      // Calculator leads are quote requests too — count them against ad campaigns.
+      fireQuoteRequestConversion(settings?.googleAdsConversionId, settings?.googleAdsConversionLabel);
     } catch { /* surfaced via mutation.isError below */ }
   };
 
