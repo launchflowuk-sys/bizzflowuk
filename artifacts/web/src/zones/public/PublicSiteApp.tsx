@@ -3,6 +3,7 @@ import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowseP
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { initGoogleTag, updateConsent, fireQuoteRequestConversion } from "./analytics";
 import { PriceCalculatorSection } from "./PriceCalculator";
+import LandingPage from "./LandingPage";
 export const SiteBaseCtx = createContext('');
 export const useSiteBase = () => useContext(SiteBaseCtx);
 
@@ -83,7 +84,7 @@ const WHY_POINTS = [
 // Renders <title>/<meta>/<link> as plain JSX — React 19 hoists these into <head> automatically
 // no matter where in the tree they render, in both client and server rendering, so this needs
 // no DOM manipulation and produces real tags in a server-rendered HTML snapshot too.
-export function PageSEO({ title, description, image, siteName }: { title: string; description: string; image?: string; siteName?: string }) {
+export function PageSEO({ title, description, image, siteName, noindex }: { title: string; description: string; image?: string; siteName?: string; noindex?: boolean }) {
   const siteBase = useSiteBase();
   const origin = useSiteOrigin();
   const [location] = useLocation();
@@ -107,7 +108,11 @@ export function PageSEO({ title, description, image, siteName }: { title: string
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       {image && <meta name="twitter:image" content={image} />}
-      {canonicalHref && <link rel="canonical" href={canonicalHref} />}
+      {/* Paid-landing variants target the same queries as their organic counterpart; letting both
+          into the index splits the signal and weakens each. No canonical either — it is not a
+          duplicate of another page, it simply should not rank. */}
+      <meta name="robots" content={noindex ? "noindex, follow" : "index, follow"} />
+      {!noindex && canonicalHref && <link rel="canonical" href={canonicalHref} />}
     </>
   );
 }
@@ -142,7 +147,7 @@ function localBusinessSchema(tenant: any, settings: any, siteUrl: string, avgRat
   };
 }
 
-function Spinner() {
+export function Spinner() {
   return (
     <div className="flex min-h-[300px] items-center justify-center">
       <div className="relative w-24 h-24 flex items-center justify-center">
@@ -3535,6 +3540,7 @@ export default function PublicSiteApp({ forcedSlug, forcedBase, forcedOrigin, ss
         <Route path="/blog/:slug">{(p: any) => <BlogPostPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/calculator">{() => <CalculatorPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/free-quote">{() => <LandingPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/pay/:token">{(p: any) => <PayQuotePage tenantSlug={tenantSlug} token={p.token}/>}</Route>
         <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/visualiser">{() => <VisualiserPage tenantSlug={tenantSlug}/>}</Route>
