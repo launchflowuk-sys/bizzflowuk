@@ -57,6 +57,9 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   squareLocationId: text("square_location_id"),
   squareAccessToken: text("square_access_token"),
   squareEnvironment: text("square_environment").default("sandbox"), // 'sandbox' | 'production'
+  // Customer-facing prefix for quote references, e.g. "AMO-R" -> AMO-R-0007. Null falls back to
+  // "QUO". Per-tenant because the reference appears on the quote the customer receives (0019).
+  quoteRefPrefix: text("quote_ref_prefix"),
   // Per-event, per-channel notification toggles
   notifyLeadNewEmail: boolean("notify_lead_new_email").default(true),
   notifyLeadNewSms: boolean("notify_lead_new_sms").default(true),

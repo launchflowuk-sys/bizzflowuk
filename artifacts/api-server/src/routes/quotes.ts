@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { randomUUID } from "node:crypto";
 import { db } from "@workspace/db";
-import { quotesTable, quoteItemsTable, projectsTable, leadsTable, customersTable, tenantsTable } from "@workspace/db";
+import { quotesTable, quoteItemsTable, projectsTable, leadsTable, customersTable, tenantsTable, tenantSettingsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
@@ -17,6 +17,35 @@ const PLATFORM_BASE_URL = process.env.PUBLIC_BASE_URL || "https://bizzflowuk.com
 export function buildPayUrl(opts: { customDomain?: string | null; tenantSlug: string; token: string }): string {
   if (opts.customDomain) return `https://${opts.customDomain}/pay/${opts.token}`;
   return `${PLATFORM_BASE_URL}/site/${opts.tenantSlug}/pay/${opts.token}`;
+}
+
+/**
+ * Builds the next human-readable quote reference for a tenant, e.g. "AMO-R-0007".
+ *
+ * The prefix is per-tenant (tenant_settings.quote_ref_prefix) because references are shown to
+ * customers — hardcoding one tenant's prefix would brand every other tenant's quotes wrongly.
+ * Falls back to "QUO" for tenants that haven't set one, which is the historic format.
+ *
+ * Numbering counts only references already matching this tenant's current prefix, so switching
+ * prefix starts a fresh sequence rather than inheriting old numbers. Legacy timestamp-style
+ * references (QUO-1786711199250) are ignored by the 1-6 digit bound, so an old quote can't push
+ * the next number into the billions.
+ */
+export async function nextQuoteReference(tenantId: number): Promise<string> {
+  const settings = await db.select({ prefix: tenantSettingsTable.quoteRefPrefix })
+    .from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
+  const prefix = settings[0]?.prefix?.trim() || "QUO";
+
+  const rows = await db.select({ reference: quotesTable.reference })
+    .from(quotesTable)
+    .where(and(eq(quotesTable.tenantId, tenantId), sql`${quotesTable.reference} ~ ${`^${prefix}-[0-9]{1,6}$`}`));
+
+  const highest = rows.reduce((max, r) => {
+    const n = Number(r.reference.slice(prefix.length + 1));
+    return Number.isFinite(n) && n > max ? n : max;
+  }, 0);
+
+  return `${prefix}-${String(highest + 1).padStart(4, "0")}`;
 }
 
 /** Resolves the customer name/email/phone to notify for a quote, from its linked customer or lead. */
@@ -46,7 +75,7 @@ router.get("/quotes", requireTenantAccess, async (req, res) => {
 
 router.post("/quotes", requireTenantAccess, async (req, res) => {
   try {
-    const ref = req.body.reference ?? `QUO-${Date.now()}`;
+    const ref = req.body.reference ?? await nextQuoteReference(req.authUser?.tenantId ?? -1);
     const q = await db.insert(quotesTable).values({ ...req.body, reference: ref, tenantId: req.authUser?.tenantId ?? -1 }).returning();
     res.status(201).json(q[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

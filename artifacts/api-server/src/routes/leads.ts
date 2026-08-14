@@ -7,6 +7,7 @@ import { fireNotification } from "../lib/notifications";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 import { buildRelativeObjectUrl } from "../lib/objectStorage";
 import { deleteLeadsDeep } from "../lib/cascadeDelete";
+import { nextQuoteReference } from "./quotes";
 
 const router = Router();
 
@@ -214,7 +215,7 @@ router.post("/leads/:id/convert-quote", requireTenantAccess, async (req, res) =>
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .limit(1);
     if (!lead.length) { res.status(404).json({ error: "Not found" }); return; }
-    const ref = `QUO-${Date.now()}`;
+    const ref = await nextQuoteReference(lead[0].tenantId);
 
     // If the lead came from the cost calculator, pre-fill the quote's line items and totals from
     // its stored estimate so Mark doesn't re-key anything — he just reviews, tweaks and sends.
