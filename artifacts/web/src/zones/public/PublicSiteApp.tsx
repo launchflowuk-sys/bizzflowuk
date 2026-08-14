@@ -3541,6 +3541,7 @@ export default function PublicSiteApp({ forcedSlug, forcedBase, forcedOrigin, ss
         <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/calculator">{() => <CalculatorPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/free-quote">{() => <LandingPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/free-quote/:variant">{(p: any) => <LandingPage tenantSlug={tenantSlug} variantKey={p.variant}/>}</Route>
         <Route path="/pay/:token">{(p: any) => <PayQuotePage tenantSlug={tenantSlug} token={p.token}/>}</Route>
         <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/visualiser">{() => <VisualiserPage tenantSlug={tenantSlug}/>}</Route>

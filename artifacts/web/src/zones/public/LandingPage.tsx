@@ -70,9 +70,14 @@ const SERVICES = [
  * scores against you through landing-page relevance, which feeds Quality Score and therefore the
  * price of every click.
  *
- * ?service=<key> lets each ad group keep its own headline and pre-select the dropdown while
- * sharing one page. An unknown or absent key falls back to the generic wording, so a mistyped ad
- * URL degrades quietly instead of breaking.
+ * The key is a path segment (/free-quote/k-rend), not a query string. The public site is server
+ * rendered and its HTML is render-cached by path — a ?query variant would serve whichever HTML
+ * was cached first and then rewrite the headline during hydration, which is both a mismatch and
+ * a visible flash on the largest element of the page. As a path it is part of routing and of the
+ * cache key, so server and client agree on the first paint.
+ *
+ * An unknown or absent key falls back to the generic wording, so a mistyped ad URL degrades
+ * quietly instead of breaking.
  */
 const SERVICE_VARIANTS: Record<string, { h1: string; intro: string; service: string }> = {
   silicone: {
@@ -107,9 +112,7 @@ const SERVICE_VARIANTS: Record<string, { h1: string; intro: string; service: str
   },
 };
 
-function readServiceVariant(): { h1?: string; intro?: string; service?: string } {
-  if (typeof window === "undefined") return {};
-  const key = new URLSearchParams(window.location.search).get("service");
+function readServiceVariant(key?: string): { h1?: string; intro?: string; service?: string } {
   return (key && SERVICE_VARIANTS[key]) || {};
 }
 
@@ -124,11 +127,11 @@ function readServiceVariant(): { h1?: string; intro?: string; service?: string }
  * enquiry that vanishes into silence is exactly the complaint this whole batch of work exists to
  * fix. A confirmation landing in their inbox is also what stops them ringing the next renderer.
  */
-function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel }: {
-  tenantSlug: string; accent: string; conversionId?: string; conversionLabel?: string;
+function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel, presetService }: {
+  tenantSlug: string; accent: string; conversionId?: string; conversionLabel?: string; presetService?: string;
 }) {
   const mutation = useSubmitQuoteRequest();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "", service: readServiceVariant().service ?? "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "", service: presetService ?? "" });
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -227,7 +230,7 @@ function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel }: {
   );
 }
 
-export default function LandingPage({ tenantSlug }: { tenantSlug: string }) {
+export default function LandingPage({ tenantSlug, variantKey }: { tenantSlug: string; variantKey?: string }) {
   const { data, isLoading } = useGetPublicSite(tenantSlug);
   const { data: reviewData } = useListPublicReviews(tenantSlug);
 
@@ -239,7 +242,7 @@ export default function LandingPage({ tenantSlug }: { tenantSlug: string }) {
   const phone: string | undefined = settings?.phone || tenant?.phone || undefined;
   const name = tenant?.name || "Us";
 
-  const variant = readServiceVariant();
+  const variant = readServiceVariant(variantKey);
   const reviews = ((reviewData as any[]) || []).filter(r => r.content).slice(0, 3);
   const avg = reviews.length
     ? Math.round((reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length) * 10) / 10
@@ -314,6 +317,7 @@ export default function LandingPage({ tenantSlug }: { tenantSlug: string }) {
               accent={accent}
               conversionId={settings?.googleAdsConversionId}
               conversionLabel={settings?.googleAdsConversionLabel}
+              presetService={variant.service}
             />
           </div>
         </div>
