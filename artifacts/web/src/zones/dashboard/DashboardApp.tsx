@@ -348,7 +348,7 @@ function TopBar({ location, onMenu, activeName }: { location: string; onMenu: ()
   return (
     <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 h-16 flex-shrink-0">
       <div className="flex items-center gap-3 min-w-0">
-        <button onClick={onMenu} className="md:hidden p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100"><svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg></button>
+        <button onClick={onMenu} aria-label="Open menu" className="md:hidden inline-flex items-center justify-center min-w-11 min-h-11 p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg></button>
         <div className="min-w-0">
           <h1 className="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">{title}</h1>
           {activeName && <p className="text-[11px] font-medium leading-tight truncate" style={{ color: "var(--brand-ink)" }}>{activeName}</p>}
@@ -762,7 +762,9 @@ function waNumber(phone?: string): string | null {
 function LeadQuickActions({ lead, onContacted, busy }: { lead: any; onContacted: (id: number) => void; busy: boolean }) {
   const wa = waNumber(lead.phone);
   const stop = (e: React.MouseEvent) => e.stopPropagation();
-  const btn = "inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors";
+  // 44px minimum on touch, tightened on desktop where the pointer is precise. These are the
+  // buttons that get pressed one-handed, outdoors, often with a glove on.
+  const btn = "inline-flex items-center justify-center gap-1.5 rounded-lg px-3.5 py-2.5 text-sm font-semibold transition-colors min-h-11 md:min-h-0 md:px-2.5 md:py-1.5 md:text-xs";
   return (
     <div className="flex items-center gap-1.5" onClick={stop}>
       {lead.phone && (
@@ -873,12 +875,12 @@ function LeadsPage() {
       )}
       <div className="flex flex-wrap items-center gap-2">
         {["", "New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
+          <button key={s} onClick={() => setStatusFilter(s)} className={`px-4 py-2.5 min-h-11 md:min-h-0 md:px-3.5 md:py-1.5 rounded-lg text-sm md:text-xs font-semibold transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
         ))}
         {needsAttention.length > 0 && (
           <button
             onClick={() => setStatusFilter(statusFilter === "__attention" ? "" : "__attention")}
-            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${statusFilter === "__attention" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"}`}
+            className={`px-4 py-2.5 min-h-11 md:min-h-0 md:px-3.5 md:py-1.5 rounded-lg text-sm md:text-xs font-semibold transition-colors ${statusFilter === "__attention" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"}`}
           >
             Needs calling ({needsAttention.length})
           </button>
@@ -2403,7 +2405,7 @@ function ProjectsPage() {
       )}
       <div className="flex flex-wrap gap-2">
         {["", "Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"].map(s => (
-          <button key={s} onClick={() => setStatusFilter(s)} className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
+          <button key={s} onClick={() => setStatusFilter(s)} className={`px-4 py-2.5 min-h-11 md:min-h-0 md:px-3.5 md:py-1.5 rounded-lg text-sm md:text-xs font-semibold transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
         ))}
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
