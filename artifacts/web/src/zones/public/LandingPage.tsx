@@ -63,6 +63,57 @@ const SERVICES = [
 ];
 
 /**
+ * Message match for paid search.
+ *
+ * One landing page serving seven ad groups would show "Rendering across Grays" to somebody who
+ * searched "pebble dash removal" — a mismatch the visitor feels immediately, and one Google
+ * scores against you through landing-page relevance, which feeds Quality Score and therefore the
+ * price of every click.
+ *
+ * ?service=<key> lets each ad group keep its own headline and pre-select the dropdown while
+ * sharing one page. An unknown or absent key falls back to the generic wording, so a mistyped ad
+ * URL degrades quietly instead of breaking.
+ */
+const SERVICE_VARIANTS: Record<string, { h1: string; intro: string; service: string }> = {
+  silicone: {
+    h1: "Silicone render across Grays & south Essex — free quote within 24 hours",
+    intro: "Self-cleaning, weatherproof silicone render fitted by a local team and backed by a written 15-year guarantee. We survey your property free, then send a fixed written price.",
+    service: "Silicone Render",
+  },
+  monocouche: {
+    h1: "Monocouche render across Grays & south Essex — free quote within 24 hours",
+    intro: "Through-coloured monocouche render, so chips and scratches stay invisible. Single-coat, durable and low-maintenance — surveyed free, priced in writing.",
+    service: "Monocouche Render",
+  },
+  "k-rend": {
+    h1: "K Rend specialists in Grays & south Essex — free quote within 24 hours",
+    intro: "Textured, hard-wearing K Rend installed by a local team. Free survey, a fixed written price within 24 hours, and a guarantee in writing.",
+    service: "K Rend",
+  },
+  ewi: {
+    h1: "External wall insulation in Grays & south Essex — free quote within 24 hours",
+    intro: "Cut your heating bills and improve your EPC rating with external wall insulation, finished in render. Free survey, fixed written price, no obligation.",
+    service: "External Wall Insulation",
+  },
+  "pebble-dash": {
+    h1: "Pebbledash removal across Grays & south Essex — free quote within 24 hours",
+    intro: "Remove dated pebbledash and replace it with a smooth, modern render finish. Removal, prep and finish handled end to end, priced in writing after a free survey.",
+    service: "Pebble Dash Removal",
+  },
+  repairs: {
+    h1: "Render repairs across Grays & south Essex — free quote within 24 hours",
+    intro: "Cracked or failing render repaired and colour-matched before water gets behind it. Fast local response, free survey, fixed written price.",
+    service: "Render Repairs",
+  },
+};
+
+function readServiceVariant(): { h1?: string; intro?: string; service?: string } {
+  if (typeof window === "undefined") return {};
+  const key = new URLSearchParams(window.location.search).get("service");
+  return (key && SERVICE_VARIANTS[key]) || {};
+}
+
+/**
  * Four fields, and only three of them required.
  *
  * The site's main quote form asks for eight answers up front, which suits an organic visitor who
@@ -77,7 +128,7 @@ function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel }: {
   tenantSlug: string; accent: string; conversionId?: string; conversionLabel?: string;
 }) {
   const mutation = useSubmitQuoteRequest();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "", service: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "", service: readServiceVariant().service ?? "" });
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -188,6 +239,7 @@ export default function LandingPage({ tenantSlug }: { tenantSlug: string }) {
   const phone: string | undefined = settings?.phone || tenant?.phone || undefined;
   const name = tenant?.name || "Us";
 
+  const variant = readServiceVariant();
   const reviews = ((reviewData as any[]) || []).filter(r => r.content).slice(0, 3);
   const avg = reviews.length
     ? Math.round((reviews.reduce((s, r) => s + (r.rating || 5), 0) / reviews.length) * 10) / 10
@@ -196,7 +248,7 @@ export default function LandingPage({ tenantSlug }: { tenantSlug: string }) {
   return (
     <div className="min-h-screen bg-white" style={{ color: TEXT }}>
       <PageSEO
-        title={`Rendering in Grays & Essex — free quote in 24 hours | ${name}`}
+        title={variant.h1 ? `${variant.h1.split(" — ")[0]} | ${name}` : `Rendering in Grays & Essex — free quote in 24 hours | ${name}`}
         description="Silicone render, K Rend and external wall insulation across Grays, Thurrock and south Essex. Free no-obligation survey, written quote within 24 hours, 15-year guarantee."
         noindex
       />
@@ -226,12 +278,10 @@ export default function LandingPage({ tenantSlug }: { tenantSlug: string }) {
         <div className="mx-auto grid max-w-5xl gap-10 px-5 py-10 lg:grid-cols-2 lg:py-14">
           <div>
             <h1 className="text-3xl font-extrabold leading-tight tracking-tight sm:text-4xl" style={{ color: INK }}>
-              Rendering across Grays &amp; south Essex — free quote within 24&nbsp;hours
+              {variant.h1 ?? "Rendering across Grays & south Essex — free quote within 24 hours"}
             </h1>
             <p className="mt-4 text-base leading-relaxed" style={{ color: MUTED }}>
-              Silicone render, K&nbsp;Rend and external wall insulation, fitted by a local team
-              and backed by a written 15-year guarantee. We survey your property free, then send a
-              fixed written price — no pressure, no obligation.
+              {variant.intro ?? "Silicone render, K Rend and external wall insulation, fitted by a local team and backed by a written 15-year guarantee. We survey your property free, then send a fixed written price — no pressure, no obligation."}
             </p>
 
             <ul className="mt-6 space-y-2.5">
