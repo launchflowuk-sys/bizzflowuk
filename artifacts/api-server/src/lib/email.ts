@@ -23,6 +23,8 @@ export interface EmailPayload {
   html: string;
   text?: string;
   attachments?: EmailAttachment[];
+  /** Set on admin alerts about a customer so hitting Reply goes to the customer, not the mailbox itself. */
+  replyTo?: string;
 }
 
 export async function sendEmail(payload: EmailPayload, smtp: SmtpConfig | null | undefined): Promise<void> {
@@ -45,6 +47,7 @@ export async function sendEmail(payload: EmailPayload, smtp: SmtpConfig | null |
   await transporter.sendMail({
     from: smtp.from || smtp.user,
     to: payload.to,
+    replyTo: payload.replyTo,
     subject: payload.subject,
     html: payload.html,
     text: payload.text,
@@ -304,6 +307,45 @@ export function buildQuoteSentCustomerEmail(opts: {
   };
 }
 
+// ─── 4b. Quote Sent — admin confirmation ──────────────────────────────────────
+// Mark's receipt that the quote actually left the building. Without this there is no
+// signal anywhere — the API returns 200 and the dashboard says "sent" even when SMTP
+// silently drops the message, so a tenant has no way to tell a delivered quote from a
+// lost one.
+export function buildQuoteSentAdminEmail(opts: {
+  brand: BrandConfig;
+  adminEmail: string;
+  reference: string;
+  customerName?: string;
+  customerEmail: string;
+  amount?: string;
+  remainingBalance?: string;
+  paymentLinkUrl?: string;
+}): EmailPayload {
+  const accent = opts.brand.primaryColor || "#f97316";
+  return {
+    to: opts.adminEmail,
+    subject: `Quote Sent — ${opts.reference}${opts.customerName ? ` to ${opts.customerName}` : ""}`,
+    html: renderEmailShell({
+      brand: opts.brand,
+      preheader: `Quote ${opts.reference} was emailed to ${opts.customerEmail}.`,
+      heading: "Quote Sent",
+      intro: `Quote <strong>${opts.reference}</strong> has been emailed to <strong>${opts.customerEmail}</strong>${opts.customerName ? ` (${opts.customerName})` : ""}. This is your confirmation that it left the system — you'll get another alert the moment they accept it.`,
+      bodyHtml: [
+        emailDataTable([
+          ["Reference", opts.reference],
+          ["Customer", opts.customerName],
+          ["Sent to", opts.customerEmail],
+          ["Amount requested", opts.amount],
+          ["Remaining balance", opts.remainingBalance],
+        ]),
+        opts.paymentLinkUrl ? emailButton("View the customer's payment page", opts.paymentLinkUrl, accent) : "",
+      ].join(""),
+    }),
+    text: `Quote ${opts.reference} was emailed to ${opts.customerEmail}${opts.customerName ? ` (${opts.customerName})` : ""}.${opts.amount ? ` Amount requested: ${opts.amount}.` : ""}${opts.remainingBalance ? ` Remaining balance: ${opts.remainingBalance}.` : ""}${opts.paymentLinkUrl ? ` Payment page: ${opts.paymentLinkUrl}` : ""}`,
+  };
+}
+
 // ─── 5. Quote Accepted — admin alert ──────────────────────────────────────────
 export function buildQuoteAcceptedAdminEmail(opts: {
   brand: BrandConfig;
@@ -481,15 +523,20 @@ export function buildReviewRequestEmail(opts: {
 }
 
 // ─── Contact form helpers (used directly in contact.ts) ───────────────────────
+// NOTE: `adminEmail` is the recipient; `email` is the person who filled in the form. These were
+// previously conflated — `to` was set to the sender's address, so every website contact message
+// was delivered to the enquirer and the tenant never saw it.
 export function buildContactAdminEmail(opts: {
   brand: BrandConfig;
+  adminEmail: string;
   name: string;
   email: string;
   phone?: string;
   message: string;
 }): EmailPayload {
   return {
-    to: opts.email,
+    to: opts.adminEmail,
+    replyTo: opts.email,
     subject: `New Contact Message — ${opts.name}`,
     html: renderEmailShell({
       brand: opts.brand,

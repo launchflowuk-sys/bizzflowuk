@@ -7,6 +7,7 @@ import {
   buildLeadNewCustomerEmail,
   buildSurveyBookedCustomerEmail,
   buildQuoteSentCustomerEmail,
+  buildQuoteSentAdminEmail,
   buildQuoteAcceptedAdminEmail,
   buildPaymentReceivedAdminEmail,
   buildPaymentReceivedCustomerEmail,
@@ -228,8 +229,24 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
         break;
       }
 
-      // ── quote_sent: customer-only notification ────────────────────────────
+      // ── quote_sent: customer quote + admin confirmation of despatch ───────
       case "quote_sent": {
+        if (doAdminEmail) {
+          sendEmail(buildQuoteSentAdminEmail({
+            brand,
+            adminEmail: adminEmail!,
+            reference: ctx.reference || "—",
+            customerName: fullName !== "Unknown" ? fullName : undefined,
+            customerEmail: ctx.customerEmail || "—",
+            amount: ctx.amount,
+            remainingBalance: ctx.remainingBalance,
+            paymentLinkUrl: ctx.paymentLinkUrl,
+          }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent admin email failed"));
+        }
+        if (doAdminSms) {
+          sendSms(adminPhone!, `Quote ${ctx.reference || ""} sent to ${fullName !== "Unknown" ? fullName : ctx.customerEmail || "customer"}${ctx.amount ? ` — ${ctx.amount} requested` : ""}.`, smsCreds!)
+            .catch(e => logger.error({ err: e }, "[notify] quote_sent admin SMS failed"));
+        }
         if (doCustomerEmail) {
           sendEmail(buildQuoteSentCustomerEmail({
             brand,

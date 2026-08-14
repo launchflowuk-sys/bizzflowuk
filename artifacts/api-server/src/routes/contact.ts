@@ -38,7 +38,7 @@ async function handleContactMessage(req: any, res: any, slug: string) {
     const brand = buildBrandConfig(tenant as any, settings as any);
 
     if (adminEmail) {
-      sendEmail(buildContactAdminEmail({ brand, name: senderName, email: senderEmail, phone: senderPhone, message: req.body.message }), smtp)
+      sendEmail(buildContactAdminEmail({ brand, adminEmail, name: senderName, email: senderEmail, phone: senderPhone, message: req.body.message }), smtp)
         .catch(e => req.log.error({ err: e }, "Failed to send contact admin email"));
     }
     if (senderEmail) {

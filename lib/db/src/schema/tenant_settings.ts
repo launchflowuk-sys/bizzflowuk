@@ -64,8 +64,10 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   notifySurveyBookedSms: boolean("notify_survey_booked_sms").default(true),
   notifyQuoteSentEmail: boolean("notify_quote_sent_email").default(true),
   notifyQuoteSentSms: boolean("notify_quote_sent_sms").default(true),
-  notifyQuoteAcceptedEmail: boolean("notify_quote_accepted_email").default(false),
-  notifyQuoteAcceptedSms: boolean("notify_quote_accepted_sms").default(false),
+  // Defaulted false by oversight while every sibling defaulted true, so tenants were never told
+  // about the single most valuable event in the funnel — a customer accepting a quote (0018).
+  notifyQuoteAcceptedEmail: boolean("notify_quote_accepted_email").default(true),
+  notifyQuoteAcceptedSms: boolean("notify_quote_accepted_sms").default(true),
   notifyPaymentReceivedEmail: boolean("notify_payment_received_email").default(true),
   notifyPaymentReceivedSms: boolean("notify_payment_received_sms").default(true),
   notifyLeadWonEmail: boolean("notify_lead_won_email").default(true),

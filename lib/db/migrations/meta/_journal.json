@@ -127,6 +127,13 @@
       "when": 1785000000000,
       "tag": "0017_survey_fields",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1786000000000,
+      "tag": "0018_quote_accepted_notify_default",
+      "breakpoints": true
     }
   ]
 }
