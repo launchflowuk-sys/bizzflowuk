@@ -66,15 +66,18 @@ const SERVICES = [
  * Four fields, and only three of them required.
  *
  * The site's main quote form asks for eight answers up front, which suits an organic visitor who
- * arrived ready to research. Paid traffic hasn't made that commitment yet — every extra required
- * field is another chance to abandon, and everything on that longer form can be asked on the
- * phone call this is trying to start. Name, phone and postcode is enough to ring somebody back.
+ * arrived ready to research. Paid traffic hasn't made that commitment yet — everything on that
+ * longer form can be asked on the phone call this is trying to start.
+ *
+ * Email is required rather than optional: without it the customer gets no acknowledgement, and an
+ * enquiry that vanishes into silence is exactly the complaint this whole batch of work exists to
+ * fix. A confirmation landing in their inbox is also what stops them ringing the next renderer.
  */
 function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel }: {
   tenantSlug: string; accent: string; conversionId?: string; conversionLabel?: string;
 }) {
   const mutation = useSubmitQuoteRequest();
-  const [form, setForm] = useState({ name: "", phone: "", postcode: "", service: "" });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "", service: "" });
   const [done, setDone] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -91,6 +94,7 @@ function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel }: {
           firstName: firstName || form.name.trim(),
           lastName: rest.join(" "),
           phone: form.phone.trim(),
+          email: form.email.trim(),
           postcode: form.postcode.trim().toUpperCase(),
           serviceInterest: form.service || undefined,
           source: "Google",
@@ -125,7 +129,7 @@ function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel }: {
   return (
     <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-7">
       <h2 className="text-lg font-extrabold tracking-tight" style={{ color: INK }}>Get your free quote</h2>
-      <p className="mt-1 text-sm" style={{ color: MUTED }}>Three details is all we need to call you back.</p>
+      <p className="mt-1 text-sm" style={{ color: MUTED }}>A few details and we'll call you back.</p>
 
       <div className="mt-5 space-y-4">
         <div>
@@ -137,6 +141,11 @@ function ShortQuoteForm({ tenantSlug, accent, conversionId, conversionLabel }: {
           <label htmlFor="lp-phone" className={label} style={{ color: MUTED }}>Phone number *</label>
           <input id="lp-phone" required type="tel" inputMode="tel" autoComplete="tel" className={input} style={{ ["--tw-ring-color" as any]: accent }}
                  value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+        </div>
+        <div>
+          <label htmlFor="lp-email" className={label} style={{ color: MUTED }}>Email address *</label>
+          <input id="lp-email" required type="email" inputMode="email" autoComplete="email" className={input} style={{ ["--tw-ring-color" as any]: accent }}
+                 value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
         </div>
         <div>
           <label htmlFor="lp-postcode" className={label} style={{ color: MUTED }}>Property postcode *</label>
