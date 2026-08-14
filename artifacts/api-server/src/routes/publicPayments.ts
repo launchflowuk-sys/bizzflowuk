@@ -47,6 +47,10 @@ router.get("/public/pay/:token", paymentLinkRateLimiter, async (req, res) => {
       ? await db.select().from(quoteItemsTable).where(eq(quoteItemsTable.quoteId, ctx.quote.id)).orderBy(asc(quoteItemsTable.sortOrder))
       : [];
 
+    // Name only — resolveQuoteRecipient also returns email/phone, which must not be echoed back
+    // on a page reachable by anyone holding the link.
+    const recipient = ctx.quote ? await resolveQuoteRecipient(ctx.quote) : {};
+
     res.json({
       tenant: { name: ctx.tenant?.name ?? "" },
       settings: {
@@ -71,7 +75,11 @@ router.get("/public/pay/:token", paymentLinkRateLimiter, async (req, res) => {
         amount: ctx.link.amount,
         currency: ctx.link.currency,
         status: ctx.link.status,
-        customerName: ctx.link.customerName,
+        // `customerName` is only ever set on standalone links, typed in at creation. For a
+        // quote-linked payment — the normal path — the name lives on the linked lead or customer,
+        // so resolve it here rather than leaving the page with nothing to greet them by.
+        customerName: ctx.link.customerName || [recipient.firstName, recipient.lastName].filter(Boolean).join(" ") || null,
+        customerFirstName: ctx.link.customerName?.split(/\s+/)[0] || recipient.firstName || null,
       },
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

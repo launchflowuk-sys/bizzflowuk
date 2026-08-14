@@ -2582,8 +2582,19 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
         tenantSlug={tenantSlug}
         tenant={tenant}
         crumb={quote ? "Your Quote" : "Payment Request"}
-        title={quote ? `Quote ${quote.reference || ""}` : `Payment Request${link.customerName ? ` for ${link.customerName}` : ""}`}
-        subtitle={quote ? "Review the details below and pay securely online, or let us know if you'd like to accept or decline." : "Review the amount below and pay securely online."}
+        /* Lead with the person, not the filing reference. Someone opening this from a text has no
+           idea what "AMO-R-0007" means, and a page that greets them by name reads as genuinely
+           theirs rather than as an automated demand. The reference moves into the subtitle, where
+           it still does its job when they quote it back on the phone. */
+        title={link.customerFirstName
+          ? `Hello ${link.customerFirstName}, here's your ${quote ? "quote" : "payment request"}`
+          : quote ? `Your quote${quote.reference ? ` — ${quote.reference}` : ""}` : "Payment Request"}
+        subtitle={[
+          quote?.reference ? `Reference ${quote.reference}.` : "",
+          quote
+            ? "Review the details below and pay securely online, or let us know if you'd like to accept or decline."
+            : "Review the amount below and pay securely online.",
+        ].filter(Boolean).join(" ")}
       />
 
       <section className="py-16 bg-white">
