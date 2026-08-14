@@ -114,7 +114,7 @@ router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
         // a hiccup here must never fail the status update the tenant just made.
         ensureCustomerForQuote(q[0].id).catch(e => req.log.error({ err: e }, "ensureCustomerForQuote failed"));
         const recipient = await resolveQuoteRecipient(q[0]);
-        fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", ...recipient, reference: q[0].reference });
+        fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", quoteId: q[0].id, ...recipient, reference: q[0].reference });
       }
     }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -155,7 +155,7 @@ router.post("/quotes/:id/convert-project", requireTenantAccess, async (req, res)
     res.status(201).json(project[0]);
 
     const recipient = await resolveQuoteRecipient(q[0]);
-    fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", ...recipient, reference: q[0].reference });
+    fireNotification({ tenantId: q[0].tenantId, event: "quote_accepted", quoteId: q[0].id, ...recipient, reference: q[0].reference });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

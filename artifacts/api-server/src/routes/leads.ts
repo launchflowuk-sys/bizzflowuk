@@ -109,9 +109,9 @@ router.patch("/leads/:id", requireTenantAccess, async (req, res) => {
       // Firing from a bare status change produced a content-less "quote is ready" email with
       // no link, since neither this handler nor a lead conversion has that data.
       if (newStatus === "Survey Booked") {
-        fireNotification({ ...ctx, event: "survey_booked" });
+        fireNotification({ ...ctx, event: "survey_booked", leadId: Number(req.params.id) });
       } else if (newStatus === "Won") {
-        fireNotification({ ...ctx, event: "lead_won" });
+        fireNotification({ ...ctx, event: "lead_won", leadId: Number(req.params.id) });
       }
     }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

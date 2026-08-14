@@ -129,6 +129,7 @@ router.post("/payment-links/:id/send", requireTenantAccess, async (req, res) => 
       fireNotification({
         tenantId: link.tenantId,
         event: "quote_sent",
+        quoteId: quote.id,
         ...recipient,
         reference: quote.reference,
         paymentLinkUrl: withUrl.url,

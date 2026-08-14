@@ -11,6 +11,10 @@ import { fireNotification } from "../lib/notifications";
 import { sendAndRecord } from "../lib/emailLog";
 
 const router = Router();
+
+// Contact-form texts link straight to the Messages screen — a name and number with no way through
+// to the actual message just makes the recipient go hunting.
+const DASHBOARD_MESSAGES_URL = `${process.env["PUBLIC_BASE_URL"] || "https://bizzflowuk.com"}/dashboard/messages`;
 function tid(req: any) { return req.authUser?.tenantId!; }
 
 async function getTenantWithSettings(slug: string) {
@@ -45,7 +49,7 @@ async function handleContactMessage(req: any, res: any, slug: string) {
       sendAndRecord(buildContactCustomerEmail({ brand, name: senderName, to: senderEmail }), smtp, { tenantId: tenant.id, event: "contact_ack" });
     }
     if (adminPhone && smsCreds) {
-      sendSms(adminPhone, `New contact from ${senderName || "someone"}${senderPhone ? ` — ${senderPhone}` : ""}`, smsCreds)
+      sendSms(adminPhone, `New contact from ${senderName || "someone"}${senderPhone ? ` — ${senderPhone}` : ""}. ${DASHBOARD_MESSAGES_URL}`, smsCreds)
         .catch(e => req.log.error({ err: e }, "Failed to send contact admin SMS"));
     }
 
@@ -82,6 +86,7 @@ async function handleQuoteRequest(req: any, res: any, slug: string) {
     fireNotification({
       tenantId: tenant.id,
       event: "lead_new",
+      leadId: lead[0].id,
       firstName: lead[0].firstName ?? undefined,
       lastName: lead[0].lastName ?? undefined,
       customerEmail: lead[0].email ?? undefined,

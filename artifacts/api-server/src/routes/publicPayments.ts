@@ -181,7 +181,7 @@ router.post("/public/pay/:token/action", paymentLinkRateLimiter, async (req, res
     if (newStatus === "Accepted") {
       ensureCustomerForQuote(quote.id).catch(e => req.log.error({ err: e }, "ensureCustomerForQuote failed after public accept"));
       const recipient = await resolveQuoteRecipient(quote);
-      fireNotification({ tenantId: quote.tenantId, event: "quote_accepted", ...recipient, reference: quote.reference });
+      fireNotification({ tenantId: quote.tenantId, event: "quote_accepted", quoteId: quote.id, ...recipient, reference: quote.reference });
     }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

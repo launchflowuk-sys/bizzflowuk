@@ -29,9 +29,23 @@ export type NotificationEvent =
   | "project_in_progress"
   | "project_completed";
 
+/**
+ * Dashboard deep links for admin SMS.
+ *
+ * A text saying "new lead: Jo Bloggs" makes the recipient go and find it. A text with a link
+ * opens the record. The dashboard is auth-scoped and lives on the platform host rather than a
+ * tenant's own domain, so these deliberately don't use customDomain — unlike customer-facing
+ * links, which do (see buildPayUrl).
+ */
+const PLATFORM_BASE_URL = process.env["PUBLIC_BASE_URL"] || "https://bizzflowuk.com";
+const dashLink = (path: string): string => `${PLATFORM_BASE_URL}${path}`;
+
 export interface NotificationContext {
   tenantId: number;
   event: NotificationEvent;
+  /** Dashboard record ids, used to deep-link the admin straight to the thing the text is about. */
+  leadId?: number;
+  quoteId?: number;
   firstName?: string;
   lastName?: string;
   customerName?: string;
@@ -192,7 +206,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
           }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
-          sendSms(adminPhone!, `New lead: ${fullName}${ctx.customerPhone ? ` — ${ctx.customerPhone}` : ""}`, smsCreds!)
+          sendSms(adminPhone!, `New lead: ${fullName}${ctx.customerPhone ? ` — ${ctx.customerPhone}` : ""}${ctx.serviceInterest ? ` (${ctx.serviceInterest})` : ""}${ctx.leadId ? `. ${dashLink(`/dashboard/leads/${ctx.leadId}`)}` : ""}`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] lead_new admin SMS failed"));
         }
         if (doCustomerEmail) {
@@ -247,7 +261,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
           }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
-          sendSms(adminPhone!, `Quote ${ctx.reference || ""} sent to ${fullName !== "Unknown" ? fullName : ctx.customerEmail || "customer"}${ctx.amount ? ` — ${ctx.amount} requested` : ""}.`, smsCreds!)
+          sendSms(adminPhone!, `Quote ${ctx.reference || ""} sent to ${fullName !== "Unknown" ? fullName : ctx.customerEmail || "customer"}${ctx.amount ? ` — ${ctx.amount} requested` : ""}.${ctx.quoteId ? ` ${dashLink(`/dashboard/quotes/${ctx.quoteId}`)}` : ""}`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] quote_sent admin SMS failed"));
         }
         if (doCustomerEmail) {
@@ -262,7 +276,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
           }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
-          sendSms(ctx.customerPhone!, `Hi ${firstName}, your quote${ctx.reference ? ` (${ctx.reference})` : ""} from ${tenant.name} is ready. Call ${tenantPhone} for questions.`, smsCreds!)
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, your quote${ctx.reference ? ` (${ctx.reference})` : ""} from ${tenant.name} is ready.${ctx.amount ? ` ${ctx.amount} requested.` : ""}${ctx.paymentLinkUrl ? ` View & pay: ${ctx.paymentLinkUrl}` : ""}${tenantPhone ? ` Questions? ${tenantPhone}` : ""}`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] quote_sent customer SMS failed"));
         }
         break;
@@ -279,7 +293,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
           }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
-          sendSms(adminPhone!, `Quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""} accepted!`, smsCreds!)
+          sendSms(adminPhone!, `Quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""} accepted!${ctx.quoteId ? ` ${dashLink(`/dashboard/quotes/${ctx.quoteId}`)}` : ""}`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] quote_accepted admin SMS failed"));
         }
         break;
@@ -297,7 +311,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
           }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
-          sendSms(adminPhone!, `Payment received: ${ctx.amount || "—"} against quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""}.`, smsCreds!)
+          sendSms(adminPhone!, `Payment received: ${ctx.amount || "—"} against quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""}.${ctx.quoteId ? ` ${dashLink(`/dashboard/quotes/${ctx.quoteId}`)}` : ""}`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] payment_received admin SMS failed"));
         }
         if (doCustomerEmail) {
@@ -310,7 +324,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
           }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
-          sendSms(ctx.customerPhone!, `Hi ${firstName}, we've received your payment of ${ctx.amount || "—"}${ctx.reference ? ` for quote ${ctx.reference}` : ""}. Thank you! — ${tenant.name}`, smsCreds!)
+          sendSms(ctx.customerPhone!, `Hi ${firstName}, we've received your payment of ${ctx.amount || "—"}${ctx.reference ? ` for quote ${ctx.reference}` : ""}. Thank you!${ctx.paymentLinkUrl ? ` Receipt: ${ctx.paymentLinkUrl}` : ""} — ${tenant.name}`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] payment_received customer SMS failed"));
         }
         break;
