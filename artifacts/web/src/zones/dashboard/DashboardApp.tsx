@@ -4368,20 +4368,25 @@ export default function DashboardApp() {
 
           <main className="flex-1 overflow-auto">
             <ScrollToTopOnNavigate />
+            {/* Detail routes use the children-as-function form, never component={inline arrow}.
+                An arrow defined during render is a new component *type* on every render, so React
+                unmounts and remounts the whole page — silently destroying any state inside it.
+                That is what wiped the survey-findings box ~4s after saving, when the toast
+                auto-dismissed and re-rendered this component. */}
             <Switch>
               <Route path="/dashboard" component={DashboardHome} />
               <Route path="/dashboard/leads" component={LeadsPage} />
               <Route path="/dashboard/leads/new" component={NewLeadPage} />
-              <Route path="/dashboard/leads/:id" component={({ params: p }) => <LeadDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/leads/:id">{(p: any) => <LeadDetailPage id={Number(p.id)} />}</Route>
               <Route path="/dashboard/quotes" component={QuotesPage} />
-              <Route path="/dashboard/quotes/:id" component={({ params: p }) => <QuoteDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/quotes/:id">{(p: any) => <QuoteDetailPage id={Number(p.id)} />}</Route>
               <Route path="/dashboard/payment-links" component={PaymentLinksPage} />
               <Route path="/dashboard/emails" component={EmailsPage} />
               <Route path="/dashboard/projects" component={ProjectsPage} />
-              <Route path="/dashboard/projects/:id" component={({ params: p }) => <ProjectDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/projects/:id">{(p: any) => <ProjectDetailPage id={Number(p.id)} />}</Route>
               <Route path="/dashboard/customers" component={CustomersPage} />
               <Route path="/dashboard/help" component={HelpPage} />
-              <Route path="/dashboard/customers/:id" component={({ params: p }) => <CustomerDetailPage id={Number(p.id)} />} />
+              <Route path="/dashboard/customers/:id">{(p: any) => <CustomerDetailPage id={Number(p.id)} />}</Route>
               <Route path="/dashboard/gallery" component={GalleryPage} />
               <Route path="/dashboard/reviews" component={ReviewsPage} />
               <Route path="/dashboard/case-studies" component={CaseStudiesPage} />
@@ -4394,7 +4399,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/visualiser" component={VisualiserPage} />
               <Route path="/dashboard/team" component={TeamPage} />
               <Route path="/dashboard/settings" component={SettingsPage} />
-              <Route component={() => <div className="p-8 text-slate-400">Page not found</div>} />
+              <Route>{() => <div className="p-8 text-slate-400">Page not found</div>}</Route>
             </Switch>
           </main>
         </div>
