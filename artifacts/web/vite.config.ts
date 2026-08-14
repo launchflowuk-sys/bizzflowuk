@@ -33,6 +33,15 @@ export default defineConfig({
   server: {
     port,
     strictPort: true,
+    // Dev only. In production web and api sit behind one origin, so /api resolves without help;
+    // running `vite dev` locally there is nothing on :3000/api, which makes the dashboard
+    // untestable outside Docker. Point it at a locally running api-server instead.
+    proxy: {
+      "/api": {
+        target: process.env.DEV_API_TARGET ?? "http://localhost:8080",
+        changeOrigin: true,
+      },
+    },
     host: "0.0.0.0",
     allowedHosts: true,
     fs: {

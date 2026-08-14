@@ -594,14 +594,136 @@ function DashboardHome() {
 }
 
 // ─── Leads ─────────────────────────────────────────────────────────────────────
+// ─── Lead urgency ────────────────────────────────────────────────────────────
+// An enquiry that nobody has replied to is the most perishable thing in the business, but in a
+// plain table a three-week-old lead looks exactly like a three-minute-old one. These helpers give
+// waiting time a visible weight so it can't be scrolled past.
+
+/** Whole days since a lead arrived. */
+function leadAgeDays(createdAt?: string): number {
+  if (!createdAt) return 0;
+  return Math.floor((Date.now() - new Date(createdAt).getTime()) / 86_400_000);
+}
+
+/**
+ * Only "New" counts as waiting. Once someone has been contacted the enquiry has had its first
+ * response, so it should drop out of the red list immediately — if pressing "Done" left the
+ * count unchanged, the badge would never go down and the whole signal would stop meaning
+ * anything. Chasing a stalled "Contacted" lead is follow-up, a different job from answering.
+ */
+const AWAITING_STATUSES = ["New"];
+
+type Urgency = { level: "none" | "warn" | "overdue"; days: number; label: string };
+
+function leadUrgency(lead: { status?: string; createdAt?: string }): Urgency {
+  const days = leadAgeDays(lead.createdAt);
+  if (!AWAITING_STATUSES.includes(lead.status ?? "")) return { level: "none", days, label: "" };
+  const label = days === 0 ? "Today" : days === 1 ? "1 day waiting" : `${days} days waiting`;
+  if (days >= 3) return { level: "overdue", days, label };
+  if (days >= 1) return { level: "warn", days, label };
+  return { level: "none", days, label };
+}
+
+function UrgencyTag({ lead }: { lead: any }) {
+  const u = leadUrgency(lead);
+  if (u.level === "none") return null;
+  const cls = u.level === "overdue"
+    ? "bg-red-50 text-red-700 ring-1 ring-red-200"
+    : "bg-amber-50 text-amber-800 ring-1 ring-amber-200";
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[11px] font-semibold ${cls}`}>
+      {u.level === "overdue" && (
+        <svg className="w-3 h-3" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+        </svg>
+      )}
+      {u.label}
+    </span>
+  );
+}
+
+/** UK mobile/landline -> E.164 so wa.me and tel: behave on a phone. */
+function waNumber(phone?: string): string | null {
+  if (!phone) return null;
+  const digits = phone.replace(/[^\d+]/g, "");
+  if (digits.startsWith("+")) return digits.slice(1);
+  if (digits.startsWith("0")) return `44${digits.slice(1)}`;
+  if (digits.startsWith("44")) return digits;
+  return digits || null;
+}
+
+/** Call / WhatsApp / mark-contacted, close enough together to hit with one thumb. */
+function LeadQuickActions({ lead, onContacted, busy }: { lead: any; onContacted: (id: number) => void; busy: boolean }) {
+  const wa = waNumber(lead.phone);
+  const stop = (e: React.MouseEvent) => e.stopPropagation();
+  const btn = "inline-flex items-center justify-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold transition-colors";
+  return (
+    <div className="flex items-center gap-1.5" onClick={stop}>
+      {lead.phone && (
+        <a href={`tel:${lead.phone}`} onClick={stop} title={`Call ${lead.phone}`} aria-label={`Call ${lead.firstName ?? "lead"}`}
+           className={`${btn} bg-[var(--brand)] text-white hover:brightness-110`}>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.95.68l1.5 4.5a1 1 0 01-.5 1.2l-2.26 1.13a11 11 0 005.5 5.5l1.13-2.26a1 1 0 011.2-.5l4.5 1.5a1 1 0 01.68.95V19a2 2 0 01-2 2h-1C9.72 21 3 14.28 3 6V5z"/></svg>
+          Call
+        </a>
+      )}
+      {wa && (
+        <a href={`https://wa.me/${wa}`} target="_blank" rel="noopener noreferrer" onClick={stop}
+           title="Message on WhatsApp" aria-label={`WhatsApp ${lead.firstName ?? "lead"}`}
+           className={`${btn} bg-emerald-50 text-emerald-700 hover:bg-emerald-100`}>
+          <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path d="M17.47 14.38c-.3-.15-1.75-.86-2.02-.96-.27-.1-.47-.15-.67.15-.2.3-.77.96-.94 1.16-.17.2-.35.22-.64.07-.3-.15-1.25-.46-2.38-1.47-.88-.79-1.48-1.75-1.65-2.05-.17-.3-.02-.46.13-.6.14-.14.3-.35.45-.53.15-.18.2-.3.3-.5.1-.2.05-.38-.02-.53-.08-.15-.67-1.6-.92-2.2-.24-.58-.49-.5-.67-.51h-.57c-.2 0-.52.07-.8.38-.27.3-1.04 1.02-1.04 2.48s1.07 2.88 1.22 3.08c.15.2 2.1 3.2 5.08 4.49.71.3 1.26.49 1.69.63.71.22 1.36.19 1.87.12.57-.09 1.75-.72 2-1.41.25-.7.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35zM12 2a10 10 0 00-8.6 15.06L2 22l5.06-1.33A10 10 0 1012 2z"/></svg>
+          WhatsApp
+        </a>
+      )}
+      {AWAITING_STATUSES.includes(lead.status) && (
+        <button onClick={(e) => { stop(e); onContacted(lead.id); }} disabled={busy}
+                title="Mark as contacted" aria-label={`Mark ${lead.firstName ?? "lead"} as contacted`}
+                className={`${btn} bg-slate-100 text-slate-700 hover:bg-slate-200 disabled:opacity-50`}>
+          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7"/></svg>
+          Done
+        </button>
+      )}
+    </div>
+  );
+}
+
 function LeadsPage() {
   const { data: leads, isLoading } = useListLeads();
   const qc = useQueryClient();
   const deleteMutation = useDeleteLead();
+  const updateLead = useUpdateLead();
   const showToast = useToast();
   const [statusFilter, setStatusFilter] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
-  const filtered = (leads as any[])?.filter((l: any) => !statusFilter || l.status === statusFilter);
+  const [contactingId, setContactingId] = useState<number | null>(null);
+
+  const all = (leads as any[]) ?? [];
+  const needsAttention = all.filter((l: any) => leadUrgency(l).level === "overdue");
+
+  const markContacted = async (id: number) => {
+    setContactingId(id);
+    try {
+      await updateLead.mutateAsync({ id, data: { status: "Contacted" } } as any);
+      qc.invalidateQueries({ queryKey: getListLeadsQueryKey() });
+      showToast("Marked as contacted");
+    } catch (err: any) {
+      showToast(err?.message || "Could not update lead", "error");
+    } finally {
+      setContactingId(null);
+    }
+  };
+
+  // Anything still waiting floats to the top, longest wait first — so the leads at risk of going
+  // cold are the ones you see, not the ones buried under recent activity.
+  const filtered = all
+    .filter((l: any) => (statusFilter === "__attention" ? leadUrgency(l).level === "overdue" : !statusFilter || l.status === statusFilter))
+    .slice()
+    .sort((a: any, b: any) => {
+      const ua = leadUrgency(a), ub = leadUrgency(b);
+      const awaiting = (u: Urgency) => (u.level === "none" ? 0 : 1);
+      if (awaiting(ua) !== awaiting(ub)) return awaiting(ub) - awaiting(ua);
+      if (awaiting(ua) === 1) return ub.days - ua.days;
+      return new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime();
+    });
   const bulk = useBulkSelect(
     (filtered ?? []).map((l: any) => l.id),
     (id) => deleteMutation.mutateAsync({ id } as any),
@@ -626,43 +748,77 @@ function LeadsPage() {
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Leads</h1>
         <Link href="/dashboard/leads/new" className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New</Link>
       </div>
+      {needsAttention.length > 0 && statusFilter !== "__attention" && (
+        <button
+          onClick={() => setStatusFilter("__attention")}
+          className="flex w-full items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-left transition-colors hover:bg-red-100"
+        >
+          <svg className="w-5 h-5 shrink-0 text-red-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+          </svg>
+          <span className="text-sm font-semibold text-red-900">
+            {needsAttention.length} {needsAttention.length === 1 ? "enquiry needs" : "enquiries need"} calling
+            <span className="ml-1.5 font-normal text-red-700">
+              — waiting {needsAttention.length === 1 ? `${leadUrgency(needsAttention[0]).days} days` : `up to ${Math.max(...needsAttention.map((l: any) => leadUrgency(l).days))} days`}
+            </span>
+          </span>
+          <span className="ml-auto shrink-0 text-xs font-semibold text-red-700">Show →</span>
+        </button>
+      )}
       <div className="flex flex-wrap items-center gap-2">
         {["", "New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"].map(s => (
           <button key={s} onClick={() => setStatusFilter(s)} className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${statusFilter === s ? "bg-[var(--brand)] text-white" : "bg-slate-100 text-slate-700 hover:bg-slate-200"}`}>{s || "All"}</button>
         ))}
+        {needsAttention.length > 0 && (
+          <button
+            onClick={() => setStatusFilter(statusFilter === "__attention" ? "" : "__attention")}
+            className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${statusFilter === "__attention" ? "bg-red-600 text-white" : "bg-red-50 text-red-700 hover:bg-red-100"}`}
+          >
+            Needs calling ({needsAttention.length})
+          </button>
+        )}
       </div>
       {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
         <>
           <div className="md:hidden space-y-2">
             {filtered?.length === 0 ? <div className="rounded-xl border border-slate-200 bg-white p-8 text-center text-slate-400">No leads found</div> : filtered?.map((l: any) => (
-              <Link key={l.id} href={`/dashboard/leads/${l.id}`} className="block rounded-xl border border-slate-200 bg-white p-4 hover:border-[var(--brand)]/50 transition-colors active:bg-slate-50">
-                <div className="flex items-start justify-between gap-2 mb-2">
-                  <div className="font-medium text-slate-900">{l.firstName} {l.lastName}</div>
-                  <Badge status={l.status} />
+              <div key={l.id} className={`rounded-xl border bg-white p-4 transition-colors ${leadUrgency(l).level === "overdue" ? "border-red-200 ring-1 ring-red-100" : "border-slate-200"}`}>
+                <Link href={`/dashboard/leads/${l.id}`} className="block active:opacity-70">
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <div className="font-medium text-slate-900">{l.firstName} {l.lastName}</div>
+                    <Badge status={l.status} />
+                  </div>
+                  <div className="text-xs text-slate-500 space-y-0.5">
+                    <div>{l.phone || l.email || "-"}</div>
+                    {l.serviceInterest && <div className="text-slate-400">{l.serviceInterest}</div>}
+                    <div className="text-slate-400">{l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-GB") : ""}</div>
+                  </div>
+                </Link>
+                <div className="mt-3 flex items-center justify-between gap-2">
+                  <UrgencyTag lead={l} />
+                  <LeadQuickActions lead={l} onContacted={markContacted} busy={contactingId === l.id} />
                 </div>
-                <div className="text-xs text-slate-500 space-y-0.5">
-                  <div>{l.phone || l.email || "-"}</div>
-                  {l.serviceInterest && <div className="text-slate-400">{l.serviceInterest}</div>}
-                  <div className="text-slate-400">{l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-GB") : ""}</div>
-                </div>
-              </Link>
+              </div>
             ))}
           </div>
           <div className="hidden md:block rounded-xl border border-slate-200 bg-white overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-slate-100 bg-slate-50 text-xs text-slate-500 uppercase tracking-wide">
-                  <th className="px-4 py-3 w-10"><input type="checkbox" className={checkCls} checked={bulk.allSelected} onChange={bulk.toggleAll} title="Select all" /></th><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Contact</th><th className="text-left px-4 py-3">Service</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Source</th><th className="text-left px-4 py-3">Created</th><th className="px-4 py-3" />
+                  <th className="px-4 py-3 w-10"><input type="checkbox" className={checkCls} checked={bulk.allSelected} onChange={bulk.toggleAll} title="Select all" /></th><th className="text-left px-4 py-3">Name</th><th className="text-left px-4 py-3">Contact</th><th className="text-left px-4 py-3">Service</th><th className="text-left px-4 py-3">Status</th><th className="text-left px-4 py-3">Quick actions</th><th className="text-left px-4 py-3">Created</th><th className="px-4 py-3" />
                 </tr></thead>
                 <tbody>
                   {filtered?.length === 0 ? <tr><td colSpan={8} className="px-4 py-8 text-center text-slate-400">No leads found</td></tr> : filtered?.map((l: any) => (
-                    <tr key={l.id} className="border-b border-slate-50 hover:bg-slate-50 transition-colors">
+                    <tr key={l.id} className={`border-b border-slate-50 transition-colors ${leadUrgency(l).level === "overdue" ? "bg-red-50/40 hover:bg-red-50" : "hover:bg-slate-50"}`}>
                       <td className="px-4 py-3"><input type="checkbox" className={checkCls} checked={bulk.selected.has(l.id)} onChange={() => bulk.toggle(l.id)} /></td>
-                      <td className="px-4 py-3 font-medium text-slate-900"><Link href={`/dashboard/leads/${l.id}`} className="hover:text-[var(--brand-ink)]">{l.firstName} {l.lastName}</Link></td>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        <Link href={`/dashboard/leads/${l.id}`} className="hover:text-[var(--brand-ink)]">{l.firstName} {l.lastName}</Link>
+                        <div className="mt-1"><UrgencyTag lead={l} /></div>
+                      </td>
                       <td className="px-4 py-3 text-slate-600">{l.phone || l.email || "-"}</td>
                       <td className="px-4 py-3 text-slate-600">{l.serviceInterest || "-"}</td>
                       <td className="px-4 py-3"><Badge status={l.status} /></td>
-                      <td className="px-4 py-3 text-slate-500">{l.source || "-"}</td>
+                      <td className="px-4 py-3"><LeadQuickActions lead={l} onContacted={markContacted} busy={contactingId === l.id} /></td>
                       <td className="px-4 py-3 text-slate-500">{l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-GB") : "-"}</td>
                       <td className="px-4 py-3 text-right">
                         {deleteId === l.id ? (
