@@ -1808,6 +1808,32 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
 }
 
 // ─── Emails — one-off branded compose + send log (not a synced inbox) ─────────
+// Plain-English names for the automated notifications, so the log reads as a record of what the
+// business did rather than a list of internal event keys. Null event = written by hand.
+const EMAIL_EVENT_LABELS: Record<string, string> = {
+  lead_new: "New enquiry alert",
+  contact_message: "Contact form message",
+  contact_ack: "Contact acknowledgement",
+  visualiser_request: "Visualiser request",
+  survey_booked: "Survey booked",
+  quote_sent: "Quote sent",
+  quote_accepted: "Quote accepted",
+  payment_received: "Payment received",
+  lead_won: "Project confirmed",
+  project_in_progress: "Work started",
+  project_completed: "Project complete",
+};
+
+function EmailKind({ event }: { event?: string | null }) {
+  const label = event ? (EMAIL_EVENT_LABELS[event] ?? event) : "Written by you";
+  const auto = !!event;
+  return (
+    <span className={`inline-block rounded px-1.5 py-0.5 text-[10px] font-semibold ${auto ? "bg-slate-100 text-slate-600" : "bg-[var(--brand)]/10 text-[var(--brand-ink)]"}`}>
+      {label}
+    </span>
+  );
+}
+
 function EmailsPage() {
   const { data: emails, isLoading } = useListSentEmails();
   const [showCompose, setShowCompose] = useState(false);
@@ -1817,6 +1843,7 @@ function EmailsPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const rows = (emails as any[]) || [];
+  const failures = rows.filter((m: any) => m.status === "failed");
   const bulk = useBulkSelect(
     rows.map((m: any) => m.id),
     (id) => deleteEmail.mutateAsync({ id } as any),
@@ -1838,10 +1865,26 @@ function EmailsPage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Emails</h1>
-          <p className="text-sm text-slate-500">Send a one-off branded email to a lead or customer, and keep a record of what was sent.</p>
+          <p className="text-sm text-slate-500">Every email the system has sent on your behalf — automatic alerts and quotes as well as anything you write yourself.</p>
         </div>
         <button onClick={() => setShowCompose(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110 whitespace-nowrap">+ Compose</button>
       </div>
+
+      {failures.length > 0 && (
+        <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+          <div className="flex items-start gap-3">
+            <svg className="w-5 h-5 shrink-0 text-red-600 mt-0.5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
+            </svg>
+            <div>
+              <div className="text-sm font-semibold text-red-900">
+                {failures.length} {failures.length === 1 ? "email did not send" : "emails did not send"}
+              </div>
+              <div className="text-xs text-red-700 mt-0.5">{failures[0].errorMessage || "The mail server rejected it."}</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showCompose && <ComposeEmailModal onClose={() => setShowCompose(false)} />}
 
@@ -1855,6 +1898,8 @@ function EmailsPage() {
                   <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status}</span>
                 </div>
                 <div className="text-xs text-slate-500">{m.toName ? `${m.toName} · ` : ""}{m.toEmail}</div>
+                <div><EmailKind event={m.event} /></div>
+                {m.status === "failed" && m.errorMessage && <div className="text-xs text-red-600">{m.errorMessage}</div>}
                 <div className="text-xs text-slate-400">{new Date(m.createdAt).toLocaleString("en-GB")}{m.attachmentUrls?.length ? ` · 📎 ${m.attachmentUrls.length}` : ""}</div>
               </div>
             ))}
@@ -1869,9 +1914,15 @@ function EmailsPage() {
                   {!rows.length ? <tr><td colSpan={7} className="px-4 py-8 text-center text-slate-400">No emails sent yet</td></tr> : rows.map((m: any) => (
                     <tr key={m.id} className="border-b border-slate-50 hover:bg-slate-50">
                       <td className="px-4 py-3"><input type="checkbox" className={checkCls} checked={bulk.selected.has(m.id)} onChange={() => bulk.toggle(m.id)} /></td>
-                      <td className="px-4 py-3 font-medium text-slate-900">{m.subject}</td>
+                      <td className="px-4 py-3 font-medium text-slate-900">
+                        {m.subject}
+                        <div className="mt-1"><EmailKind event={m.event} /></div>
+                      </td>
                       <td className="px-4 py-3 text-slate-600">{m.toName ? `${m.toName} · ` : ""}{m.toEmail}</td>
-                      <td className="px-4 py-3"><span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status}</span></td>
+                      <td className="px-4 py-3">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${m.status === "sent" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>{m.status === "sent" ? "delivered" : "not sent"}</span>
+                        {m.status === "failed" && m.errorMessage && <div className="mt-1 max-w-[22rem] text-xs text-red-600">{m.errorMessage}</div>}
+                      </td>
                       <td className="px-4 py-3 text-slate-500">{m.attachmentUrls?.length || "—"}</td>
                       <td className="px-4 py-3 text-slate-500">{new Date(m.createdAt).toLocaleString("en-GB")}</td>
                       <td className="px-4 py-3 text-right">

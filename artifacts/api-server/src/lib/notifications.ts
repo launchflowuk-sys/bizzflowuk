@@ -2,7 +2,6 @@ import { db } from "@workspace/db";
 import { tenantSettingsTable, tenantsTable, customersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import {
-  sendEmail,
   buildLeadNewAdminEmail,
   buildLeadNewCustomerEmail,
   buildSurveyBookedCustomerEmail,
@@ -18,6 +17,7 @@ import {
 import { sendSms } from "./sms";
 import { buildSmtpConfig, buildSmsCreds, buildBrandConfig, buildObjectUrl } from "./settingsHelpers";
 import { logger } from "./logger";
+import { sendAndRecord } from "./emailLog";
 
 export type NotificationEvent =
   | "lead_new"
@@ -133,9 +133,12 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
     const adminPhone = settings?.adminNotificationPhone || null;
     const tenantPhone = settings?.phone || tenant.phone || "";
 
-    const doAdminEmail  = emailEnabled(settings, ctx.event) && !!adminEmail && !!smtp;
+    // Deliberately NOT gated on `smtp` being present. If credentials are missing we still want
+    // sendAndRecord to run, so it writes a "not set up" row the tenant can actually see —
+    // skipping silently here is what made the outage invisible in the first place.
+    const doAdminEmail  = emailEnabled(settings, ctx.event) && !!adminEmail;
     const doAdminSms    = smsEnabled(settings, ctx.event) && !!adminPhone && !!smsCreds;
-    const doCustomerEmail = emailEnabled(settings, ctx.event) && !!ctx.customerEmail && !!smtp;
+    const doCustomerEmail = emailEnabled(settings, ctx.event) && !!ctx.customerEmail;
     const doCustomerSms   = smsEnabled(settings, ctx.event) && !!ctx.customerPhone && !!smsCreds;
 
     const firstName = ctx.firstName || ctx.customerName || "there";
@@ -147,7 +150,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── lead_new: admin alert + customer acknowledgement ──────────────────
       case "lead_new": {
         if (doAdminEmail) {
-          sendEmail(buildLeadNewAdminEmail({
+          sendAndRecord(buildLeadNewAdminEmail({
             brand,
             adminEmail: adminEmail!,
             firstName: ctx.firstName || "",
@@ -186,21 +189,21 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             planningStatus: ctx.planningStatus,
             hasDrawings: ctx.hasDrawings,
             urgency: ctx.urgency,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new admin email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
           sendSms(adminPhone!, `New lead: ${fullName}${ctx.customerPhone ? ` — ${ctx.customerPhone}` : ""}`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] lead_new admin SMS failed"));
         }
         if (doCustomerEmail) {
-          sendEmail(buildLeadNewCustomerEmail({
+          sendAndRecord(buildLeadNewCustomerEmail({
             brand,
             firstName,
             serviceInterest: ctx.serviceInterest,
             to: ctx.customerEmail!,
             estimateItems: ctx.estimateItems,
             estimateTotal: ctx.estimateTotal,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_new customer email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
           sendSms(ctx.customerPhone!, `Hi ${firstName}, thanks for contacting ${tenant.name}! We'll be in touch within 24 hours. — ${tenant.name}`, smsCreds!)
@@ -212,12 +215,12 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── survey_booked: customer notification ─────────────────────────────
       case "survey_booked": {
         if (doCustomerEmail) {
-          sendEmail(buildSurveyBookedCustomerEmail({
+          sendAndRecord(buildSurveyBookedCustomerEmail({
             brand,
             firstName,
             to: ctx.customerEmail!,
             scheduledFor: ctx.surveyDate,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] survey_booked customer email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
           const smsBody = ctx.surveyDate
@@ -232,7 +235,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── quote_sent: customer quote + admin confirmation of despatch ───────
       case "quote_sent": {
         if (doAdminEmail) {
-          sendEmail(buildQuoteSentAdminEmail({
+          sendAndRecord(buildQuoteSentAdminEmail({
             brand,
             adminEmail: adminEmail!,
             reference: ctx.reference || "—",
@@ -241,14 +244,14 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             amount: ctx.amount,
             remainingBalance: ctx.remainingBalance,
             paymentLinkUrl: ctx.paymentLinkUrl,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent admin email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
           sendSms(adminPhone!, `Quote ${ctx.reference || ""} sent to ${fullName !== "Unknown" ? fullName : ctx.customerEmail || "customer"}${ctx.amount ? ` — ${ctx.amount} requested` : ""}.`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] quote_sent admin SMS failed"));
         }
         if (doCustomerEmail) {
-          sendEmail(buildQuoteSentCustomerEmail({
+          sendAndRecord(buildQuoteSentCustomerEmail({
             brand,
             firstName,
             reference: ctx.reference,
@@ -256,7 +259,7 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             paymentAmount: ctx.amount,
             remainingBalance: ctx.remainingBalance,
             to: ctx.customerEmail!,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_sent customer email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
           sendSms(ctx.customerPhone!, `Hi ${firstName}, your quote${ctx.reference ? ` (${ctx.reference})` : ""} from ${tenant.name} is ready. Call ${tenantPhone} for questions.`, smsCreds!)
@@ -268,12 +271,12 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── quote_accepted: admin alert only ─────────────────────────────────
       case "quote_accepted": {
         if (doAdminEmail) {
-          sendEmail(buildQuoteAcceptedAdminEmail({
+          sendAndRecord(buildQuoteAcceptedAdminEmail({
             brand,
             adminEmail: adminEmail!,
             reference: ctx.reference || "—",
             customerName: fullName !== "Unknown" ? fullName : undefined,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] quote_accepted admin email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
           sendSms(adminPhone!, `Quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""} accepted!`, smsCreds!)
@@ -285,26 +288,26 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── payment_received: admin alert + customer receipt ──────────────────
       case "payment_received": {
         if (doAdminEmail) {
-          sendEmail(buildPaymentReceivedAdminEmail({
+          sendAndRecord(buildPaymentReceivedAdminEmail({
             brand,
             adminEmail: adminEmail!,
             reference: ctx.reference || "—",
             amount: ctx.amount || "—",
             customerName: fullName !== "Unknown" ? fullName : undefined,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] payment_received admin email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {
           sendSms(adminPhone!, `Payment received: ${ctx.amount || "—"} against quote ${ctx.reference || ""}${fullName !== "Unknown" ? ` from ${fullName}` : ""}.`, smsCreds!)
             .catch(e => logger.error({ err: e }, "[notify] payment_received admin SMS failed"));
         }
         if (doCustomerEmail) {
-          sendEmail(buildPaymentReceivedCustomerEmail({
+          sendAndRecord(buildPaymentReceivedCustomerEmail({
             brand,
             firstName,
             reference: ctx.reference,
             amount: ctx.amount || "—",
             to: ctx.customerEmail!,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] payment_received customer email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
           sendSms(ctx.customerPhone!, `Hi ${firstName}, we've received your payment of ${ctx.amount || "—"}${ctx.reference ? ` for quote ${ctx.reference}` : ""}. Thank you! — ${tenant.name}`, smsCreds!)
@@ -316,11 +319,11 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── lead_won: customer notification ───────────────────────────────────
       case "lead_won": {
         if (doCustomerEmail) {
-          sendEmail(buildLeadWonCustomerEmail({
+          sendAndRecord(buildLeadWonCustomerEmail({
             brand,
             firstName,
             to: ctx.customerEmail!,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] lead_won customer email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
           sendSms(ctx.customerPhone!, `Hi ${firstName}, great news! Your project with ${tenant.name} is confirmed. We'll be in touch to schedule the work.`, smsCreds!)
@@ -332,12 +335,12 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── project_in_progress: customer notification ────────────────────────
       case "project_in_progress": {
         if (doCustomerEmail) {
-          sendEmail(buildProjectInProgressCustomerEmail({
+          sendAndRecord(buildProjectInProgressCustomerEmail({
             brand,
             firstName,
             projectTitle: ctx.projectTitle || "your project",
             to: ctx.customerEmail!,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] project_in_progress customer email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
           sendSms(ctx.customerPhone!, `Hi ${firstName}, work has started on "${ctx.projectTitle || "your project"}" with ${tenant.name}. Questions? Call ${tenantPhone}.`, smsCreds!)
@@ -349,12 +352,12 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
       // ── project_completed: customer notification ──────────────────────────
       case "project_completed": {
         if (doCustomerEmail) {
-          sendEmail(buildProjectCompleteCustomerEmail({
+          sendAndRecord(buildProjectCompleteCustomerEmail({
             brand,
             firstName,
             projectTitle: ctx.projectTitle || "your project",
             to: ctx.customerEmail!,
-          }), smtp!).catch(e => logger.error({ err: e }, "[notify] project_completed customer email failed"));
+          }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doCustomerSms) {
           sendSms(ctx.customerPhone!, `Hi ${firstName}, your project "${ctx.projectTitle || "your project"}" with ${tenant.name} is complete! Thank you for choosing us.`, smsCreds!)
