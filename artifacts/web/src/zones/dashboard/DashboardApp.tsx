@@ -485,6 +485,63 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
 }
 
 // ─── Dashboard Home ────────────────────────────────────────────────────────────
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Good morning";
+  if (h < 18) return "Good afternoon";
+  return "Good evening";
+}
+
+type Todo = { key: string; text: string; detail?: string; href: string; tone: "urgent" | "warn" | "calm" };
+
+/**
+ * The first thing on the screen is what needs doing, not what happened.
+ *
+ * KPI tiles tell you the business has 4 leads; they don't tell you two of them have been waiting
+ * a fortnight for a phone call. For an owner who checks this between jobs, the useful question is
+ * "what needs me right now", and everything else is reference.
+ */
+function TodoPanel({ todos }: { todos: Todo[] }) {
+  if (!todos.length) {
+    return (
+      <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 flex items-center gap-3">
+        <svg className="w-5 h-5 shrink-0 text-emerald-600" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24" aria-hidden="true">
+          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div>
+          <div className="text-sm font-semibold text-emerald-900">You're all caught up</div>
+          <div className="text-xs text-emerald-700">Nothing is waiting on you. New enquiries will appear here.</div>
+        </div>
+      </div>
+    );
+  }
+  const tone = {
+    urgent: { wrap: "border-red-200 bg-red-50 hover:bg-red-100", text: "text-red-900", sub: "text-red-700", dot: "bg-red-500" },
+    warn:   { wrap: "border-amber-200 bg-amber-50 hover:bg-amber-100", text: "text-amber-900", sub: "text-amber-800", dot: "bg-amber-500" },
+    calm:   { wrap: "border-slate-200 bg-white hover:bg-slate-50", text: "text-slate-900", sub: "text-slate-500", dot: "bg-slate-400" },
+  };
+  return (
+    <div className="space-y-2">
+      <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500">Needs you today</h2>
+      <div className="space-y-2">
+        {todos.map(t => {
+          const c = tone[t.tone];
+          return (
+            <Link key={t.key} href={t.href} className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-colors ${c.wrap}`}>
+              <span className={`w-2 h-2 shrink-0 rounded-full ${c.dot}`} aria-hidden="true" />
+              <span className="min-w-0">
+                <span className={`block text-sm font-semibold ${c.text}`}>{t.text}</span>
+                {t.detail && <span className={`block text-xs ${c.sub}`}>{t.detail}</span>}
+              </span>
+              <span className={`ml-auto shrink-0 text-xs font-semibold ${c.sub}`}>Open →</span>
+            </Link>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DashboardHome() {
   const { data: stats } = useGetDashboardStats();
   const { data: activity } = useGetRecentActivity();
@@ -507,6 +564,52 @@ function DashboardHome() {
     .slice(0, 5);
   const fmtSurvey = (d: string) => new Date(d).toLocaleString("en-GB", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" });
 
+  // ── What needs doing, worst first ──────────────────────────────────────────
+  const { data: sentEmails } = useListSentEmails();
+  const failedEmails = ((sentEmails as any[]) || []).filter(m => m.status === "failed");
+  const coldLeads = leadArr.filter(l => leadUrgency(l).level === "overdue");
+  const unrepliedQuotes = quoteArr.filter(q => q.status === "Sent" && leadAgeDays(q.updatedAt || q.createdAt) >= 5);
+  const surveysSoon = upcomingSurveys.filter(l => new Date(l.surveyScheduledAt).getTime() < Date.now() + 48 * 3600_000);
+
+  const todos: Todo[] = [];
+  if (failedEmails.length) {
+    todos.push({
+      key: "email",
+      text: `${failedEmails.length} ${failedEmails.length === 1 ? "email didn't send" : "emails didn't send"}`,
+      detail: failedEmails[0].errorMessage || "Check your email settings.",
+      href: "/dashboard/emails",
+      tone: "urgent",
+    });
+  }
+  if (coldLeads.length) {
+    const worst = Math.max(...coldLeads.map(l => leadUrgency(l).days));
+    todos.push({
+      key: "cold",
+      text: `Call ${coldLeads.length} ${coldLeads.length === 1 ? "enquiry" : "enquiries"}`,
+      detail: `Longest has been waiting ${worst} ${worst === 1 ? "day" : "days"}. The sooner you ring, the better your odds.`,
+      href: "/dashboard/leads",
+      tone: "urgent",
+    });
+  }
+  if (surveysSoon.length) {
+    todos.push({
+      key: "survey",
+      text: `${surveysSoon.length} ${surveysSoon.length === 1 ? "survey" : "surveys"} coming up`,
+      detail: fmtSurvey(surveysSoon[0].surveyScheduledAt),
+      href: "/dashboard/leads",
+      tone: "warn",
+    });
+  }
+  if (unrepliedQuotes.length) {
+    todos.push({
+      key: "quotes",
+      text: `${unrepliedQuotes.length} ${unrepliedQuotes.length === 1 ? "quote has" : "quotes have"} had no reply`,
+      detail: `Worth a follow-up call — ${money(unrepliedQuotes.reduce((s, q) => s + (parseFloat(q.total || "0") || 0), 0))} sitting unanswered.`,
+      href: "/dashboard/quotes",
+      tone: "warn",
+    });
+  }
+
   const kpis = [
     { label: "New Leads", value: s?.newLeads ?? "-", sub: "awaiting action", href: "/dashboard/leads", icon: "M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z" },
     { label: "Pipeline Value", value: money(pipelineValue), sub: "in open quotes", href: "/dashboard/quotes", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
@@ -517,9 +620,12 @@ function DashboardHome() {
   return (
     <div className="p-4 sm:p-6 space-y-6 max-w-6xl">
       <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Overview</h1>
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{greeting()}</h1>
         {bizName && <p className="text-sm text-slate-500 mt-0.5">{bizName}</p>}
       </div>
+
+      <TodoPanel todos={todos} />
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         {kpis.map(k => (
           <Link key={k.label} href={k.href} className="group rounded-2xl bg-white p-4 sm:p-5 border border-slate-200 block hover:shadow-lg hover:-translate-y-0.5 transition-all">
