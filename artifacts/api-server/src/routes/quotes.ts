@@ -195,8 +195,21 @@ router.patch("/quotes/:id/items/:itemId", requireTenantAccess, async (req, res) 
   try {
     const quoteId = await requireOwnedQuote(req, res);
     if (quoteId === null) return;
-    const item = await db.update(quoteItemsTable).set(sanitizeUpdate(req.body))
-      .where(and(eq(quoteItemsTable.id, Number(req.params.itemId)), eq(quoteItemsTable.quoteId, quoteId)))
+    const itemId = Number(req.params.itemId);
+    const existing = await db.select().from(quoteItemsTable)
+      .where(and(eq(quoteItemsTable.id, itemId), eq(quoteItemsTable.quoteId, quoteId)))
+      .limit(1);
+    if (!existing.length) { res.status(404).json({ error: "Not found" }); return; }
+
+    // `total` is derived, never taken from the client: the quote subtotal is the sum of these,
+    // so a caller that edits quantity but forgets total would silently misprice the whole quote.
+    const patch = sanitizeUpdate(req.body) as Record<string, unknown>;
+    const quantity = patch.quantity ?? existing[0].quantity;
+    const unitPrice = patch.unitPrice ?? existing[0].unitPrice;
+    patch.total = (Number(quantity) * Number(unitPrice)).toFixed(2);
+
+    const item = await db.update(quoteItemsTable).set(patch)
+      .where(and(eq(quoteItemsTable.id, itemId), eq(quoteItemsTable.quoteId, quoteId)))
       .returning();
     if (!item.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(item[0]);

@@ -10,5 +10,5 @@ export interface QuoteItemUpdate {
   description?: string;
   quantity?: number;
   unitPrice?: number;
-  notes?: string;
+  sortOrder?: number;
 }

@@ -1410,14 +1410,15 @@ export const SendSmsResponse = zod.object({
  * @summary Update quote item
  */
 export const UpdateQuoteItemParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.number(),
+  "itemId": zod.coerce.number()
 })
 
 export const UpdateQuoteItemBody = zod.object({
   "description": zod.string().optional(),
   "quantity": zod.number().optional(),
   "unitPrice": zod.number().optional(),
-  "notes": zod.string().optional()
+  "sortOrder": zod.number().optional()
 })
 
 export const UpdateQuoteItemResponse = zod.object({
@@ -1435,7 +1436,8 @@ export const UpdateQuoteItemResponse = zod.object({
  * @summary Delete quote item
  */
 export const DeleteQuoteItemParams = zod.object({
-  "id": zod.coerce.number()
+  "id": zod.coerce.number(),
+  "itemId": zod.coerce.number()
 })
 
 

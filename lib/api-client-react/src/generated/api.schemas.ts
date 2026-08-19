@@ -905,7 +905,7 @@ export interface QuoteItemUpdate {
   description?: string;
   quantity?: number;
   unitPrice?: number;
-  notes?: string;
+  sortOrder?: number;
 }
 
 export type PaymentLinkStatus = typeof PaymentLinkStatus[keyof typeof PaymentLinkStatus];

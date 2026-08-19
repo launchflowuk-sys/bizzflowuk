@@ -2063,6 +2063,7 @@ function QuoteDetailPage({ id }: { id: number }) {
   const { data: paymentLinks } = useListQuotePaymentLinks(id);
   const updateMutation = useUpdateQuote();
   const createItem = useCreateQuoteItem();
+  const updateItem = useUpdateQuoteItem();
   const deleteItem = useDeleteQuoteItem();
   const deleteQuote = useDeleteQuote();
   const convertToProject = useConvertQuoteToProject();
@@ -2071,6 +2072,8 @@ function QuoteDetailPage({ id }: { id: number }) {
   const qc = useQueryClient();
   const showToast = useToast();
   const [newItem, setNewItem] = useState({ description: "", quantity: 1, unitPrice: "" });
+  const [editingItemId, setEditingItemId] = useState<number | null>(null);
+  const [editDraft, setEditDraft] = useState({ description: "", quantity: "1", unitPrice: "" });
   const [confirmProject, setConfirmProject] = useState(false);
   const [confirmPayment, setConfirmPayment] = useState(false);
   const [payAmount, setPayAmount] = useState("");
@@ -2107,6 +2110,41 @@ function QuoteDetailPage({ id }: { id: number }) {
       qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) });
     } catch (err: any) {
       showToast(err?.message || "Failed to add item", "error");
+    }
+  };
+  const startEditItem = (item: any) => {
+    setEditingItemId(item.id);
+    setEditDraft({
+      description: item.description ?? "",
+      quantity: String(item.quantity ?? "1"),
+      unitPrice: String(item.unitPrice ?? ""),
+    });
+  };
+  const handleSaveItem = async (itemId: number) => {
+    const qty = Number(editDraft.quantity);
+    const price = Number(editDraft.unitPrice);
+    if (!editDraft.description.trim() || !Number.isFinite(qty) || !Number.isFinite(price)) {
+      showToast("Enter a description, quantity and unit price", "error");
+      return;
+    }
+    try {
+      await updateItem.mutateAsync({
+        id, itemId,
+        data: { description: editDraft.description.trim(), quantity: qty, unitPrice: price },
+      } as any);
+      setEditingItemId(null);
+      qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) });
+    } catch (err: any) {
+      showToast(err?.message || "Failed to update item", "error");
+    }
+  };
+  const handleDeleteItem = async (itemId: number) => {
+    try {
+      await deleteItem.mutateAsync({ id, itemId });
+      if (editingItemId === itemId) setEditingItemId(null);
+      qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) });
+    } catch (err: any) {
+      showToast(err?.message || "Delete failed", "error");
     }
   };
   const handleStatusChange = async (status: string) => {
@@ -2183,18 +2221,51 @@ function QuoteDetailPage({ id }: { id: number }) {
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead><tr className="border-b border-slate-100 text-xs text-slate-500 uppercase">
-                  <th className="text-left pb-2">Description</th><th className="text-right pb-2 w-12">Qty</th><th className="text-right pb-2 w-20">Unit £</th><th className="text-right pb-2 w-20">Total £</th><th className="w-8 pb-2" />
+                  <th className="text-left pb-2">Description</th><th className="text-right pb-2 w-16">Qty</th><th className="text-right pb-2 w-24">Unit £</th><th className="text-right pb-2 w-20">Total £</th><th className="w-20 pb-2" />
                 </tr></thead>
                 <tbody>
-                  {lineItems.map((item: any) => (
+                  {lineItems.map((item: any) => (editingItemId === item.id ? (
+                    <tr key={item.id} className="border-b border-slate-50 bg-slate-50/60">
+                      <td className="py-2 pr-4">
+                        <input value={editDraft.description} onChange={e => setEditDraft({ ...editDraft, description: e.target.value })}
+                          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm" aria-label="Description" autoFocus />
+                      </td>
+                      <td className="py-2 pr-1">
+                        <input type="number" step="0.01" min="0" value={editDraft.quantity} onChange={e => setEditDraft({ ...editDraft, quantity: e.target.value })}
+                          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm text-right" aria-label="Quantity" />
+                      </td>
+                      <td className="py-2 pr-1">
+                        <input type="number" step="0.01" min="0" value={editDraft.unitPrice} onChange={e => setEditDraft({ ...editDraft, unitPrice: e.target.value })}
+                          className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm text-right" aria-label="Unit price" />
+                      </td>
+                      <td className="py-2 text-right font-medium text-slate-800">
+                        £{(Number(editDraft.quantity) * Number(editDraft.unitPrice) || 0).toFixed(2)}
+                      </td>
+                      <td className="py-2">
+                        <div className="flex items-center justify-end gap-1">
+                          <button type="button" onClick={() => handleSaveItem(item.id)} disabled={updateItem.isPending}
+                            className="h-8 w-8 rounded-md text-emerald-600 hover:bg-emerald-50 disabled:opacity-50" title="Save" aria-label="Save item">✓</button>
+                          <button type="button" onClick={() => setEditingItemId(null)}
+                            className="h-8 w-8 rounded-md text-slate-400 hover:bg-slate-100" title="Cancel" aria-label="Cancel edit">✕</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
                     <tr key={item.id} className="border-b border-slate-50">
                       <td className="py-2 pr-4 text-slate-800">{item.description}</td>
                       <td className="py-2 text-right text-slate-600">{item.quantity}</td>
                       <td className="py-2 text-right text-slate-600">£{Number(item.unitPrice).toFixed(2)}</td>
                       <td className="py-2 text-right font-medium text-slate-800">£{Number(item.total).toFixed(2)}</td>
-                      <td className="py-2 text-right"><button onClick={async () => { try { await deleteItem.mutateAsync({ id, itemId: item.id } as any); qc.invalidateQueries({ queryKey: getListQuoteItemsQueryKey(id) }); } catch { showToast("Delete failed", "error"); } }} className="text-red-400 hover:text-red-600 text-xs">✕</button></td>
+                      <td className="py-2">
+                        <div className="flex items-center justify-end gap-1">
+                          <button type="button" onClick={() => startEditItem(item)}
+                            className="h-8 w-8 rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 text-xs" title="Edit" aria-label="Edit item">✎</button>
+                          <button type="button" onClick={() => handleDeleteItem(item.id)} disabled={deleteItem.isPending}
+                            className="h-8 w-8 rounded-md text-red-400 hover:bg-red-50 hover:text-red-600 text-xs disabled:opacity-50" title="Delete" aria-label="Delete item">✕</button>
+                        </div>
+                      </td>
                     </tr>
-                  ))}
+                  )))}
                   {!lineItems.length && <tr><td colSpan={5} className="py-4 text-center text-slate-400 text-xs">No line items yet</td></tr>}
                 </tbody>
               </table>

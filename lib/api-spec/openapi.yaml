@@ -957,13 +957,23 @@ paths:
               schema:
                 $ref: "#/components/schemas/SmsSendResult"
 
-  /quote-items/{id}:
+  # Nested under the quote on purpose: the server resolves tenant ownership via the
+  # parent quote (requireOwnedQuote) and then scopes the item to it, so an item can
+  # never be touched through a quote the caller does not own. A flat /quote-items/{id}
+  # was specced here once; no such route has ever existed on the server, so every
+  # generated edit/delete call 404'd.
+  /quotes/{id}/items/{itemId}:
     patch:
       operationId: updateQuoteItem
       tags: [quotes]
       summary: Update quote item
       parameters:
         - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
           in: path
           required: true
           schema:
@@ -981,12 +991,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/QuoteItem"
+        "404":
+          description: Not found
     delete:
       operationId: deleteQuoteItem
       tags: [quotes]
       summary: Delete quote item
       parameters:
         - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: itemId
           in: path
           required: true
           schema:
@@ -4092,6 +4109,8 @@ components:
 
     QuoteItemUpdate:
       type: object
+      # No `total` here on purpose — the server derives it from quantity x unitPrice.
+      # (`notes` used to be listed and has no column on quote_items; sending it 500'd.)
       properties:
         description:
           type: string
@@ -4099,8 +4118,8 @@ components:
           type: number
         unitPrice:
           type: number
-        notes:
-          type: string
+        sortOrder:
+          type: integer
 
     # ─── Payments (Square) ────────────────────────────────────────────────
     PaymentLink:

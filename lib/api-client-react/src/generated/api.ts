@@ -3610,21 +3610,23 @@ export const useSendSms = <TError = ErrorType<unknown>,
       return useMutation(getSendSmsMutationOptions(options));
     }
 
-export const getUpdateQuoteItemUrl = (id: number,) => {
+export const getUpdateQuoteItemUrl = (id: number,
+    itemId: number,) => {
 
 
 
 
-  return `/api/quote-items/${id}`
+  return `/api/quotes/${id}/items/${itemId}`
 }
 
 /**
  * @summary Update quote item
  */
 export const updateQuoteItem = async (id: number,
+    itemId: number,
     quoteItemUpdate: QuoteItemUpdate, options?: RequestInit): Promise<QuoteItem> => {
 
-  return customFetch<QuoteItem>(getUpdateQuoteItemUrl(id),
+  return customFetch<QuoteItem>(getUpdateQuoteItemUrl(id,itemId),
   {
     ...options,
     method: 'PATCH',
@@ -3637,9 +3639,9 @@ export const updateQuoteItem = async (id: number,
 
 
 
-export const getUpdateQuoteItemMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuoteItem>>, TError,{id: number;data: BodyType<QuoteItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof updateQuoteItem>>, TError,{id: number;data: BodyType<QuoteItemUpdate>}, TContext> => {
+export const getUpdateQuoteItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuoteItem>>, TError,{id: number;itemId: number;data: BodyType<QuoteItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateQuoteItem>>, TError,{id: number;itemId: number;data: BodyType<QuoteItemUpdate>}, TContext> => {
 
 const mutationKey = ['updateQuoteItem'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3651,10 +3653,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateQuoteItem>>, {id: number;data: BodyType<QuoteItemUpdate>}> = (props) => {
-          const {id,data} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateQuoteItem>>, {id: number;itemId: number;data: BodyType<QuoteItemUpdate>}> = (props) => {
+          const {id,itemId,data} = props ?? {};
 
-          return  updateQuoteItem(id,data,requestOptions)
+          return  updateQuoteItem(id,itemId,data,requestOptions)
         }
 
 
@@ -3666,36 +3668,38 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
     export type UpdateQuoteItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateQuoteItem>>>
     export type UpdateQuoteItemMutationBody = BodyType<QuoteItemUpdate>
-    export type UpdateQuoteItemMutationError = ErrorType<unknown>
+    export type UpdateQuoteItemMutationError = ErrorType<void>
 
     /**
  * @summary Update quote item
  */
-export const useUpdateQuoteItem = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuoteItem>>, TError,{id: number;data: BodyType<QuoteItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+export const useUpdateQuoteItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateQuoteItem>>, TError,{id: number;itemId: number;data: BodyType<QuoteItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof updateQuoteItem>>,
         TError,
-        {id: number;data: BodyType<QuoteItemUpdate>},
+        {id: number;itemId: number;data: BodyType<QuoteItemUpdate>},
         TContext
       > => {
       return useMutation(getUpdateQuoteItemMutationOptions(options));
     }
 
-export const getDeleteQuoteItemUrl = (id: number,) => {
+export const getDeleteQuoteItemUrl = (id: number,
+    itemId: number,) => {
 
 
 
 
-  return `/api/quote-items/${id}`
+  return `/api/quotes/${id}/items/${itemId}`
 }
 
 /**
  * @summary Delete quote item
  */
-export const deleteQuoteItem = async (id: number, options?: RequestInit): Promise<void> => {
+export const deleteQuoteItem = async (id: number,
+    itemId: number, options?: RequestInit): Promise<void> => {
 
-  return customFetch<void>(getDeleteQuoteItemUrl(id),
+  return customFetch<void>(getDeleteQuoteItemUrl(id,itemId),
   {
     ...options,
     method: 'DELETE'
@@ -3708,8 +3712,8 @@ export const deleteQuoteItem = async (id: number, options?: RequestInit): Promis
 
 
 export const getDeleteQuoteItemMutationOptions = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteQuoteItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof deleteQuoteItem>>, TError,{id: number}, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteQuoteItem>>, TError,{id: number;itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteQuoteItem>>, TError,{id: number;itemId: number}, TContext> => {
 
 const mutationKey = ['deleteQuoteItem'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -3721,10 +3725,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteQuoteItem>>, {id: number}> = (props) => {
-          const {id} = props ?? {};
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteQuoteItem>>, {id: number;itemId: number}> = (props) => {
+          const {id,itemId} = props ?? {};
 
-          return  deleteQuoteItem(id,requestOptions)
+          return  deleteQuoteItem(id,itemId,requestOptions)
         }
 
 
@@ -3742,11 +3746,11 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
  * @summary Delete quote item
  */
 export const useDeleteQuoteItem = <TError = ErrorType<unknown>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteQuoteItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteQuoteItem>>, TError,{id: number;itemId: number}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof deleteQuoteItem>>,
         TError,
-        {id: number},
+        {id: number;itemId: number},
         TContext
       > => {
       return useMutation(getDeleteQuoteItemMutationOptions(options));
