@@ -2,6 +2,7 @@ import { useParams } from "wouter";
 import { useGetPublicSite } from "@workspace/api-client-react";
 import PublicSiteApp from "./PublicSiteApp";
 import ConstructionSiteApp from "./ConstructionSiteApp";
+import LandscapingSiteApp from "./LandscapingSiteApp";
 
 /**
  * Picks the public-site template for a tenant by industry. The site query is
@@ -20,5 +21,6 @@ export default function TenantSiteRouter(props: { forcedSlug?: string; forcedBas
   if (isLoading && !data) return null;
 
   if (industry === "construction") return <ConstructionSiteApp {...props} />;
+  if (industry === "landscaping") return <LandscapingSiteApp {...props} />;
   return <PublicSiteApp {...props} />;
 }

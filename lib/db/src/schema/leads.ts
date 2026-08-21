@@ -50,6 +50,13 @@ export const leadsTable = pgTable("leads", {
   planningStatus: text("planning_status"),          // planning / building-regs status
   hasDrawings: text("has_drawings"),                // Yes | No | Not sure
   urgency: text("urgency"),                          // Emergency | Planned (electrical work)
+  // Landscaping/groundworks (KD Essex) fields — nullable, populated only for landscaping tenants.
+  gardenSize: text("garden_size"),                   // approximate area of the work
+  currentSurface: text("current_surface"),           // what's there now: lawn, old patio, concrete…
+  levelChange: text("level_change"),                 // flat / gentle slope / steep — drives groundworks scope
+  drainageIssues: text("drainage_issues"),           // does it hold water? Yes | No | Not sure
+  wasteRemoval: text("waste_removal"),               // muck-away needed — a real cost line
+  desiredFeatures: jsonb("desired_features").$type<string[]>().default([]),
   consentAgreed: boolean("consent_agreed").notNull().default(false),
   // Cost-calculator output — structured line items + total, so a lead from the calculator
   // converts straight into a quote with its items pre-filled (see /leads/:id/convert-quote).

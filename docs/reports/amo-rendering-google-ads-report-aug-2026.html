@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMO Rendering — Google Ads Management Report · August 2026</title>
+<style>
+  :root{
+    --ink:#1a2330; --ink-2:#46525f; --ink-3:#7a8592;
+    --accent:#ea580c; --accent-soft:#fff3ea; --accent-deep:#c2410c;
+    --line:#e6e9ed; --panel:#f7f8fa; --good:#1a7f4e; --bad:#b42318;
+    --surface:#ffffff;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    font-family:"Segoe UI", -apple-system, BlinkMacSystemFont, Roboto, "Helvetica Neue", Arial, sans-serif;
+    color:var(--ink); background:#eef0f3; line-height:1.55; font-size:15px;
+  }
+  .page{max-width:860px; margin:0 auto; background:var(--surface);}
+  .pad{padding:0 56px;}
+
+  /* Masthead */
+  .masthead{border-top:6px solid var(--accent); padding:40px 56px 28px; border-bottom:1px solid var(--line);}
+  .brandrow{display:flex; justify-content:space-between; align-items:baseline; gap:16px; flex-wrap:wrap;}
+  .brand{font-size:20px; font-weight:700; letter-spacing:.4px;}
+  .brand span{color:var(--accent);}
+  .doctype{font-size:12px; font-weight:600; letter-spacing:1.6px; text-transform:uppercase; color:var(--ink-3);}
+  h1{font-size:27px; font-weight:700; margin-top:22px; letter-spacing:-.2px;}
+  .meta{display:flex; gap:28px; flex-wrap:wrap; margin-top:14px; font-size:13px; color:var(--ink-2);}
+  .meta b{display:block; font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--ink-3); margin-bottom:1px;}
+
+  /* Sections */
+  section{padding:34px 56px 6px;}
+  .kicker{font-size:11.5px; font-weight:700; letter-spacing:1.6px; text-transform:uppercase; color:var(--accent-deep); margin-bottom:8px;}
+  h2{font-size:19px; font-weight:700; margin-bottom:12px; letter-spacing:-.1px;}
+  p{color:var(--ink-2); margin-bottom:12px; max-width:70ch;}
+  p.lead{font-size:16px; color:var(--ink);}
+
+  /* KPI tiles */
+  .kpis{display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:18px 0 10px;}
+  .kpi{border:1px solid var(--line); border-radius:10px; padding:14px 16px 12px; background:var(--surface);}
+  .kpi .label{font-size:11px; font-weight:600; letter-spacing:1px; text-transform:uppercase; color:var(--ink-3);}
+  .kpi .value{font-size:26px; font-weight:700; margin-top:2px; letter-spacing:-.4px; font-variant-numeric:tabular-nums;}
+  .kpi .note{font-size:12px; color:var(--ink-3); margin-top:2px;}
+  .kpi.flag .value{color:var(--bad);}
+  .kpi.ok .value{color:var(--good);}
+
+  /* Findings */
+  .finding{display:flex; gap:14px; margin:16px 0; align-items:flex-start;}
+  .fnum{flex:0 0 30px; height:30px; border-radius:50%; background:var(--accent-soft); color:var(--accent-deep);
+        font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; margin-top:2px;}
+  .finding h3{font-size:15.5px; font-weight:700; margin-bottom:3px;}
+  .finding p{margin-bottom:0; font-size:14px;}
+
+  /* Chart */
+  figure{margin:22px 0 8px; border:1px solid var(--line); border-radius:10px; padding:18px 20px 14px; background:var(--surface);}
+  figcaption{font-size:14px; font-weight:700; color:var(--ink); margin-bottom:2px;}
+  .figsub{font-size:12.5px; color:var(--ink-3); margin-bottom:14px;}
+  .bar-row{display:grid; grid-template-columns:250px 1fr 62px; align-items:center; gap:10px; padding:4px 0;}
+  .bar-term{font-size:13px; color:var(--ink-2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .bar-track{height:14px; position:relative;}
+  .bar-fill{position:absolute; inset:0 auto 0 0; background:var(--accent); border-radius:0 4px 4px 0; min-width:3px; transition:opacity .15s;}
+  .bar-row:hover .bar-fill{opacity:.75;}
+  .bar-val{font-size:13px; font-weight:600; text-align:right; font-variant-numeric:tabular-nums; color:var(--ink);}
+  .fignote{font-size:12px; color:var(--ink-3); margin-top:12px; border-top:1px solid var(--line); padding-top:10px;}
+
+  /* Actions table-ish list */
+  .action{border-left:3px solid var(--accent); padding:2px 0 2px 16px; margin:14px 0;}
+  .action h3{font-size:15px; font-weight:700;}
+  .action p{font-size:14px; margin:2px 0 0;}
+  .tag{display:inline-block; font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase;
+       background:var(--accent-soft); color:var(--accent-deep); border-radius:4px; padding:2px 8px; margin-left:8px; vertical-align:1px;}
+
+  /* Tables */
+  table{width:100%; border-collapse:collapse; margin:14px 0 8px; font-size:13.5px;}
+  th{font-size:11px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--ink-3);
+     text-align:left; padding:8px 10px; border-bottom:2px solid var(--line);}
+  td{padding:8px 10px; border-bottom:1px solid var(--line); color:var(--ink-2); vertical-align:top;}
+  td:first-child{color:var(--ink); font-weight:600;}
+  .num{text-align:right; font-variant-numeric:tabular-nums;}
+
+  .callout{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px 20px; margin:18px 0; font-size:14px; color:var(--ink-2);}
+  .callout b{color:var(--ink);}
+
+  /* Footer */
+  footer{margin-top:30px; padding:26px 56px 40px; border-top:1px solid var(--line);
+         display:flex; justify-content:space-between; gap:16px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-3);}
+  footer .fb{font-weight:700; color:var(--ink);} footer .fb span{color:var(--accent);}
+
+  @media (max-width:700px){
+    .masthead, section, footer{padding-left:22px; padding-right:22px;}
+    .kpis{grid-template-columns:repeat(2,1fr);}
+    .bar-row{grid-template-columns:130px 1fr 56px;}
+  }
+  @media print{
+    body{background:#fff;}
+    .page{max-width:none;}
+    section{break-inside:avoid-page;}
+    .masthead{padding-top:24px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="masthead">
+    <div class="brandrow">
+      <div class="brand">Launch<span>Flow</span></div>
+      <div class="doctype">Google Ads Management Report</div>
+    </div>
+    <h1>AMO Rendering — Campaign Audit &amp; Optimisation</h1>
+    <div class="meta">
+      <div><b>Client</b>AMO Rendering, Grays, Essex</div>
+      <div><b>Campaign</b>AMO – Rendering Services (Google Search)</div>
+      <div><b>Period reviewed</b>18 July – 5 August 2026</div>
+      <div><b>Report date</b>6 August 2026</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="kicker">1 · Executive summary</div>
+    <h2>The launch period did its job — and told us exactly what to change</h2>
+    <p class="lead">The first weeks of a new Google Ads campaign are a data-gathering
+    phase: we let Google's auction show us which searches it matches, what they cost,
+    and which of them turn into enquiries. That data is now in, and it was decisive.</p>
+    <p>The campaign attracted a healthy volume of attention — a 4.58% click-through rate
+    is a strong result for a new account — but the searches that consumed the budget were
+    dominated by product research (colour charts, render brands, materials suppliers)
+    rather than homeowners looking to hire a renderer. Combined with an automated bidding
+    strategy that was paying a premium per click, this produced traffic without enquiries.</p>
+    <p>We have now completed a full rebuild of the campaign — bidding, keywords, ad copy,
+    campaign structure and call tracking — detailed in section&nbsp;4. The campaign is
+    currently paused at your request and is ready to relaunch on your go-ahead.</p>
+  </section>
+
+  <section>
+    <div class="kicker">2 · Performance snapshot</div>
+    <h2>Launch period at a glance</h2>
+    <div class="kpis">
+      <div class="kpi"><div class="label">Total spend</div><div class="value">£395.55</div><div class="note">£15.00 daily budget</div></div>
+      <div class="kpi"><div class="label">Impressions</div><div class="value">1,244</div><div class="note">Times ads were shown</div></div>
+      <div class="kpi"><div class="label">Clicks</div><div class="value">57</div><div class="note">Visits to amorendering.co.uk</div></div>
+      <div class="kpi ok"><div class="label">Click-through rate</div><div class="value">4.58%</div><div class="note">Strong — the ads resonated</div></div>
+      <div class="kpi flag"><div class="label">Average cost per click</div><div class="value">£6.94</div><div class="note">Too high — now capped at £2.50</div></div>
+      <div class="kpi flag"><div class="label">Quote requests</div><div class="value">0</div><div class="note">The problem this rebuild fixes</div></div>
+    </div>
+    <p>In plain terms: the ads were good enough to get clicked, but the campaign was
+    paying too much per click for the wrong kinds of searches. Both issues are structural,
+    both are now fixed.</p>
+  </section>
+
+  <section>
+    <div class="kicker">3 · What the audit found</div>
+    <h2>Four root causes, identified from the search data</h2>
+
+    <div class="finding"><div class="fnum">1</div><div>
+      <h3>Automated bidding was paying a premium</h3>
+      <p>The campaign ran on Google's "Maximise Clicks" strategy, which ignores manual
+      bid limits. Individual clicks cost up to £13, against a realistic local market
+      rate of £2–3. On a £15/day budget, that meant only around two clicks per day.</p>
+    </div></div>
+
+    <div class="finding"><div class="fnum">2</div><div>
+      <h3>The budget was matched to research searches, not hiring searches</h3>
+      <p>Google's broad matching sent the ads to people researching render products,
+      colour charts, suppliers and DIY methods — searches that will never become a
+      rendering enquiry. Verified examples from Google's own search report are below.</p>
+    </div></div>
+
+    <div class="finding"><div class="fnum">3</div><div>
+      <h3>Four of the six ads were serving with policy restrictions</h3>
+      <p>Google restricts ads that include a phone number in the ad text. Four ads
+      carried "Call 01375 506071" in their copy and were flagged "Approved (Limited)",
+      which suppresses how often they are shown.</p>
+    </div></div>
+
+    <div class="finding"><div class="fnum">4</div><div>
+      <h3>The highest-value local searches had no coverage</h3>
+      <p>Searches such as <i>"rendering companies near me"</i> and <i>"house rendering
+      Essex"</i> — the clearest hire-a-renderer intent there is — matched no keyword in
+      the campaign. With very little competing advertising from other local rendering
+      firms, these searches are the campaign's biggest untapped opportunity.</p>
+    </div></div>
+
+    <figure>
+      <figcaption>Where the budget leaked — verified examples</figcaption>
+      <div class="figsub">Actual searches that triggered paid clicks, from Google's search terms report (18 Jul – 5 Aug)</div>
+      <div class="bar-row"><div class="bar-term">"silicone render colours"</div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div><div class="bar-val">£27.81</div></div>
+      <div class="bar-row"><div class="bar-term">"can you render over pebbledash"</div><div class="bar-track"><div class="bar-fill" style="width:46%"></div></div><div class="bar-val">£12.66</div></div>
+      <div class="bar-row"><div class="bar-term">"house rendering cost calculator uk"</div><div class="bar-track"><div class="bar-fill" style="width:38%"></div></div><div class="bar-val">£10.65</div></div>
+      <div class="bar-row"><div class="bar-term">"free external wall insulation uk"</div><div class="bar-track"><div class="bar-fill" style="width:38%"></div></div><div class="bar-val">£10.63</div></div>
+      <div class="bar-row"><div class="bar-term">"k rend colours"</div><div class="bar-track"><div class="bar-fill" style="width:38%"></div></div><div class="bar-val">£10.54</div></div>
+      <div class="bar-row"><div class="bar-term">"atlas silicone hybrid render" (product)</div><div class="bar-track"><div class="bar-fill" style="width:23%"></div></div><div class="bar-val">£6.47</div></div>
+      <div class="bar-row"><div class="bar-term">"weberpral m" (product brand)</div><div class="bar-track"><div class="bar-fill" style="width:23%"></div></div><div class="bar-val">£6.36</div></div>
+      <div class="fignote">Every search above is a researcher, DIYer or trade buyer — not a homeowner hiring a renderer.
+      All of these categories are now blocked (see section 4).</div>
+    </figure>
+  </section>
+
+  <section>
+    <div class="kicker">4 · Optimisation work completed</div>
+    <h2>Full campaign rebuild — completed 5–6 August 2026</h2>
+
+    <div class="action">
+      <h3>Bidding moved to manual cost control <span class="tag">Cost</span></h3>
+      <p>Replaced automated bidding with fixed cost-per-click ceilings: £2.50 across the
+      service ad groups and £2.00 for render repairs. The £6.94 average — and the £13
+      outliers — cannot recur. At the capped rate, the same daily budget buys roughly
+      three times as many clicks.</p>
+    </div>
+
+    <div class="action">
+      <h3>Around 70 new negative keywords added <span class="tag">Targeting</span></h3>
+      <p>Every wasted-spend category found in the search data is now blocked: colour
+      charts, product brands (K&nbsp;Rend products, Weber, Kingspan, Rockwool and others),
+      suppliers and merchants, DIY and "how to" searches, grant and free-scheme hunters,
+      and price-calculator queries. The budget is reserved for people looking to hire.</p>
+    </div>
+
+    <div class="action">
+      <h3>All ad copy rewritten and policy-cleared <span class="tag">Ads</span></h3>
+      <p>Phone numbers were removed from ad text and every restricted ad rewritten and
+      resubmitted, so ads can serve at full strength. The number is not lost — see the
+      call button below.</p>
+    </div>
+
+    <div class="action">
+      <h3>New "House Rendering" ad group launched <span class="tag">Growth</span></h3>
+      <p>A dedicated ad group now targets the strongest local hiring searches —
+      "rendering companies near me", "house rendering Essex", "renderers near me",
+      "rendering quote" and similar — where local competition is minimal.</p>
+    </div>
+
+    <div class="action">
+      <h3>Call button added to all ads <span class="tag">Leads</span></h3>
+      <p>A Google-approved call asset for 01375&nbsp;506071 is now attached account-wide,
+      putting a tappable call button on mobile ads — the compliant (and more effective)
+      replacement for a number in the ad text.</p>
+    </div>
+
+    <div class="action">
+      <h3>Enquiry tracking extended <span class="tag">Measurement</span></h3>
+      <p>Quote-form enquiries were already tracked; conversion tracking has now been
+      extended to the website's cost-calculator leads as well, so every enquiry the ads
+      generate is counted and attributed.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="kicker">5 · What to expect next</div>
+    <h2>Relaunch plan and reporting</h2>
+    <p>The rebuilt campaign is paused and ready. On your approval we will re-enable it at
+    the current £15/day budget. With clicks capped at £2.50 and the budget pointed at
+    hiring-intent searches only, expect fewer — but far better — visitors: roughly five
+    to six qualified clicks per day instead of two expensive, poorly-matched ones.</p>
+    <table>
+      <tr><th>When</th><th>Action</th></tr>
+      <tr><td>On approval</td><td>Campaign re-enabled; new ads finish Google review (typically within 1 working day)</td></tr>
+      <tr><td>Days 7–10</td><td>First search-term review — prune any new wasted-spend patterns, adjust bids</td></tr>
+      <tr><td>Weekly</td><td>Ongoing search-term and bid monitoring</td></tr>
+      <tr><td>Monthly</td><td>Performance report (like this one) with spend, clicks, cost per enquiry and recommendations</td></tr>
+    </table>
+    <div class="callout"><b>A note on expectations:</b> rendering is a considered,
+    high-value purchase — a homeowner may click today and enquire next week. The first
+    fortnight after relaunch is about confirming click quality and cost; enquiry volume
+    builds from there, and every enquiry is now measured.</div>
+  </section>
+
+  <footer>
+    <div>
+      <div class="fb">Launch<span>Flow</span></div>
+      Digital growth for local businesses · Grays, Essex
+    </div>
+    <div style="text-align:right">
+      Prepared for AMO Rendering · amorendering.co.uk<br>
+      Questions? Reply any time — we're happy to walk through any section.
+    </div>
+  </footer>
+
+</div>
+</body>
+</html>

@@ -140,12 +140,47 @@ const PortalApp = lazy(() => import("@/zones/portal/PortalApp"));
 const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
 const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
 
+/**
+ * Which tenant's branding the loader may show, resolved before any tenant data has
+ * loaded. Matches the custom domain first, then the platform path (/site/:slug) so
+ * a tenant is branded correctly while it is still being reviewed pre-launch.
+ *
+ * Anything unrecognised gets the unbranded loader below — showing one tenant's logo
+ * to another tenant's visitor is worse than showing no logo at all, and a hostname
+ * fallthrough is exactly how AMO Rendering's mark ended up spinning on every other
+ * tenant's site.
+ */
+function loaderTenant(): "amo-services" | "amo-rendering" | "kd-essex" | null {
+  if (typeof window === "undefined") return null;
+  const host = window.location.hostname;
+  const path = window.location.pathname;
+  const match = (domain: string, slug: string) => host.includes(domain) || path.startsWith(`/site/${slug}`);
+
+  if (match("amoservices", "amo-services")) return "amo-services";
+  if (match("kdessexlandscapes", "kd-essex")) return "kd-essex";
+  if (match("amorendering", "amo-rendering")) return "amo-rendering";
+  return null;
+}
+
 function ZoneLoader() {
-  // Branded per hostname so cross-tenant branding never leaks while loading:
-  // AMO Services gets its own loader (pulsing logo + bouncing green dots — deliberately
-  // a different animation to AMO Rendering's spinning ring).
-  const host = typeof window !== "undefined" ? window.location.hostname : "";
-  if (host.includes("amoservices")) {
+  const tenant = loaderTenant();
+
+  // KD Essex — the brand mark fills with colour from the bottom up, the way the
+  // ground itself gets built. Both layers are masked to the mark's own alpha, so
+  // the colour is confined to the letterforms with no rectangle bleeding behind
+  // them. Reduced motion gets the finished, filled mark and no animation.
+  if (tenant === "kd-essex") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="kd-loader" role="img" aria-label="Loading">
+          <span className="kd-loader-base" />
+          <span className="kd-loader-fill" />
+        </div>
+      </div>
+    );
+  }
+
+  if (tenant === "amo-services") {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
         <div className="flex flex-col items-center gap-6">
@@ -159,14 +194,32 @@ function ZoneLoader() {
       </div>
     );
   }
+  // AMO Rendering — its own spinning ring, now only when we know it IS AMO Rendering.
+  if (tenant === "amo-rendering") {
+    return (
+      <div className="flex h-screen items-center justify-center bg-white">
+        <div className="relative w-24 h-24 flex items-center justify-center">
+          <img src="/amo-logo-icon.webp" alt="Loading" className="w-16 h-16 object-contain" />
+          <svg className="absolute inset-0 w-24 h-24 animate-spin" viewBox="0 0 96 96" fill="none">
+            <circle cx="48" cy="48" r="44" stroke="#1F8CFF" strokeWidth="4" strokeLinecap="round" strokeDasharray="69 207"/>
+          </svg>
+        </div>
+      </div>
+    );
+  }
+
+  // Unknown tenant, or a platform zone (dashboard, portal, admin) — unbranded.
   return (
     <div className="flex h-screen items-center justify-center bg-white">
-      <div className="relative w-24 h-24 flex items-center justify-center">
-        <img src="/amo-logo-icon.webp" alt="Loading" className="w-16 h-16 object-contain" />
-        <svg className="absolute inset-0 w-24 h-24 animate-spin" viewBox="0 0 96 96" fill="none">
-          <circle cx="48" cy="48" r="44" stroke="#1F8CFF" strokeWidth="4" strokeLinecap="round" strokeDasharray="69 207"/>
-        </svg>
-      </div>
+      <svg className="w-12 h-12" viewBox="0 0 48 48" fill="none" role="img" aria-label="Loading">
+        <circle cx="24" cy="24" r="20" stroke="#E5E7EB" strokeWidth="3"/>
+        <circle
+          cx="24" cy="24" r="20"
+          stroke="#9CA3AF" strokeWidth="3" strokeLinecap="round" strokeDasharray="34 92"
+          className="motion-safe:animate-spin"
+          style={{ transformOrigin: "center", animationDuration: "900ms" }}
+        />
+      </svg>
     </div>
   );
 }

@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* KD Essex display + body faces. MUST stay with the other @import rules:
+   a CSS @import after any other rule is silently ignored by the browser. */
+@import "@fontsource-variable/archivo";
+@import "@fontsource-variable/public-sans";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -172,4 +176,213 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   KD Essex — landscaping template (tenant.industry === 'landscaping')
+   Self-hosted variable faces. Declared globally so the @font-face rules
+   exist, but applied ONLY under .kd-site — the rendering and construction
+   templates share this stylesheet and must keep their own typography.
+   Browsers only fetch a face once something actually uses it, so the other
+   two tenants pay nothing for these.
+   ───────────────────────────────────────────────────────────────────────── */
+
+.kd-site {
+  font-family: "Public Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-synthesis-weight: none;
+}
+
+/* Display voice: the logo's lettering is a wide, flat-terminal grotesque, so
+   headings run tight and set their own tracking rather than inheriting body. */
+.kd-display {
+  font-family: "Archivo Variable", "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01";
+}
+
+/* Tabular figures wherever depths and measurements line up. */
+.kd-nums { font-variant-numeric: tabular-nums; }
+
+/* ── The one authored moment ──────────────────────────────────────────────
+   The build-up diagram assembles bottom-up, in the order the ground is
+   actually built: subgrade, membrane, sub-base, laying course, finish. The
+   motion IS the content — it's the argument the whole site makes. Layers
+   start visible and settle into place, so nothing is hidden if the script
+   or the observer never runs.                                              */
+@keyframes kd-settle {
+  from { transform: translateY(-14px) scaleY(0.86); opacity: 0.35; filter: blur(1.5px); }
+  to   { transform: none; opacity: 1; filter: none; }
+}
+
+.kd-layer {
+  transform-origin: bottom;
+  will-change: transform, opacity;
+}
+
+/* Only animate once the section is in view; until then layers sit at rest. */
+.kd-stack[data-settled="true"] .kd-layer {
+  animation: kd-settle 620ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--kd-delay, 0ms);
+}
+
+/* Row labels follow their layer in, a beat behind. */
+.kd-stack[data-settled="true"] ~ .kd-legend .kd-legend-row,
+.kd-legend[data-settled="true"] .kd-legend-row {
+  animation: kd-settle 520ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--kd-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-stack[data-settled="true"] .kd-layer,
+  .kd-legend[data-settled="true"] .kd-legend-row {
+    animation: none;
+  }
+}
+
+/* ── KD interaction states ────────────────────────────────────────────────
+   Hover is a state change you can feel, not an opacity fade. Transform +
+   shadow, short durations, exit handled by the same transition.            */
+.kd-site .kd-btn-solid:hover  { background-color: #4E6939 !important; transform: translateY(-2px); box-shadow: 0 8px 20px -6px rgba(30,31,29,0.38); }
+.kd-site .kd-btn-solid:active { transform: translateY(0); box-shadow: 0 3px 8px -4px rgba(30,31,29,0.34); }
+
+.kd-site .kd-btn-outline:hover  { background-color: #5D7B45 !important; color: #FFFFFF !important; transform: translateY(-2px); box-shadow: 0 8px 20px -6px rgba(30,31,29,0.28); }
+.kd-site .kd-btn-outline:active { transform: translateY(0); }
+
+.kd-site .kd-btn-ghost:hover  { background-color: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.72) !important; transform: translateY(-2px); }
+.kd-site .kd-btn-ghost:active { transform: translateY(0); }
+
+/* Area tiles: outline only, no fill. Hover moves the border and the text to
+   the brand green rather than flooding the cell with colour. */
+.kd-site .kd-area:hover {
+  border-color: #5D7B45 !important;
+  color: #5D7B45 !important;
+}
+
+.kd-site a:focus-visible,
+.kd-site button:focus-visible,
+.kd-site summary:focus-visible {
+  outline: 2px solid #5D7B45;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ── Hero entrance ────────────────────────────────────────────────────────
+   One short staged arrival on load, then nothing. Elements start visible
+   (backwards fill from a rendered default) so a failed animation degrades
+   to a complete hero rather than a blank one.                              */
+@keyframes kd-rise {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.kd-hero-in > * {
+  animation: kd-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.kd-hero-in > *:nth-child(1) { animation-delay:  60ms; }
+.kd-hero-in > *:nth-child(2) { animation-delay: 130ms; }
+.kd-hero-in > *:nth-child(3) { animation-delay: 200ms; }
+.kd-hero-in > *:nth-child(4) { animation-delay: 260ms; }
+.kd-hero-in > *:nth-child(5) { animation-delay: 320ms; }
+.kd-hero-in > *:nth-child(6) { animation-delay: 380ms; }
+.kd-hero-in > *:nth-child(7) { animation-delay: 430ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-site .kd-btn-solid:hover,
+  .kd-site .kd-btn-outline:hover,
+  .kd-site .kd-btn-ghost:hover,
+  .kd-site .kd-chip:hover { transform: none; }
+  .kd-hero-in > * { animation: none; }
+}
+
+/* ── KD loader ────────────────────────────────────────────────────────────
+   The brand mark fills from the bottom up, then the fill continues out
+   through the top so the loop reads as one rising wave rather than a snap
+   back to empty. Both layers are masked to the mark's own alpha, so colour
+   only ever appears inside the letterforms — no rectangle bleeding behind
+   them, which is what an overlay would have done.
+
+   Declared outside .kd-site: the loader renders above the tenant template,
+   before that wrapper exists.                                              */
+.kd-loader {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.kd-loader-base,
+.kd-loader-fill {
+  position: absolute;
+  inset: 0;
+  -webkit-mask-image: url("/kd-essex/kd-essex-mark-mask.webp");
+          mask-image: url("/kd-essex/kd-essex-mark-mask.webp");
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+  -webkit-mask-size: contain;
+          mask-size: contain;
+}
+
+/* Unfilled state — a quiet grey with a hint of the brand hue, not a neutral. */
+.kd-loader-base { background-color: #CBD2C1; }
+
+.kd-loader-fill {
+  background-color: #5D7B45;
+  clip-path: inset(100% 0 0 0);
+  animation: kd-loader-rise 1900ms cubic-bezier(0.45, 0, 0.25, 1) infinite;
+}
+
+@keyframes kd-loader-rise {
+  0%   { clip-path: inset(100% 0 0 0); }   /* empty */
+  55%  { clip-path: inset(0 0 0 0); }      /* filled to the top */
+  72%  { clip-path: inset(0 0 0 0); }      /* hold, so "complete" registers */
+  100% { clip-path: inset(0 0 100% 0); }   /* drains out through the top */
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-loader-fill {
+    animation: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+
+/* ── Coverage map hotspots ────────────────────────────────────────────────
+   A slow halo pulse per pin, staggered so the map reads as alive rather than
+   as twelve dots blinking in lockstep. The solid pin underneath never moves,
+   so the location stays legible throughout.                                */
+@keyframes kd-pulse {
+  0%   { transform: scale(1);   opacity: 0.55; }
+  70%  { transform: scale(3.4); opacity: 0; }
+  100% { transform: scale(3.4); opacity: 0; }
+}
+
+.kd-pulse {
+  animation: kd-pulse 2600ms ease-out infinite;
+  animation-delay: var(--kd-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-pulse { animation: none; opacity: 0.3; }
+}
+
+
+/* Typewriter caret for the rotating service name. Sized from the current font
+   so it scales with the heading instead of being pinned to a pixel height. */
+.kd-caret {
+  display: inline-block;
+  width: 0.06em;
+  height: 0.82em;
+  margin-left: 0.07em;
+  vertical-align: baseline;
+  transform: translateY(0.06em);
+  animation: kd-caret-blink 1100ms steps(1, end) infinite;
+}
+
+@keyframes kd-caret-blink {
+  0%, 45%   { opacity: 1; }
+  46%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-caret { display: none; }
 }

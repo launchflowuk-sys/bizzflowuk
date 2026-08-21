@@ -2,6 +2,7 @@ import app from "./app";
 import { logger } from "./lib/logger";
 import { runSeedFixIfNeeded } from "./lib/seedFix";
 import { seedAmoServicesIfMissing } from "./lib/seedAmoServices";
+import { seedKdEssexIfMissing } from "./lib/seedKdEssex";
 import { clearAllPageCache } from "./lib/pageCache";
 
 const rawPort = process.env["PORT"];
@@ -20,6 +21,7 @@ if (Number.isNaN(port) || port <= 0) {
 
 runSeedFixIfNeeded()
   .then(() => seedAmoServicesIfMissing())
+  .then(() => seedKdEssexIfMissing())
   .then(() => clearAllPageCache().catch((err) => logger.error({ err }, "Page cache clear failed — non-fatal, stale pages may persist")))
   .then(() => {
   app.listen(port, (err) => {

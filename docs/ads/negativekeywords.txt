@@ -1,0 +1,174 @@
+# AMO Rendering — shared negative keyword list
+# Apply as ONE campaign-level shared list, attached to all three campaigns.
+# Tools > Shared library > Negative keyword lists > paste > attach to campaigns.
+# All entries are PHRASE match.
+#
+# Section 1 is the list already live on campaign 24044145596 (keep it).
+# Section 2 is new, added from the Aug 2026 competitor and search-intent review.
+
+# ---------- 1. ALREADY LIVE — DO NOT DROP ----------
+how to
+how to render
+how much
+average cost
+price per bag
+per bag
+can you
+do i need
+render yourself
+diy
+training
+course
+qualification
+apprenticeship
+nvq
+jobs
+careers
+hiring
+vacancy
+buy
+shop
+store
+supplier
+suppliers
+stockists
+tools
+kit
+b&q
+wickes
+screwfix
+toolstation
+travis perkins
+jewson
+primer
+sealant
+adhesive
+filler
+mortar
+mesh
+beads
+boards
+board
+plasterboard
+basecoat
+base coat
+top coat
+paint
+colour
+colours
+samples
+sample
+calculator
+pdf
+grants
+grant
+eco4
+free insulation
+free external wall insulation
+cavity wall
+internal insulation
+internally
+render pump
+render mixer
+render machine
+spray machine
+premixed
+pre mixed
+weber
+weberpral
+kingspan
+knauf
+celotex
+rockwool
+kooltherm
+parex
+ceresit
+baumit
+licata
+atlas
+johnstone
+johnstones
+envirowall
+ecorend
+eco rend
+hpx
+hp12
+leeds
+liverpool
+manchester
+north west
+
+# ---------- 2. NEW — ADD THESE ----------
+# Research / no buying intent
+wikipedia
+reddit
+youtube
+video
+images
+pictures
+ideas
+before and after
+planning permission
+building regs
+building regulations
+what is
+pros and cons
+disadvantages
+life expectancy
+how long does
+
+# Employment
+salary
+wage
+day rate
+labourer
+subcontractor
+cscs
+recruitment
+
+# Directory sites — they outrank you and take the click
+checkatrade
+mybuilder
+rated people
+ratedpeople
+trustatrader
+yell
+which
+trustpilot
+
+# Named local competitors — do not pay to be compared
+ewi specialist
+bro therm
+bro-therm
+essex render pros
+ultimate plastering
+a90 construction
+crafting spaces
+
+# Wrong service
+internal plastering
+skimming
+plastering course
+artex
+damp proofing
+scaffolding
+scaffold hire
+chimney
+roofing
+driveway
+guttering
+
+# Out of area
+birmingham
+bristol
+glasgow
+cardiff
+newcastle
+sheffield
+nottingham
+leicester
+scotland
+wales
+ireland
+yorkshire
+midlands

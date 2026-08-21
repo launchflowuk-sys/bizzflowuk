@@ -39,6 +39,9 @@ const ROUTE_PREFETCHERS: Array<{
   { pattern: /^\/gallery\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getBrowsePublicGalleryQueryOptions(t)) },
   { pattern: /^\/case-studies\/([^/]+)\/?$/, prefetch: (t, m, qc) => qc.prefetchQuery(getGetPublicCaseStudyQueryOptions(t, m[1])) },
   { pattern: /^\/case-studies\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicCaseStudiesQueryOptions(t)) },
+  // The landscaping template calls its case-studies index /projects.
+  { pattern: /^\/projects\/([^/]+)\/?$/, prefetch: (t, m, qc) => qc.prefetchQuery(getGetPublicCaseStudyQueryOptions(t, m[1])) },
+  { pattern: /^\/projects\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicCaseStudiesQueryOptions(t)) },
   { pattern: /^\/reviews\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicReviewsQueryOptions(t)) },
   { pattern: /^\/faqs\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicFaqsQueryOptions(t)) },
   { pattern: /^\/blog\/([^/]+)\/?$/, prefetch: (t, m, qc) => qc.prefetchQuery(getGetPublicBlogPostQueryOptions(t, m[1])) },
@@ -68,9 +71,15 @@ export async function renderPublicPage(opts: {
   // Site query + price-items are prefetched for every route: the nav renders a calculator link
   // whenever the tenant has published price items, so both templates read price-items on all
   // pages — prefetching everywhere keeps the SSR nav identical to the hydrated one.
+  // Services and areas are prefetched everywhere for the same reason as price-items: the
+  // footer lists both on every page, so without them the server HTML would ship a footer with
+  // no internal links and fill them in only after hydration — exactly the links that carry the
+  // site's internal linking.
   const prefetches: Promise<unknown>[] = [
     queryClient.prefetchQuery(getGetPublicSiteQueryOptions(tenantSlug)),
     queryClient.prefetchQuery(getListPublicPriceItemsQueryOptions(tenantSlug)),
+    queryClient.prefetchQuery(getListPublicServicesQueryOptions(tenantSlug)),
+    queryClient.prefetchQuery(getListPublicAreasQueryOptions(tenantSlug)),
   ];
   for (const route of ROUTE_PREFETCHERS) {
     const match = pathOnly.match(route.pattern);
