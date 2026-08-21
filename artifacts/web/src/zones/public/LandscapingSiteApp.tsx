@@ -428,6 +428,22 @@ function RatingBadge({ reviews }: { reviews: any[] }) {
  *
  * Under prefers-reduced-motion nothing types: the first name is simply shown.
  */
+
+/** Renders a heading line with any ampersand picked out in the brand green. */
+function AmpGreen({ text, color }: { text: string; color: string }) {
+  const parts = text.split("&");
+  return (
+    <>
+      {parts.map((part, i) => (
+        <span key={i}>
+          {part}
+          {i < parts.length - 1 && <span style={{ color }}>&amp;</span>}
+        </span>
+      ))}
+    </>
+  );
+}
+
 function RotatingService({ names, color }: { names: string[]; color: string }) {
   const [index, setIndex] = useState(0);
   const [text, setText] = useState(names[0] ?? "");
@@ -879,8 +895,8 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                   {headlineLead}
                 </span>
               )}
-              <span className="block" style={{ color: INK }}>{headlineTop}</span>
-              {headlineAccent && <span className="block" style={{ color: INK }}>{headlineAccent}</span>}
+              <span className="block" style={{ color: INK }}><AmpGreen text={headlineTop} color={GREEN}/></span>
+              {headlineAccent && <span className="block" style={{ color: INK }}><AmpGreen text={headlineAccent} color={GREEN}/></span>}
               {heroWords.length > 0 && (
                 <span className="block whitespace-nowrap">
                   <span style={{ color: INK }}>In </span>
