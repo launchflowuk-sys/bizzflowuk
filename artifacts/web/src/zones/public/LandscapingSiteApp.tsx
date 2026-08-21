@@ -89,9 +89,9 @@ function Heading({ children, onDark = false, className = "", rule = true }: { ch
   const [lead, accent] = raw && raw.includes("|") ? splitHeadline(raw) : [raw, ""];
   return (
     <>
-      {rule && <span className="block h-[2px] w-9 mb-5" style={{ backgroundColor: onDark ? GREEN : GREEN_DEEP }}/>}
+      {rule && <span className="block h-[3px] w-14 mb-6" style={{ backgroundColor: onDark ? GREEN : GREEN_DEEP }}/>}
       <h2
-        className={`kd-display text-[1.6rem] sm:text-[1.95rem] lg:text-[2.25rem] font-semibold leading-[1.15] tracking-[-0.02em] max-w-3xl ${className}`}
+        className={`kd-display text-[2.1rem] sm:text-[3rem] lg:text-[3.75rem] font-semibold leading-[1.02] tracking-[-0.032em] max-w-3xl ${className}`}
         style={{ color: onDark ? "#FFFFFF" : INK, textWrap: "balance" } as React.CSSProperties}
       >
         {raw === null ? children : (
@@ -222,6 +222,103 @@ function BuildUpDiagram({ layers = DEFAULT_LAYERS, onDark = false }: { layers?: 
         ))}
       </ul>
     </div>
+  );
+}
+
+
+// ── Coverage map ─────────────────────────────────────────────────────────────
+// A schematic map of the Thurrock / South Essex patch, drawn from real
+// coordinates rather than an embedded map tile: no API key, no third-party
+// request, no cookie banner implications, and it can be drawn in the brand's
+// own colours. Positions are approximate and the shape is stylised — it is a
+// coverage diagram, not a survey.
+const TOWN_COORDS: Record<string, [number, number]> = {
+  "grays":            [0.3239, 51.4757],
+  "tilbury":          [0.3580, 51.4620],
+  "chafford-hundred": [0.2900, 51.4870],
+  "south-ockendon":   [0.2900, 51.5200],
+  "aveley":           [0.2530, 51.4990],
+  "purfleet":         [0.2340, 51.4810],
+  "west-thurrock":    [0.2680, 51.4820],
+  "corringham":       [0.4740, 51.5190],
+  "stanford-le-hope": [0.4290, 51.5150],
+  "chadwell-st-mary": [0.3670, 51.4830],
+  "orsett":           [0.3720, 51.5080],
+  "east-tilbury":     [0.4200, 51.4840],
+};
+
+const MAP_W = 620, MAP_H = 330, PAD = 46;
+const LON_MIN = 0.215, LON_MAX = 0.495, LAT_MIN = 51.448, LAT_MAX = 51.535;
+const projectX = (lon: number) => PAD + ((lon - LON_MIN) / (LON_MAX - LON_MIN)) * (MAP_W - PAD * 2);
+const projectY = (lat: number) => PAD + ((LAT_MAX - lat) / (LAT_MAX - LAT_MIN)) * (MAP_H - PAD * 2);
+
+function CoverageMap({ areas, tenantSlug }: { areas: any[]; tenantSlug: string }) {
+  const siteBase = useSiteBase();
+  const [hover, setHover] = useState<string | null>(null);
+  const points = areas
+    .map(a => ({ area: a, c: TOWN_COORDS[a.slug] }))
+    .filter(p => p.c)
+    .map(p => ({ ...p, x: projectX(p.c![0]), y: projectY(p.c![1]) }));
+
+  if (points.length === 0) return null;
+
+  return (
+    <figure className="m-0">
+      <svg
+        viewBox={`0 0 ${MAP_W} ${MAP_H}`}
+        className="w-full h-auto"
+        role="img"
+        aria-label={`Map of the area covered, including ${points.map(p => p.area.name).join(", ")}`}
+      >
+        {/* The Thames, stylised — the one landmark that makes this patch readable */}
+        <path
+          d="M20 268 C 110 250, 165 262, 232 258 C 300 254, 338 276, 402 272 C 470 268, 530 246, 604 232"
+          fill="none" stroke={PALE} strokeWidth="26" strokeLinecap="round" opacity="0.9"
+        />
+        <path
+          d="M20 268 C 110 250, 165 262, 232 258 C 300 254, 338 276, 402 272 C 470 268, 530 246, 604 232"
+          fill="none" stroke="#C8D4BA" strokeWidth="1.25" strokeLinecap="round"
+        />
+        <text x="26" y="296" className="kd-display" fontSize="10.5" letterSpacing="2.4" fill={GREY} opacity="0.8">
+          RIVER THAMES
+        </text>
+
+        {points.map((p, i) => {
+          const on = hover === p.area.slug;
+          return (
+            <a
+              key={p.area.id}
+              href={`${siteBase}/areas/${p.area.slug}`}
+              onMouseEnter={() => setHover(p.area.slug)}
+              onMouseLeave={() => setHover(null)}
+              onFocus={() => setHover(p.area.slug)}
+              onBlur={() => setHover(null)}
+            >
+              {/* pulsing halo */}
+              <circle
+                cx={p.x} cy={p.y} r="5"
+                fill={GREEN}
+                className="kd-pulse"
+                style={{ ["--kd-delay" as string]: `${i * 260}ms`, transformOrigin: `${p.x}px ${p.y}px` }}
+              />
+              <circle cx={p.x} cy={p.y} r={on ? 6 : 4.5} fill={GREEN_DEEP} style={{ transition: "r 180ms ease-out" }} />
+              <text
+                x={p.x} y={p.y - 13}
+                textAnchor="middle"
+                fontSize="12"
+                fontWeight={on ? 700 : 600}
+                fill={on ? GREEN_DEEP : INK}
+                style={{ transition: "fill 180ms ease-out" }}
+              >
+                {p.area.name}
+              </text>
+              {/* generous invisible hit target */}
+              <circle cx={p.x} cy={p.y} r="18" fill="transparent" />
+            </a>
+          );
+        })}
+      </svg>
+    </figure>
   );
 }
 
@@ -848,19 +945,21 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 07 — AREAS */}
       {areas.length > 0 && (
         <section className="py-14 sm:py-20">
-          <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-20">
-            <div>
-              <Heading>{`Covering ${tenant?.city || "Essex"}|and the surrounding towns.`}</Heading>
-              <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: GREY }}>
-                Ground conditions change street to street around here. We quote on what's actually
-                under your garden, not a rate card.
-              </p>
+          <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+            <div className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)] lg:gap-14 items-center">
+              <div>
+                <Heading>{`Covering ${tenant?.city || "Essex"}|and the surrounding towns.`}</Heading>
+                <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: GREY }}>
+                  Ground conditions change street to street around here. We quote on what's actually
+                  under your garden, not a rate card.
+                </p>
+              </div>
+              <CoverageMap areas={areas} tenantSlug={tenantSlug}/>
             </div>
-            {/* An even grid of outlined tiles. Equal cell widths are the point: a
-                wrapped inline list left orphaned separators at line starts, and
-                pill shapes at ragged widths looked scattered. No fill — the border
-                carries it, and hover moves the border and text to the brand green. */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+
+            {/* Even grid of outlined tiles: equal cell widths, so a list of names of
+                very different lengths cannot sit raggedly. Outline only, no fill. */}
+            <div className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
               {areas.map((a: any) => (
                 <a
                   key={a.id}
