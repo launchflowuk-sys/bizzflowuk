@@ -176,7 +176,7 @@ export async function seedKdEssexIfMissing(): Promise<void> {
       secondaryColor: BRAND_GREEN_DEEP,
       // "|" marks the line break in the static half of the hero headline. The
       // rotating "In <town>" line is appended by the template from the tenant's areas.
-      heroHeadline: "Landscaping &|Groundworks",
+      heroHeadline: "From the ground up|Landscaping &|Groundworks",
       heroSubheadline: "Expert solutions. Lasting results.",
       // Drop the supplied hero photograph at this path in the web package's public dir
       // (same convention as /amo-services/*). Left set so the layout is complete the moment

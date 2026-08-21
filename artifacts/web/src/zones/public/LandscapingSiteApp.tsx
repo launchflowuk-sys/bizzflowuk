@@ -361,7 +361,7 @@ const FEATURES: { icon: string; title: string; body: string }[] = [
 function FeatureStrip() {
   return (
     <section className="border-b" style={{ backgroundColor: OFF_WHITE, borderColor: "#E6EAE2" }}>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-y-8 sm:grid-cols-2 lg:grid-cols-4 py-10">
+      <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-y-8 sm:grid-cols-2 lg:grid-cols-4 py-10">
         {FEATURES.map((f, i) => (
           <div key={f.title} className={`flex gap-4 lg:px-7 ${i > 0 ? "lg:border-l" : ""}`} style={{ borderColor: "#DDE3D6" }}>
             <Icon d={f.icon} className="w-8 h-8 flex-shrink-0" color={GREEN_DEEP} strokeWidth={1.4}/>
@@ -380,7 +380,7 @@ function FeatureStrip() {
 function ServingBand({ city }: { city?: string }) {
   if (!city) return null;
   return (
-    <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-7 flex items-center gap-5">
+    <div className="max-w-[1400px] mx-auto px-5 sm:px-8 py-7 flex items-center gap-5">
       <span className="hidden sm:block h-px flex-1" style={{ backgroundColor: "#DDE3D6" }}/>
       <span className="flex items-center gap-2.5 text-[12.5px] font-semibold uppercase tracking-[0.18em] text-center" style={{ color: INK }}>
         <PinIcon color={GREEN_DEEP}/>Proudly serving {city} &amp; surrounding areas
@@ -490,7 +490,7 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
 
   return (
     <header className="sticky top-0 z-40 border-b" style={{ backgroundColor: "rgba(255,255,255,0.94)", borderColor: "#E6EAE2", backdropFilter: "blur(10px)" }}>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 flex items-center justify-between h-[92px] gap-6">
+      <div className="max-w-[1400px] mx-auto px-5 sm:px-8 flex items-center justify-between h-[92px] gap-6">
         <a href={siteBase || "/"} className="flex items-center flex-shrink-0" aria-label={tenant?.name || "Home"}>
           {logo
             ? <img src={logo} alt={tenant?.name || "Logo"} className="h-16 w-auto transition-transform duration-300 hover:scale-[1.03]" width={300} height={200}/>
@@ -586,7 +586,7 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
 
   return (
     <footer style={{ backgroundColor: INK }} className="pb-24 md:pb-0">
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pt-16 pb-12">
+      <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pt-16 pb-12">
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:pr-6">
             {settings?.logoUrl
@@ -693,7 +693,7 @@ function Breadcrumbs({ trail }: { trail: { name: string; url: string }[] }) {
 function PageHead({ title, intro }: { title: string; intro?: string }) {
   return (
     <section className="pt-12 pb-10 sm:pt-16 sm:pb-12" style={{ backgroundColor: OFF_WHITE }}>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+      <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
         <h1 className="kd-display text-[2rem] sm:text-[2.5rem] lg:text-[3rem] font-semibold leading-[1.08] tracking-[-0.025em] max-w-3xl" style={{ color: INK }}>{title}</h1>
         {intro && <p className="mt-6 text-lg leading-relaxed max-w-2xl" style={{ color: GREY }}>{intro}</p>}
       </div>
@@ -724,7 +724,7 @@ function TrustStrip({ settings }: { settings: any }) {
   const items = badges.length > 0 ? badges : TRUST_FALLBACK;
   return (
     <div className="border-y" style={{ borderColor: "#E6EAE2", backgroundColor: OFF_WHITE }}>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-5 flex flex-wrap gap-x-8 gap-y-3 justify-center">
+      <div className="max-w-[1400px] mx-auto px-5 sm:px-8 py-5 flex flex-wrap gap-x-8 gap-y-3 justify-center">
         {items.map(t => (
           <span key={t} className="flex items-center gap-2 text-[13px] font-medium" style={{ color: INK }}>
             <CheckIcon className="w-4 h-4" color={GREEN_DEEP}/>{t}
@@ -763,7 +763,7 @@ function QuoteCTA({ tenantSlug, tenant, settings }: { tenantSlug: string; tenant
   const phone = settings?.phone || tenant?.phone;
   return (
     <section className="py-14 sm:py-20" style={{ backgroundColor: INK }}>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 text-center">
+      <div className="max-w-[1400px] mx-auto px-5 sm:px-8 text-center">
         <Heading onDark className="max-w-3xl mx-auto">Tell us about the job and we'll put a written quote together.</Heading>
         <p className="mt-5 text-base leading-relaxed max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
           Send a few photos with your enquiry and we can often price smaller work without a visit.
@@ -807,8 +807,14 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
   // Three hero text slots mapped onto existing settings columns, so no schema change:
   // heroHeadline is the two-tone headline ("Landscaping &|Groundworks"), heroSubheadline is
   // the short tagline under it, and the paragraph comes from the tenant's description.
-  const headline = settings?.heroHeadline || `Landscaping &|Groundworks`;
-  const [headlineTop, headlineAccent] = splitHeadline(headline);
+  const headline = settings?.heroHeadline || `From the ground up|Landscaping &|Groundworks`;
+  // Three parts means the first is a lead-in above the main heading; two or fewer
+  // keeps the previous behaviour, so existing tenants are unaffected.
+  const headlineParts = headline.split("|").map((x: string) => x.trim()).filter(Boolean);
+  const headlineLead = headlineParts.length >= 3 ? headlineParts[0] : "";
+  const [headlineTop, headlineAccent] = headlineParts.length >= 3
+    ? [headlineParts[1], headlineParts.slice(2).join(" ")]
+    : splitHeadline(headline);
   const tagline = settings?.heroSubheadline || "";
   // The towns the tenant actually covers, home town first so the hero opens on it.
   const heroWords = useMemo(() => {
@@ -833,8 +839,8 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 01 — HERO. Split layout from the client's mockup: copy on white at the left,
           photography bleeding off the right, with the image feathered into the white rather
           than darkened under an overlay. On mobile the image sits above the copy. */}
-      <section className="relative bg-white">
-        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)] lg:items-stretch">
+      <section className="relative bg-white overflow-hidden">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)] lg:items-stretch">
           {/* Image — first in the DOM on mobile, right-hand column on desktop */}
           {heroImage && (
             <div className="relative order-first lg:order-last h-[260px] sm:h-[380px] lg:h-auto lg:min-h-[620px]">
@@ -852,7 +858,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           )}
 
           {/* Copy */}
-          <div className="kd-hero-in relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1240px)/2))] lg:pr-14 py-12 sm:py-16 lg:py-20 flex flex-col justify-center">
+          <div className="kd-hero-in relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1400px)/2))] lg:pr-10 py-12 sm:py-16 lg:py-20 flex flex-col justify-center">
             {tenant?.city && (
               <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.18em] mb-6" style={{ color: INK }}>
                 <PinIcon color={GREEN_DEEP}/>Based in {tenant.city}, UK
@@ -864,11 +870,19 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 the town half cycles, making every pass a local keyword. Towns also
                 avoid the ampersand pile-up that service names caused
                 ("Landscaping & Patios & Paving"). */}
-            <h1 className="kd-display font-semibold uppercase leading-[1.08] tracking-[-0.025em] text-[2.2rem] sm:text-[2.8rem] lg:text-[3.25rem]">
+            <h1 className="kd-display font-semibold uppercase leading-[1.08] tracking-[-0.025em] text-[2rem] sm:text-[2.6rem] lg:text-[3rem]">
+              {headlineLead && (
+                <span
+                  className="block mb-2.5 text-[0.42em] font-semibold tracking-[0.2em]"
+                  style={{ color: GREEN_DEEP }}
+                >
+                  {headlineLead}
+                </span>
+              )}
               <span className="block" style={{ color: INK }}>{headlineTop}</span>
               {headlineAccent && <span className="block" style={{ color: INK }}>{headlineAccent}</span>}
               {heroWords.length > 0 && (
-                <span className="block">
+                <span className="block whitespace-nowrap">
                   <span style={{ color: INK }}>In </span>
                   <RotatingService names={heroWords} color={GREEN}/>
                 </span>
@@ -906,7 +920,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 02 — SERVICES, split into the two sides of the business */}
       {services.length > 0 && (
         <section className="py-14 sm:py-20">
-          <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-16">
               <Heading>Two halves of|the same job.</Heading>
               <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: GREY }}>
@@ -942,7 +956,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 03 — BEFORE/AFTER */}
       {settings?.showBeforeAfter !== false && beforeAfter.length > 0 && (
         <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
-          <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-14">
               <Heading>Drag to see|the difference.</Heading>
             </div>
@@ -953,7 +967,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* 04 — THE SIGNATURE BLOCK: what's underneath */}
       <section className="py-14 sm:py-20" style={{ backgroundColor: INK }}>
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           <div className="max-w-2xl mb-16">
             <Heading onDark>Anyone can lay a nice patio. It's the six inches below it that decide whether it's still flat in five years.</Heading>
             <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.66)" }}>
@@ -971,7 +985,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 05 — PROJECTS */}
       {projects.length > 0 && (
         <section className="py-14 sm:py-20">
-          <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
             <div className="flex flex-wrap items-end justify-between gap-6 mb-9">
               <div className="max-w-xl">
                 <Heading>Jobs we've|finished.</Heading>
@@ -999,7 +1013,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 06 — REVIEWS */}
       {settings?.showReviews !== false && reviews.length > 0 && (
         <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
-          <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-14">
               <Heading>What customers|said.</Heading>
             </div>
@@ -1023,7 +1037,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 07 — AREAS */}
       {areas.length > 0 && (
         <section className="py-14 sm:py-20">
-          <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
             <div className="grid gap-10 lg:grid-cols-[minmax(0,0.8fr)_minmax(0,1.15fr)] lg:gap-14 items-center">
               <div>
                 <Heading>{`Covering ${tenant?.city || "Essex"}|and the surrounding towns.`}</Heading>
@@ -1059,7 +1073,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 08 — FAQ */}
       {faqs.length > 0 && (
         <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
-          <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+          <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-14">
               <Heading>Before|you ask.</Heading>
             </div>
@@ -1118,7 +1132,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
       <PageHead title="Services" intro="Everything from the excavation and drainage through to the planting and the final sweep-up."/>
 
       <section className="py-16 sm:py-20">
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           {isSplit ? (
             <div className="space-y-20">
               {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
@@ -1162,7 +1176,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
       <Shell tenantSlug={tenantSlug}>
         <PageSEO title="Not found" description="" noindex siteName={tenant?.name}/>
         <PageHead title="We couldn't find that service." intro="It may have moved or been renamed."/>
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pb-24"><Btn href={`${siteBase}/services`}>All services</Btn></div>
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-24"><Btn href={`${siteBase}/services`}>All services</Btn></div>
       </Shell>
     );
   }
@@ -1195,7 +1209,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
       <PageHead title={s?.name || ""} intro={s?.tagline || undefined}/>
 
       {s?.heroImageUrl && (
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8 -mt-4 mb-16">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 -mt-4 mb-16">
           <div className="aspect-[16/7] overflow-hidden rounded-xl" style={{ backgroundColor: PALE }}>
             <img src={s.heroImageUrl} alt={s.name} className="w-full h-full object-cover" fetchPriority="high"/>
           </div>
@@ -1203,7 +1217,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
       )}
 
       <section className="pb-20">
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-20">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-20">
           <div>
             {(s?.content || s?.description) && (
               <div className="text-[17px] leading-[1.75] space-y-5 max-w-2xl" style={{ color: GREY }}>
@@ -1305,7 +1319,7 @@ function ProjectsPage({ tenantSlug }: { tenantSlug: string }) {
       <PageHead title="Projects" intro="Finished work, with what was actually involved."/>
 
       <section className="py-16 sm:py-20">
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           {projects.length === 0 ? (
             <p className="text-[17px]" style={{ color: GREY }}>Project write-ups are on their way.</p>
           ) : (
@@ -1348,7 +1362,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
       <PageHead title="Areas we cover" intro="Ground conditions change town to town round here — which is why we quote on what's under your garden, not a rate card."/>
 
       <section className="py-16 sm:py-20">
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           {areas.length === 0 ? (
             <p className="text-[17px]" style={{ color: GREY }}>Coverage details coming soon.</p>
           ) : (
@@ -1388,7 +1402,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
       <PageHead title={`About ${tenant?.name || "us"}`}/>
 
       <section className="pb-20">
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-2 lg:gap-20 items-start">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-2 lg:gap-20 items-start">
           <div className="text-[17px] leading-[1.75] space-y-5" style={{ color: GREY }}>
             {(settings?.aboutText || tenant?.description || "").split("\n").filter(Boolean).map((p: string, i: number) => <p key={i}>{p}</p>)}
             <div className="pt-4"><Btn href={`${siteBase}/quote`}>Get a free quote</Btn></div>
@@ -1402,7 +1416,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
       </section>
 
       <section className="py-20 sm:py-24" style={{ backgroundColor: OFF_WHITE }}>
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           <div className="max-w-2xl mb-14">
             <Heading>The bit you can't see once it's finished.</Heading>
           </div>
@@ -1488,7 +1502,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
       <PageHead title="Get in touch"/>
 
       <section className="pb-24">
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-20">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-20">
           <div>
             <ul className="space-y-6">
               {phone && (
@@ -1572,7 +1586,7 @@ function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "
       <PageSEO title={`${title} | ${tenant?.name || ""}`} description={title} siteName={tenant?.name} noindex/>
       <PageHead title={title}/>
       <section className="pb-24">
-        <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           <div className="max-w-3xl text-[16px] leading-[1.8] space-y-5" style={{ color: GREY }}>
             {body
               ? String(body).split("\n").filter(Boolean).map((p: string, i: number) => <p key={i}>{p}</p>)
@@ -1592,7 +1606,7 @@ function NotFoundPage({ tenantSlug }: { tenantSlug: string }) {
     <Shell tenantSlug={tenantSlug}>
       <PageSEO title="Page not found" description="" siteName={tenant?.name} noindex/>
       <PageHead title="That page doesn't exist." intro="It may have moved, or the link might be out of date."/>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 pb-24 flex flex-wrap gap-3">
+      <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-24 flex flex-wrap gap-3">
         <Btn href={siteBase || "/"}>Back to home</Btn>
         <Btn href={`${siteBase}/services`} variant="outline">See services</Btn>
       </div>
