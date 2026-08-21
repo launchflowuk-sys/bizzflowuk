@@ -810,12 +810,13 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
   const headline = settings?.heroHeadline || `Landscaping &|Groundworks`;
   const [headlineTop, headlineAccent] = splitHeadline(headline);
   const tagline = settings?.heroSubheadline || "";
-  // Brand line first, then the rest of the services, de-duplicated.
+  // The towns the tenant actually covers, home town first so the hero opens on it.
   const heroWords = useMemo(() => {
-    const names = services.map((x: any) => String(x.name));
-    const lead = headlineAccent || "Groundworks";
-    return [lead, ...names.filter(n => n.toLowerCase() !== lead.toLowerCase())];
-  }, [services, headlineAccent]);
+    const home = (tenant?.city || "").trim();
+    const towns = areas.map((a: any) => String(a.name));
+    const rest = towns.filter(t => t.toLowerCase() !== home.toLowerCase());
+    return home ? [home, ...rest] : towns;
+  }, [areas, tenant?.city]);
   const sub = tenant?.description
     || "From the dig and the drainage to the finished garden — one contractor, start to finish.";
 
@@ -858,13 +859,20 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
               </p>
             )}
 
+            {/* H1 carries the two things that rank: what the business does, and where.
+                The service half is static so the keywords never leave the heading;
+                the town half cycles, making every pass a local keyword. Towns also
+                avoid the ampersand pile-up that service names caused
+                ("Landscaping & Patios & Paving"). */}
             <h1 className="kd-display font-semibold uppercase leading-[1.08] tracking-[-0.025em] text-[2.2rem] sm:text-[2.8rem] lg:text-[3.25rem]">
               <span className="block" style={{ color: INK }}>{headlineTop}</span>
-              {/* The tail cycles through what the business actually does. The brand
-                  line leads so the hero always opens on "Landscaping & Groundworks". */}
-              <span className="block">
-                <RotatingService names={heroWords} color={GREEN}/>
-              </span>
+              {headlineAccent && <span className="block" style={{ color: INK }}>{headlineAccent}</span>}
+              {heroWords.length > 0 && (
+                <span className="block">
+                  <span style={{ color: INK }}>In </span>
+                  <RotatingService names={heroWords} color={GREEN}/>
+                </span>
+              )}
             </h1>
 
             {settings?.heroSubheadline && (

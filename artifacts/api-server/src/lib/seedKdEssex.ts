@@ -174,7 +174,8 @@ export async function seedKdEssexIfMissing(): Promise<void> {
       faviconUrl: "/kd-essex/kd-essex-logo-320.webp",
       primaryColor: BRAND_GREEN,
       secondaryColor: BRAND_GREEN_DEEP,
-      // "|" marks the line break for the two-tone hero headline (ink above, green below).
+      // "|" marks the line break in the static half of the hero headline. The
+      // rotating "In <town>" line is appended by the template from the tenant's areas.
       heroHeadline: "Landscaping &|Groundworks",
       heroSubheadline: "Expert solutions. Lasting results.",
       // Drop the supplied hero photograph at this path in the web package's public dir
