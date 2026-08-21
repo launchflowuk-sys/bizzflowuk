@@ -133,7 +133,7 @@ const DEFAULT_LAYERS: BuildLayer[] = [
   { label: "Subgrade",          depth: "—",       note: "Excavated and compacted ground",          fill: "#4A4F45", height: 46 },
 ];
 
-function BuildUpDiagram({ layers = DEFAULT_LAYERS, onDark = false }: { layers?: BuildLayer[]; onDark?: boolean }) {
+function BuildUpDiagram({ layers = DEFAULT_LAYERS, onDark = false, stacked = false }: { layers?: BuildLayer[]; onDark?: boolean; stacked?: boolean }) {
   const [active, setActive] = useState<number | null>(null);
   const [settled, setSettled] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -170,11 +170,14 @@ function BuildUpDiagram({ layers = DEFAULT_LAYERS, onDark = false }: { layers?: 
   const delayFor = (i: number) => (layers.length - 1 - i) * 90;
 
   return (
-    <div ref={ref} className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 items-center">
+    <div ref={ref} className={`grid gap-8 items-center ${stacked ? "" : "lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14"}`}>
       <div>
-        <p className="kd-display text-[10px] font-semibold uppercase tracking-[0.16em] mb-2.5" style={{ color: mutedColor }}>
-          Fall to drainage — 1:80
-        </p>
+        <div className="flex items-baseline justify-between gap-4 mb-2.5">
+          <p className="kd-display text-[10px] font-semibold uppercase tracking-[0.16em]" style={{ color: mutedColor }}>
+            Fall to drainage — 1:80
+          </p>
+          <p className="hidden sm:block text-[11px]" style={{ color: mutedColor }}>Hover a layer</p>
+        </div>
         <div className="kd-stack overflow-hidden rounded-[5px]" data-settled={settled ? "true" : "false"}>
           {layers.map((l, i) => (
             <div
@@ -984,16 +987,18 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 04 — THE SIGNATURE BLOCK: what's underneath */}
       <section className="py-14 sm:py-20" style={{ backgroundColor: INK }}>
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
-          <div className="max-w-2xl mb-16">
-            <Heading onDark>Anyone can lay a nice patio. It's the six inches below it that decide whether it's still flat in five years.</Heading>
-            <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.66)" }}>
-              Most quotes tell you the finish and stay quiet about the build-up. Here's ours, in
-              full — so you've got something real to compare the other quotes against.
-            </p>
-          </div>
-          <BuildUpDiagram onDark/>
-          <div className="mt-12">
-            <Btn href={`${siteBase}/quote`}>Get a written spec with your quote</Btn>
+          <div className="grid gap-12 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] lg:gap-16 items-start">
+            <div>
+              <Heading onDark>Anyone can lay a nice patio. It's the six inches below it that decide whether it's still flat in five years.</Heading>
+              <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.66)" }}>
+                Most quotes tell you the finish and stay quiet about the build-up. Here's ours, in
+                full — so you've got something real to compare the other quotes against.
+              </p>
+              <div className="mt-10">
+                <Btn href={`${siteBase}/quote`}>Get a written spec with your quote</Btn>
+              </div>
+            </div>
+            <BuildUpDiagram onDark stacked/>
           </div>
         </div>
       </section>
