@@ -250,12 +250,21 @@
 .kd-site .kd-btn-ghost:hover  { background-color: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.72) !important; transform: translateY(-2px); }
 .kd-site .kd-btn-ghost:active { transform: translateY(0); }
 
-.kd-site .kd-chip:hover {
-  background-color: #FFFFFF !important;
-  border-color: #5D7B45 !important;
+/* Area names read as text, so the hover is an underline that draws itself
+   rather than a box that lights up. */
+.kd-site .kd-area {
+  /* A two-word town must wrap as one unit, never split across lines. */
+  white-space: nowrap;
+  background-image: linear-gradient(#5D7B45, #5D7B45);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 2px;
+  transition: background-size 260ms cubic-bezier(0.16, 1, 0.3, 1), color 200ms ease-out;
+  padding-bottom: 2px;
+}
+.kd-site .kd-area:hover {
   color: #5D7B45 !important;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px -8px rgba(30,31,29,0.30);
+  background-size: 100% 2px;
 }
 
 .kd-site a:focus-visible,

@@ -856,13 +856,24 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 under your garden, not a rate card.
               </p>
             </div>
-            <div className="flex flex-wrap gap-2.5 lg:pt-3">
-              {areas.map((a: any) => (
-                <a key={a.id} href={`${siteBase}/areas/${a.slug}`} className="kd-chip inline-flex items-center rounded-full px-4 py-2 text-[13.5px] font-medium border transition-[background-color,border-color,color,transform] duration-200 ease-out" style={{ borderColor: "#DDE3D6", color: INK, backgroundColor: OFF_WHITE }}>
-                  {a.name}
-                </a>
+            {/* Set as one flowing line of names rather than a cloud of pills: the towns
+                are a list to read, and pill shapes at uneven widths just look scattered. */}
+            <p className="lg:pt-2 text-[1.35rem] sm:text-[1.6rem] leading-[1.5] tracking-[-0.015em]">
+              {areas.map((a: any, i: number) => (
+                <span key={a.id}>
+                  <a
+                    href={`${siteBase}/areas/${a.slug}`}
+                    className="kd-area transition-colors duration-200"
+                    style={{ color: INK }}
+                  >
+                    {a.name}
+                  </a>
+                  {i < areas.length - 1 && (
+                    <span aria-hidden="true" className="inline-block align-middle mx-3 h-[5px] w-[5px] rounded-[1px] rotate-45" style={{ backgroundColor: GREEN }}/>
+                  )}
+                </span>
               ))}
-            </div>
+            </p>
           </div>
         </section>
       )}
