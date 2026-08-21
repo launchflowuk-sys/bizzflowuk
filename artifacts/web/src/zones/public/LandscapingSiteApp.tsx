@@ -894,7 +894,10 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           )}
 
           {/* Copy */}
-          <div className="kd-hero-in relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1400px)/2))] lg:pr-10 py-12 sm:py-16 lg:py-20 flex flex-col justify-center">
+          {/* Tighter top padding on mobile only: the photo sits directly above the copy
+              there, so the full py-12 pushed the headline further down the fold than it
+              needs to be. Tablet and desktop keep their original spacing. */}
+          <div className="kd-hero-in relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1400px)/2))] lg:pr-10 pt-6 pb-12 sm:py-16 lg:py-20 flex flex-col justify-center">
             {tenant?.city && (
               <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.18em] mb-6" style={{ color: INK }}>
                 <PinIcon color={GREEN_DEEP}/>Based in {tenant.city}, UK
