@@ -106,7 +106,7 @@ function Heading({ children, onDark = false, className = "", rule = true }: { ch
 }
 
 function Btn({ href, children, variant = "solid", className = "" }: { href: string; children: React.ReactNode; variant?: "solid" | "outline" | "ghost"; className?: string }) {
-  const base = "kd-btn inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold min-h-[48px] transition-[transform,box-shadow,background-color,color] duration-200 ease-out will-change-transform";
+  const base = "kd-btn inline-flex items-center justify-center gap-2 rounded-full px-5 sm:px-7 py-3.5 text-[13px] sm:text-sm font-semibold min-h-[48px] transition-[transform,box-shadow,background-color,color] duration-200 ease-out will-change-transform";
   const styles = variant === "solid"
     ? { backgroundColor: GREEN_DEEP, color: "#FFFFFF" }
     : variant === "outline"
@@ -501,6 +501,20 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
   const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const logo = settings?.logoUrl || tenant?.logoUrl;
+
+  // Escape closes the drawer, and the page behind it stops scrolling while it is
+  // open — without that, scrolling the drawer drags the page underneath on iOS.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
   const phone = settings?.phone || tenant?.phone;
   const { data: priceItems } = useListPublicPriceItems(tenantSlug || "");
   const links = ((priceItems as any[]) || []).length > 0
@@ -553,22 +567,98 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
           </Btn>
         </div>
 
-        <button className="lg:hidden p-2 -mr-2" onClick={() => setOpen(v => !v)} aria-label="Toggle menu" aria-expanded={open}>
-          <svg className="w-6 h-6" style={{ color: INK }} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" viewBox="0 0 24 24">
-            {open ? <path d="M6 6l12 12M6 18L18 6"/> : <path d="M4 8h16M4 16h16"/>}
-          </svg>
+        {/* Two bars that rotate into a cross, rather than swapping one icon for
+            another — the morph reads as the same control changing state. */}
+        <button
+          className="lg:hidden relative w-11 h-11 -mr-2 flex items-center justify-center"
+          onClick={() => setOpen(v => !v)}
+          aria-label={open ? "Close menu" : "Open menu"}
+          aria-expanded={open}
+          aria-controls="kd-mobile-menu"
+        >
+          <span className="sr-only">Menu</span>
+          <span
+            aria-hidden="true"
+            className="absolute block h-[2px] w-6 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{ backgroundColor: INK, transform: open ? "rotate(45deg)" : "translateY(-4px)" }}
+          />
+          <span
+            aria-hidden="true"
+            className="absolute block h-[2px] w-6 rounded-full transition-transform duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{ backgroundColor: INK, transform: open ? "rotate(-45deg)" : "translateY(4px)" }}
+          />
         </button>
       </div>
 
-      {open && (
-        <div className="lg:hidden border-t bg-white px-5 sm:px-8 py-3" style={{ borderColor: "#E6EAE2" }}>
-          {links.map(l => (
-            <WouterLink key={l.href} href={l.href} className="block py-3 text-[15px] font-medium" style={{ color: INK }} onClick={() => setOpen(false)}>{l.label}</WouterLink>
-          ))}
-          <WouterLink href="/quote" className="block py-3 text-[15px] font-semibold" style={{ color: GREEN_DEEP }} onClick={() => setOpen(false)}>Get a quote</WouterLink>
-          {phone && <a href={`tel:${phone}`} className="flex items-center gap-2 py-3 text-[15px] font-medium" style={{ color: INK }}><PhoneIcon color={GREEN_DEEP}/>{phone}</a>}
-        </div>
-      )}
+      {/* Full-height drawer. Kept mounted so it animates out as well as in, and
+          marked inert when closed so its links are not focusable behind the page. */}
+      <div
+        className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        {...(open ? {} : { inert: "" as any })}
+        aria-hidden={!open}
+      >
+        <button
+          className="absolute inset-0 w-full h-full cursor-default"
+          style={{ backgroundColor: "rgba(30,31,29,0.45)", backdropFilter: open ? "blur(3px)" : "none" }}
+          onClick={() => setOpen(false)}
+          tabIndex={-1}
+          aria-label="Close menu"
+        />
+        <nav
+          id="kd-mobile-menu"
+          className="absolute right-0 top-0 h-full w-[86%] max-w-sm bg-white flex flex-col transition-transform duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{ transform: open ? "translateX(0)" : "translateX(100%)", boxShadow: "-16px 0 40px -20px rgba(30,31,29,0.4)" }}
+        >
+          <div className="flex items-center justify-between h-[92px] px-6 border-b" style={{ borderColor: "#E6EAE2" }}>
+            {logo
+              ? <img src={logo} alt={tenant?.name || "Logo"} className="h-12 w-auto" width={220} height={140}/>
+              : <span className="kd-display text-base font-semibold" style={{ color: INK }}>{tenant?.name || ""}</span>}
+            <button
+              className="w-11 h-11 flex items-center justify-center -mr-2"
+              onClick={() => setOpen(false)}
+              aria-label="Close menu"
+            >
+              <Icon d="M6 6l12 12M6 18L18 6" className="w-6 h-6" color={INK} strokeWidth={1.8}/>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-6 py-6">
+            {links.map((l, i) => (
+              <WouterLink
+                key={l.href}
+                href={l.href}
+                className="kd-drawer-item kd-display flex items-center justify-between gap-4 py-4 text-[1.35rem] font-semibold tracking-[-0.015em] border-b"
+                style={{ color: INK, borderColor: "#EEF1EA", ["--kd-delay" as string]: `${90 + i * 45}ms` }}
+                onClick={() => setOpen(false)}
+              >
+                {l.label}
+                <ArrowIcon className="w-4 h-4" color={GREEN_DEEP}/>
+              </WouterLink>
+            ))}
+          </div>
+
+          <div className="px-6 pb-8 pt-2 space-y-3">
+            <WouterLink
+              href="/quote"
+              className="kd-btn kd-btn-solid flex items-center justify-center gap-2 rounded-full py-4 text-[14px] font-semibold text-white"
+              style={{ backgroundColor: GREEN_DEEP }}
+              onClick={() => setOpen(false)}
+            >
+              {settings?.ctaText || "Get a free quote"}
+              <ArrowIcon className="w-4 h-4" color="#FFFFFF"/>
+            </WouterLink>
+            {phone && (
+              <a
+                href={`tel:${phone}`}
+                className="flex items-center justify-center gap-2.5 rounded-full py-4 text-[14px] font-semibold border"
+                style={{ borderColor: "#D9DFD1", color: INK }}
+              >
+                <PhoneIcon color={GREEN_DEEP}/>{phone}
+              </a>
+            )}
+          </div>
+        </nav>
+      </div>
     </header>
   );
 }
@@ -879,7 +969,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <div className="lg:grid lg:grid-cols-[minmax(0,1.18fr)_minmax(0,1fr)] lg:items-stretch">
           {/* Image — first in the DOM on mobile, right-hand column on desktop */}
           {heroImage && (
-            <div className="relative order-first lg:order-last h-[260px] sm:h-[380px] lg:h-auto lg:min-h-[620px]">
+            <div className="relative order-first lg:order-last h-[190px] sm:h-[380px] lg:h-auto lg:min-h-[620px]">
               <img
                 src={heroImage}
                 alt=""
@@ -929,15 +1019,15 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </h1>
 
             {settings?.heroSubheadline && (
-              <p className="kd-display mt-5 text-[13px] sm:text-[14px] font-semibold uppercase tracking-[0.09em]" style={{ color: INK }}>
+              <p className="kd-display mt-3 sm:mt-5 text-[13px] sm:text-[14px] font-semibold uppercase tracking-[0.09em]" style={{ color: INK }}>
                 {tagline}
               </p>
             )}
-            <span className="block h-[3px] w-16 mt-6" style={{ backgroundColor: GREEN_DEEP }}/>
+            <span className="block h-[3px] w-16 mt-4 sm:mt-6" style={{ backgroundColor: GREEN_DEEP }}/>
 
-            <p className="mt-5 text-[15px] leading-[1.7] max-w-md" style={{ color: GREY }}>{sub}</p>
+            <p className="mt-4 sm:mt-5 text-[14.5px] sm:text-[15px] leading-[1.65] sm:leading-[1.7] max-w-md" style={{ color: GREY }}>{sub}</p>
 
-            <div className="mt-9 flex flex-wrap gap-3.5">
+            <div className="mt-6 sm:mt-9 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:gap-3.5">
               <Btn href={`${siteBase}/services`} className="!rounded-none">
                 Our services <ArrowIcon className="w-4 h-4"/>
               </Btn>
@@ -947,7 +1037,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </div>
 
             {/* Real-review badge — renders itself only when there are genuine reviews. */}
-            <div className="mt-9 empty:mt-0"><RatingBadge reviews={reviews}/></div>
+            <div className="mt-6 sm:mt-9 empty:mt-0"><RatingBadge reviews={reviews}/></div>
           </div>
         </div>
       </section>
