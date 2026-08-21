@@ -1,0 +1,499 @@
+<title>AMO Rendering Next Steps</title>
+<style>
+  :root {
+    --paper:      #F5F6F2;
+    --surface:    #FFFFFF;
+    --surface-2:  #EDEFE8;
+    --ink:        #1C2018;
+    --ink-2:      #414839;
+    --muted:      #6E7565;
+    --rule:       #D8DCCF;
+    --accent:     #4E7419;
+    --accent-ink: #3B590F;
+    --accent-wash:#E8EFDA;
+    --critical:   #8E3A1F;
+    --crit-wash:  #F6E6E0;
+    --warn:       #866713;
+    --warn-wash:  #F4EBD4;
+
+    --display: ui-sans-serif, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    --body: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --paper:      #15180F;
+      --surface:    #1C2018;
+      --surface-2:  #242A1A;
+      --ink:        #EAEEE2;
+      --ink-2:      #C5CCB8;
+      --muted:      #8F9884;
+      --rule:       #343B29;
+      --accent:     #A8CF60;
+      --accent-ink: #C2DF88;
+      --accent-wash:#252E15;
+      --critical:   #DF9074;
+      --crit-wash:  #2F1C14;
+      --warn:       #DAB85E;
+      --warn-wash:  #2C2512;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --paper:      #15180F;
+    --surface:    #1C2018;
+    --surface-2:  #242A1A;
+    --ink:        #EAEEE2;
+    --ink-2:      #C5CCB8;
+    --muted:      #8F9884;
+    --rule:       #343B29;
+    --accent:     #A8CF60;
+    --accent-ink: #C2DF88;
+    --accent-wash:#252E15;
+    --critical:   #DF9074;
+    --crit-wash:  #2F1C14;
+    --warn:       #DAB85E;
+    --warn-wash:  #2C2512;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 17px;
+    line-height: 1.62;
+    margin: 0;
+    padding: 0 24px 96px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .wrap { max-width: 720px; margin: 0 auto; }
+
+  .letterhead {
+    padding: 56px 0 24px;
+    border-bottom: 1px solid var(--rule);
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+  }
+  .lf-name {
+    font-family: var(--display);
+    font-size: 17px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+  }
+  .lf-sub, .lf-meta {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+  .lf-meta { text-align: right; }
+
+  .titleblock { padding: 40px 0 8px; }
+  h1 {
+    font-family: var(--display);
+    font-size: clamp(30px, 5.2vw, 42px);
+    line-height: 1.08;
+    letter-spacing: -.024em;
+    font-weight: 720;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  .subtitle { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+
+  section { padding-top: 44px; }
+  h2 {
+    font-family: var(--display);
+    font-size: 12.5px;
+    letter-spacing: .13em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--accent-ink);
+    margin: 0 0 18px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--rule);
+  }
+  p { margin: 0 0 15px; max-width: 65ch; text-wrap: pretty; }
+  strong { font-weight: 700; color: var(--ink); }
+  a { color: var(--accent-ink); text-underline-offset: 3px; }
+  a:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+
+  ul { margin: 0 0 15px; padding-left: 20px; max-width: 65ch; }
+  li { margin-bottom: 6px; }
+  li::marker { color: var(--muted); }
+
+  .tablewrap { overflow-x: auto; margin-bottom: 18px; }
+  table { border-collapse: collapse; width: 100%; min-width: 400px; font-size: 15.5px; }
+  th, td { text-align: left; padding: 10px 16px 10px 0; border-bottom: 1px solid var(--rule); vertical-align: top; }
+  th {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  td.num { font-variant-numeric: tabular-nums; font-family: var(--mono); font-size: 14px; white-space: nowrap; }
+  .state { font-family: var(--mono); font-size: 12.5px; white-space: nowrap; }
+  .state.bad { color: var(--critical); }
+  .state.mid { color: var(--warn); }
+  .state.ok  { color: var(--accent-ink); }
+
+  .job {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-left: 3px solid var(--rule);
+    padding: 18px 20px;
+    margin-bottom: 12px;
+  }
+  .job.now   { border-left-color: var(--critical); }
+  .job.soon  { border-left-color: var(--warn); }
+  .job.keep  { border-left-color: var(--accent); }
+  .job-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 10px; }
+  .job-head .title {
+    font-family: var(--display);
+    font-weight: 680;
+    font-size: 17.5px;
+    letter-spacing: -.01em;
+    flex: 1 1 300px;
+  }
+  .tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 2px;
+    white-space: nowrap;
+    font-weight: 600;
+  }
+  .tag.now  { background: var(--crit-wash); color: var(--critical); }
+  .tag.soon { background: var(--warn-wash); color: var(--warn); }
+  .tag.keep { background: var(--accent-wash); color: var(--accent-ink); }
+  .job p { font-size: 16px; margin-bottom: 10px; }
+  .job p:last-child { margin-bottom: 0; }
+  .job ul { font-size: 16px; }
+
+  .note {
+    background: var(--surface-2);
+    border-left: 3px solid var(--accent);
+    padding: 16px 20px;
+    margin: 22px 0;
+  }
+  .note p { margin-bottom: 10px; }
+  .note p:last-child { margin-bottom: 0; }
+
+  .script {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    padding: 16px 18px;
+    font-size: 16px;
+    font-style: italic;
+    color: var(--ink-2);
+    margin: 0 0 15px;
+    max-width: 65ch;
+  }
+
+  .phase {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    gap: 20px;
+    padding: 16px 0;
+    border-top: 1px solid var(--rule);
+    align-items: start;
+  }
+  .phase:last-of-type { border-bottom: 1px solid var(--rule); }
+  .phase .when {
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--accent-ink);
+    padding-top: 3px;
+    font-weight: 600;
+  }
+  .phase ul { margin: 0; padding-left: 18px; }
+  .phase li { font-size: 16px; }
+
+  .signoff { margin-top: 36px; }
+  .signoff .name { font-family: var(--display); font-weight: 700; font-size: 17px; margin-top: 22px; }
+  .signoff .role { font-family: var(--mono); font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); line-height: 1.8; }
+
+  footer {
+    margin-top: 56px;
+    padding-top: 18px;
+    border-top: 1px solid var(--rule);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    line-height: 1.8;
+    color: var(--muted);
+  }
+
+  @media (max-width: 560px) {
+    body { font-size: 16.5px; padding: 0 18px 64px; }
+    .letterhead { padding-top: 40px; }
+    .lf-meta { text-align: left; }
+    .phase { grid-template-columns: 1fr; gap: 8px; }
+  }
+</style>
+
+<div class="wrap">
+
+  <header class="letterhead">
+    <div>
+      <div class="lf-name">LaunchFlow UK Limited</div>
+      <div class="lf-sub">Websites, software and campaign management</div>
+    </div>
+    <div class="lf-meta">
+      For: Mark Baker, AMO Rendering<br>
+      15 August 2026
+    </div>
+  </header>
+
+  <div class="titleblock">
+    <h1>Where we are, and what I need from you</h1>
+    <div class="subtitle">Website and Google Ads · Review and next steps</div>
+  </div>
+
+  <section>
+    <p>Mark,</p>
+    <p>I've gone through the website and the ad account properly this week and I want to lay out what I've found, what I'm doing about it, and the handful of things that have to come from you.</p>
+    <p>The short version: the build is done. The website is live and the campaign is set up correctly. What's stopping it working is that there's nothing online yet showing that AMO Rendering is a real, established, local business. Google can't see it and neither can your customers. Almost all of it is free to fix, and most of it needs you rather than me.</p>
+    <p>I know you're anxious with no work on at the moment. That's exactly why I don't want to just turn the spend up and hope. Here's the actual picture.</p>
+  </section>
+
+  <section>
+    <h2>Where things stand</h2>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Item</th><th>Status</th><th>Whose job</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Website</td><td class="state ok">Built and live</td><td>Me</td></tr>
+          <tr><td>Google Ads campaign</td><td class="state mid">Built, currently paused</td><td>Me</td></tr>
+          <tr><td>Google Business listing</td><td class="state bad">Doesn't exist</td><td>You</td></tr>
+          <tr><td>Photos of your work</td><td class="state bad">None</td><td>You</td></tr>
+          <tr><td>Customer reviews</td><td class="state bad">None</td><td>You</td></tr>
+          <tr><td>Address details</td><td class="state bad">Edgware vs Grays clash</td><td>You + accountant</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The two green items are mine and they're done. The four red ones are yours, and they're the ones deciding whether the first two earn you anything.</p>
+  </section>
+
+  <section>
+    <h2>What I found</h2>
+
+    <p>Rendering a house is a big spend on the front of somebody's home. People don't commit to that off a web form. They want to see work you've done, read what other customers said, and be satisfied you're a real firm based near them.</p>
+
+    <p>At the moment, someone clicking your ad lands on a page with no photos of any job you've completed, no reviews, no Google listing, and a company address in Edgware while the page tells them you're a Grays firm. The offer is fine. There's just nothing sitting behind it.</p>
+
+    <p>Google works it out too, and it charges you for it.</p>
+
+    <div class="note">
+      <p><strong>This is why your clicks are expensive.</strong> Google doesn't score you on trust directly, but the gaps show up three ways.</p>
+      <p>Without a Google Business listing, your ads can't show a location line. That makes the ad physically smaller on the page, so fewer people click it. Google uses your click rate to work out Ad Rank, and a weaker Ad Rank means you pay more to sit in the same position. Second, Google also scores the quality of the page people land on, and a thin page marks you down again. Third, you're not in the free map results at the top of local searches, which is where most "renderer near me" clicks go, so every single visitor has to be paid for.</p>
+      <p>Your first month averaged <strong>£6.94 a click</strong>. I've since capped the bids at £2.50 and cut out the rubbish searches. Getting your click rate up is the other half of that job, and that needs the listing, the photos and the reviews.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What I need from you</h2>
+
+    <p>In order of what unblocks the most. The first three are holding money up right now.</p>
+
+    <div class="job now">
+      <div class="job-head">
+        <span class="title">Photos of finished jobs, before and after</span>
+        <span class="tag now">This week</span>
+      </div>
+      <p>This is the biggest single thing and it costs you an afternoon. You've just come off a run of work, so those houses are standing out there right now.</p>
+      <ul>
+        <li>Send me everything already on your phone, however rough it looks. I'll pick what works.</li>
+        <li>For jobs where you've no "before" shot, drive back and take a photo of the finished house from the street. Drop the owner a quick message first as a courtesy, most people are happy to say yes.</li>
+        <li>Ask a few past customers if they've got a before photo. Most people photographed their own house before the work started.</li>
+        <li>Daylight, overcast is fine, whole front of the house in shot, phone held level. No filters.</li>
+      </ul>
+      <p>Six jobs is what I'm after. <strong>Three would already change that page completely.</strong> One decent before-and-after pair does more work than anything I can write.</p>
+      <p><strong>What it unlocks:</strong> the rebuilt landing pages, image assets on your ads, and a proper proof section so the enquiry form is worth filling in.</p>
+    </div>
+
+    <div class="job now">
+      <div class="job-head">
+        <span class="title">Set up your Google Business listing</span>
+        <span class="tag now">This week</span>
+      </div>
+      <p>It's free, and right now it's the biggest hole in the whole setup. I'll sit down and do it with you if that's easier.</p>
+      <p>Important bit: we set it up as a <strong>service area business</strong>. That means it's registered at the address you actually work from in Grays, the address stays <em>hidden</em> from the public, and we list your service areas as Grays, Thurrock, Basildon, Tilbury and the surrounding patch.</p>
+      <p><strong>You don't need to rent an office in Grays.</strong> Service area is the correct setup for a trade that travels to the customer, and it's what every decent local firm uses.</p>
+      <p>Verification is normally a postcard or a video call and can take a week or two, which is why I want it started now rather than after everything else.</p>
+      <p><strong>What it unlocks:</strong> location details on your ads, which means a bigger ad, a better click rate and a lower cost per click. Plus a free listing in the local map results, and somewhere for your reviews to actually live.</p>
+    </div>
+
+    <div class="job now">
+      <div class="job-head">
+        <span class="title">Decide which address the public sees</span>
+        <span class="tag now">Decision needed</span>
+      </div>
+      <p>I think these two things have got tangled together, so let me separate them.</p>
+      <p><strong>Your Companies House registered office</strong> at Whitchurch Parade in Edgware is legal admin. Plenty of businesses use their accountant's address for that and no customer ever sees it. Worth tidying up eventually, but it isn't holding anything up. Don't let it block you.</p>
+      <p><strong>The address on your website and Google listing</strong> is the urgent one. Your website footer currently shows the Edgware address while every headline on the page says Grays and south Essex. That contradiction is live on the site today and it undermines the whole local pitch. Google cross-checks the two as well.</p>
+      <p>All I need from you is the Grays address you want used publicly. I'll put the identical wording on the website and the Google listing.</p>
+      <p><strong>What it unlocks:</strong> a website that stops arguing with itself, and the consistency Google uses to decide whether to show you for local searches.</p>
+    </div>
+
+    <div class="job soon">
+      <div class="job-head">
+        <span class="title">Ten Google reviews from past customers</span>
+        <span class="tag soon">First month</span>
+      </div>
+      <p>Start this the moment the listing is verified. Every job you've ever done is somebody you can ask. Ten is roughly where a listing stops looking brand new.</p>
+      <p>Send it as a text, something like:</p>
+      <p class="script">"Hi [name], it's Mark from AMO Rendering. I've just got the business set up properly on Google and I'm trying to get a few honest reviews together. If you were happy with the render, would you mind leaving one? Takes about a minute: [link]. No problem at all if not, thanks either way."</p>
+      <p>Space them out over a couple of weeks rather than firing them all off at once. Ten reviews landing in one afternoon looks exactly like what it is.</p>
+      <p><strong>What it unlocks:</strong> star ratings on your map listing, real quotes I can put on the website, and the strongest trust signal a trade business has.</p>
+    </div>
+
+    <div class="job soon">
+      <div class="job-head">
+        <span class="title">Company details I can actually publish</span>
+        <span class="tag soon">This month</span>
+      </div>
+      <p>I won't put made-up numbers on your website. Anything you can back up, I'll use:</p>
+      <ul>
+        <li>How long you've been rendering, and how long trading as AMO</li>
+        <li>Roughly how many houses you've completed, a fair estimate is fine</li>
+        <li>How many of you there are, and whether they're employed or subbies</li>
+        <li>Public liability insurance, who it's with and the cover amount</li>
+        <li>Any manufacturer training, accreditations or CSCS cards</li>
+        <li>Exactly what the 15-year guarantee covers, written down</li>
+      </ul>
+      <p>That guarantee is the strongest claim on your site and currently the one with least behind it. A single page setting out what it actually covers would carry real weight with people.</p>
+      <p><strong>What it unlocks:</strong> an About section with something in it, and a guarantee page that turns a line of text into an actual promise.</p>
+    </div>
+
+    <div class="job soon">
+      <div class="job-head">
+        <span class="title">Ring enquiries back within the hour</span>
+        <span class="tag soon">Ongoing</span>
+      </div>
+      <p>People asking for render quotes contact three or four firms in one sitting. Whoever rings back first tends to get the job, often before the others have even picked up the message.</p>
+      <p>A lead that costs me £15 of your budget to get and then sits until Thursday is money in the bin. You've got no work on at the moment, so you can answer these straight away. Use that while you've got it.</p>
+      <p><strong>What it unlocks:</strong> all of the above actually turning into paid work.</p>
+    </div>
+
+    <div class="job keep">
+      <div class="job-head">
+        <span class="title">Photograph every job from now on</span>
+        <span class="tag keep">Habit</span>
+      </div>
+      <p>Before shot when you arrive, after shot at handover, ask for the review when you take final payment. Every job, no exceptions. Keep that up for six months and you'll never have this problem again.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What I'm doing at my end</h2>
+
+    <p>None of this waits on you, and it's all covered by the monthly fee.</p>
+    <ul>
+      <li>Rebuilding the landing pages with proper depth. Your work, the guarantee explained, who you are, how the job runs. I'm designing the photo slots in now so they look right while they're empty and better once yours land.</li>
+      <li>Adding sitelinks, callouts and service listings to the ads so they take up more space on the page. Written and ready.</li>
+      <li>Switching your seven ads back on. They've been off since 14 August, which is why the campaign has spent nothing. I'm holding them until the pages are worth sending people to.</li>
+      <li>Going through the search terms every week for the first month and blocking the junk searches as they appear.</li>
+      <li>Setting up the Google listing with you and matching the website details to it exactly.</li>
+      <li>Tracking cost per enquiry rather than cost per click. Clicks on their own don't pay wages.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>The first month</h2>
+
+    <div class="phase">
+      <div class="when">Week 1</div>
+      <ul>
+        <li>You send me every job photo you've got</li>
+        <li>Google listing submitted for verification, clock starts</li>
+        <li>You confirm the Grays address for public use</li>
+        <li>I rebuild the landing pages and add the ad extras</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="when">Week 2</div>
+      <ul>
+        <li>New pages go live with your photos on them</li>
+        <li>Ads switched back on, campaign starts spending again</li>
+        <li>You start sending review requests to past customers</li>
+        <li>First search term clear-out</li>
+      </ul>
+    </div>
+    <div class="phase">
+      <div class="when">Weeks 3–4</div>
+      <ul>
+        <li>Listing verified, location details added to the ads</li>
+        <li>Reviews building up, quotes go onto the website</li>
+        <li>Weekly search term clear-outs continue</li>
+        <li>First proper read on what an enquiry is costing you</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the budget can realistically do</h2>
+
+    <p>So you know what you're looking at. This is arithmetic off your current settings, not a promise.</p>
+
+    <div class="tablewrap">
+      <table>
+        <thead>
+          <tr><th>Figure</th><th>Number</th><th>Where it comes from</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Daily budget</td><td class="num">£15</td><td>Your current setting</td></tr>
+          <tr><td>Max cost per click</td><td class="num">£2.50</td><td>The bid cap I set</td></tr>
+          <tr><td>Clicks per day</td><td class="num">6–8</td><td>Budget divided by realistic click cost</td></tr>
+          <tr><td>Clicks per month</td><td class="num">180–240</td><td>Arithmetic</td></tr>
+          <tr><td>Enquiries, page as it is</td><td class="num">1–3%</td><td>Thin page, nothing to prove you're real</td></tr>
+          <tr><td>Enquiries, page sorted</td><td class="num">5–10%</td><td>Normal for a local trade page with proof on it</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p>The gap between those last two lines is the whole point of this document. Same money either way. The difference is roughly <strong>two to five enquiries a month against nine to twenty</strong>. Your budget isn't the thing holding this back.</p>
+
+    <p>Two things to be fair about. Don't judge any of it on less than about a hundred clicks, because small numbers are misleading. And enquiries aren't jobs. Turning a quote into signed work is your end, and it comes down to how fast you ring back and how the survey goes.</p>
+  </section>
+
+  <section>
+    <h2>Where that leaves us</h2>
+
+    <p>I'd rather do this groundwork now than turn the spend up and hope. We already know how that goes, because the first month cost you £395 and brought in nothing.</p>
+
+    <p>Everything expensive is built and paid for. What's missing costs you nothing but time. An afternoon photographing houses you've already rendered, a free Google listing, and a run of texts to people you've already worked for.</p>
+
+    <p>Get those three done this week and I'll have you in a proper working setup inside a month. If they don't happen, we're paying Google to send strangers to a business that can't show them anything, and there's nothing more I can build to get round that.</p>
+
+    <p>Send the photos over whenever you're ready and give me a ring if you want to go through any of it.</p>
+
+    <div class="signoff">
+      <div class="name">Shoji</div>
+      <div class="role">Shujaat Chaudary<br>LaunchFlow UK Limited</div>
+    </div>
+  </section>
+
+  <footer>
+    Google Ads account 207-806-0180 · Campaign "AMO – Rendering Services" · £15/day · Manual CPC<br>
+    First 30 days to 5 August 2026: £395.55 spent, 57 clicks, 0 conversions, £6.94 average cost per click.
+  </footer>
+
+</div>

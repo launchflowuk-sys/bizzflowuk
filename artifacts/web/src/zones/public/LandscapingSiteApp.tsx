@@ -1,6 +1,6 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
 import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useListPublicBeforeAfter, useSubmitContact, useListPublicPriceItems } from "@workspace/api-client-react";
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, useSiteOrigin, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
 import { PriceCalculatorSection } from "./PriceCalculator";
@@ -74,12 +74,13 @@ function Star({ filled = true }: { filled?: boolean }) {
 }
 
 /** Section label — small, tracked, uppercase. Sets the editorial tone. */
-function Eyebrow({ children, onDark = false }: { children: React.ReactNode; onDark?: boolean }) {
-  return <p className="text-[11px] font-semibold uppercase tracking-[0.22em] mb-4" style={{ color: onDark ? GREEN : GREEN_DEEP }}>{children}</p>;
+/** A real heading for a labelled block, not a kicker floating above another heading. */
+function SectionLabel({ children, onDark = false }: { children: React.ReactNode; onDark?: boolean }) {
+  return <h3 className="kd-display text-[11px] font-semibold uppercase tracking-[0.22em] mb-4" style={{ color: onDark ? GREEN : GREEN_DEEP }}>{children}</h3>;
 }
 
 function Heading({ children, onDark = false, className = "" }: { children: React.ReactNode; onDark?: boolean; className?: string }) {
-  return <h2 className={`text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold leading-[1.1] tracking-[-0.02em] ${className}`} style={{ color: onDark ? "#FFFFFF" : INK }}>{children}</h2>;
+  return <h2 className={`kd-display text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold leading-[1.1] tracking-[-0.02em] ${className}`} style={{ color: onDark ? "#FFFFFF" : INK }}>{children}</h2>;
 }
 
 function Btn({ href, children, variant = "solid", className = "" }: { href: string; children: React.ReactNode; variant?: "solid" | "outline" | "ghost"; className?: string }) {
@@ -87,7 +88,7 @@ function Btn({ href, children, variant = "solid", className = "" }: { href: stri
   const styles = variant === "solid"
     ? { backgroundColor: GREEN_DEEP, color: "#FFFFFF" }
     : variant === "outline"
-      ? { border: `1.5px solid ${INK}`, color: INK }
+      ? { border: `1.5px solid ${GREEN_DEEP}`, color: GREEN_DEEP }
       : { border: "1.5px solid rgba(255,255,255,0.35)", color: "#FFFFFF" };
   return <a href={href} className={`${base} hover:opacity-85 ${className}`} style={styles}>{children}</a>;
 }
@@ -112,70 +113,85 @@ const DEFAULT_LAYERS: BuildLayer[] = [
 
 function BuildUpDiagram({ layers = DEFAULT_LAYERS, onDark = false }: { layers?: BuildLayer[]; onDark?: boolean }) {
   const [active, setActive] = useState<number | null>(null);
-  const total = layers.reduce((sum, l) => sum + l.height, 0);
+  const [settled, setSettled] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  // The section builds itself once, when it first comes into view. Layers start
+  // visible (animation-fill: backwards on an already-rendered element), so if the
+  // observer never runs — SSR, an old browser, reduced motion — the diagram is
+  // simply there, complete.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || settled) return;
+    if (typeof IntersectionObserver === "undefined") { setSettled(true); return; }
+
+    // Geometry fallback: IntersectionObserver only reports on a page that is
+    // actually compositing frames, so a diagram already on screen at mount can
+    // otherwise sit un-animated indefinitely. getBoundingClientRect needs layout
+    // but not paint, so this still resolves where the observer stays silent.
+    const timer = window.setTimeout(() => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.85 && r.bottom > 0) setSettled(true);
+    }, 120);
+
+    const io = new IntersectionObserver(
+      entries => { if (entries.some(e => e.isIntersecting)) { setSettled(true); io.disconnect(); } },
+      { threshold: 0.35 },
+    );
+    io.observe(el);
+    return () => { window.clearTimeout(timer); io.disconnect(); };
+  }, [settled]);
+
   const textColor = onDark ? "#FFFFFF" : INK;
   const mutedColor = onDark ? "rgba(255,255,255,0.62)" : GREY;
+  // Ground is built from the bottom up, so the last row in the stack moves first.
+  const delayFor = (i: number) => (layers.length - 1 - i) * 90;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 items-center">
-      {/* The section itself */}
-      <div className="relative">
-        <svg viewBox={`0 0 320 ${total + 24}`} className="w-full h-auto" role="img" aria-label="Cross-section of a hard landscaping build-up showing each layer and its depth">
-          <defs>
-            <clipPath id="kd-section-clip">
-              <rect x="0" y="10" width="320" height={total} rx="4"/>
-            </clipPath>
-          </defs>
-          <g clipPath="url(#kd-section-clip)">
-            {layers.reduce<{ y: number; nodes: React.ReactNode[] }>((acc, l, i) => {
-              const dim = active !== null && active !== i;
-              acc.nodes.push(
-                <g key={l.label} onMouseEnter={() => setActive(i)} onMouseLeave={() => setActive(null)}>
-                  <rect
-                    x="0" y={acc.y} width="320" height={l.height}
-                    fill={l.fill}
-                    opacity={dim ? 0.4 : 1}
-                    style={{ transition: "opacity 200ms" }}
-                  />
-                  {/* texture for the granular layers */}
-                  {(i === 2 || i === 4) && Array.from({ length: 26 }).map((_, d) => (
-                    <circle
-                      key={d}
-                      cx={((d * 61) % 312) + 4}
-                      cy={acc.y + 6 + ((d * 23) % Math.max(1, l.height - 12))}
-                      r={i === 2 ? 2.4 : 1.5}
-                      fill="#FFFFFF"
-                      opacity={dim ? 0.05 : 0.16}
-                    />
-                  ))}
-                </g>
-              );
-              acc.y += l.height;
-              return acc;
-            }, { y: 10, nodes: [] }).nodes}
-          </g>
-          {/* fall indicator across the finish layer */}
-          <path d="M8 8 L312 14" stroke={onDark ? "#FFFFFF" : INK} strokeWidth="1.25" strokeDasharray="4 4" opacity="0.55" fill="none"/>
-          <text x="8" y="6" fontSize="8" fill={onDark ? "#FFFFFF" : INK} opacity="0.75" fontFamily="ui-sans-serif, system-ui, sans-serif">Fall to drainage — 1:80</text>
-        </svg>
+    <div ref={ref} className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-14 items-center">
+      <div>
+        <p className="kd-display text-[10px] font-semibold uppercase tracking-[0.16em] mb-2.5" style={{ color: mutedColor }}>
+          Fall to drainage — 1:80
+        </p>
+        <div className="kd-stack overflow-hidden rounded-[5px]" data-settled={settled ? "true" : "false"}>
+          {layers.map((l, i) => (
+            <div
+              key={l.label}
+              className="kd-layer"
+              onMouseEnter={() => setActive(i)}
+              onMouseLeave={() => setActive(null)}
+              style={{
+                height: l.height * 1.35,
+                backgroundColor: l.fill,
+                ["--kd-delay" as string]: `${delayFor(i)}ms`,
+                opacity: active !== null && active !== i ? 0.55 : 1,
+                transition: "opacity 200ms ease-out",
+              }}
+            />
+          ))}
+        </div>
       </div>
 
-      {/* Labels */}
-      <ul className="space-y-0">
+      <ul className="kd-legend" data-settled={settled ? "true" : "false"}>
         {layers.map((l, i) => (
           <li
             key={l.label}
+            className="kd-legend-row flex gap-4 py-4 border-b"
             onMouseEnter={() => setActive(i)}
             onMouseLeave={() => setActive(null)}
-            className="flex gap-4 py-4 border-b transition-colors"
-            style={{ borderColor: onDark ? "rgba(255,255,255,0.12)" : "#E3E7DF", opacity: active !== null && active !== i ? 0.5 : 1 }}
+            style={{
+              borderColor: onDark ? "rgba(255,255,255,0.12)" : "#E3E7DF",
+              opacity: active !== null && active !== i ? 0.5 : 1,
+              transition: "opacity 200ms ease-out",
+              ["--kd-delay" as string]: `${delayFor(i) + 120}ms`,
+            }}
           >
             <span className="mt-1.5 h-3.5 w-3.5 rounded-sm flex-shrink-0" style={{ backgroundColor: l.fill }} aria-hidden="true"/>
             <div className="min-w-0">
               <div className="flex flex-wrap items-baseline gap-x-3">
                 <span className="text-[15px] font-semibold" style={{ color: textColor }}>{l.label}</span>
                 {l.depth !== "—" && (
-                  <span className="text-[13px] font-semibold tabular-nums" style={{ color: onDark ? GREEN : GREEN_DEEP }}>{l.depth}</span>
+                  <span className="kd-nums text-[13px] font-semibold" style={{ color: onDark ? GREEN : GREEN_DEEP }}>{l.depth}</span>
                 )}
               </div>
               <p className="text-[13.5px] leading-relaxed mt-0.5" style={{ color: mutedColor }}>{l.note}</p>
@@ -190,15 +206,101 @@ function BuildUpDiagram({ layers = DEFAULT_LAYERS, onDark = false }: { layers?: 
 // ── chrome ───────────────────────────────────────────────────────────────────
 
 const NAV_LINKS = [
+  { href: "/", label: "Home" },
   { href: "/services", label: "Services" },
   { href: "/projects", label: "Projects" },
-  { href: "/areas", label: "Areas" },
-  { href: "/about", label: "About" },
+  { href: "/about", label: "About Us" },
+  { href: "/areas", label: "Areas We Cover" },
   { href: "/contact", label: "Contact" },
 ];
 
+/**
+ * Splits the hero headline into a dark line and a green line, per the client's mockup
+ * ("LANDSCAPING &" in ink above "GROUNDWORKS" in green). An explicit "|" in the headline
+ * marks the break; without one the last word is used, which is the common case for a
+ * "<trade> & <trade>" headline. Tenants that want a single-colour headline just avoid "|"
+ * and get a sensible split rather than a broken one.
+ */
+function splitHeadline(headline: string): [string, string] {
+  if (headline.includes("|")) {
+    const [a, ...rest] = headline.split("|");
+    return [a.trim(), rest.join("|").trim()];
+  }
+  const words = headline.trim().split(/\s+/);
+  if (words.length < 2) return [headline, ""];
+  return [words.slice(0, -1).join(" "), words[words.length - 1]];
+}
+
+/** Trust row under the hero — template chrome, editable copy lives here rather than the DB. */
+const FEATURES: { icon: string; title: string; body: string }[] = [
+  { icon: "M12 2l8 3.5v5.5c0 5-3.4 9.3-8 10.5-4.6-1.2-8-5.5-8-10.5V5.5L12 2z", title: "Quality workmanship", body: "Built to a written specification, with the depths stated." },
+  { icon: "M3 18h18M5 18v-4h4l2-5h4l2 4h2v5M8 9V6h4", title: "Reliable & efficient", body: "Turn up when we say, and finish when we say." },
+  { icon: "M12 21c5-1 8-5 8-10V5s-4 1-8 1-8-1-8-1v6c0 5 3 9 8 10zM12 8v9", title: "Considerate on site", body: "Cleared down daily, and mindful of your neighbours." },
+  { icon: "M16 20v-1a4 4 0 00-8 0v1M12 11a3 3 0 100-6 3 3 0 000 6M20 20v-1a3 3 0 00-2.5-3M18 5.2a3 3 0 010 5.6", title: "Straight answers", body: "One person quoting, doing the work and picking up the phone." },
+];
+
+function FeatureStrip() {
+  return (
+    <section className="border-b" style={{ backgroundColor: OFF_WHITE, borderColor: "#E6EAE2" }}>
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-y-8 sm:grid-cols-2 lg:grid-cols-4 py-10">
+        {FEATURES.map((f, i) => (
+          <div key={f.title} className={`flex gap-4 lg:px-7 ${i > 0 ? "lg:border-l" : ""}`} style={{ borderColor: "#DDE3D6" }}>
+            <Icon d={f.icon} className="w-8 h-8 flex-shrink-0" color={GREEN_DEEP} strokeWidth={1.4}/>
+            <div className="min-w-0">
+              <h3 className="text-[13.5px] font-semibold uppercase tracking-[0.06em] mb-1.5" style={{ color: INK }}>{f.title}</h3>
+              <p className="text-[13.5px] leading-relaxed" style={{ color: GREY }}>{f.body}</p>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/** "Proudly serving …" band, flanked by rules — from the mockup. */
+function ServingBand({ city }: { city?: string }) {
+  if (!city) return null;
+  return (
+    <div className="max-w-[1240px] mx-auto px-5 sm:px-8 py-7 flex items-center gap-5">
+      <span className="hidden sm:block h-px flex-1" style={{ backgroundColor: "#DDE3D6" }}/>
+      <span className="flex items-center gap-2.5 text-[12.5px] font-semibold uppercase tracking-[0.18em] text-center" style={{ color: INK }}>
+        <PinIcon color={GREEN_DEEP}/>Proudly serving {city} &amp; surrounding areas
+      </span>
+      <span className="hidden sm:block h-px flex-1" style={{ backgroundColor: "#DDE3D6" }}/>
+    </div>
+  );
+}
+
+/**
+ * Star rating badge. Renders ONLY when the tenant has real published reviews — the mockup
+ * showed a hardcoded "5 star rated · Google" badge, which would have been a fabricated review
+ * claim on a business that currently has none (and fake reviews are unlawful in the UK under
+ * the DMCC Act 2024). Driven by data, it appears by itself once genuine reviews exist.
+ */
+function RatingBadge({ reviews }: { reviews: any[] }) {
+  if (!reviews || reviews.length === 0) return null;
+  const rated = reviews.filter(r => typeof r.rating === "number");
+  if (rated.length === 0) return null;
+  const avg = rated.reduce((sum, r) => sum + r.rating, 0) / rated.length;
+  const rounded = Math.round(avg * 10) / 10;
+  return (
+    <div className="flex items-center gap-3">
+      <span className="text-[13px] font-semibold uppercase tracking-[0.08em]" style={{ color: INK }}>
+        {rounded} out of 5
+      </span>
+      <span className="flex gap-0.5" aria-label={`Rated ${rounded} out of 5 from ${rated.length} reviews`}>
+        {Array.from({ length: 5 }).map((_, i) => <Star key={i} filled={i < Math.round(avg)}/>)}
+      </span>
+      <span className="text-[13px]" style={{ color: GREY }}>
+        {rated.length} review{rated.length === 1 ? "" : "s"}
+      </span>
+    </div>
+  );
+}
+
 function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; tenantSlug: string }) {
   const siteBase = useSiteBase();
+  const [location] = useLocation();
   const [open, setOpen] = useState(false);
   const logo = settings?.logoUrl || tenant?.logoUrl;
   const phone = settings?.phone || tenant?.phone;
@@ -216,19 +318,33 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
             : <span className="text-lg font-semibold tracking-[-0.01em]" style={{ color: INK }}>{tenant?.name || ""}</span>}
         </a>
 
-        <nav className="hidden lg:flex items-center gap-9">
-          {links.map(l => (
-            <a key={l.href} href={`${siteBase}${l.href}`} className="text-[13.5px] font-medium transition-opacity hover:opacity-60" style={{ color: INK }}>{l.label}</a>
-          ))}
+        <nav className="hidden lg:flex items-center gap-8">
+          {links.map(l => {
+            const active = l.href === "/" ? location === "/" : location.startsWith(l.href);
+            return (
+              <a
+                key={l.href}
+                href={`${siteBase}${l.href}`}
+                aria-current={active ? "page" : undefined}
+                className="relative text-[12.5px] font-semibold uppercase tracking-[0.08em] py-1.5 transition-opacity hover:opacity-60"
+                style={{ color: active ? GREEN_DEEP : INK }}
+              >
+                {l.label}
+                {active && <span className="absolute left-0 right-0 -bottom-0.5 h-[2px]" style={{ backgroundColor: GREEN_DEEP }}/>}
+              </a>
+            );
+          })}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-6 flex-shrink-0">
+        <div className="hidden lg:flex items-center gap-5 flex-shrink-0">
           {phone && (
             <a href={`tel:${phone}`} className="flex items-center gap-2 text-[13.5px] font-semibold transition-opacity hover:opacity-70" style={{ color: INK }}>
               <PhoneIcon color={GREEN_DEEP}/>{phone}
             </a>
           )}
-          <Btn href={`${siteBase}/quote`} className="!px-6 !py-2.5 !min-h-0">Get a quote</Btn>
+          <Btn href={`${siteBase}/quote`} variant="outline" className="!px-6 !py-2.5 !min-h-0 !rounded-none">
+            Get a quote <ArrowIcon className="w-4 h-4"/>
+          </Btn>
         </div>
 
         <button className="lg:hidden p-2 -mr-2" onClick={() => setOpen(v => !v)} aria-label="Toggle menu" aria-expanded={open}>
@@ -369,12 +485,11 @@ function Breadcrumbs({ trail }: { trail: { name: string; url: string }[] }) {
 }
 
 /** Inner-page header. Deliberately typographic rather than a photo banner. */
-function PageHead({ crumb, title, intro }: { crumb?: string; title: string; intro?: string }) {
+function PageHead({ title, intro }: { title: string; intro?: string }) {
   return (
     <section className="pt-16 pb-12 sm:pt-24 sm:pb-16" style={{ backgroundColor: OFF_WHITE }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-        {crumb && <Eyebrow>{crumb}</Eyebrow>}
-        <h1 className="text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-[-0.028em] max-w-4xl" style={{ color: INK }}>{title}</h1>
+        <h1 className="kd-display text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-[-0.028em] max-w-4xl" style={{ color: INK }}>{title}</h1>
         {intro && <p className="mt-6 text-lg leading-relaxed max-w-2xl" style={{ color: GREY }}>{intro}</p>}
       </div>
     </section>
@@ -386,7 +501,7 @@ function Shell({ tenantSlug, children }: { tenantSlug: string; children: React.R
   const { tenant, settings } = (data as any) || {};
   const phone = settings?.phone || tenant?.phone;
   return (
-    <div className="min-h-screen flex flex-col" style={{ backgroundColor: "#FFFFFF" }}>
+    <div className="kd-site min-h-screen flex flex-col" style={{ backgroundColor: "#FFFFFF" }}>
       <KDNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <main className="flex-1">{children}</main>
       <KDFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
@@ -444,7 +559,6 @@ function QuoteCTA({ tenantSlug, tenant, settings }: { tenantSlug: string; tenant
   return (
     <section className="py-20 sm:py-28" style={{ backgroundColor: INK }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 text-center">
-        <Eyebrow onDark>Next step</Eyebrow>
         <Heading onDark className="max-w-3xl mx-auto">Tell us about the job and we'll put a written quote together.</Heading>
         <p className="mt-5 text-base leading-relaxed max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
           Send a few photos with your enquiry and we can often price smaller work without a visit.
@@ -485,8 +599,14 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
   const phone = settings?.phone || tenant?.phone;
   const heroImage = settings?.heroImageUrl;
-  const headline = settings?.heroHeadline || `Landscaping & groundworks${tenant?.city ? ` in ${tenant.city}` : ""}`;
-  const sub = settings?.heroSubheadline || "From the dig and the drainage to the finished garden — one contractor, start to finish.";
+  // Three hero text slots mapped onto existing settings columns, so no schema change:
+  // heroHeadline is the two-tone headline ("Landscaping &|Groundworks"), heroSubheadline is
+  // the short tagline under it, and the paragraph comes from the tenant's description.
+  const headline = settings?.heroHeadline || `Landscaping &|Groundworks`;
+  const [headlineTop, headlineAccent] = splitHeadline(headline);
+  const tagline = settings?.heroSubheadline || "";
+  const sub = tenant?.description
+    || "From the dig and the drainage to the finished garden — one contractor, start to finish.";
 
   return (
     <Shell tenantSlug={tenantSlug}>
@@ -498,27 +618,66 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       />
       <Breadcrumbs trail={[{ name: "Home", url: `${origin}${siteBase}/` }]}/>
 
-      {/* 01 — HERO. Full-bleed photography; the work is the product. */}
-      <section className="relative" style={{ backgroundColor: INK }}>
-        {heroImage && (
-          <>
-            <img src={heroImage} alt="" aria-hidden="true" className="absolute inset-0 w-full h-full object-cover" fetchPriority="high"/>
-            <div className="absolute inset-0" style={{ background: "linear-gradient(100deg, rgba(30,31,29,0.92) 0%, rgba(30,31,29,0.74) 46%, rgba(30,31,29,0.34) 100%)" }}/>
-          </>
-        )}
-        <div className="relative max-w-[1240px] mx-auto px-5 sm:px-8 py-24 sm:py-32 lg:py-40">
-          <div className="max-w-3xl">
-            <Eyebrow onDark>{tenant?.city ? `${tenant.city} & Essex` : "Essex"}</Eyebrow>
-            <h1 className="text-4xl sm:text-5xl lg:text-[4.25rem] font-semibold leading-[1.03] tracking-[-0.03em] text-white">{headline}</h1>
-            <p className="mt-7 text-lg sm:text-xl leading-relaxed max-w-xl" style={{ color: "rgba(255,255,255,0.78)" }}>{sub}</p>
-            <div className="mt-10 flex flex-wrap gap-3">
-              <Btn href={`${siteBase}/quote`}>{settings?.ctaText || "Get a free quote"}</Btn>
-              <Btn href={`${siteBase}/projects`} variant="ghost">See our work</Btn>
+      {/* 01 — HERO. Split layout from the client's mockup: copy on white at the left,
+          photography bleeding off the right, with the image feathered into the white rather
+          than darkened under an overlay. On mobile the image sits above the copy. */}
+      <section className="relative bg-white">
+        <div className="lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)] lg:items-stretch">
+          {/* Image — first in the DOM on mobile, right-hand column on desktop */}
+          {heroImage && (
+            <div className="relative order-first lg:order-last h-[260px] sm:h-[380px] lg:h-auto lg:min-h-[620px]">
+              <img
+                src={heroImage}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 w-full h-full object-cover"
+                fetchPriority="high"
+              />
+              {/* Feather into the white panel — horizontal on desktop, vertical on mobile */}
+              <div className="absolute inset-0 lg:hidden" style={{ background: "linear-gradient(to bottom, rgba(255,255,255,0) 55%, rgba(255,255,255,0.95) 100%)" }}/>
+              <div className="hidden lg:block absolute inset-y-0 left-0 w-2/5" style={{ background: "linear-gradient(to right, #FFFFFF 6%, rgba(255,255,255,0) 100%)" }}/>
             </div>
+          )}
+
+          {/* Copy */}
+          <div className="relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1240px)/2))] lg:pr-14 py-14 sm:py-20 lg:py-28 flex flex-col justify-center">
+            {tenant?.city && (
+              <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.18em] mb-6" style={{ color: INK }}>
+                <PinIcon color={GREEN_DEEP}/>Based in {tenant.city}, UK
+              </p>
+            )}
+
+            <h1 className="kd-display font-semibold uppercase leading-[0.94] tracking-[-0.025em] text-[2.6rem] sm:text-[3.6rem] lg:text-[4.1rem]">
+              <span className="block" style={{ color: INK }}>{headlineTop}</span>
+              {headlineAccent && <span className="block" style={{ color: GREEN }}>{headlineAccent}</span>}
+            </h1>
+
+            {settings?.heroSubheadline && (
+              <p className="kd-display mt-6 text-[15px] sm:text-[17px] font-semibold uppercase tracking-[0.05em]" style={{ color: INK }}>
+                {tagline}
+              </p>
+            )}
+            <span className="block h-[3px] w-16 mt-6" style={{ backgroundColor: GREEN_DEEP }}/>
+
+            <p className="mt-6 text-[15.5px] sm:text-base leading-[1.75] max-w-md" style={{ color: GREY }}>{sub}</p>
+
+            <div className="mt-9 flex flex-wrap gap-3.5">
+              <Btn href={`${siteBase}/services`} className="!rounded-none">
+                Our services <ArrowIcon className="w-4 h-4"/>
+              </Btn>
+              <Btn href={`${siteBase}/projects`} variant="outline" className="!rounded-none">
+                View our work <ArrowIcon className="w-4 h-4"/>
+              </Btn>
+            </div>
+
+            {/* Real-review badge — renders itself only when there are genuine reviews. */}
+            <div className="mt-9 empty:mt-0"><RatingBadge reviews={reviews}/></div>
           </div>
         </div>
       </section>
 
+      <FeatureStrip/>
+      <ServingBand city={tenant?.city}/>
       <TrustStrip settings={settings}/>
 
       {/* 02 — SERVICES, split into the two sides of the business */}
@@ -526,7 +685,6 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-14">
-              <Eyebrow>What we do</Eyebrow>
               <Heading>Two halves of the same job.</Heading>
               <p className="mt-5 text-[17px] leading-relaxed" style={{ color: GREY }}>
                 Most gardens need work below ground before anything goes on top. Doing both means
@@ -562,7 +720,6 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-12">
-              <Eyebrow>Before & after</Eyebrow>
               <Heading>Drag to see the difference.</Heading>
             </div>
             <BeforeAfterGallery items={beforeAfter} accent={GREEN_DEEP}/>
@@ -574,7 +731,6 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       <section className="py-20 sm:py-28" style={{ backgroundColor: INK }}>
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
           <div className="max-w-2xl mb-14">
-            <Eyebrow onDark>What's underneath</Eyebrow>
             <Heading onDark>Anyone can lay a nice patio. It's the six inches below it that decide whether it's still flat in five years.</Heading>
             <p className="mt-6 text-[17px] leading-relaxed" style={{ color: "rgba(255,255,255,0.66)" }}>
               Most quotes tell you the finish and stay quiet about the build-up. Here's ours, in
@@ -594,7 +750,6 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
               <div className="max-w-xl">
-                <Eyebrow>Recent work</Eyebrow>
                 <Heading>Jobs we've finished.</Heading>
               </div>
               <a href={`${siteBase}/projects`} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold" style={{ color: GREEN_DEEP }}>
@@ -622,7 +777,6 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-12">
-              <Eyebrow>Reviews</Eyebrow>
               <Heading>What customers said.</Heading>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -647,7 +801,6 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-20">
             <div>
-              <Eyebrow>Where we work</Eyebrow>
               <Heading>Covering {tenant?.city || "Essex"} and the surrounding towns.</Heading>
               <p className="mt-5 text-[17px] leading-relaxed" style={{ color: GREY }}>
                 Ground conditions change street to street around here. We quote on what's actually
@@ -670,7 +823,6 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-12">
-              <Eyebrow>Questions</Eyebrow>
               <Heading>Before you ask.</Heading>
             </div>
             <div className="max-w-3xl divide-y" style={{ borderColor: "#E6EAE2" }}>
@@ -725,7 +877,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Services", url: `${origin}${siteBase}/services` },
       ]}/>
-      <PageHead crumb="What we do" title="Services" intro="Everything from the excavation and drainage through to the planting and the final sweep-up."/>
+      <PageHead title="Services" intro="Everything from the excavation and drainage through to the planting and the final sweep-up."/>
 
       <section className="py-16 sm:py-20">
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
@@ -801,7 +953,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
         }}/>
       )}
 
-      <PageHead crumb="Service" title={s?.name || ""} intro={s?.tagline || undefined}/>
+      <PageHead title={s?.name || ""} intro={s?.tagline || undefined}/>
 
       {s?.heroImageUrl && (
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8 -mt-4 mb-16">
@@ -822,7 +974,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {benefits.length > 0 && (
               <div className="mt-14">
-                <Eyebrow>What's included</Eyebrow>
+                <SectionLabel>What's included</SectionLabel>
                 <ul className="grid gap-x-8 gap-y-3.5 sm:grid-cols-2 mt-2">
                   {benefits.map(b => (
                     <li key={b} className="flex gap-3 text-[15.5px] leading-snug" style={{ color: INK }}>
@@ -835,7 +987,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {steps.length > 0 && (
               <div className="mt-14">
-                <Eyebrow>How we do it</Eyebrow>
+                <SectionLabel>How we do it</SectionLabel>
                 <ol className="mt-2 divide-y" style={{ borderColor: "#E6EAE2" }}>
                   {steps.map((st, i) => (
                     <li key={st.title} className="flex gap-6 py-6">
@@ -852,7 +1004,6 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {isGroundworks(s || {}) === false && (
               <div className="mt-16 rounded-xl p-8 sm:p-10" style={{ backgroundColor: OFF_WHITE }}>
-                <Eyebrow>The build-up</Eyebrow>
                 <h3 className="text-2xl font-semibold tracking-[-0.02em] mb-8" style={{ color: INK }}>What goes in before the finish.</h3>
                 <BuildUpDiagram/>
               </div>
@@ -875,7 +1026,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {related.length > 0 && (
               <div className="mt-10">
-                <Eyebrow>Related</Eyebrow>
+                <SectionLabel>Related</SectionLabel>
                 <ul className="space-y-1 mt-1">
                   {related.map(r => (
                     <li key={r.id}>
@@ -912,7 +1063,7 @@ function ProjectsPage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Projects", url: `${origin}${siteBase}/projects` },
       ]}/>
-      <PageHead crumb="Portfolio" title="Projects" intro="Finished work, with what was actually involved."/>
+      <PageHead title="Projects" intro="Finished work, with what was actually involved."/>
 
       <section className="py-16 sm:py-20">
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
@@ -955,7 +1106,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Areas", url: `${origin}${siteBase}/areas` },
       ]}/>
-      <PageHead crumb="Coverage" title="Areas we cover" intro="Ground conditions change town to town round here — which is why we quote on what's under your garden, not a rate card."/>
+      <PageHead title="Areas we cover" intro="Ground conditions change town to town round here — which is why we quote on what's under your garden, not a rate card."/>
 
       <section className="py-16 sm:py-20">
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
@@ -995,7 +1146,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "About", url: `${origin}${siteBase}/about` },
       ]}/>
-      <PageHead crumb="About" title={`About ${tenant?.name || "us"}`}/>
+      <PageHead title={`About ${tenant?.name || "us"}`}/>
 
       <section className="pb-20">
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-2 lg:gap-20 items-start">
@@ -1014,7 +1165,6 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
       <section className="py-20 sm:py-24" style={{ backgroundColor: OFF_WHITE }}>
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
           <div className="max-w-2xl mb-12">
-            <Eyebrow>Our standard</Eyebrow>
             <Heading>The bit you can't see once it's finished.</Heading>
           </div>
           <BuildUpDiagram/>
@@ -1038,7 +1188,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Get a quote", url: `${origin}${siteBase}/quote` },
       ]}/>
-      <PageHead crumb="Free quote" title="Tell us about the job" intro="The more detail you give us, the closer the first number will be. Photos help most."/>
+      <PageHead title="Tell us about the job" intro="The more detail you give us, the closer the first number will be. Photos help most."/>
       <div className="pb-24">
         <QuoteFormSection tenantSlug={tenantSlug} accent={GREEN_DEEP} panel={INK}/>
       </div>
@@ -1058,7 +1208,7 @@ function CalculatorPage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Cost guide", url: `${origin}${siteBase}/calculator` },
       ]}/>
-      <PageHead crumb="Pricing" title="What it costs" intro="A ballpark before you pick up the phone. Everyone else makes you ring to find out."/>
+      <PageHead title="What it costs" intro="A ballpark before you pick up the phone. Everyone else makes you ring to find out."/>
       <div className="pb-24">
         <PriceCalculatorSection tenantSlug={tenantSlug} accent={GREEN_DEEP} panel={INK}/>
       </div>
@@ -1096,7 +1246,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Contact", url: `${origin}${siteBase}/contact` },
       ]}/>
-      <PageHead crumb="Contact" title="Get in touch"/>
+      <PageHead title="Get in touch"/>
 
       <section className="pb-24">
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-20">

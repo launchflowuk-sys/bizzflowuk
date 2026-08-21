@@ -1,0 +1,407 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AMO Rendering — Competitive Position</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+      --paper:#FBFAF7; --surface:#FFFFFF; --ink:#15181D; --ink2:#4A525E; --ink3:#8A93A0;
+      --rule:#E4E2DC; --accent:#C2410C; --accent2:#EA580C; --wash:#FDF0E7;
+      --good:#1A7F4E; --goodwash:#E8F3EC; --bad:#B42318; --badwash:#FBEBE9;
+      --disp:"Instrument Serif", Georgia, "Times New Roman", serif;
+      --body:"IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+    }
+    body{margin:0; font-family:var(--body); color:var(--ink); background:var(--paper);
+      -webkit-font-smoothing:antialiased;}
+    a{color:var(--accent);} a:hover{color:var(--accent2);}
+    .slide{width:1280px; height:720px; background:var(--paper); position:relative;
+      display:flex; flex-direction:column; overflow:hidden;}
+    .rail{display:flex; justify-content:space-between; align-items:center;
+      padding:34px 64px 0; font-size:11.5px; font-weight:600; letter-spacing:1.7px;
+      text-transform:uppercase; color:var(--ink3);}
+    .rail .lbl{color:var(--accent);}
+    .body{flex:1; padding:26px 64px 0; display:flex; flex-direction:column; min-height:0;}
+    .foot{padding:0 64px 30px; display:flex; justify-content:space-between; align-items:flex-end;
+      font-size:11.5px; color:var(--ink3); letter-spacing:.3px;}
+    .foot b{font-weight:600; color:var(--ink2);}
+    h1{font-family:var(--disp); font-weight:400; font-size:66px; line-height:1.04;
+      letter-spacing:-.5px; margin:0;}
+    h2{font-family:var(--disp); font-weight:400; font-size:44px; line-height:1.1;
+      letter-spacing:-.3px; margin:0 0 6px;}
+    p{margin:0; color:var(--ink2); font-size:16px; line-height:1.55;}
+    .lede{font-size:19px; line-height:1.5; color:var(--ink2); max-width:64ch;}
+
+/* ---- deck chrome ---- */
+html, body { height:100%; overflow:hidden; background:#2A2C28; }
+#deck { position:fixed; inset:0; display:flex; align-items:center; justify-content:center; }
+.stage { display:none; }
+.stage.on { display:block; }
+.slide { box-shadow:0 18px 60px rgba(0,0,0,.34); border-radius:4px; transform-origin:center center; }
+#bar { position:fixed; left:0; right:0; bottom:0; height:3px; background:rgba(255,255,255,.13); }
+#fill { height:100%; width:0; background:var(--accent2); transition:width .22s ease; }
+#hud { position:fixed; right:20px; bottom:16px; color:rgba(255,255,255,.62); font-family:var(--body);
+  font-size:12px; letter-spacing:.6px; font-variant-numeric:tabular-nums; display:flex; align-items:center; gap:14px; }
+#hud kbd { background:rgba(255,255,255,.12); border-radius:4px; padding:2px 6px; font-family:inherit; font-size:11px; }
+#nav { position:fixed; left:20px; bottom:14px; display:flex; gap:8px; }
+#nav button { background:rgba(255,255,255,.11); color:#fff; border:0; border-radius:6px; width:34px; height:30px;
+  font-size:15px; cursor:pointer; font-family:var(--body); line-height:1; }
+#nav button:hover { background:rgba(255,255,255,.2); }
+@media print {
+  @page { size:1280px 720px; margin:0; }
+  html, body { overflow:visible; background:#fff; height:auto; }
+  #deck { position:static; display:block; }
+  #bar, #hud, #nav { display:none !important; }
+  .stage { display:block !important; page-break-after:always; break-after:page; }
+  .stage:last-child { page-break-after:auto; break-after:auto; }
+  .slide { transform:none !important; box-shadow:none; border-radius:0; }
+}
+</style>
+</head>
+<body>
+<div id="deck">
+<section class="stage on">
+<div class="slide">
+  <div class="rail"><span class="lbl">LaunchFlow &middot; Client Briefing</span><span>19 August 2026</span></div>
+  <div class="body" style="justify-content:center; gap:28px;">
+    <div style="display:flex; flex-direction:column; gap:20px; max-width:none;">
+      <div style="width:54px; height:4px; background:var(--accent);"></div>
+      <h1>Where AMO Rendering<br>actually stands<span style="color:var(--accent);">.</span></h1>
+      <p class="lede">An honest read on the six firms competing for the same Grays and Thurrock
+        rendering jobs &mdash; what they have, what we have, and the shortest route to real enquiries.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px; margin-top:14px;">
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 20px;">
+        <div style="font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink3);">The good news</div>
+        <p style="margin-top:6px; font-size:15px;">Your website already beats most of them.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 20px;">
+        <div style="font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink3);">The problem</div>
+        <p style="margin-top:6px; font-size:15px;">Outside your own site, you do not exist.</p>
+      </div>
+      <div style="background:var(--wash); border:1px solid #F2D6C4; border-radius:12px; padding:18px 20px;">
+        <div style="font-size:11px; font-weight:600; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent);">The fix</div>
+        <p style="margin-top:6px; font-size:15px; color:var(--ink);">Four weeks of unglamorous groundwork.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Grays &amp; Thurrock, Essex</span><span>Prepared by Shoji, LaunchFlow</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">01 &middot; The market</span><span>Who you are up against</span></div>
+  <div class="body" style="gap:20px;">
+    <div>
+      <h2>It is a crowded, reviewed, vetted market.</h2>
+      <p class="lede">Rendering in Essex is not a quiet corner. Homeowners here have plenty of
+        choice and they choose on proof, not on promises.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px;">
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:22px 24px;">
+        <div style="font-family:var(--disp); font-size:46px; line-height:1; color:var(--accent);">40</div>
+        <p style="margin-top:8px; font-size:15px;">vetted rendering firms listed on Checkatrade for Essex alone &mdash; averaging 10/10 across 244 reviews.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:22px 24px;">
+        <div style="font-family:var(--disp); font-size:46px; line-height:1; color:var(--accent);">&pound;6.94</div>
+        <p style="margin-top:8px; font-size:15px;">your average cost per click in month one. A price that high only happens when several firms are bidding hard on the same searches.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:22px 24px;">
+        <div style="font-family:var(--disp); font-size:46px; line-height:1; color:var(--accent);">6+</div>
+        <p style="margin-top:8px; font-size:15px;">firms actively marketing for Grays and Thurrock rendering work, from one-man local outfits to 21-year-old accredited installers.</p>
+      </div>
+    </div>
+    <div style="background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent); border-radius:0 10px 10px 0; padding:18px 24px;">
+      <p style="font-size:16px; color:var(--ink);"><b>What that means for you.</b> Nobody is going to stumble across AMO.
+        Every job you win from here is one you take off a competitor who is already visible, already reviewed, and already trusted.</p>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>01</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">02 &middot; The scoreboard</span><span>Five rivals, eight trust signals</span></div>
+  <div class="body" style="gap:13px;">
+    <div>
+      <h2 style="font-size:37px;">Signal by signal, side by side.</h2>
+      <p style="font-size:15px; margin-top:4px;">Checked against their live websites and public listings, 19 August 2026.</p>
+    </div>
+    <div style="border:1px solid var(--rule); border-radius:12px; overflow:hidden; background:var(--surface);">
+      <div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); background:#F4F2ED; border-bottom:1px solid var(--rule);">
+        <div style="padding:10px 18px; font-size:11px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--ink3); align-self:center;">Trust signal</div>
+        <div style="padding:9px 8px; text-align:center; font-size:12.5px; font-weight:700; color:var(--accent);">AMO<br><span style="font-weight:500; color:var(--ink3); font-size:10.5px;">you</span></div><div style="padding:9px 8px; text-align:center; font-size:12.5px; font-weight:600;">Bro-Therm<br><span style="font-weight:400; color:var(--ink3); font-size:10.5px;">nr Grays</span></div><div style="padding:9px 8px; text-align:center; font-size:12.5px; font-weight:600;">Essex Render Pros<br><span style="font-weight:400; color:var(--ink3); font-size:10.5px;">Billericay</span></div><div style="padding:9px 8px; text-align:center; font-size:12.5px; font-weight:600;">EWI Specialist<br><span style="font-weight:400; color:var(--ink3); font-size:10.5px;">Hatfield</span></div><div style="padding:9px 8px; text-align:center; font-size:12.5px; font-weight:600;">Ultimate Plastering<br><span style="font-weight:400; color:var(--ink3); font-size:10.5px;">Basildon</span></div>
+      </div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Google Business Profile with reviews</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div></div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Checkatrade or MyBuilder listing</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div></div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Photos of their own finished jobs</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div></div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Written guarantee, length stated</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div></div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Manufacturer or scheme accreditation</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div></div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Years established stated on site</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Local address shown on the website</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div></div>
+<div style="display:grid; grid-template-columns:282px repeat(5, minmax(0,1fr)); border-bottom:1px solid #EFEDE7; align-items:stretch;"><div style="padding:9px 18px; font-size:13.5px; font-weight:600; color:var(--ink); align-self:center;">Full service and area page coverage</div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:#FDF0E7;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg></div><div style="padding:9px 8px; display:flex; justify-content:center; align-items:center; background:transparent;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg></div></div>
+    </div>
+    <div style="display:flex; gap:24px; align-items:center; font-size:12px; color:var(--ink3);">
+      <span style="display:flex; align-items:center; gap:6px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A7F4E" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"></path></svg> present</span>
+      <span style="display:flex; align-items:center; gap:6px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#B42318" stroke-width="3" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"></path></svg> absent</span>
+      <span style="display:flex; align-items:center; gap:6px;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#8A93A0" stroke-width="3" stroke-linecap="round"><path d="M5 12h14"></path></svg> not verifiable from public sources</span>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>02</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">03 &middot; Your advantage</span><span>What you already win on</span></div>
+  <div class="body" style="gap:20px;">
+    <div>
+      <h2>Your website is not the problem.</h2>
+      <p class="lede">On paper you out-specify three of the five firms competing for the same jobs.
+        This is worth saying plainly, because everything else in this deck is a list of things to fix.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:14px;">
+      <div style="background:var(--goodwash); border:1px solid #CADFD2; border-radius:12px; padding:20px 24px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--good);">Guarantee</div>
+        <p style="margin-top:6px; font-size:15.5px; color:var(--ink);">Up to <b>15 years, written and backed</b>. Bro-Therm and Essex Render Pros publish no guarantee at all.</p>
+      </div>
+      <div style="background:var(--goodwash); border:1px solid #CADFD2; border-radius:12px; padding:20px 24px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--good);">Accreditation</div>
+        <p style="margin-top:6px; font-size:15.5px; color:var(--ink);"><b>K-Rend approved applicator</b> plus &pound;5m public liability. Only EWI Specialist can match that claim.</p>
+      </div>
+      <div style="background:var(--goodwash); border:1px solid #CADFD2; border-radius:12px; padding:20px 24px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--good);">Reach</div>
+        <p style="margin-top:6px; font-size:15.5px; color:var(--ink);"><b>Six services across nineteen towns</b>, each with its own page. Most rivals have one page and a phone number.</p>
+      </div>
+      <div style="background:var(--goodwash); border:1px solid #CADFD2; border-radius:12px; padding:20px 24px;">
+        <div style="font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--good);">Machinery</div>
+        <p style="margin-top:6px; font-size:15.5px; color:var(--ink);">A <b>live cost calculator, quote system and CRM</b> behind the site. Nobody else on this list has one.</p>
+      </div>
+    </div>
+    <div style="background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent); border-radius:0 10px 10px 0; padding:16px 24px;">
+      <p style="font-size:16px; color:var(--ink);">So the honest verdict: <b>you have built the shop and nobody can find the door.</b></p>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>03</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">04 &middot; The gap</span><span>Three things costing you jobs</span></div>
+  <div class="body" style="gap:18px;">
+    <div>
+      <h2>You have no proof, and proof is what sells.</h2>
+      <p class="lede">I searched Google, Yell, Checkatrade, MyBuilder and RatedPeople for AMO Rendering.
+        You appear on none of them. To a homeowner comparing three quotes, that reads as risk.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:12px;">
+      <div style="display:flex; gap:18px; background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 24px; align-items:flex-start;">
+        <div style="flex:0 0 34px; height:34px; border-radius:50%; background:var(--badwash); color:var(--bad); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;">1</div>
+        <div>
+          <div style="font-size:17px; font-weight:600;">No Google Business Profile</div>
+          <p style="margin-top:3px;">This is the big one. It is free, it puts you on the map pack for &ldquo;rendering near me&rdquo;,
+            and it is where reviews live. Without it you are invisible in the exact place people look first.</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:18px; background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 24px; align-items:flex-start;">
+        <div style="flex:0 0 34px; height:34px; border-radius:50%; background:var(--badwash); color:var(--bad); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;">2</div>
+        <div>
+          <div style="font-size:17px; font-weight:600;">The site claims &ldquo;5&#9733; average&rdquo; with no reviews behind it</div>
+          <p style="margin-top:3px;">A rating with nothing to click through to is worse than no rating &mdash; it invites doubt about everything else on the page. We either back it up or take it down.</p>
+        </div>
+      </div>
+      <div style="display:flex; gap:18px; background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 24px; align-items:flex-start;">
+        <div style="flex:0 0 34px; height:34px; border-radius:50%; background:var(--badwash); color:var(--bad); font-weight:700; font-size:15px; display:flex; align-items:center; justify-content:center;">3</div>
+        <div>
+          <div style="font-size:17px; font-weight:600;">A Grays business with an Edgware address in the footer</div>
+          <p style="margin-top:3px;">Every headline says Grays; the footer says Whitchurch Lane, Edgware. Bro-Therm, Essex Render Pros and Ultimate Plastering all show a local base. A careful customer notices.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>04</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">05 &middot; The advertising</span><span>Where the budget went</span></div>
+  <div class="body" style="gap:18px;">
+    <div>
+      <h2>Month one bought data, not jobs.</h2>
+      <p class="lede">Told straight: the first campaign spent the budget and produced no enquiries.
+        We know exactly why, and it has been rebuilt.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px;">
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:16px 18px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--ink3);">Spent</div>
+        <div style="font-family:var(--disp); font-size:34px; line-height:1.15;">&pound;395</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:16px 18px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--ink3);">Clicks</div>
+        <div style="font-family:var(--disp); font-size:34px; line-height:1.15;">57</div>
+      </div>
+      <div style="background:var(--badwash); border:1px solid #EBC9C3; border-radius:12px; padding:16px 18px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--bad);">Enquiries</div>
+        <div style="font-family:var(--disp); font-size:34px; line-height:1.15; color:var(--bad);">0</div>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:16px 18px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.1px; text-transform:uppercase; color:var(--ink3);">Cost per click</div>
+        <div style="font-family:var(--disp); font-size:34px; line-height:1.15;">&pound;6.94</div>
+      </div>
+    </div>
+    <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:20px 24px;">
+      <div style="font-size:11px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--good); margin-bottom:12px;">What the rebuild changed</div>
+      <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px 32px; font-size:14.5px; color:var(--ink2);">
+        <div>Every click now capped at <b>&pound;2.50</b> instead of running free.</div>
+        <div>Around <b>70 blocked search terms</b> so the budget stops paying for colour charts, DIY guides and suppliers.</div>
+        <div><b>Seven focused ad groups</b>, one per service, with rewritten ads.</div>
+        <div>Traffic lands on a <b>dedicated quote page</b> built to convert, not the homepage.</div>
+      </div>
+    </div>
+    <div style="background:var(--wash); border:1px solid #F2D6C4; border-radius:10px; padding:15px 22px;">
+      <p style="font-size:15.5px; color:var(--ink);"><b>Expect fewer clicks and better ones.</b> At &pound;15 a day with a &pound;2.50 cap we are buying
+        roughly six real enquiring visitors a day instead of two curious ones &mdash; but the ads only earn that while they are switched on and pointed at the new quote page.</p>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>05</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">06 &middot; The plan</span><span>Next four weeks</span></div>
+  <div class="body" style="gap:16px;">
+    <div>
+      <h2>Four weeks to close the gap.</h2>
+      <p class="lede">Nothing here is clever. It is the groundwork every competitor above you has already done.</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:10px;">
+      <div style="display:grid; grid-template-columns:118px 1fr 190px; gap:20px; align-items:center; background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:16px 22px;">
+        <div><div style="font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent);">Week 1</div><div style="font-size:13px; color:var(--ink3); margin-top:1px;">Get on the map</div></div>
+        <div style="font-size:15px; color:var(--ink);">Create and verify the <b>Google Business Profile</b> for Grays. Fix the address shown on the site. Take the unbacked 5&#9733; claim down until it is real.</div>
+        <div style="font-size:13px; color:var(--ink2);"><b>Mark</b> verifies the postcard<br><span style="color:var(--ink3);">Shoji does the rest</span></div>
+      </div>
+      <div style="display:grid; grid-template-columns:118px 1fr 190px; gap:20px; align-items:center; background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:16px 22px;">
+        <div><div style="font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent);">Week 2</div><div style="font-size:13px; color:var(--ink3); margin-top:1px;">Get proof</div></div>
+        <div style="font-size:15px; color:var(--ink);">Ask <b>every past customer</b> for a Google review. Ten is the target. Photograph three finished jobs, before and after, on a phone &mdash; that is enough.</div>
+        <div style="font-size:13px; color:var(--ink2);"><b>Mark only</b><br><span style="color:var(--ink3);">nobody can do this for you</span></div>
+      </div>
+      <div style="display:grid; grid-template-columns:118px 1fr 190px; gap:20px; align-items:center; background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:16px 22px;">
+        <div><div style="font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent);">Week 3</div><div style="font-size:13px; color:var(--ink3); margin-top:1px;">Get listed</div></div>
+        <div style="font-size:15px; color:var(--ink);">Register on <b>Checkatrade and MyBuilder</b>. Forty Essex renderers are there and homeowners search them directly. Real photos and real reviews go up on the site.</div>
+        <div style="font-size:13px; color:var(--ink2);"><b>Mark</b> signs up &amp; pays<br><span style="color:var(--ink3);">Shoji loads the content</span></div>
+      </div>
+      <div style="display:grid; grid-template-columns:118px 1fr 190px; gap:20px; align-items:center; background:var(--wash); border:1px solid #F2D6C4; border-radius:12px; padding:16px 22px;">
+        <div><div style="font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent);">Week 4</div><div style="font-size:13px; color:var(--ink3); margin-top:1px;">Turn the tap on</div></div>
+        <div style="font-size:15px; color:var(--ink);">With proof in place, run the rebuilt ads properly for a full month and review the search terms weekly. <b>Set the phone alerts up</b> so no enquiry sits unanswered.</div>
+        <div style="font-size:13px; color:var(--ink2);"><b>Shoji</b> runs and reports<br><span style="color:var(--ink3);">Mark answers the phone</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>06</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">07 &middot; Over to you</span><span>What only Mark can do</span></div>
+  <div class="body" style="gap:20px;">
+    <div>
+      <h2>Five things I cannot do for you.</h2>
+      <p class="lede">Everything technical is built and waiting. These five are the bottleneck,
+        and until they are done the advertising is pouring water into a bucket with a hole in it.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:12px;">
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 22px;">
+        <div style="font-size:16px; font-weight:600; color:var(--ink);">Ten Google reviews</div>
+        <p style="margin-top:4px; font-size:14.5px;">From customers you have already worked for. One text each. This single item moves you further than anything else on the list.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 22px;">
+        <div style="font-size:16px; font-weight:600; color:var(--ink);">Photographs of your own work</div>
+        <p style="margin-top:4px; font-size:14.5px;">Three jobs, before and after, taken on your phone. They upload straight into your dashboard and appear on the site the same minute.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 22px;">
+        <div style="font-size:16px; font-weight:600; color:var(--ink);">Verify the Google listing</div>
+        <p style="margin-top:4px; font-size:14.5px;">Google posts a code to the business address. Only you can receive it and enter it. I will set the listing up ready.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:18px 22px;">
+        <div style="font-size:16px; font-weight:600; color:var(--ink);">A decision on the address</div>
+        <p style="margin-top:4px; font-size:14.5px;">Whether we show a Grays trading address in place of the Edgware registered one. Every local rival shows a local base; yours currently contradicts your own headlines.</p>
+      </div>
+      <div style="background:var(--wash); border:1px solid #F2D6C4; border-radius:12px; padding:18px 22px; grid-column:span 2;">
+        <div style="font-size:16px; font-weight:600; color:var(--ink);">Answer the phone, every time</div>
+        <p style="margin-top:4px; font-size:14.5px; color:var(--ink2);">At &pound;6.94 a click, a missed call is money on the floor. Most rendering enquiries ring two or three firms and book the one that picks up. This is the cheapest advantage available to you and it costs nothing.</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>07</span></div>
+</div>
+</section>
+<section class="stage">
+<div class="slide">
+  <div class="rail"><span class="lbl">08 &middot; The target</span><span>What good looks like</span></div>
+  <div class="body" style="gap:20px;">
+    <div>
+      <h2>What to expect, honestly.</h2>
+      <p class="lede">No promises about page one. Here is the realistic shape of the next three months
+        if the five items on the previous page get done.</p>
+    </div>
+    <div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:14px;">
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:22px 24px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink3);">By end of September</div>
+        <div style="font-family:var(--disp); font-size:40px; line-height:1.1; margin-top:6px;">Findable</div>
+        <p style="margin-top:8px; font-size:14.5px;">On the map for &ldquo;rendering near me&rdquo; in Grays, with real reviews attached. Ads running clean on a &pound;15 daily budget.</p>
+      </div>
+      <div style="background:var(--surface); border:1px solid var(--rule); border-radius:12px; padding:22px 24px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--ink3);">By end of October</div>
+        <div style="font-family:var(--disp); font-size:40px; line-height:1.1; margin-top:6px;">Enquiring</div>
+        <p style="margin-top:8px; font-size:14.5px;">A steady trickle of quote requests from ads and from the map listing, all landing in your dashboard and on your phone.</p>
+      </div>
+      <div style="background:var(--wash); border:1px solid #F2D6C4; border-radius:12px; padding:22px 24px;">
+        <div style="font-size:10.5px; font-weight:700; letter-spacing:1.2px; text-transform:uppercase; color:var(--accent);">By end of November</div>
+        <div style="font-family:var(--disp); font-size:40px; line-height:1.1; margin-top:6px; color:var(--accent);">Choosing</div>
+        <p style="margin-top:8px; font-size:14.5px; color:var(--ink2);">Enough enquiries that we can start turning down the ones that are not worth your time, and spend more where the good ones come from.</p>
+      </div>
+    </div>
+    <div style="background:var(--surface); border:1px solid var(--rule); border-left:3px solid var(--accent); border-radius:0 10px 10px 0; padding:18px 24px;">
+      <p style="font-size:16.5px; color:var(--ink);"><b>One number to judge me on:</b> cost per real enquiry. Right now it is infinite &mdash; nothing came in.
+        A healthy figure for local rendering is &pound;40 to &pound;70. Get there and a &pound;450 monthly spend is buying you eight or nine chances to quote.</p>
+    </div>
+  </div>
+  <div class="foot"><span><b>AMO Rendering</b> &nbsp;&middot;&nbsp; Competitive position</span><span>08</span></div>
+</div>
+</section>
+</div>
+<div id="nav"><button id="prev" aria-label="Previous slide">&#8249;</button><button id="next" aria-label="Next slide">&#8250;</button></div>
+<div id="hud"><span><kbd>&#8592;</kbd> <kbd>&#8594;</kbd> to move &nbsp;&middot;&nbsp; <kbd>Ctrl</kbd>+<kbd>P</kbd> for PDF</span><span id="count"></span></div>
+<div id="bar"><div id="fill"></div></div>
+<script>
+(function () {
+  var stages = Array.prototype.slice.call(document.querySelectorAll(".stage"));
+  var i = 0;
+  function fit() {
+    var s = Math.min(window.innerWidth / 1280, window.innerHeight / 720) * 0.94;
+    stages.forEach(function (st) { st.querySelector(".slide").style.transform = "scale(" + s + ")"; });
+  }
+  function show(n) {
+    i = Math.max(0, Math.min(stages.length - 1, n));
+    stages.forEach(function (st, k) { st.classList.toggle("on", k === i); });
+    document.getElementById("count").textContent = (i + 1) + " / " + stages.length;
+    document.getElementById("fill").style.width = ((i + 1) / stages.length * 100) + "%";
+  }
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowRight" || e.key === "PageDown" || e.key === " ") { show(i + 1); e.preventDefault(); }
+    else if (e.key === "ArrowLeft" || e.key === "PageUp") { show(i - 1); e.preventDefault(); }
+    else if (e.key === "Home") { show(0); }
+    else if (e.key === "End") { show(stages.length - 1); }
+  });
+  document.getElementById("next").addEventListener("click", function () { show(i + 1); });
+  document.getElementById("prev").addEventListener("click", function () { show(i - 1); });
+  document.getElementById("deck").addEventListener("click", function (e) {
+    if (e.target.closest("#nav")) { return; }
+    show(i + 1);
+  });
+  window.addEventListener("resize", fit);
+  fit(); show(0);
+})();
+</script>
+</body>
+</html>

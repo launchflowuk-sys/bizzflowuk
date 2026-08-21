@@ -173,3 +173,65 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* ─────────────────────────────────────────────────────────────────────────
+   KD Essex — landscaping template (tenant.industry === 'landscaping')
+   Self-hosted variable faces. Declared globally so the @font-face rules
+   exist, but applied ONLY under .kd-site — the rendering and construction
+   templates share this stylesheet and must keep their own typography.
+   Browsers only fetch a face once something actually uses it, so the other
+   two tenants pay nothing for these.
+   ───────────────────────────────────────────────────────────────────────── */
+@import "@fontsource-variable/archivo";
+@import "@fontsource-variable/public-sans";
+
+.kd-site {
+  font-family: "Public Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-synthesis-weight: none;
+}
+
+/* Display voice: the logo's lettering is a wide, flat-terminal grotesque, so
+   headings run tight and set their own tracking rather than inheriting body. */
+.kd-display {
+  font-family: "Archivo Variable", "Public Sans Variable", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01";
+}
+
+/* Tabular figures wherever depths and measurements line up. */
+.kd-nums { font-variant-numeric: tabular-nums; }
+
+/* ── The one authored moment ──────────────────────────────────────────────
+   The build-up diagram assembles bottom-up, in the order the ground is
+   actually built: subgrade, membrane, sub-base, laying course, finish. The
+   motion IS the content — it's the argument the whole site makes. Layers
+   start visible and settle into place, so nothing is hidden if the script
+   or the observer never runs.                                              */
+@keyframes kd-settle {
+  from { transform: translateY(-14px) scaleY(0.86); opacity: 0.35; filter: blur(1.5px); }
+  to   { transform: none; opacity: 1; filter: none; }
+}
+
+.kd-layer {
+  transform-origin: bottom;
+  will-change: transform, opacity;
+}
+
+/* Only animate once the section is in view; until then layers sit at rest. */
+.kd-stack[data-settled="true"] .kd-layer {
+  animation: kd-settle 620ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--kd-delay, 0ms);
+}
+
+/* Row labels follow their layer in, a beat behind. */
+.kd-stack[data-settled="true"] ~ .kd-legend .kd-legend-row,
+.kd-legend[data-settled="true"] .kd-legend-row {
+  animation: kd-settle 520ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+  animation-delay: var(--kd-delay, 0ms);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-stack[data-settled="true"] .kd-layer,
+  .kd-legend[data-settled="true"] .kd-legend-row {
+    animation: none;
+  }
+}

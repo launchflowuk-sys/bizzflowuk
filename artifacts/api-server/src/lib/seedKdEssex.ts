@@ -163,9 +163,13 @@ export async function seedKdEssexIfMissing(): Promise<void> {
       tenantId,
       primaryColor: BRAND_GREEN,
       secondaryColor: BRAND_GREEN_DEEP,
-      heroHeadline: "Landscaping & groundworks in Thurrock and Essex",
-      heroSubheadline:
-        "From the dig and the drainage to the finished garden — one contractor, start to finish.",
+      // "|" marks the line break for the two-tone hero headline (ink above, green below).
+      heroHeadline: "Landscaping &|Groundworks",
+      heroSubheadline: "Expert solutions. Lasting results.",
+      // Drop the supplied hero photograph at this path in the web package's public dir
+      // (same convention as /amo-services/*). Left set so the layout is complete the moment
+      // the file lands; the hero degrades to a copy-only panel until then.
+      heroImageUrl: "/kd-essex/kd-essex-hero-home.webp",
       aboutText:
         "KD Essex Landscaping & Groundworks covers Thurrock and South Essex, taking on both sides of a garden project: the excavation, drainage and levels underneath, and the paving, fencing and planting on top.\nMost quotes tell you about the finish and stay quiet about the build-up. Ours sets out the depths and materials in writing, so you have something real to compare against the other prices you've been given.",
       // ⚠ phone / email / address deliberately NULL until the client supplies them.
