@@ -237,3 +237,59 @@
     animation: none;
   }
 }
+
+/* ── KD interaction states ────────────────────────────────────────────────
+   Hover is a state change you can feel, not an opacity fade. Transform +
+   shadow, short durations, exit handled by the same transition.            */
+.kd-site .kd-btn-solid:hover  { background-color: #4E6939 !important; transform: translateY(-2px); box-shadow: 0 8px 20px -6px rgba(30,31,29,0.38); }
+.kd-site .kd-btn-solid:active { transform: translateY(0); box-shadow: 0 3px 8px -4px rgba(30,31,29,0.34); }
+
+.kd-site .kd-btn-outline:hover  { background-color: #5D7B45 !important; color: #FFFFFF !important; transform: translateY(-2px); box-shadow: 0 8px 20px -6px rgba(30,31,29,0.28); }
+.kd-site .kd-btn-outline:active { transform: translateY(0); }
+
+.kd-site .kd-btn-ghost:hover  { background-color: rgba(255,255,255,0.10); border-color: rgba(255,255,255,0.72) !important; transform: translateY(-2px); }
+.kd-site .kd-btn-ghost:active { transform: translateY(0); }
+
+.kd-site .kd-chip:hover {
+  background-color: #FFFFFF !important;
+  border-color: #5D7B45 !important;
+  color: #5D7B45 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px -8px rgba(30,31,29,0.30);
+}
+
+.kd-site a:focus-visible,
+.kd-site button:focus-visible,
+.kd-site summary:focus-visible {
+  outline: 2px solid #5D7B45;
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* ── Hero entrance ────────────────────────────────────────────────────────
+   One short staged arrival on load, then nothing. Elements start visible
+   (backwards fill from a rendered default) so a failed animation degrades
+   to a complete hero rather than a blank one.                              */
+@keyframes kd-rise {
+  from { transform: translateY(16px); opacity: 0; }
+  to   { transform: none; opacity: 1; }
+}
+
+.kd-hero-in > * {
+  animation: kd-rise 560ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+.kd-hero-in > *:nth-child(1) { animation-delay:  60ms; }
+.kd-hero-in > *:nth-child(2) { animation-delay: 130ms; }
+.kd-hero-in > *:nth-child(3) { animation-delay: 200ms; }
+.kd-hero-in > *:nth-child(4) { animation-delay: 260ms; }
+.kd-hero-in > *:nth-child(5) { animation-delay: 320ms; }
+.kd-hero-in > *:nth-child(6) { animation-delay: 380ms; }
+.kd-hero-in > *:nth-child(7) { animation-delay: 430ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-site .kd-btn-solid:hover,
+  .kd-site .kd-btn-outline:hover,
+  .kd-site .kd-btn-ghost:hover,
+  .kd-site .kd-chip:hover { transform: none; }
+  .kd-hero-in > * { animation: none; }
+}

@@ -59,7 +59,7 @@ const KD_SERVICES = [
   {
     name: "Fencing",
     slug: "fencing",
-    heroImageUrl: "/kd-essex/garden-b.webp",
+    heroImageUrl: "/kd-essex/garden-walls-retaining.webp",
     tagline: "Posts set properly so the panels stay put.",
     description: "Fence supply and installation, from panels to closeboard.",
     content: "Most fences fail at the post. We set posts to depth in concrete and check the line and levels before anything else goes up.",
@@ -79,7 +79,7 @@ const KD_SERVICES = [
   {
     name: "Garden Walls & Retaining",
     slug: "garden-walls-retaining",
-    heroImageUrl: "/kd-essex/garden-walls-retaining.webp",
+    heroImageUrl: "/kd-essex/garden-b.webp",
     tagline: "Foundations first, then the brickwork.",
     description: "Garden walls, sleeper walls and structural retaining.",
     content: "Retaining walls hold back real weight. They need a footing sized for the job and drainage behind them, or they lean. We build both properly.",
@@ -89,6 +89,7 @@ const KD_SERVICES = [
   {
     name: "Groundworks",
     slug: "groundworks",
+    heroImageUrl: "/kd-essex/groundworks.webp",
     tagline: "Excavation, levels and access — the work before the work.",
     description: "Site clearance, excavation, levelling and sub-base preparation.",
     content: "Clearance, excavation, muck-away, levelling and terracing. This is the part most landscapers subcontract out; doing it ourselves means no gap between trades and nobody to blame when the levels are wrong.",

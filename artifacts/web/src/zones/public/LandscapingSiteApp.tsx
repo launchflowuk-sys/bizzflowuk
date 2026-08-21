@@ -84,13 +84,13 @@ function Heading({ children, onDark = false, className = "" }: { children: React
 }
 
 function Btn({ href, children, variant = "solid", className = "" }: { href: string; children: React.ReactNode; variant?: "solid" | "outline" | "ghost"; className?: string }) {
-  const base = "inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold transition-all duration-200 min-h-[48px]";
+  const base = "kd-btn inline-flex items-center justify-center gap-2 rounded-full px-7 py-3.5 text-sm font-semibold min-h-[48px] transition-[transform,box-shadow,background-color,color] duration-200 ease-out will-change-transform";
   const styles = variant === "solid"
     ? { backgroundColor: GREEN_DEEP, color: "#FFFFFF" }
     : variant === "outline"
       ? { border: `1.5px solid ${GREEN_DEEP}`, color: GREEN_DEEP }
       : { border: "1.5px solid rgba(255,255,255,0.35)", color: "#FFFFFF" };
-  return <a href={href} className={`${base} hover:opacity-85 ${className}`} style={styles}>{children}</a>;
+  return <a href={href} className={`${base} ${variant === "solid" ? "kd-btn-solid" : variant === "outline" ? "kd-btn-outline" : "kd-btn-ghost"} ${className}`} style={styles}>{children}</a>;
 }
 
 // ── the signature element ────────────────────────────────────────────────────
@@ -311,10 +311,10 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
 
   return (
     <header className="sticky top-0 z-40 border-b" style={{ backgroundColor: "rgba(255,255,255,0.94)", borderColor: "#E6EAE2", backdropFilter: "blur(10px)" }}>
-      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 flex items-center justify-between h-[76px] gap-6">
+      <div className="max-w-[1240px] mx-auto px-5 sm:px-8 flex items-center justify-between h-[92px] gap-6">
         <a href={siteBase || "/"} className="flex items-center flex-shrink-0" aria-label={tenant?.name || "Home"}>
           {logo
-            ? <img src={logo} alt={tenant?.name || "Logo"} className="h-10 w-auto" width={200} height={80}/>
+            ? <img src={logo} alt={tenant?.name || "Logo"} className="h-16 w-auto transition-transform duration-300 hover:scale-[1.03]" width={300} height={200}/>
             : <span className="text-lg font-semibold tracking-[-0.01em]" style={{ color: INK }}>{tenant?.name || ""}</span>}
         </a>
 
@@ -326,11 +326,19 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
                 key={l.href}
                 href={`${siteBase}${l.href}`}
                 aria-current={active ? "page" : undefined}
-                className="relative text-[12.5px] font-semibold uppercase tracking-[0.08em] py-1.5 transition-opacity hover:opacity-60"
+                className="group/nav relative text-[12.5px] font-semibold uppercase tracking-[0.08em] py-1.5 transition-colors duration-200 hover:!text-[#5D7B45]"
                 style={{ color: active ? GREEN_DEEP : INK }}
               >
                 {l.label}
-                {active && <span className="absolute left-0 right-0 -bottom-0.5 h-[2px]" style={{ backgroundColor: GREEN_DEEP }}/>}
+                <span
+                  className="absolute left-0 -bottom-0.5 h-[2px] origin-left transition-transform duration-300 ease-out"
+                  style={{
+                    backgroundColor: GREEN_DEEP,
+                    width: "100%",
+                    transform: active ? "scaleX(1)" : "scaleX(0)",
+                  }}
+                />
+                {!active && <span className="absolute left-0 -bottom-0.5 h-[2px] w-full origin-left scale-x-0 transition-transform duration-300 ease-out group-hover/nav:scale-x-100" style={{ backgroundColor: GREEN_DEEP }}/>}
               </a>
             );
           })}
@@ -403,8 +411,26 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="lg:pr-6">
             {settings?.logoUrl
-              ? <img src={settings.logoUrl} alt={tenant?.name || "Logo"} className="h-10 w-auto mb-5" width={200} height={80}/>
-              : <div className="text-lg font-semibold mb-5 text-white">{tenant?.name}</div>}
+              ? (
+                  // The mark is ink + green, which disappears on the dark footer. Prefer a
+                  // reversed lockup by naming convention; if a tenant hasn't supplied one,
+                  // fall back to the original knocked out to white.
+                  <img
+                    src={settings.logoUrl.replace(/\.webp$/, "-reversed.webp")}
+                    alt={tenant?.name || "Logo"}
+                    className="h-20 w-auto mb-6"
+                    width={300}
+                    height={200}
+                    onError={e => {
+                      const img = e.currentTarget;
+                      if (img.dataset["fellBack"]) return;
+                      img.dataset["fellBack"] = "1";
+                      img.src = settings.logoUrl;
+                      img.style.filter = "brightness(0) invert(1)";
+                    }}
+                  />
+                )
+              : <div className="text-xl font-semibold mb-6 text-white">{tenant?.name}</div>}
             {(settings?.aboutText || tenant?.description) && (
               <p className="text-[13.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.6)" }}>
                 {(settings?.aboutText || tenant?.description || "").slice(0, 190)}
@@ -425,7 +451,7 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
               <ul className="space-y-2.5">
                 {services.map((s: any) => (
                   <li key={s.id}>
-                    <a href={`${siteBase}/services/${s.slug}`} className="text-[13.5px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.68)" }}>{s.name}</a>
+                    <a href={`${siteBase}/services/${s.slug}`} className="text-[13.5px] transition-colors duration-200 hover:text-white" style={{ color: "rgba(255,255,255,0.68)" }}>{s.name}</a>
                   </li>
                 ))}
               </ul>
@@ -438,7 +464,7 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
               <ul className="space-y-2.5">
                 {areas.map((a: any) => (
                   <li key={a.id}>
-                    <a href={`${siteBase}/areas/${a.slug}`} className="text-[13.5px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.68)" }}>{a.name}</a>
+                    <a href={`${siteBase}/areas/${a.slug}`} className="text-[13.5px] transition-colors duration-200 hover:text-white" style={{ color: "rgba(255,255,255,0.68)" }}>{a.name}</a>
                   </li>
                 ))}
               </ul>
@@ -461,9 +487,9 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
             © {new Date().getFullYear()} {tenant?.name}. All rights reserved.
           </p>
           <div className="flex gap-6">
-            <a href={`${siteBase}/privacy`} className="text-[12.5px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.45)" }}>Privacy</a>
-            <a href={`${siteBase}/terms`} className="text-[12.5px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.45)" }}>Terms</a>
-            <a href="/" className="text-[12.5px] transition-opacity hover:opacity-100" style={{ color: "rgba(255,255,255,0.45)" }}>Powered by LaunchFlow</a>
+            <a href={`${siteBase}/privacy`} className="text-[12.5px] transition-colors duration-200 hover:text-white" style={{ color: "rgba(255,255,255,0.45)" }}>Privacy</a>
+            <a href={`${siteBase}/terms`} className="text-[12.5px] transition-colors duration-200 hover:text-white" style={{ color: "rgba(255,255,255,0.45)" }}>Terms</a>
+            <a href="/" className="text-[12.5px] transition-colors duration-200 hover:text-white" style={{ color: "rgba(255,255,255,0.45)" }}>Powered by LaunchFlow</a>
           </div>
         </div>
       </div>
@@ -540,11 +566,11 @@ function ServiceCard({ service, tenantSlug }: { service: any; tenantSlug?: strin
             src={service.heroImageUrl}
             alt={service.name}
             loading="lazy"
-            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            className="w-full h-full object-cover transition-transform duration-[600ms] ease-out group-hover:scale-[1.06]"
           />
         )}
       </div>
-      <h3 className="text-lg font-semibold tracking-[-0.01em] mb-1.5" style={{ color: INK }}>{service.name}</h3>
+      <h3 className="text-lg font-semibold tracking-[-0.01em] mb-1.5 transition-colors duration-200 group-hover:text-[#5D7B45]" style={{ color: INK }}>{service.name}</h3>
       {service.tagline && <p className="text-sm leading-relaxed mb-3" style={{ color: GREY }}>{service.tagline}</p>}
       <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold" style={{ color: GREEN_DEEP }}>
         Read more <ArrowIcon className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5"/>
@@ -640,7 +666,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           )}
 
           {/* Copy */}
-          <div className="relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1240px)/2))] lg:pr-14 py-14 sm:py-20 lg:py-28 flex flex-col justify-center">
+          <div className="kd-hero-in relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1240px)/2))] lg:pr-14 py-14 sm:py-20 lg:py-28 flex flex-col justify-center">
             {tenant?.city && (
               <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.18em] mb-6" style={{ color: INK }}>
                 <PinIcon color={GREEN_DEEP}/>Based in {tenant.city}, UK
@@ -809,7 +835,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </div>
             <div className="flex flex-wrap gap-2.5 lg:pt-3">
               {areas.map((a: any) => (
-                <a key={a.id} href={`${siteBase}/areas/${a.slug}`} className="inline-flex items-center rounded-full px-4 py-2 text-[13.5px] font-medium border transition-colors hover:bg-white" style={{ borderColor: "#DDE3D6", color: INK, backgroundColor: OFF_WHITE }}>
+                <a key={a.id} href={`${siteBase}/areas/${a.slug}`} className="kd-chip inline-flex items-center rounded-full px-4 py-2 text-[13.5px] font-medium border transition-[background-color,border-color,color,transform] duration-200 ease-out" style={{ borderColor: "#DDE3D6", color: INK, backgroundColor: OFF_WHITE }}>
                   {a.name}
                 </a>
               ))}

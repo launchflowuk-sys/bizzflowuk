@@ -165,21 +165,32 @@ function loaderTenant(): "amo-services" | "amo-rendering" | "kd-essex" | null {
 function ZoneLoader() {
   const tenant = loaderTenant();
 
-  // KD Essex — the brand mark drawn as a stroke that traces itself, in the
-  // tenant's own green. No logo file needed, so it works before assets land.
+  // KD Essex — the client's own spinner mark, rotating, with a green ring
+  // tracing behind it. The ring is drawn in markup so there is still a loading
+  // signal if the image is slow or missing.
   if (tenant === "kd-essex") {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
-        <svg className="w-16 h-16" viewBox="0 0 48 48" fill="none" role="img" aria-label="Loading">
-          <circle cx="24" cy="24" r="20" stroke="#E2EAD9" strokeWidth="3"/>
-          <circle
-            cx="24" cy="24" r="20"
-            stroke="#5D7B45" strokeWidth="3" strokeLinecap="round"
-            strokeDasharray="34 92"
-            className="motion-safe:animate-spin"
-            style={{ transformOrigin: "center", animationDuration: "900ms" }}
+        <div className="relative w-28 h-28 flex items-center justify-center">
+          <img
+            src="/kd-essex/kd-essex-spinner.webp"
+            alt="Loading"
+            width={72}
+            height={72}
+            className="w-18 h-18 object-contain motion-safe:animate-spin"
+            style={{ width: 72, height: 72, animationDuration: "1400ms" }}
+            onError={e => { e.currentTarget.style.display = "none"; }}
           />
-        </svg>
+          <svg className="absolute inset-0 w-28 h-28" viewBox="0 0 112 112" fill="none" aria-hidden="true">
+            <circle cx="56" cy="56" r="52" stroke="#E2EAD9" strokeWidth="3"/>
+            <circle
+              cx="56" cy="56" r="52"
+              stroke="#5D7B45" strokeWidth="3" strokeLinecap="round" strokeDasharray="60 267"
+              className="motion-safe:animate-spin"
+              style={{ transformOrigin: "center", animationDuration: "900ms" }}
+            />
+          </svg>
+        </div>
       </div>
     );
   }
