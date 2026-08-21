@@ -40,6 +40,7 @@ const ROUTE_PREFETCHERS: Array<{
   { pattern: /^\/case-studies\/([^/]+)\/?$/, prefetch: (t, m, qc) => qc.prefetchQuery(getGetPublicCaseStudyQueryOptions(t, m[1])) },
   { pattern: /^\/case-studies\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicCaseStudiesQueryOptions(t)) },
   // The landscaping template calls its case-studies index /projects.
+  { pattern: /^\/projects\/([^/]+)\/?$/, prefetch: (t, m, qc) => qc.prefetchQuery(getGetPublicCaseStudyQueryOptions(t, m[1])) },
   { pattern: /^\/projects\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicCaseStudiesQueryOptions(t)) },
   { pattern: /^\/reviews\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicReviewsQueryOptions(t)) },
   { pattern: /^\/faqs\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicFaqsQueryOptions(t)) },

@@ -1,5 +1,5 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
-import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useListPublicBeforeAfter, useSubmitContact, useListPublicPriceItems } from "@workspace/api-client-react";
+import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useListPublicCaseStudies, useGetPublicCaseStudy, useListPublicFaqs, useListPublicBeforeAfter, useSubmitContact, useListPublicPriceItems } from "@workspace/api-client-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, useSiteOrigin, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
@@ -1407,6 +1407,219 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
   );
 }
 
+
+function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const siteBase = useSiteBase();
+  const origin = useSiteOrigin();
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  const { data: area, isLoading } = useGetPublicArea(tenantSlug, slug);
+  const { data: servicesData } = useListPublicServices(tenantSlug);
+  const { data: areasData } = useListPublicAreas(tenantSlug);
+  const a = area as any;
+  const services = ((servicesData as any[]) || []).slice(0, 6);
+  const nearby = ((areasData as any[]) || []).filter(x => x.slug !== slug).slice(0, 8);
+
+  if (!isLoading && !a) {
+    return (
+      <Shell tenantSlug={tenantSlug}>
+        <PageSEO title="Area not found" description="" siteName={tenant?.name} noindex/>
+        <PageHead title="We have no page for that area." intro="It may have moved, or we may not cover it yet."/>
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-14 sm:pb-20"><Btn href={`${siteBase}/areas`}>All areas we cover</Btn></div>
+      </Shell>
+    );
+  }
+
+  const where = a?.name ? `${a.name}${a.county ? `, ${a.county}` : ""}` : "";
+
+  return (
+    <Shell tenantSlug={tenantSlug}>
+      <PageSEO
+        title={a?.seoTitle || `Landscaping & Groundworks in ${a?.name || ""} | ${tenant?.name || ""}`}
+        description={a?.seoDescription || a?.description || ""}
+        image={a?.heroImageUrl}
+        siteName={tenant?.name}
+      />
+      <Breadcrumbs trail={[
+        { name: "Home", url: `${origin}${siteBase}/` },
+        { name: "Areas", url: `${origin}${siteBase}/areas` },
+        { name: a?.name || "Area", url: `${origin}${siteBase}/areas/${slug}` },
+      ]}/>
+      {a && (
+        <JsonLd data={{
+          "@context": "https://schema.org", "@type": "Service",
+          name: `Landscaping and groundworks in ${a.name}`,
+          description: a.description || undefined,
+          provider: { "@type": "HomeAndConstructionBusiness", name: tenant?.name },
+          areaServed: { "@type": "Place", name: where },
+        }}/>
+      )}
+
+      <PageHead title={`Landscaping & groundworks in ${a?.name || ""}`} intro={a?.description || undefined}/>
+
+      <section className="pb-14 sm:pb-20">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-16">
+          <div>
+            {a?.content && (
+              <div className="text-[16.5px] leading-[1.8] space-y-5 max-w-2xl" style={{ color: GREY }}>
+                {String(a.content).split(/\r?\n/).filter(Boolean).map((para: string, i: number) => <p key={i}>{para}</p>)}
+              </div>
+            )}
+
+            <div className="mt-14 rounded-xl p-8 sm:p-10" style={{ backgroundColor: OFF_WHITE }}>
+              <SectionLabel>The build-up</SectionLabel>
+              <h3 className="kd-display text-[1.4rem] font-semibold tracking-[-0.02em] mb-8" style={{ color: INK }}>
+                What goes in before the finish.
+              </h3>
+              <BuildUpDiagram/>
+            </div>
+          </div>
+
+          <aside className="lg:sticky lg:top-28 lg:self-start">
+            <div className="rounded-xl p-8" style={{ backgroundColor: INK }}>
+              <h2 className="kd-display text-xl font-semibold text-white tracking-[-0.01em]">
+                Getting a price in {a?.name || "your area"}
+              </h2>
+              <p className="mt-3 text-[14.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
+                Send a few photos with your enquiry and we can often price smaller work without visiting.
+              </p>
+              <Btn href={`${siteBase}/quote`} className="mt-6 w-full">Get a free quote</Btn>
+            </div>
+
+            {services.length > 0 && (
+              <div className="mt-10">
+                <SectionLabel>What we do here</SectionLabel>
+                <ul className="space-y-1 mt-1">
+                  {services.map(sv => (
+                    <li key={sv.id}>
+                      <a href={`${siteBase}/services/${sv.slug}`} className="flex items-center justify-between gap-4 py-3.5 border-b text-[15px] font-medium group" style={{ borderColor: "#E6EAE2", color: INK }}>
+                        {sv.name}
+                        <ArrowIcon className="w-4 h-4 transition-transform group-hover:translate-x-0.5" color={GREEN_DEEP}/>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {nearby.length > 0 && (
+              <div className="mt-10">
+                <SectionLabel>Nearby</SectionLabel>
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {nearby.map(n => (
+                    <a key={n.id} href={`${siteBase}/areas/${n.slug}`} className="kd-area rounded-[3px] border px-3 py-2 text-[13px] font-medium transition-colors duration-200" style={{ borderColor: "#D9DFD1", color: INK }}>
+                      {n.name}
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
+          </aside>
+        </div>
+      </section>
+
+      <QuoteCTA tenantSlug={tenantSlug} tenant={tenant} settings={settings}/>
+    </Shell>
+  );
+}
+
+function ProjectDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const siteBase = useSiteBase();
+  const origin = useSiteOrigin();
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  const { data: study, isLoading } = useGetPublicCaseStudy(tenantSlug, slug);
+  const c = study as any;
+
+  if (!isLoading && !c) {
+    return (
+      <Shell tenantSlug={tenantSlug}>
+        <PageSEO title="Project not found" description="" siteName={tenant?.name} noindex/>
+        <PageHead title="We have no page for that project." intro="It may have moved or been renamed."/>
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-14 sm:pb-20"><Btn href={`${siteBase}/projects`}>All projects</Btn></div>
+      </Shell>
+    );
+  }
+
+  const photos = ((c?.photoUrls as string[]) || []).filter(Boolean);
+  const blocks = ([
+    ["The brief", c?.challenge],
+    ["What we did", c?.solution],
+    ["The result", c?.result],
+  ] as [string, string][]).filter(pair => !!pair[1]);
+
+  return (
+    <Shell tenantSlug={tenantSlug}>
+      <PageSEO
+        title={c?.seoTitle || `${c?.title || "Project"} | ${tenant?.name || ""}`}
+        description={c?.seoDescription || c?.tagline || ""}
+        image={c?.heroImageUrl}
+        siteName={tenant?.name}
+      />
+      <Breadcrumbs trail={[
+        { name: "Home", url: `${origin}${siteBase}/` },
+        { name: "Projects", url: `${origin}${siteBase}/projects` },
+        { name: c?.title || "Project", url: `${origin}${siteBase}/projects/${slug}` },
+      ]}/>
+
+      <PageHead title={c?.title || ""} intro={c?.tagline || undefined}/>
+
+      {c?.heroImageUrl && (
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 mb-14 sm:mb-16">
+          <div className="aspect-[16/7] overflow-hidden rounded-xl" style={{ backgroundColor: PALE }}>
+            <img src={c.heroImageUrl} alt={c.title} className="w-full h-full object-cover" fetchPriority="high"/>
+          </div>
+        </div>
+      )}
+
+      <section className="pb-14 sm:pb-20">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-12 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-16">
+          <div className="space-y-12">
+            {blocks.map(pair => (
+              <div key={pair[0]}>
+                <SectionLabel>{pair[0]}</SectionLabel>
+                <div className="text-[16.5px] leading-[1.8] space-y-4 max-w-2xl" style={{ color: GREY }}>
+                  {String(pair[1]).split(/\r?\n/).filter(Boolean).map((para, i) => <p key={i}>{para}</p>)}
+                </div>
+              </div>
+            ))}
+
+            {photos.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2">
+                {photos.map((src, i) => (
+                  <div key={src} className="aspect-[4/3] overflow-hidden rounded-lg" style={{ backgroundColor: PALE }}>
+                    <img src={src} alt={`${c?.title || "Project"} photo ${i + 1}`} loading="lazy" className="w-full h-full object-cover"/>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <aside className="lg:sticky lg:top-28 lg:self-start">
+            <dl className="rounded-xl p-7 space-y-4" style={{ backgroundColor: OFF_WHITE }}>
+              {c?.location && (
+                <div>
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-1" style={{ color: GREEN_DEEP }}>Location</dt>
+                  <dd className="text-[15px] font-medium" style={{ color: INK }}>{c.location}</dd>
+                </div>
+              )}
+              {c?.projectDuration && (
+                <div>
+                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-1" style={{ color: GREEN_DEEP }}>Duration</dt>
+                  <dd className="text-[15px] font-medium" style={{ color: INK }}>{c.projectDuration}</dd>
+                </div>
+              )}
+            </dl>
+            <Btn href={`${siteBase}/quote`} className="mt-6 w-full">Get a quote like this</Btn>
+          </aside>
+        </div>
+      </section>
+
+      <QuoteCTA tenantSlug={tenantSlug} tenant={tenant} settings={settings}/>
+    </Shell>
+  );
+}
+
 function AboutPage({ tenantSlug }: { tenantSlug: string }) {
   const siteBase = useSiteBase();
   const origin = useSiteOrigin();
@@ -1710,7 +1923,9 @@ export default function LandscapingSiteApp({ forcedSlug, forcedBase, forcedOrigi
         <Route path="/services">{() => <ServicesPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/services/:slug">{(p: any) => <ServiceDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/projects">{() => <ProjectsPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/projects/:slug">{(p: any) => <ProjectDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/areas">{() => <AreasPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/areas/:slug">{(p: any) => <AreaDetailPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/about">{() => <AboutPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/calculator">{() => <CalculatorPage tenantSlug={tenantSlug}/>}</Route>
