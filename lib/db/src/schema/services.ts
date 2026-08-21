@@ -15,6 +15,9 @@ export const servicesTable = pgTable("services", {
   iconUrl: text("icon_url"),
   benefits: jsonb("benefits").$type<string[]>().default([]),
   processSteps: jsonb("process_steps").$type<Array<{ title: string; description: string }>>().default([]),
+  // Indicative ranges shown as "What it costs". Nullable on purpose — a tenant who
+  // has not agreed their pricing publishes nothing rather than a guess.
+  priceGuide: text("price_guide"),
   published: boolean("published").notNull().default(false),
   featured: boolean("featured").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),

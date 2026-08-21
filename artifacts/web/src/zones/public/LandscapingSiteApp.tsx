@@ -1318,8 +1318,13 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
   const { tenant, settings } = (siteData as any) || {};
   const { data: service, isLoading } = useGetPublicService(tenantSlug, slug);
   const { data: servicesData } = useListPublicServices(tenantSlug);
+  const { data: areasData } = useListPublicAreas(tenantSlug);
   const s = service as any;
   const related = ((servicesData as any[]) || []).filter(x => x.slug !== slug).slice(0, 3);
+  const areas = ((areasData as any[]) || []).slice(0, 12);
+  // FAQs travel with the service payload. Falls back to nothing rather than the
+  // tenant-wide set, which would repeat the homepage FAQ block on every service page.
+  const serviceFaqs = ((s?.faqs as any[]) || []);
 
   if (!isLoading && !s) {
     return (
@@ -1405,10 +1410,79 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
               </div>
             )}
 
+            {s?.priceGuide && (
+              <div className="mt-14">
+                <SectionLabel>What it costs</SectionLabel>
+                <div className="rounded-xl p-7 sm:p-8" style={{ backgroundColor: OFF_WHITE }}>
+                  <div className="text-[16px] leading-[1.8] space-y-3" style={{ color: GREY }}>
+                    {String(s.priceGuide).split(/\r?\n/).filter(Boolean).map((line: string, i: number) => {
+                      const parts = line.split("|");
+                      if (parts.length === 2) {
+                        return (
+                          <div key={i} className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1 py-2.5 border-b last:border-0" style={{ borderColor: "#DDE3D6" }}>
+                            <span className="text-[15.5px]" style={{ color: INK }}>{parts[0].trim()}</span>
+                            <span className="kd-nums text-[15.5px] font-semibold" style={{ color: GREEN_DEEP }}>{parts[1].trim()}</span>
+                          </div>
+                        );
+                      }
+                      return <p key={i} className="text-[14.5px]">{line}</p>;
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {isGroundworks(s || {}) === false && (
               <div className="mt-16 rounded-xl p-8 sm:p-10" style={{ backgroundColor: OFF_WHITE }}>
                 <h3 className="text-2xl font-semibold tracking-[-0.02em] mb-8" style={{ color: INK }}>What goes in before the finish.</h3>
                 <BuildUpDiagram/>
+              </div>
+            )}
+            {serviceFaqs.length > 0 && (
+              <div className="mt-14">
+                <SectionLabel>Questions about {s?.name?.toLowerCase() || "this work"}</SectionLabel>
+                <div className="divide-y" style={{ borderColor: "#E6EAE2" }}>
+                  {serviceFaqs.map((f: any) => (
+                    <details key={f.id} className="group py-5">
+                      <summary className="flex items-start justify-between gap-6 cursor-pointer list-none">
+                        <span className="text-[16.5px] font-medium leading-snug" style={{ color: INK }}>{f.question}</span>
+                        <span className="mt-1 flex-shrink-0 transition-transform duration-200 group-open:rotate-45">
+                          <Icon d="M12 5v14M5 12h14" className="w-5 h-5" color={GREEN_DEEP} strokeWidth={1.8}/>
+                        </span>
+                      </summary>
+                      <p className="mt-3 text-[15.5px] leading-relaxed max-w-2xl" style={{ color: GREY }}>{f.answer}</p>
+                    </details>
+                  ))}
+                </div>
+                <JsonLd data={{
+                  "@context": "https://schema.org",
+                  "@type": "FAQPage",
+                  mainEntity: serviceFaqs.map((f: any) => ({
+                    "@type": "Question", name: f.question,
+                    acceptedAnswer: { "@type": "Answer", text: f.answer },
+                  })),
+                }}/>
+              </div>
+            )}
+
+            {areas.length > 0 && (
+              <div className="mt-14">
+                <SectionLabel>Where we do this</SectionLabel>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-1">
+                  {areas.map((ar: any) => (
+                    <a
+                      key={ar.id}
+                      href={`${siteBase}/areas/${ar.slug}`}
+                      className="kd-area group/area flex items-center justify-between gap-2 rounded-[3px] border px-3.5 py-2.5 text-[13px] font-medium leading-none transition-colors duration-200"
+                      style={{ borderColor: "#D9DFD1", color: INK }}
+                    >
+                      <span className="truncate">{ar.name}</span>
+                      <span className="opacity-0 -translate-x-1 transition-all duration-200 group-hover/area:opacity-100 group-hover/area:translate-x-0">
+                        <ArrowIcon className="w-3 h-3" color={GREEN_DEEP}/>
+                      </span>
+                    </a>
+                  ))}
+                </div>
               </div>
             )}
           </div>

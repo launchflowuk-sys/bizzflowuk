@@ -221,7 +221,14 @@ router.get("/public/:tenantSlug/services/:slug", async (req, res) => {
     if (!tenant) { res.status(404).json({ error: "Tenant not found" }); return; }
     const service = await db.select().from(servicesTable).where(and(eq(servicesTable.tenantId, tenant.id), eq(servicesTable.slug, req.params.slug), sql`${servicesTable.published} = true`)).limit(1);
     if (!service.length) { res.status(404).json({ error: "Not found" }); return; }
-    res.json(service[0]);
+    // FAQs attached to this service travel with it. Deliberately returned here rather
+    // than widening /faqs, which filters on global = true: that endpoint feeds other
+    // tenants' FAQ pages, and loosening its filter would change what they display.
+    // An extra field on this response cannot affect a template that ignores it.
+    const faqs = await db.select().from(faqsTable)
+      .where(and(eq(faqsTable.tenantId, tenant.id), eq(faqsTable.serviceId, service[0].id)))
+      .orderBy(faqsTable.sortOrder);
+    res.json({ ...service[0], faqs });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
