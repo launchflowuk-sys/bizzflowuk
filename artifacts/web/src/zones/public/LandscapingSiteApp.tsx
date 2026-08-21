@@ -42,7 +42,7 @@ const PALE = "#E2EAD9";        // section tints
 // is changed by reordering services in the dashboard, not by editing this file.
 const GROUNDWORKS_TERMS = [
   "groundwork", "drainage", "drain", "excavat", "dig", "dropped kerb", "kerb",
-  "foundation", "footing", "muck", "sub-base", "subbase", "retaining", "soakaway",
+  "foundation", "footing", "muck", "sub-base", "subbase", "soakaway",
   "levelling", "leveling", "site clearance", "civils",
 ];
 

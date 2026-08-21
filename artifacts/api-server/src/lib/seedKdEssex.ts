@@ -34,6 +34,7 @@ const KD_SERVICES = [
   {
     name: "Patios & Paving",
     slug: "patios-paving",
+    heroImageUrl: "/kd-essex/patios-paving.webp",
     tagline: "Natural stone, porcelain and block, laid on a proper base.",
     description: "Patio and paving installation with a full, published build-up — excavation, compacted sub-base, laying course and finish.",
     content: "A patio is only as good as what's underneath it. We excavate to depth, lay and compact a Type 1 sub-base in layers, and set the falls so water runs away from the house rather than sitting on the slabs.\nYou get the build-up in writing with your quote, so you can compare it against the other prices you've been given.",
@@ -48,6 +49,7 @@ const KD_SERVICES = [
   {
     name: "Driveways",
     slug: "driveways",
+    heroImageUrl: "/kd-essex/driveways.webp",
     tagline: "Block paving and resin, built to take the weight.",
     description: "Driveway installation with the sub-base depth a vehicle actually needs.",
     content: "Driveways fail because the base was built for a footpath. We dig deeper, compact properly, and deal with drainage so you're not left with standing water or sunken tyre tracks.\nWhere a dropped kerb is needed we can handle that side too.",
@@ -57,6 +59,7 @@ const KD_SERVICES = [
   {
     name: "Fencing",
     slug: "fencing",
+    heroImageUrl: "/kd-essex/garden-b.webp",
     tagline: "Posts set properly so the panels stay put.",
     description: "Fence supply and installation, from panels to closeboard.",
     content: "Most fences fail at the post. We set posts to depth in concrete and check the line and levels before anything else goes up.",
@@ -66,6 +69,7 @@ const KD_SERVICES = [
   {
     name: "Turfing & Artificial Grass",
     slug: "turfing-artificial-grass",
+    heroImageUrl: "/kd-essex/garden-a.webp",
     tagline: "Prepared ground, not turf rolled onto old lawn.",
     description: "Real turf and artificial grass installation with proper ground preparation.",
     content: "Turf laid over unprepared ground goes patchy within a season. We strip, level, and prepare the ground first — and for artificial grass, build the base and drainage so it doesn't hold water.",
@@ -75,6 +79,7 @@ const KD_SERVICES = [
   {
     name: "Garden Walls & Retaining",
     slug: "garden-walls-retaining",
+    heroImageUrl: "/kd-essex/garden-walls-retaining.webp",
     tagline: "Foundations first, then the brickwork.",
     description: "Garden walls, sleeper walls and structural retaining.",
     content: "Retaining walls hold back real weight. They need a footing sized for the job and drainage behind them, or they lean. We build both properly.",
@@ -93,6 +98,7 @@ const KD_SERVICES = [
   {
     name: "Drainage & Soakaways",
     slug: "drainage-soakaways",
+    heroImageUrl: "/kd-essex/drainage-soakaways.webp",
     tagline: "For gardens that hold water after every downpour.",
     description: "Land drainage, soakaways and surface water solutions.",
     content: "Standing water is usually a levels problem, a compaction problem, or nowhere for the water to go. We work out which before quoting, then design the drainage around it.",
@@ -102,6 +108,7 @@ const KD_SERVICES = [
   {
     name: "Dropped Kerbs",
     slug: "dropped-kerbs",
+    heroImageUrl: "/kd-essex/dropped-kerbs.webp",
     tagline: "Vehicle crossovers, start to finish.",
     description: "Dropped kerb and vehicle crossover installation.",
     content: "A dropped kerb needs council approval before any work starts. We can talk you through the application and carry out the crossover once it's granted.",
@@ -148,6 +155,7 @@ export async function seedKdEssexIfMissing(): Promise<void> {
       slug: SLUG,
       industry: "landscaping",
       primaryColor: BRAND_GREEN,
+      logoUrl: "/kd-essex/kd-essex-logo.webp",
       city: "Grays",
       country: "UK",
       description:
@@ -161,6 +169,8 @@ export async function seedKdEssexIfMissing(): Promise<void> {
 
     await db.insert(tenantSettingsTable).values({
       tenantId,
+      logoUrl: "/kd-essex/kd-essex-logo.webp",
+      faviconUrl: "/kd-essex/kd-essex-logo-320.webp",
       primaryColor: BRAND_GREEN,
       secondaryColor: BRAND_GREEN_DEEP,
       // "|" marks the line break for the two-tone hero headline (ink above, green below).

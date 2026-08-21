@@ -1,5 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+/* KD Essex display + body faces. MUST stay with the other @import rules:
+   a CSS @import after any other rule is silently ignored by the browser. */
+@import "@fontsource-variable/archivo";
+@import "@fontsource-variable/public-sans";
 @plugin "@tailwindcss/typography";
 
 @custom-variant dark (&:is(.dark *));
@@ -182,8 +186,6 @@
    Browsers only fetch a face once something actually uses it, so the other
    two tenants pay nothing for these.
    ───────────────────────────────────────────────────────────────────────── */
-@import "@fontsource-variable/archivo";
-@import "@fontsource-variable/public-sans";
 
 .kd-site {
   font-family: "Public Sans Variable", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
