@@ -165,31 +165,16 @@ function loaderTenant(): "amo-services" | "amo-rendering" | "kd-essex" | null {
 function ZoneLoader() {
   const tenant = loaderTenant();
 
-  // KD Essex — the client's own spinner mark, rotating, with a green ring
-  // tracing behind it. The ring is drawn in markup so there is still a loading
-  // signal if the image is slow or missing.
+  // KD Essex — the brand mark fills with colour from the bottom up, the way the
+  // ground itself gets built. Both layers are masked to the mark's own alpha, so
+  // the colour is confined to the letterforms with no rectangle bleeding behind
+  // them. Reduced motion gets the finished, filled mark and no animation.
   if (tenant === "kd-essex") {
     return (
       <div className="flex h-screen items-center justify-center bg-white">
-        <div className="relative w-28 h-28 flex items-center justify-center">
-          <img
-            src="/kd-essex/kd-essex-spinner.webp"
-            alt="Loading"
-            width={72}
-            height={72}
-            className="w-18 h-18 object-contain motion-safe:animate-spin"
-            style={{ width: 72, height: 72, animationDuration: "1400ms" }}
-            onError={e => { e.currentTarget.style.display = "none"; }}
-          />
-          <svg className="absolute inset-0 w-28 h-28" viewBox="0 0 112 112" fill="none" aria-hidden="true">
-            <circle cx="56" cy="56" r="52" stroke="#E2EAD9" strokeWidth="3"/>
-            <circle
-              cx="56" cy="56" r="52"
-              stroke="#5D7B45" strokeWidth="3" strokeLinecap="round" strokeDasharray="60 267"
-              className="motion-safe:animate-spin"
-              style={{ transformOrigin: "center", animationDuration: "900ms" }}
-            />
-          </svg>
+        <div className="kd-loader" role="img" aria-label="Loading">
+          <span className="kd-loader-base" />
+          <span className="kd-loader-fill" />
         </div>
       </div>
     );

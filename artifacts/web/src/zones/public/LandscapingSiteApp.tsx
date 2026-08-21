@@ -79,8 +79,30 @@ function SectionLabel({ children, onDark = false }: { children: React.ReactNode;
   return <h3 className="kd-display text-[11px] font-semibold uppercase tracking-[0.22em] mb-4" style={{ color: onDark ? GREEN : GREEN_DEEP }}>{children}</h3>;
 }
 
-function Heading({ children, onDark = false, className = "" }: { children: React.ReactNode; onDark?: boolean; className?: string }) {
-  return <h2 className={`kd-display text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold leading-[1.1] tracking-[-0.02em] ${className}`} style={{ color: onDark ? "#FFFFFF" : INK }}>{children}</h2>;
+/**
+ * Section heading. Display scale, and two-tone the same way the hero headline is:
+ * a "|" in the text marks where the green half starts. A short rule sits above it
+ * so a section opening is unmistakably a section opening rather than bold body text.
+ */
+function Heading({ children, onDark = false, className = "", rule = true }: { children: React.ReactNode; onDark?: boolean; className?: string; rule?: boolean }) {
+  const raw = typeof children === "string" ? children : null;
+  const [lead, accent] = raw && raw.includes("|") ? splitHeadline(raw) : [raw, ""];
+  return (
+    <>
+      {rule && <span className="block h-[3px] w-14 mb-7" style={{ backgroundColor: onDark ? GREEN : GREEN_DEEP }}/>}
+      <h2
+        className={`kd-display text-[2.1rem] sm:text-[3rem] lg:text-[3.75rem] font-semibold leading-[1.02] tracking-[-0.032em] ${className}`}
+        style={{ color: onDark ? "#FFFFFF" : INK, textWrap: "balance" } as React.CSSProperties}
+      >
+        {raw === null ? children : (
+          <>
+            {lead}
+            {accent && <><br/><span style={{ color: onDark ? GREEN : GREEN_DEEP }}>{accent}</span></>}
+          </>
+        )}
+      </h2>
+    </>
+  );
 }
 
 function Btn({ href, children, variant = "solid", className = "" }: { href: string; children: React.ReactNode; variant?: "solid" | "outline" | "ghost"; className?: string }) {
@@ -515,7 +537,7 @@ function PageHead({ title, intro }: { title: string; intro?: string }) {
   return (
     <section className="pt-16 pb-12 sm:pt-24 sm:pb-16" style={{ backgroundColor: OFF_WHITE }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-        <h1 className="kd-display text-4xl sm:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-[-0.028em] max-w-4xl" style={{ color: INK }}>{title}</h1>
+        <h1 className="kd-display text-[2.6rem] sm:text-[3.4rem] lg:text-[4.5rem] font-semibold leading-[0.98] tracking-[-0.035em] max-w-4xl" style={{ color: INK }}>{title}</h1>
         {intro && <p className="mt-6 text-lg leading-relaxed max-w-2xl" style={{ color: GREY }}>{intro}</p>}
       </div>
     </section>
@@ -711,7 +733,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-14">
-              <Heading>Two halves of the same job.</Heading>
+              <Heading>Two halves of|the same job.</Heading>
               <p className="mt-5 text-[17px] leading-relaxed" style={{ color: GREY }}>
                 Most gardens need work below ground before anything goes on top. Doing both means
                 no gap between trades, and nobody to blame when the levels are wrong.
@@ -722,9 +744,10 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
               <div className="grid gap-14 lg:grid-cols-2">
                 {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
                   <div key={label as string}>
-                    <div className="flex items-center gap-3 pb-5 mb-8 border-b" style={{ borderColor: "#E6EAE2" }}>
-                      <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GREEN_DEEP }}/>
-                      <h3 className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: INK }}>{label as string}</h3>
+                    <div className="pb-5 mb-9 border-b-2" style={{ borderColor: INK }}>
+                      <h3 className="kd-display text-[1.6rem] sm:text-[2rem] font-semibold uppercase tracking-[-0.01em] leading-none" style={{ color: INK }}>
+                        {label as string}
+                      </h3>
                     </div>
                     <div className="grid gap-8 sm:grid-cols-2">
                       {(list as any[]).map(s => <ServiceCard key={s.id} service={s} tenantSlug={tenantSlug}/>)}
@@ -746,7 +769,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-12">
-              <Heading>Drag to see the difference.</Heading>
+              <Heading>Drag to see|the difference.</Heading>
             </div>
             <BeforeAfterGallery items={beforeAfter} accent={GREEN_DEEP}/>
           </div>
@@ -776,7 +799,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
               <div className="max-w-xl">
-                <Heading>Jobs we've finished.</Heading>
+                <Heading>Jobs we've|finished.</Heading>
               </div>
               <a href={`${siteBase}/projects`} className="inline-flex items-center gap-1.5 text-[13.5px] font-semibold" style={{ color: GREEN_DEEP }}>
                 All projects <ArrowIcon className="w-3.5 h-3.5"/>
@@ -803,7 +826,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-12">
-              <Heading>What customers said.</Heading>
+              <Heading>What customers|said.</Heading>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {reviews.slice(0, 6).map((r: any) => (
@@ -827,7 +850,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-20">
             <div>
-              <Heading>Covering {tenant?.city || "Essex"} and the surrounding towns.</Heading>
+              <Heading>{`Covering ${tenant?.city || "Essex"}|and the surrounding towns.`}</Heading>
               <p className="mt-5 text-[17px] leading-relaxed" style={{ color: GREY }}>
                 Ground conditions change street to street around here. We quote on what's actually
                 under your garden, not a rate card.
@@ -849,7 +872,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
             <div className="max-w-2xl mb-12">
-              <Heading>Before you ask.</Heading>
+              <Heading>Before|you ask.</Heading>
             </div>
             <div className="max-w-3xl divide-y" style={{ borderColor: "#E6EAE2" }}>
               {faqs.map((f: any) => (
@@ -911,9 +934,10 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
             <div className="space-y-20">
               {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
                 <div key={label as string}>
-                  <div className="flex items-center gap-3 pb-5 mb-10 border-b" style={{ borderColor: "#E6EAE2" }}>
-                    <span className="h-2 w-2 rounded-full" style={{ backgroundColor: GREEN_DEEP }}/>
-                    <h2 className="text-[11px] font-semibold uppercase tracking-[0.22em]" style={{ color: INK }}>{label as string}</h2>
+                  <div className="pb-5 mb-10 border-b-2" style={{ borderColor: INK }}>
+                    <h2 className="kd-display text-[1.6rem] sm:text-[2rem] font-semibold uppercase tracking-[-0.01em] leading-none" style={{ color: INK }}>
+                      {label as string}
+                    </h2>
                   </div>
                   <div className="grid gap-9 sm:grid-cols-2 lg:grid-cols-3">
                     {(list as any[]).map(s => <ServiceCard key={s.id} service={s} tenantSlug={tenantSlug}/>)}
