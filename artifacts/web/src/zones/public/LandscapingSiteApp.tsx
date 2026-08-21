@@ -696,6 +696,23 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
 }
 
 /** Breadcrumb JSON-LD — one of the two schema types the SEO plan flagged as missing. */
+
+/**
+ * PageSEO, with one safeguard added: any page served on the platform preview path
+ * (/site/<slug>) is marked noindex.
+ *
+ * A tenant is built and reviewed on that path for days or weeks before its own
+ * domain is attached, and the platform host serves a permissive robots.txt — so
+ * without this, an unfinished site with placeholder content is crawlable, and once
+ * the real domain goes live the two compete as duplicates. On the tenant's own
+ * domain siteBase is empty, so indexing behaves normally there.
+ */
+function SEO(props: { title: string; description: string; image?: string; siteName?: string; noindex?: boolean }) {
+  const siteBase = useSiteBase();
+  const isPreview = siteBase.startsWith("/site/");
+  return <PageSEO {...props} noindex={props.noindex || isPreview} />;
+}
+
 function Breadcrumbs({ trail }: { trail: { name: string; url: string }[] }) {
   return (
     <JsonLd data={{
@@ -847,7 +864,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO
+      <SEO
         title={settings?.seoTitle || `${tenant?.name || "Landscaping & Groundworks"}${tenant?.city ? ` | ${tenant.city}` : ""}`}
         description={settings?.seoDescription || sub}
         image={heroImage}
@@ -1141,7 +1158,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO
+      <SEO
         title={`Services | ${tenant?.name || ""}`}
         description={`Landscaping and groundworks services${tenant?.city ? ` in ${tenant.city} and across Essex` : ""}.`}
         siteName={tenant?.name}
@@ -1195,7 +1212,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
   if (!isLoading && !s) {
     return (
       <Shell tenantSlug={tenantSlug}>
-        <PageSEO title="Not found" description="" noindex siteName={tenant?.name}/>
+        <SEO title="Not found" description="" noindex siteName={tenant?.name}/>
         <PageHead title="We couldn't find that service." intro="It may have moved or been renamed."/>
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-24"><Btn href={`${siteBase}/services`}>All services</Btn></div>
       </Shell>
@@ -1207,7 +1224,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO
+      <SEO
         title={s?.seoTitle || `${s?.name || "Service"}${tenant?.city ? ` in ${tenant.city}` : ""} | ${tenant?.name || ""}`}
         description={s?.seoDescription || s?.tagline || ""}
         image={s?.heroImageUrl}
@@ -1332,7 +1349,7 @@ function ProjectsPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title={`Projects | ${tenant?.name || ""}`} description="Recent landscaping and groundworks projects." siteName={tenant?.name}/>
+      <SEO title={`Projects | ${tenant?.name || ""}`} description="Recent landscaping and groundworks projects." siteName={tenant?.name}/>
       <Breadcrumbs trail={[
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Projects", url: `${origin}${siteBase}/projects` },
@@ -1375,7 +1392,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title={`Areas we cover | ${tenant?.name || ""}`} description={`Landscaping and groundworks across ${tenant?.city || "Essex"} and the surrounding towns.`} siteName={tenant?.name}/>
+      <SEO title={`Areas we cover | ${tenant?.name || ""}`} description={`Landscaping and groundworks across ${tenant?.city || "Essex"} and the surrounding towns.`} siteName={tenant?.name}/>
       <Breadcrumbs trail={[
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Areas", url: `${origin}${siteBase}/areas` },
@@ -1423,7 +1440,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
   if (!isLoading && !a) {
     return (
       <Shell tenantSlug={tenantSlug}>
-        <PageSEO title="Area not found" description="" siteName={tenant?.name} noindex/>
+        <SEO title="Area not found" description="" siteName={tenant?.name} noindex/>
         <PageHead title="We have no page for that area." intro="It may have moved, or we may not cover it yet."/>
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-14 sm:pb-20"><Btn href={`${siteBase}/areas`}>All areas we cover</Btn></div>
       </Shell>
@@ -1434,7 +1451,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO
+      <SEO
         title={a?.seoTitle || `Landscaping & Groundworks in ${a?.name || ""} | ${tenant?.name || ""}`}
         description={a?.seoDescription || a?.description || ""}
         image={a?.heroImageUrl}
@@ -1534,7 +1551,7 @@ function ProjectDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
   if (!isLoading && !c) {
     return (
       <Shell tenantSlug={tenantSlug}>
-        <PageSEO title="Project not found" description="" siteName={tenant?.name} noindex/>
+        <SEO title="Project not found" description="" siteName={tenant?.name} noindex/>
         <PageHead title="We have no page for that project." intro="It may have moved or been renamed."/>
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-14 sm:pb-20"><Btn href={`${siteBase}/projects`}>All projects</Btn></div>
       </Shell>
@@ -1550,7 +1567,7 @@ function ProjectDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO
+      <SEO
         title={c?.seoTitle || `${c?.title || "Project"} | ${tenant?.name || ""}`}
         description={c?.seoDescription || c?.tagline || ""}
         image={c?.heroImageUrl}
@@ -1628,7 +1645,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title={`About | ${tenant?.name || ""}`} description={settings?.aboutText?.slice(0, 155) || ""} siteName={tenant?.name}/>
+      <SEO title={`About | ${tenant?.name || ""}`} description={settings?.aboutText?.slice(0, 155) || ""} siteName={tenant?.name}/>
       <Breadcrumbs trail={[
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "About", url: `${origin}${siteBase}/about` },
@@ -1670,7 +1687,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant } = (siteData as any) || {};
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title={`Get a free quote | ${tenant?.name || ""}`} description="Tell us about the job and we'll come back with a written quote." siteName={tenant?.name}/>
+      <SEO title={`Get a free quote | ${tenant?.name || ""}`} description="Tell us about the job and we'll come back with a written quote." siteName={tenant?.name}/>
       <Breadcrumbs trail={[
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Get a quote", url: `${origin}${siteBase}/quote` },
@@ -1690,7 +1707,7 @@ function CalculatorPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant } = (siteData as any) || {};
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title={`Cost guide | ${tenant?.name || ""}`} description="Get a ballpark figure before you pick up the phone." siteName={tenant?.name}/>
+      <SEO title={`Cost guide | ${tenant?.name || ""}`} description="Get a ballpark figure before you pick up the phone." siteName={tenant?.name}/>
       <Breadcrumbs trail={[
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Cost guide", url: `${origin}${siteBase}/calculator` },
@@ -1728,7 +1745,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title={`Contact | ${tenant?.name || ""}`} description="Get in touch." siteName={tenant?.name}/>
+      <SEO title={`Contact | ${tenant?.name || ""}`} description="Get in touch." siteName={tenant?.name}/>
       <Breadcrumbs trail={[
         { name: "Home", url: `${origin}${siteBase}/` },
         { name: "Contact", url: `${origin}${siteBase}/contact` },
@@ -1817,7 +1834,7 @@ function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "
   const title = kind === "terms" ? "Terms & conditions" : "Privacy policy";
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title={`${title} | ${tenant?.name || ""}`} description={title} siteName={tenant?.name} noindex/>
+      <SEO title={`${title} | ${tenant?.name || ""}`} description={title} siteName={tenant?.name} noindex/>
       <PageHead title={title}/>
       <section className="pb-14 sm:pb-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
@@ -1859,7 +1876,7 @@ function NotFoundPage({ tenantSlug }: { tenantSlug: string }) {
   const { tenant } = (siteData as any) || {};
   return (
     <Shell tenantSlug={tenantSlug}>
-      <PageSEO title="Page not found" description="" siteName={tenant?.name} noindex/>
+      <SEO title="Page not found" description="" siteName={tenant?.name} noindex/>
       <PageHead title="That page doesn't exist." intro="It may have moved, or the link might be out of date."/>
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pb-24 flex flex-wrap gap-3">
         <Btn href={siteBase || "/"}>Back to home</Btn>
