@@ -1,6 +1,7 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
 import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useListPublicCaseStudies, useGetPublicCaseStudy, useListPublicFaqs, useListPublicBeforeAfter, useSubmitContact, useListPublicPriceItems } from "@workspace/api-client-react";
 import { useState, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, useSiteOrigin, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
 import { PriceCalculatorSection } from "./PriceCalculator";
@@ -502,6 +503,10 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
   const [open, setOpen] = useState(false);
   const logo = settings?.logoUrl || tenant?.logoUrl;
 
+  // Portalled drawer renders only after mount; there is no document during SSR.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
   // Escape closes the drawer, and the page behind it stops scrolling while it is
   // open — without that, scrolling the drawer drags the page underneath on iOS.
   useEffect(() => {
@@ -522,6 +527,7 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
     : NAV_LINKS;
 
   return (
+    <>
     <header className="sticky top-0 z-40 border-b" style={{ backgroundColor: "rgba(255,255,255,0.94)", borderColor: "#E6EAE2", backdropFilter: "blur(10px)" }}>
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8 flex items-center justify-between h-[92px] gap-6">
         <a href={siteBase || "/"} className="flex items-center flex-shrink-0" aria-label={tenant?.name || "Home"}>
@@ -590,76 +596,89 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
         </button>
       </div>
 
-      {/* Full-height drawer. Kept mounted so it animates out as well as in, and
-          marked inert when closed so its links are not focusable behind the page. */}
-      <div
-        className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
-        {...(open ? {} : { inert: "" as any })}
-        aria-hidden={!open}
-      >
-        <button
-          className="absolute inset-0 w-full h-full cursor-default"
-          style={{ backgroundColor: "rgba(30,31,29,0.45)", backdropFilter: open ? "blur(3px)" : "none" }}
-          onClick={() => setOpen(false)}
-          tabIndex={-1}
-          aria-label="Close menu"
-        />
-        <nav
-          id="kd-mobile-menu"
-          className="absolute right-0 top-0 h-full w-[86%] max-w-sm bg-white flex flex-col transition-transform duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
-          style={{ transform: open ? "translateX(0)" : "translateX(100%)", boxShadow: "-16px 0 40px -20px rgba(30,31,29,0.4)" }}
-        >
-          <div className="flex items-center justify-between h-[92px] px-6 border-b" style={{ borderColor: "#E6EAE2" }}>
-            {logo
-              ? <img src={logo} alt={tenant?.name || "Logo"} className="h-12 w-auto" width={220} height={140}/>
-              : <span className="kd-display text-base font-semibold" style={{ color: INK }}>{tenant?.name || ""}</span>}
-            <button
-              className="w-11 h-11 flex items-center justify-center -mr-2"
-              onClick={() => setOpen(false)}
-              aria-label="Close menu"
-            >
-              <Icon d="M6 6l12 12M6 18L18 6" className="w-6 h-6" color={INK} strokeWidth={1.8}/>
-            </button>
-          </div>
+    </header>
 
-          <div className="flex-1 overflow-y-auto px-6 py-6">
-            {links.map((l, i) => (
+      {/* Portalled to <body> deliberately. The header sets backdrop-filter,
+          and a backdrop-filter establishes a containing block for fixed-position
+          descendants — so while the drawer lived inside the header, "fixed inset-0"
+          resolved against the 92px header box instead of the viewport and the panel
+          was squashed into the header band. No amount of z-index or positioning
+          fixes that; the element has to leave the header. */}
+      {mounted && createPortal(
+        <>
+        {/* Full-height drawer. Kept mounted so it animates out as well as in, and
+            marked inert when closed so its links are not focusable behind the page. */}
+        <div
+          className={`lg:hidden fixed inset-0 z-50 transition-opacity duration-300 ${open ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+          {...(open ? {} : { inert: "" as any })}
+          aria-hidden={!open}
+        >
+          <button
+            className="absolute inset-0 w-full h-full cursor-default"
+            style={{ backgroundColor: "rgba(30,31,29,0.45)", backdropFilter: open ? "blur(3px)" : "none" }}
+            onClick={() => setOpen(false)}
+            tabIndex={-1}
+            aria-label="Close menu"
+          />
+          <nav
+            id="kd-mobile-menu"
+            className="absolute right-0 top-0 h-full w-[86%] max-w-sm bg-white flex flex-col transition-transform duration-[380ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+            style={{ transform: open ? "translateX(0)" : "translateX(100%)", boxShadow: "-16px 0 40px -20px rgba(30,31,29,0.4)" }}
+          >
+            <div className="flex items-center justify-between h-[92px] px-6 border-b" style={{ borderColor: "#E6EAE2" }}>
+              {logo
+                ? <img src={logo} alt={tenant?.name || "Logo"} className="h-12 w-auto" width={220} height={140}/>
+                : <span className="kd-display text-base font-semibold" style={{ color: INK }}>{tenant?.name || ""}</span>}
+              <button
+                className="w-11 h-11 flex items-center justify-center -mr-2"
+                onClick={() => setOpen(false)}
+                aria-label="Close menu"
+              >
+                <Icon d="M6 6l12 12M6 18L18 6" className="w-6 h-6" color={INK} strokeWidth={1.8}/>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-6 py-6">
+              {links.map((l, i) => (
+                <WouterLink
+                  key={l.href}
+                  href={l.href}
+                  className="kd-drawer-item kd-display flex items-center justify-between gap-4 py-4 text-[1.35rem] font-semibold tracking-[-0.015em] border-b"
+                  style={{ color: INK, borderColor: "#EEF1EA", ["--kd-delay" as string]: `${90 + i * 45}ms` }}
+                  onClick={() => setOpen(false)}
+                >
+                  {l.label}
+                  <ArrowIcon className="w-4 h-4" color={GREEN_DEEP}/>
+                </WouterLink>
+              ))}
+            </div>
+
+            <div className="px-6 pb-8 pt-2 space-y-3">
               <WouterLink
-                key={l.href}
-                href={l.href}
-                className="kd-drawer-item kd-display flex items-center justify-between gap-4 py-4 text-[1.35rem] font-semibold tracking-[-0.015em] border-b"
-                style={{ color: INK, borderColor: "#EEF1EA", ["--kd-delay" as string]: `${90 + i * 45}ms` }}
+                href="/quote"
+                className="kd-btn kd-btn-solid flex items-center justify-center gap-2 rounded-full py-4 text-[14px] font-semibold text-white"
+                style={{ backgroundColor: GREEN_DEEP }}
                 onClick={() => setOpen(false)}
               >
-                {l.label}
-                <ArrowIcon className="w-4 h-4" color={GREEN_DEEP}/>
+                {settings?.ctaText || "Get a free quote"}
+                <ArrowIcon className="w-4 h-4" color="#FFFFFF"/>
               </WouterLink>
-            ))}
-          </div>
-
-          <div className="px-6 pb-8 pt-2 space-y-3">
-            <WouterLink
-              href="/quote"
-              className="kd-btn kd-btn-solid flex items-center justify-center gap-2 rounded-full py-4 text-[14px] font-semibold text-white"
-              style={{ backgroundColor: GREEN_DEEP }}
-              onClick={() => setOpen(false)}
-            >
-              {settings?.ctaText || "Get a free quote"}
-              <ArrowIcon className="w-4 h-4" color="#FFFFFF"/>
-            </WouterLink>
-            {phone && (
-              <a
-                href={`tel:${phone}`}
-                className="flex items-center justify-center gap-2.5 rounded-full py-4 text-[14px] font-semibold border"
-                style={{ borderColor: "#D9DFD1", color: INK }}
-              >
-                <PhoneIcon color={GREEN_DEEP}/>{phone}
-              </a>
-            )}
-          </div>
-        </nav>
-      </div>
-    </header>
+              {phone && (
+                <a
+                  href={`tel:${phone}`}
+                  className="flex items-center justify-center gap-2.5 rounded-full py-4 text-[14px] font-semibold border"
+                  style={{ borderColor: "#D9DFD1", color: INK }}
+                >
+                  <PhoneIcon color={GREEN_DEEP}/>{phone}
+                </a>
+              )}
+            </div>
+          </nav>
+        </div>
+        </>,
+        document.body,
+      )}
+    </>
   );
 }
 
