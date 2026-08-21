@@ -856,24 +856,25 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 under your garden, not a rate card.
               </p>
             </div>
-            {/* Set as one flowing line of names rather than a cloud of pills: the towns
-                are a list to read, and pill shapes at uneven widths just look scattered. */}
-            <p className="lg:pt-2 text-[1rem] sm:text-[1.05rem] leading-[2] tracking-[-0.005em]">
-              {areas.map((a: any, i: number) => (
-                <span key={a.id}>
-                  <a
-                    href={`${siteBase}/areas/${a.slug}`}
-                    className="kd-area transition-colors duration-200"
-                    style={{ color: INK }}
-                  >
-                    {a.name}
-                  </a>
-                  {i < areas.length - 1 && (
-                    <span aria-hidden="true" className="inline-block align-middle mx-3 h-[5px] w-[5px] rounded-[1px] rotate-45" style={{ backgroundColor: GREEN }}/>
-                  )}
-                </span>
+            {/* An even grid of outlined tiles. Equal cell widths are the point: a
+                wrapped inline list left orphaned separators at line starts, and
+                pill shapes at ragged widths looked scattered. No fill — the border
+                carries it, and hover moves the border and text to the brand green. */}
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+              {areas.map((a: any) => (
+                <a
+                  key={a.id}
+                  href={`${siteBase}/areas/${a.slug}`}
+                  className="kd-area group/area flex items-center justify-between gap-2 rounded-[3px] border px-4 py-3 text-[13.5px] font-medium leading-none transition-colors duration-200"
+                  style={{ borderColor: "#D9DFD1", color: INK }}
+                >
+                  <span className="truncate">{a.name}</span>
+                  <span className="opacity-0 -translate-x-1 transition-all duration-200 group-hover/area:opacity-100 group-hover/area:translate-x-0">
+                    <ArrowIcon className="w-3.5 h-3.5" color={GREEN_DEEP}/>
+                  </span>
+                </a>
               ))}
-            </p>
+            </div>
           </div>
         </section>
       )}
