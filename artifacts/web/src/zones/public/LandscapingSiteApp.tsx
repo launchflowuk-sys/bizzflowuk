@@ -75,9 +75,20 @@ function Star({ filled = true }: { filled?: boolean }) {
 }
 
 /** Section label — small, tracked, uppercase. Sets the editorial tone. */
-/** A real heading for a labelled block, not a kicker floating above another heading. */
+/**
+ * Heading for a block within a page. Set at a size a person would actually call a
+ * heading — small tracked capitals read as a system label rather than as writing,
+ * and once every block on the page wears one the whole thing looks generated.
+ */
 function SectionLabel({ children, onDark = false }: { children: React.ReactNode; onDark?: boolean }) {
-  return <h3 className="kd-display text-[11px] font-semibold uppercase tracking-[0.22em] mb-4" style={{ color: onDark ? GREEN : GREEN_DEEP }}>{children}</h3>;
+  return (
+    <h3
+      className="kd-display text-[1.4rem] sm:text-[1.6rem] font-semibold leading-tight tracking-[-0.02em] mb-6"
+      style={{ color: onDark ? "#FFFFFF" : INK }}
+    >
+      {children}
+    </h3>
+  );
 }
 
 /**
@@ -370,7 +381,7 @@ function FeatureStrip() {
           <div key={f.title} className={`flex gap-4 lg:px-7 ${i > 0 ? "lg:border-l" : ""}`} style={{ borderColor: "#DDE3D6" }}>
             <Icon d={f.icon} className="w-8 h-8 flex-shrink-0" color={GREEN_DEEP} strokeWidth={1.4}/>
             <div className="min-w-0">
-              <h3 className="text-[13.5px] font-semibold uppercase tracking-[0.06em] mb-1.5" style={{ color: INK }}>{f.title}</h3>
+              <h3 className="kd-display text-[1.05rem] font-semibold tracking-[-0.01em] mb-1.5" style={{ color: INK }}>{f.title}</h3>
               <p className="text-[13.5px] leading-relaxed" style={{ color: GREY }}>{f.body}</p>
             </div>
           </div>
@@ -754,7 +765,7 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
 
           {services.length > 0 && (
             <div>
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-4" style={{ color: GREEN }}>Services</h3>
+              <h3 className="kd-display text-[1.05rem] font-semibold tracking-[-0.01em] mb-5" style={{ color: "#FFFFFF" }}>Services</h3>
               <ul className="space-y-2.5">
                 {services.map((s: any) => (
                   <li key={s.id}>
@@ -767,7 +778,7 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
 
           {areas.length > 0 && (
             <div>
-              <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-4" style={{ color: GREEN }}>Areas we cover</h3>
+              <h3 className="kd-display text-[1.05rem] font-semibold tracking-[-0.01em] mb-5" style={{ color: "#FFFFFF" }}>Areas we cover</h3>
               <ul className="space-y-2.5">
                 {areas.map((a: any) => (
                   <li key={a.id}>
@@ -779,7 +790,7 @@ function KDFooter({ tenant, settings, tenantSlug }: { tenant: any; settings: any
           )}
 
           <div>
-            <h3 className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-4" style={{ color: GREEN }}>Get in touch</h3>
+            <h3 className="kd-display text-[1.05rem] font-semibold tracking-[-0.01em] mb-5" style={{ color: "#FFFFFF" }}>Get in touch</h3>
             <ul className="space-y-3">
               {phone && <li><a href={`tel:${phone}`} className="text-[13.5px] font-medium text-white">{phone}</a></li>}
               {email && <li><a href={`mailto:${email}`} className="text-[13.5px] break-all" style={{ color: "rgba(255,255,255,0.68)" }}>{email}</a></li>}
@@ -1082,7 +1093,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
                   <div key={label as string}>
                     <div className="pb-5 mb-9 border-b-2" style={{ borderColor: INK }}>
-                      <h3 className="kd-display text-[1.05rem] sm:text-[1.2rem] font-semibold uppercase tracking-[0.02em] leading-none" style={{ color: INK }}>
+                      <h3 className="kd-display text-[1.3rem] sm:text-[1.5rem] font-semibold tracking-[-0.02em] leading-none" style={{ color: INK }}>
                         {label as string}
                       </h3>
                     </div>
@@ -1288,7 +1299,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
               {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
                 <div key={label as string}>
                   <div className="pb-5 mb-10 border-b-2" style={{ borderColor: INK }}>
-                    <h2 className="kd-display text-[1.05rem] sm:text-[1.2rem] font-semibold uppercase tracking-[0.02em] leading-none" style={{ color: INK }}>
+                    <h2 className="kd-display text-[1.3rem] sm:text-[1.5rem] font-semibold tracking-[-0.02em] leading-none" style={{ color: INK }}>
                       {label as string}
                     </h2>
                   </div>
@@ -1382,7 +1393,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {benefits.length > 0 && (
               <div className="mt-14">
-                <SectionLabel>What's included</SectionLabel>
+                <SectionLabel>What you get</SectionLabel>
                 <ul className="grid gap-x-8 gap-y-3.5 sm:grid-cols-2 mt-2">
                   {benefits.map(b => (
                     <li key={b} className="flex gap-3 text-[15.5px] leading-snug" style={{ color: INK }}>
@@ -1395,7 +1406,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {steps.length > 0 && (
               <div className="mt-14">
-                <SectionLabel>How we do it</SectionLabel>
+                <SectionLabel>How the job runs</SectionLabel>
                 <ol className="mt-2 divide-y" style={{ borderColor: "#E6EAE2" }}>
                   {steps.map((st, i) => (
                     <li key={st.title} className="flex gap-6 py-6">
@@ -1440,7 +1451,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
             )}
             {serviceFaqs.length > 0 && (
               <div className="mt-14">
-                <SectionLabel>Questions about {s?.name?.toLowerCase() || "this work"}</SectionLabel>
+                <SectionLabel>Questions we get asked</SectionLabel>
                 <div className="divide-y" style={{ borderColor: "#E6EAE2" }}>
                   {serviceFaqs.map((f: any) => (
                     <details key={f.id} className="group py-5">
@@ -1467,7 +1478,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {areas.length > 0 && (
               <div className="mt-14">
-                <SectionLabel>Where we do this</SectionLabel>
+                <SectionLabel>Towns we cover</SectionLabel>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 mt-1">
                   {areas.map((ar: any) => (
                     <a
@@ -1489,7 +1500,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
           <aside className="lg:sticky lg:top-28 lg:self-start">
             <div className="rounded-xl p-8" style={{ backgroundColor: INK }}>
-              <h3 className="text-xl font-semibold text-white tracking-[-0.01em]">Get a price for {s?.name?.toLowerCase() || "this work"}</h3>
+              <h3 className="kd-display text-[1.35rem] font-semibold text-white tracking-[-0.015em] leading-tight">Get a price for {s?.name?.toLowerCase() || "this work"}</h3>
               <p className="mt-3 text-[14.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
                 Send photos with your enquiry and we can often quote without visiting.
               </p>
@@ -1503,7 +1514,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
             {related.length > 0 && (
               <div className="mt-10">
-                <SectionLabel>Related</SectionLabel>
+                <SectionLabel>Other things we do</SectionLabel>
                 <ul className="space-y-1 mt-1">
                   {related.map(r => (
                     <li key={r.id}>
@@ -1670,10 +1681,10 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
             )}
 
             <div className="mt-14 rounded-xl p-8 sm:p-10" style={{ backgroundColor: OFF_WHITE }}>
-              <SectionLabel>The build-up</SectionLabel>
-              <h3 className="kd-display text-[1.4rem] font-semibold tracking-[-0.02em] mb-8" style={{ color: INK }}>
-                What goes in before the finish.
-              </h3>
+              <SectionLabel>What goes in underneath</SectionLabel>
+              <p className="text-[15.5px] leading-relaxed mb-8 max-w-xl" style={{ color: GREY }}>
+                The depths we build to, so you have something specific to compare the other quotes against.
+              </p>
               <BuildUpDiagram/>
             </div>
           </div>
@@ -1707,7 +1718,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
 
             {nearby.length > 0 && (
               <div className="mt-10">
-                <SectionLabel>Nearby</SectionLabel>
+                <SectionLabel>Nearby towns</SectionLabel>
                 <div className="flex flex-wrap gap-2 mt-1">
                   {nearby.map(n => (
                     <a key={n.id} href={`${siteBase}/areas/${n.slug}`} className="kd-area rounded-[3px] border px-3 py-2 text-[13px] font-medium transition-colors duration-200" style={{ borderColor: "#D9DFD1", color: INK }}>
@@ -1802,13 +1813,13 @@ function ProjectDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
             <dl className="rounded-xl p-7 space-y-4" style={{ backgroundColor: OFF_WHITE }}>
               {c?.location && (
                 <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-1" style={{ color: GREEN_DEEP }}>Location</dt>
+                  <dt className="kd-display text-[0.95rem] font-semibold tracking-[-0.01em] mb-1" style={{ color: GREEN_DEEP }}>Location</dt>
                   <dd className="text-[15px] font-medium" style={{ color: INK }}>{c.location}</dd>
                 </div>
               )}
               {c?.projectDuration && (
                 <div>
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.18em] mb-1" style={{ color: GREEN_DEEP }}>Duration</dt>
+                  <dt className="kd-display text-[0.95rem] font-semibold tracking-[-0.01em] mb-1" style={{ color: GREEN_DEEP }}>Duration</dt>
                   <dd className="text-[15px] font-medium" style={{ color: INK }}>{c.projectDuration}</dd>
                 </div>
               )}
@@ -1944,19 +1955,19 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
             <ul className="space-y-6">
               {phone && (
                 <li>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-1.5" style={{ color: GREEN_DEEP }}>Phone</p>
+                  <p className="kd-display text-[1rem] font-semibold tracking-[-0.01em] mb-1.5" style={{ color: INK }}>Phone</p>
                   <a href={`tel:${phone}`} className="text-xl font-semibold" style={{ color: INK }}>{phone}</a>
                 </li>
               )}
               {email && (
                 <li>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-1.5" style={{ color: GREEN_DEEP }}>Email</p>
+                  <p className="kd-display text-[1rem] font-semibold tracking-[-0.01em] mb-1.5" style={{ color: INK }}>Email</p>
                   <a href={`mailto:${email}`} className="text-[16px] break-all" style={{ color: INK }}>{email}</a>
                 </li>
               )}
               {address && (
                 <li>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.2em] mb-1.5" style={{ color: GREEN_DEEP }}>Address</p>
+                  <p className="kd-display text-[1rem] font-semibold tracking-[-0.01em] mb-1.5" style={{ color: INK }}>Address</p>
                   <p className="text-[16px]" style={{ color: INK }}>{address}</p>
                 </li>
               )}
@@ -1980,20 +1991,20 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
               <form onSubmit={submit} className="space-y-4">
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div>
-                    <label htmlFor="kd-name" className="block text-[11px] font-semibold uppercase tracking-[0.16em] mb-2" style={{ color: INK }}>Name</label>
+                    <label htmlFor="kd-name" className="block text-[14px] font-semibold mb-2" style={{ color: INK }}>Name</label>
                     <input id="kd-name" required className={inputCls} style={inputStyle} value={form.senderName} onChange={e => setForm({ ...form, senderName: e.target.value })}/>
                   </div>
                   <div>
-                    <label htmlFor="kd-phone" className="block text-[11px] font-semibold uppercase tracking-[0.16em] mb-2" style={{ color: INK }}>Phone</label>
+                    <label htmlFor="kd-phone" className="block text-[14px] font-semibold mb-2" style={{ color: INK }}>Phone</label>
                     <input id="kd-phone" type="tel" className={inputCls} style={inputStyle} value={form.senderPhone} onChange={e => setForm({ ...form, senderPhone: e.target.value })}/>
                   </div>
                 </div>
                 <div>
-                  <label htmlFor="kd-email" className="block text-[11px] font-semibold uppercase tracking-[0.16em] mb-2" style={{ color: INK }}>Email</label>
+                  <label htmlFor="kd-email" className="block text-[14px] font-semibold mb-2" style={{ color: INK }}>Email</label>
                   <input id="kd-email" type="email" required className={inputCls} style={inputStyle} value={form.senderEmail} onChange={e => setForm({ ...form, senderEmail: e.target.value })}/>
                 </div>
                 <div>
-                  <label htmlFor="kd-message" className="block text-[11px] font-semibold uppercase tracking-[0.16em] mb-2" style={{ color: INK }}>Message</label>
+                  <label htmlFor="kd-message" className="block text-[14px] font-semibold mb-2" style={{ color: INK }}>Message</label>
                   <textarea id="kd-message" required rows={6} className={inputCls} style={inputStyle} value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}/>
                 </div>
                 {mutation.isError && (
