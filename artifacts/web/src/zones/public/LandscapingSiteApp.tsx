@@ -417,6 +417,66 @@ function RatingBadge({ reviews }: { reviews: any[] }) {
   );
 }
 
+
+/**
+ * Types a service name, holds it, deletes it, moves to the next. Used as the tail
+ * of a section heading so the phrase stays grammatical whichever service is showing.
+ *
+ * The visible run is aria-hidden and paired with a visually-hidden list of every
+ * service, so a screen reader and a crawler both get the full set as static text
+ * rather than whatever fragment happened to be typed at that moment.
+ *
+ * Under prefers-reduced-motion nothing types: the first name is simply shown.
+ */
+function RotatingService({ names, color }: { names: string[]; color: string }) {
+  const [index, setIndex] = useState(0);
+  const [text, setText] = useState(names[0] ?? "");
+  const [phase, setPhase] = useState<"hold" | "typing" | "deleting">("hold");
+  const reduced = typeof window !== "undefined"
+    && typeof window.matchMedia === "function"
+    && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  useEffect(() => {
+    if (reduced || names.length < 2) return;
+    const current = names[index] ?? "";
+    let delay = 90;
+
+    if (phase === "hold") delay = 1800;
+    else if (phase === "deleting") delay = 42;
+    else delay = 78;
+
+    const t = window.setTimeout(() => {
+      if (phase === "hold") { setPhase("deleting"); return; }
+      if (phase === "deleting") {
+        if (text.length === 0) {
+          const next = (index + 1) % names.length;
+          setIndex(next);
+          setPhase("typing");
+        } else {
+          setText(text.slice(0, -1));
+        }
+        return;
+      }
+      // typing
+      const target = names[index] ?? "";
+      if (text.length < target.length) setText(target.slice(0, text.length + 1));
+      else setPhase("hold");
+    }, delay);
+
+    return () => window.clearTimeout(t);
+  }, [text, phase, index, names, reduced]);
+
+  return (
+    <>
+      <span aria-hidden="true" style={{ color }}>
+        {reduced ? (names[0] ?? "") : text}
+        {!reduced && <span className="kd-caret" style={{ backgroundColor: color }} />}
+      </span>
+      <span className="sr-only">{names.join(", ")}</span>
+    </>
+  );
+}
+
 function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; tenantSlug: string }) {
   const siteBase = useSiteBase();
   const [location] = useLocation();
@@ -750,6 +810,12 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
   const headline = settings?.heroHeadline || `Landscaping &|Groundworks`;
   const [headlineTop, headlineAccent] = splitHeadline(headline);
   const tagline = settings?.heroSubheadline || "";
+  // Brand line first, then the rest of the services, de-duplicated.
+  const heroWords = useMemo(() => {
+    const names = services.map((x: any) => String(x.name));
+    const lead = headlineAccent || "Groundworks";
+    return [lead, ...names.filter(n => n.toLowerCase() !== lead.toLowerCase())];
+  }, [services, headlineAccent]);
   const sub = tenant?.description
     || "From the dig and the drainage to the finished garden — one contractor, start to finish.";
 
@@ -792,9 +858,13 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
               </p>
             )}
 
-            <h1 className="kd-display font-semibold uppercase leading-[0.94] tracking-[-0.025em] text-[2.2rem] sm:text-[2.8rem] lg:text-[3.25rem]">
+            <h1 className="kd-display font-semibold uppercase leading-[1.08] tracking-[-0.025em] text-[2.2rem] sm:text-[2.8rem] lg:text-[3.25rem]">
               <span className="block" style={{ color: INK }}>{headlineTop}</span>
-              {headlineAccent && <span className="block" style={{ color: GREEN }}>{headlineAccent}</span>}
+              {/* The tail cycles through what the business actually does. The brand
+                  line leads so the hero always opens on "Landscaping & Groundworks". */}
+              <span className="block">
+                <RotatingService names={heroWords} color={GREEN}/>
+              </span>
             </h1>
 
             {settings?.heroSubheadline && (
@@ -829,7 +899,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {services.length > 0 && (
         <section className="py-14 sm:py-20">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-10">
+            <div className="max-w-2xl mb-16">
               <Heading>Two halves of|the same job.</Heading>
               <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: GREY }}>
                 Most gardens need work below ground before anything goes on top. Doing both means
@@ -838,7 +908,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             </div>
 
             {isSplit ? (
-              <div className="grid gap-14 lg:grid-cols-2">
+              <div className="grid gap-16 lg:grid-cols-2">
                 {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
                   <div key={label as string}>
                     <div className="pb-5 mb-9 border-b-2" style={{ borderColor: INK }}>
@@ -846,7 +916,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                         {label as string}
                       </h3>
                     </div>
-                    <div className="grid gap-8 sm:grid-cols-2">
+                    <div className="grid gap-10 sm:grid-cols-2">
                       {(list as any[]).map(s => <ServiceCard key={s.id} service={s} tenantSlug={tenantSlug}/>)}
                     </div>
                   </div>
@@ -865,7 +935,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {settings?.showBeforeAfter !== false && beforeAfter.length > 0 && (
         <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-9">
+            <div className="max-w-2xl mb-14">
               <Heading>Drag to see|the difference.</Heading>
             </div>
             <BeforeAfterGallery items={beforeAfter} accent={GREEN_DEEP}/>
@@ -876,7 +946,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* 04 — THE SIGNATURE BLOCK: what's underneath */}
       <section className="py-14 sm:py-20" style={{ backgroundColor: INK }}>
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-          <div className="max-w-2xl mb-10">
+          <div className="max-w-2xl mb-16">
             <Heading onDark>Anyone can lay a nice patio. It's the six inches below it that decide whether it's still flat in five years.</Heading>
             <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.66)" }}>
               Most quotes tell you the finish and stay quiet about the build-up. Here's ours, in
@@ -922,7 +992,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {settings?.showReviews !== false && reviews.length > 0 && (
         <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-9">
+            <div className="max-w-2xl mb-14">
               <Heading>What customers|said.</Heading>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -959,7 +1029,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
             {/* Even grid of outlined tiles: equal cell widths, so a list of names of
                 very different lengths cannot sit raggedly. Outline only, no fill. */}
-            <div className="mt-12 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            <div className="mt-16 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               {areas.map((a: any) => (
                 <a
                   key={a.id}
@@ -982,7 +1052,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {faqs.length > 0 && (
         <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-9">
+            <div className="max-w-2xl mb-14">
               <Heading>Before|you ask.</Heading>
             </div>
             <div className="max-w-3xl divide-y" style={{ borderColor: "#E6EAE2" }}>
@@ -1325,7 +1395,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
 
       <section className="py-20 sm:py-24" style={{ backgroundColor: OFF_WHITE }}>
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-          <div className="max-w-2xl mb-9">
+          <div className="max-w-2xl mb-14">
             <Heading>The bit you can't see once it's finished.</Heading>
           </div>
           <BuildUpDiagram/>

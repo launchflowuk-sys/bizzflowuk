@@ -364,3 +364,25 @@
 @media (prefers-reduced-motion: reduce) {
   .kd-pulse { animation: none; opacity: 0.3; }
 }
+
+
+/* Typewriter caret for the rotating service name. Sized from the current font
+   so it scales with the heading instead of being pinned to a pixel height. */
+.kd-caret {
+  display: inline-block;
+  width: 0.06em;
+  height: 0.82em;
+  margin-left: 0.07em;
+  vertical-align: baseline;
+  transform: translateY(0.06em);
+  animation: kd-caret-blink 1100ms steps(1, end) infinite;
+}
+
+@keyframes kd-caret-blink {
+  0%, 45%   { opacity: 1; }
+  46%, 100% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kd-caret { display: none; }
+}
