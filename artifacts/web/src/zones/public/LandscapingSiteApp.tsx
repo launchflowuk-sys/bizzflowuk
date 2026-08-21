@@ -711,7 +711,7 @@ function Breadcrumbs({ trail }: { trail: { name: string; url: string }[] }) {
 /** Inner-page header. Deliberately typographic rather than a photo banner. */
 function PageHead({ title, intro }: { title: string; intro?: string }) {
   return (
-    <section className="pt-12 pb-10 sm:pt-16 sm:pb-12" style={{ backgroundColor: OFF_WHITE }}>
+    <section className="pt-14 pb-12 sm:pt-20 sm:pb-16" style={{ backgroundColor: OFF_WHITE }}>
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
         <h1 className="kd-display text-[2rem] sm:text-[2.5rem] lg:text-[3rem] font-semibold leading-[1.08] tracking-[-0.025em] max-w-3xl" style={{ color: INK }}>{title}</h1>
         {intro && <p className="mt-6 text-lg leading-relaxed max-w-2xl" style={{ color: GREY }}>{intro}</p>}
@@ -1152,7 +1152,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
       ]}/>
       <PageHead title="Services" intro="Everything from the excavation and drainage through to the planting and the final sweep-up."/>
 
-      <section className="py-16 sm:py-20">
+      <section className="py-14 sm:py-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           {isSplit ? (
             <div className="space-y-20">
@@ -1230,14 +1230,14 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
       <PageHead title={s?.name || ""} intro={s?.tagline || undefined}/>
 
       {s?.heroImageUrl && (
-        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 -mt-4 mb-16">
+        <div className="max-w-[1400px] mx-auto px-5 sm:px-8 pt-12 sm:pt-16 mb-14 sm:mb-16">
           <div className="aspect-[16/7] overflow-hidden rounded-xl" style={{ backgroundColor: PALE }}>
             <img src={s.heroImageUrl} alt={s.name} className="w-full h-full object-cover" fetchPriority="high"/>
           </div>
         </div>
       )}
 
-      <section className="pb-20">
+      <section className="pb-14 sm:pb-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-20">
           <div>
             {(s?.content || s?.description) && (
@@ -1339,7 +1339,7 @@ function ProjectsPage({ tenantSlug }: { tenantSlug: string }) {
       ]}/>
       <PageHead title="Projects" intro="Finished work, with what was actually involved."/>
 
-      <section className="py-16 sm:py-20">
+      <section className="py-14 sm:py-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           {projects.length === 0 ? (
             <p className="text-[17px]" style={{ color: GREY }}>Project write-ups are on their way.</p>
@@ -1382,7 +1382,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
       ]}/>
       <PageHead title="Areas we cover" intro="Ground conditions change town to town round here — which is why we quote on what's under your garden, not a rate card."/>
 
-      <section className="py-16 sm:py-20">
+      <section className="py-14 sm:py-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           {areas.length === 0 ? (
             <p className="text-[17px]" style={{ color: GREY }}>Coverage details coming soon.</p>
@@ -1422,7 +1422,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
       ]}/>
       <PageHead title={`About ${tenant?.name || "us"}`}/>
 
-      <section className="pb-20">
+      <section className="pb-14 sm:pb-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-2 lg:gap-20 items-start">
           <div className="text-[17px] leading-[1.75] space-y-5" style={{ color: GREY }}>
             {(settings?.aboutText || tenant?.description || "").split("\n").filter(Boolean).map((p: string, i: number) => <p key={i}>{p}</p>)}
@@ -1436,7 +1436,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      <section className="py-20 sm:py-24" style={{ backgroundColor: OFF_WHITE }}>
+      <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
           <div className="max-w-2xl mb-14">
             <Heading>The bit you can't see once it's finished.</Heading>
@@ -1463,7 +1463,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Get a quote", url: `${origin}${siteBase}/quote` },
       ]}/>
       <PageHead title="Tell us about the job" intro="The more detail you give us, the closer the first number will be. Photos help most."/>
-      <div className="pb-24">
+      <div className="pb-14 sm:pb-20">
         <QuoteFormSection tenantSlug={tenantSlug} accent={GREEN_DEEP} panel={INK}/>
       </div>
     </Shell>
@@ -1483,7 +1483,7 @@ function CalculatorPage({ tenantSlug }: { tenantSlug: string }) {
         { name: "Cost guide", url: `${origin}${siteBase}/calculator` },
       ]}/>
       <PageHead title="What it costs" intro="A ballpark before you pick up the phone. Everyone else makes you ring to find out."/>
-      <div className="pb-24">
+      <div className="pb-14 sm:pb-20">
         <PriceCalculatorSection tenantSlug={tenantSlug} accent={GREEN_DEEP} panel={INK}/>
       </div>
     </Shell>
@@ -1522,7 +1522,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
       ]}/>
       <PageHead title="Get in touch"/>
 
-      <section className="pb-24">
+      <section className="pb-14 sm:pb-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8 grid gap-14 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.2fr)] lg:gap-20">
           <div>
             <ul className="space-y-6">
@@ -1606,11 +1606,32 @@ function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "
     <Shell tenantSlug={tenantSlug}>
       <PageSEO title={`${title} | ${tenant?.name || ""}`} description={title} siteName={tenant?.name} noindex/>
       <PageHead title={title}/>
-      <section className="pb-24">
+      <section className="pb-14 sm:pb-20">
         <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
-          <div className="max-w-3xl text-[16px] leading-[1.8] space-y-5" style={{ color: GREY }}>
+          <div className="max-w-3xl text-[16px] leading-[1.8]" style={{ color: GREY }}>
             {body
-              ? String(body).split("\n").filter(Boolean).map((p: string, i: number) => <p key={i}>{p}</p>)
+              ? String(body).split(/\r?\n/).filter(Boolean).map((line: string, i: number) => {
+                  // "## " marks a section heading and "- " a bullet; anything else is a
+                  // paragraph. A policy of any real length is unreadable as one flat run,
+                  // and tenants edit this as plain text in the dashboard.
+                  const t = line.trim();
+                  if (t.startsWith("## ")) {
+                    return (
+                      <h2 key={i} className="kd-display text-[1.15rem] font-semibold mt-10 mb-3 first:mt-0" style={{ color: INK }}>
+                        {t.slice(3)}
+                      </h2>
+                    );
+                  }
+                  if (t.startsWith("- ")) {
+                    return (
+                      <p key={i} className="flex gap-3 mb-2">
+                        <span aria-hidden="true" className="mt-[0.7em] h-[5px] w-[5px] flex-shrink-0 rounded-[1px]" style={{ backgroundColor: GREEN_DEEP }}/>
+                        <span>{t.slice(2)}</span>
+                      </p>
+                    );
+                  }
+                  return <p key={i} className="mb-4">{t}</p>;
+                })
               : <p>This page is being prepared. Please contact us in the meantime.</p>}
           </div>
         </div>
