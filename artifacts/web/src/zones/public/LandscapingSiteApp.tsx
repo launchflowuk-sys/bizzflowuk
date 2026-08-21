@@ -89,9 +89,9 @@ function Heading({ children, onDark = false, className = "", rule = true }: { ch
   const [lead, accent] = raw && raw.includes("|") ? splitHeadline(raw) : [raw, ""];
   return (
     <>
-      {rule && <span className="block h-[3px] w-14 mb-7" style={{ backgroundColor: onDark ? GREEN : GREEN_DEEP }}/>}
+      {rule && <span className="block h-[2px] w-9 mb-5" style={{ backgroundColor: onDark ? GREEN : GREEN_DEEP }}/>}
       <h2
-        className={`kd-display text-[2.1rem] sm:text-[3rem] lg:text-[3.75rem] font-semibold leading-[1.02] tracking-[-0.032em] ${className}`}
+        className={`kd-display text-[1.6rem] sm:text-[1.95rem] lg:text-[2.25rem] font-semibold leading-[1.15] tracking-[-0.02em] max-w-3xl ${className}`}
         style={{ color: onDark ? "#FFFFFF" : INK, textWrap: "balance" } as React.CSSProperties}
       >
         {raw === null ? children : (
@@ -535,9 +535,9 @@ function Breadcrumbs({ trail }: { trail: { name: string; url: string }[] }) {
 /** Inner-page header. Deliberately typographic rather than a photo banner. */
 function PageHead({ title, intro }: { title: string; intro?: string }) {
   return (
-    <section className="pt-16 pb-12 sm:pt-24 sm:pb-16" style={{ backgroundColor: OFF_WHITE }}>
+    <section className="pt-12 pb-10 sm:pt-16 sm:pb-12" style={{ backgroundColor: OFF_WHITE }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-        <h1 className="kd-display text-[2.6rem] sm:text-[3.4rem] lg:text-[4.5rem] font-semibold leading-[0.98] tracking-[-0.035em] max-w-4xl" style={{ color: INK }}>{title}</h1>
+        <h1 className="kd-display text-[2rem] sm:text-[2.5rem] lg:text-[3rem] font-semibold leading-[1.08] tracking-[-0.025em] max-w-3xl" style={{ color: INK }}>{title}</h1>
         {intro && <p className="mt-6 text-lg leading-relaxed max-w-2xl" style={{ color: GREY }}>{intro}</p>}
       </div>
     </section>
@@ -605,7 +605,7 @@ function QuoteCTA({ tenantSlug, tenant, settings }: { tenantSlug: string; tenant
   const siteBase = useSiteBase();
   const phone = settings?.phone || tenant?.phone;
   return (
-    <section className="py-20 sm:py-28" style={{ backgroundColor: INK }}>
+    <section className="py-14 sm:py-20" style={{ backgroundColor: INK }}>
       <div className="max-w-[1240px] mx-auto px-5 sm:px-8 text-center">
         <Heading onDark className="max-w-3xl mx-auto">Tell us about the job and we'll put a written quote together.</Heading>
         <p className="mt-5 text-base leading-relaxed max-w-xl mx-auto" style={{ color: "rgba(255,255,255,0.65)" }}>
@@ -688,26 +688,26 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           )}
 
           {/* Copy */}
-          <div className="kd-hero-in relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1240px)/2))] lg:pr-14 py-14 sm:py-20 lg:py-28 flex flex-col justify-center">
+          <div className="kd-hero-in relative z-10 px-5 sm:px-8 lg:pl-[max(2rem,calc((100vw-1240px)/2))] lg:pr-14 py-12 sm:py-16 lg:py-20 flex flex-col justify-center">
             {tenant?.city && (
               <p className="flex items-center gap-2 text-[12px] font-semibold uppercase tracking-[0.18em] mb-6" style={{ color: INK }}>
                 <PinIcon color={GREEN_DEEP}/>Based in {tenant.city}, UK
               </p>
             )}
 
-            <h1 className="kd-display font-semibold uppercase leading-[0.94] tracking-[-0.025em] text-[2.6rem] sm:text-[3.6rem] lg:text-[4.1rem]">
+            <h1 className="kd-display font-semibold uppercase leading-[0.94] tracking-[-0.025em] text-[2.2rem] sm:text-[2.8rem] lg:text-[3.25rem]">
               <span className="block" style={{ color: INK }}>{headlineTop}</span>
               {headlineAccent && <span className="block" style={{ color: GREEN }}>{headlineAccent}</span>}
             </h1>
 
             {settings?.heroSubheadline && (
-              <p className="kd-display mt-6 text-[15px] sm:text-[17px] font-semibold uppercase tracking-[0.05em]" style={{ color: INK }}>
+              <p className="kd-display mt-5 text-[13px] sm:text-[14px] font-semibold uppercase tracking-[0.09em]" style={{ color: INK }}>
                 {tagline}
               </p>
             )}
             <span className="block h-[3px] w-16 mt-6" style={{ backgroundColor: GREEN_DEEP }}/>
 
-            <p className="mt-6 text-[15.5px] sm:text-base leading-[1.75] max-w-md" style={{ color: GREY }}>{sub}</p>
+            <p className="mt-5 text-[15px] leading-[1.7] max-w-md" style={{ color: GREY }}>{sub}</p>
 
             <div className="mt-9 flex flex-wrap gap-3.5">
               <Btn href={`${siteBase}/services`} className="!rounded-none">
@@ -730,11 +730,11 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* 02 — SERVICES, split into the two sides of the business */}
       {services.length > 0 && (
-        <section className="py-20 sm:py-28">
+        <section className="py-14 sm:py-20">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-14">
+            <div className="max-w-2xl mb-10">
               <Heading>Two halves of|the same job.</Heading>
-              <p className="mt-5 text-[17px] leading-relaxed" style={{ color: GREY }}>
+              <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: GREY }}>
                 Most gardens need work below ground before anything goes on top. Doing both means
                 no gap between trades, and nobody to blame when the levels are wrong.
               </p>
@@ -745,7 +745,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
                 {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
                   <div key={label as string}>
                     <div className="pb-5 mb-9 border-b-2" style={{ borderColor: INK }}>
-                      <h3 className="kd-display text-[1.6rem] sm:text-[2rem] font-semibold uppercase tracking-[-0.01em] leading-none" style={{ color: INK }}>
+                      <h3 className="kd-display text-[1.05rem] sm:text-[1.2rem] font-semibold uppercase tracking-[0.02em] leading-none" style={{ color: INK }}>
                         {label as string}
                       </h3>
                     </div>
@@ -766,9 +766,9 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* 03 — BEFORE/AFTER */}
       {settings?.showBeforeAfter !== false && beforeAfter.length > 0 && (
-        <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
+        <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-12">
+            <div className="max-w-2xl mb-9">
               <Heading>Drag to see|the difference.</Heading>
             </div>
             <BeforeAfterGallery items={beforeAfter} accent={GREEN_DEEP}/>
@@ -777,11 +777,11 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       )}
 
       {/* 04 — THE SIGNATURE BLOCK: what's underneath */}
-      <section className="py-20 sm:py-28" style={{ backgroundColor: INK }}>
+      <section className="py-14 sm:py-20" style={{ backgroundColor: INK }}>
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-          <div className="max-w-2xl mb-14">
+          <div className="max-w-2xl mb-10">
             <Heading onDark>Anyone can lay a nice patio. It's the six inches below it that decide whether it's still flat in five years.</Heading>
-            <p className="mt-6 text-[17px] leading-relaxed" style={{ color: "rgba(255,255,255,0.66)" }}>
+            <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: "rgba(255,255,255,0.66)" }}>
               Most quotes tell you the finish and stay quiet about the build-up. Here's ours, in
               full — so you've got something real to compare the other quotes against.
             </p>
@@ -795,9 +795,9 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* 05 — PROJECTS */}
       {projects.length > 0 && (
-        <section className="py-20 sm:py-28">
+        <section className="py-14 sm:py-20">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="flex flex-wrap items-end justify-between gap-6 mb-12">
+            <div className="flex flex-wrap items-end justify-between gap-6 mb-9">
               <div className="max-w-xl">
                 <Heading>Jobs we've|finished.</Heading>
               </div>
@@ -823,9 +823,9 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* 06 — REVIEWS */}
       {settings?.showReviews !== false && reviews.length > 0 && (
-        <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
+        <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-12">
+            <div className="max-w-2xl mb-9">
               <Heading>What customers|said.</Heading>
             </div>
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -847,18 +847,18 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* 07 — AREAS */}
       {areas.length > 0 && (
-        <section className="py-20 sm:py-28">
+        <section className="py-14 sm:py-20">
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8 grid gap-12 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1fr)] lg:gap-20">
             <div>
               <Heading>{`Covering ${tenant?.city || "Essex"}|and the surrounding towns.`}</Heading>
-              <p className="mt-5 text-[17px] leading-relaxed" style={{ color: GREY }}>
+              <p className="mt-4 text-[15.5px] leading-relaxed" style={{ color: GREY }}>
                 Ground conditions change street to street around here. We quote on what's actually
                 under your garden, not a rate card.
               </p>
             </div>
             {/* Set as one flowing line of names rather than a cloud of pills: the towns
                 are a list to read, and pill shapes at uneven widths just look scattered. */}
-            <p className="lg:pt-2 text-[1.35rem] sm:text-[1.6rem] leading-[1.5] tracking-[-0.015em]">
+            <p className="lg:pt-2 text-[1rem] sm:text-[1.05rem] leading-[2] tracking-[-0.005em]">
               {areas.map((a: any, i: number) => (
                 <span key={a.id}>
                   <a
@@ -880,9 +880,9 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* 08 — FAQ */}
       {faqs.length > 0 && (
-        <section className="py-20 sm:py-28" style={{ backgroundColor: OFF_WHITE }}>
+        <section className="py-14 sm:py-20" style={{ backgroundColor: OFF_WHITE }}>
           <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-            <div className="max-w-2xl mb-12">
+            <div className="max-w-2xl mb-9">
               <Heading>Before|you ask.</Heading>
             </div>
             <div className="max-w-3xl divide-y" style={{ borderColor: "#E6EAE2" }}>
@@ -946,7 +946,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
               {[["Landscaping", landscaping], ["Groundworks", groundworks]].map(([label, list]) => (
                 <div key={label as string}>
                   <div className="pb-5 mb-10 border-b-2" style={{ borderColor: INK }}>
-                    <h2 className="kd-display text-[1.6rem] sm:text-[2rem] font-semibold uppercase tracking-[-0.01em] leading-none" style={{ color: INK }}>
+                    <h2 className="kd-display text-[1.05rem] sm:text-[1.2rem] font-semibold uppercase tracking-[0.02em] leading-none" style={{ color: INK }}>
                       {label as string}
                     </h2>
                   </div>
@@ -1225,7 +1225,7 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
 
       <section className="py-20 sm:py-24" style={{ backgroundColor: OFF_WHITE }}>
         <div className="max-w-[1240px] mx-auto px-5 sm:px-8">
-          <div className="max-w-2xl mb-12">
+          <div className="max-w-2xl mb-9">
             <Heading>The bit you can't see once it's finished.</Heading>
           </div>
           <BuildUpDiagram/>
