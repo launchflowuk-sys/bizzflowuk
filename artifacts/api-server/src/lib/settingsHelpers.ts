@@ -30,6 +30,7 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   "heroHeadline", "heroSubheadline", "heroImageUrl", "ctaText", "ctaUrl",
   "aboutText", "aboutImageUrl", "serviceAreaText", "footerText",
   "email", "phone", "address", "city", "description",
+  "serviceBase", "serviceArea",
   "socialFacebook", "socialInstagram", "socialTwitter", "socialLinkedin",
   "googleAnalyticsId", "googleAdsConversionId", "googleAdsConversionLabel", "termsContent", "privacyContent",
   "createdAt", "updatedAt",

@@ -4202,6 +4202,12 @@ function SettingsPage() {
           {field("city", "City")}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <h2 className="font-semibold text-slate-900">Where You Work</h2>
+          <p className="text-xs text-slate-500 -mt-2">These two drive the wording across your public website — headings, page copy and search listings. They are separate from the postal address above.</p>
+          {field("serviceBase", "Based In", "text", "The town you work out of, e.g. Grays, Thurrock")}
+          {field("serviceArea", "Areas You Cover", "text", "The region you sell into, e.g. Essex & London")}
+        </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-slate-900">Email Notifications</h2>
           {field("adminNotificationEmail", "Admin Notification Email", "email", "Receives emails when a lead/quote/contact form is submitted")}
           {field("customerEmail", "Customer Confirmation Email", "email", "Shown to customers as your contact email in confirmation messages")}

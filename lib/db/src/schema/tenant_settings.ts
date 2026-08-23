@@ -19,6 +19,11 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   email: text("email"),
   address: text("address"),
   city: text("city"),
+  // Marketing location, separate from the postal address above. serviceBase is where they trade
+  // FROM ("Grays, Thurrock"); serviceArea is the region they SELL INTO ("Essex & London"). The
+  // public templates read these instead of hardcoding one tenant's patch into shared copy.
+  serviceBase: text("service_base"),
+  serviceArea: text("service_area"),
   googleMapsUrl: text("google_maps_url"),
   facebookUrl: text("facebook_url"),
   instagramUrl: text("instagram_url"),

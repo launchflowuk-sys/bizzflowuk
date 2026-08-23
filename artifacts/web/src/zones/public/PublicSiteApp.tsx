@@ -19,11 +19,10 @@ const LIGHT_BG = "#F6F8FB";
 const TEXT = "#26323F";
 const MUTED = "#64717F";
 
-const ALL_AREAS = [
-  "Grays","Thurrock","Basildon","Brentwood","Romford","Dagenham",
-  "Barking","Ilford","Upminster","Hornchurch","Rainham","Chelmsford",
-  "Southend","Dartford","Gravesend","Chigwell","Epping","London","Essex",
-];
+// Intentionally empty. This used to hold one tenant's towns, which meant every other tenant's
+// Areas page advertised somebody else's patch. Areas now come only from the tenant's own rows;
+// a tenant with none simply shows no town list.
+const ALL_AREAS: string[] = [];
 
 const AREA_IMAGES: Record<string, string> = {
   "grays":      "/gal-monocouche-grays.webp",
@@ -71,10 +70,10 @@ const PROCESS_STEPS = [
   { n: 5, title: "Clean Modern Finish", body: "Your property is completed with a sharp, durable exterior render." },
 ];
 
-const WHY_POINTS = [
+const whyPoints = (base: string, area: string) => [
   "Rendering specialists — not general builders",
-  "Based locally in Grays, Thurrock",
-  "Serving Essex and London",
+  base ? `Based locally in ${base}` : "Locally based and independent",
+  `Serving ${area}`,
   "Clean modern finishes on every project",
   "Photo-based quote requests available",
   "Clear communication from enquiry to completion",
@@ -122,13 +121,40 @@ export function JsonLd({ data }: { data: Record<string, unknown> | Record<string
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />;
 }
 
+/**
+ * Every business-specific string on this template resolves through here.
+ *
+ * This template is shared by every rendering tenant, and `tenants.industry` DEFAULTS to
+ * 'rendering', so a tenant created without an industry lands on it too. Hardcoding one client's
+ * name, town or region into the copy therefore advertises that client on somebody else's
+ * website — which is what happened on the landscaping tenant's quote page (commit 6a80fde).
+ *
+ * serviceBase / serviceArea are tenant_settings columns (migration 0023): where they trade FROM,
+ * and the region they SELL INTO. They fall back to the postal city and finally to neutral
+ * wording — never to another tenant's patch.
+ */
+function brandCopy(tenant: any, settings: any) {
+  const name = tenant?.name || "Our team";
+  const base = settings?.serviceBase || settings?.city || tenant?.city || "";
+  const area = settings?.serviceArea || base || "your area";
+  const uniq = (xs: string[]) => xs.filter(Boolean).filter((v, i, a) => a.indexOf(v) === i);
+  return {
+    name,
+    base,                                    // "Grays, Thurrock"
+    area,                                    // "Essex & London"
+    hasBase: !!base,
+    reach: uniq([base, area]).join(", "),    // "Grays, Thurrock, Essex & London"
+    areasServed: uniq([base, ...String(area).split(/\s*(?:&|and|,)\s*/)].map(v => v.trim())),
+  };
+}
+
 /** Shared LocalBusiness schema — same facts every page can reuse (address, phone, sameAs links, rating). */
 function localBusinessSchema(tenant: any, settings: any, siteUrl: string, avgRating?: number, reviewCount?: number) {
   const sameAs = [settings?.facebookUrl, settings?.instagramUrl, settings?.twitterUrl, settings?.youtubeUrl, settings?.tiktokUrl].filter(Boolean);
   return {
     "@context": "https://schema.org",
     "@type": "HomeAndConstructionBusiness",
-    name: tenant?.name || "AMO Rendering",
+    name: brandCopy(tenant, settings).name,
     image: settings?.logoUrl || settings?.heroImageUrl || undefined,
     url: siteUrl,
     telephone: settings?.phone || undefined,
@@ -139,7 +165,7 @@ function localBusinessSchema(tenant: any, settings: any, siteUrl: string, avgRat
       addressLocality: settings?.city || undefined,
       addressCountry: "GB",
     } : undefined,
-    areaServed: ["Grays", "Thurrock", "Essex", "London"],
+    areaServed: brandCopy(tenant, settings).areasServed,
     ...(sameAs.length ? { sameAs } : {}),
     ...(avgRating && reviewCount ? {
       aggregateRating: { "@type": "AggregateRating", ratingValue: avgRating, reviewCount },
@@ -440,7 +466,7 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
   const burgerHover = isOpaque ? "hover:bg-slate-100" : "hover:bg-white/10";
   const logoSrc = isOpaque
     ? (settings?.logoUrl || "/amo-logo-dark.webp")
-    : "/amo-logo-icon.webp";
+    : (settings?.logoUrl || "/amo-logo-icon.webp");
 
   return (
     <nav className={navClass}>
@@ -449,7 +475,7 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
         <a href={siteBase || '/'} className="flex-shrink-0">
           <img
             src={logoSrc}
-            alt={tenant?.name || "AMO Rendering"}
+            alt={tenant?.name || "Logo"}
             className="h-14 sm:h-16 w-auto object-contain transition-all duration-300"
           />
         </a>
@@ -633,13 +659,14 @@ function SiteFooter({ tenant, settings }: any) {
   );
 }
 
-function QuoteCTASection({ tenantSlug, phone }: { tenantSlug: string; phone?: string }) {
+function QuoteCTASection({ tenantSlug, phone, businessName }: { tenantSlug: string; phone?: string; businessName?: string }) {
   const siteBase = useSiteBase();
+  const who = businessName || "our team";
   return (
     <section style={{ backgroundColor: NAVY }} className="py-16">
       <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center text-white space-y-6">
         <h2 className="text-3xl font-bold">Ready to Modernise Your Property Exterior?</h2>
-        <p className="text-lg text-slate-300">Send us your details and upload photos of your property. AMO Rendering will review your project and help you choose the right rendering solution.</p>
+        <p className="text-lg text-slate-300">Send us your details and upload photos of your property. {who} will review your project and help you choose the right rendering solution.</p>
         <div className="flex flex-wrap justify-center gap-4">
           <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
           <OutlineBtn href={`${siteBase}/visualiser`} dark>Upload Property Photos</OutlineBtn>
@@ -650,11 +677,11 @@ function QuoteCTASection({ tenantSlug, phone }: { tenantSlug: string; phone?: st
   );
 }
 
-function TrustBar() {
+function TrustBar({ base, area }: { base?: string; area?: string }) {
   return (
     <div style={{ backgroundColor: "#E8F3FF" }} className="border-b border-[#8EC8FF]/40 py-3">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex flex-wrap items-center justify-center gap-6 text-sm font-medium" style={{ color: TEXT }}>
-        {["Rendering Specialists","Based in Grays, Thurrock","Essex & London","Free Quote Requests","Photo Upload Available"].map(t => (
+        {["Rendering Specialists", base ? `Based in ${base}` : null, area || null, "Free Quote Requests","Photo Upload Available"].filter(Boolean).map(t => (
           <div key={t} className="flex items-center gap-1.5">
             <CheckIcon color={BLUE}/>
             {t}
@@ -671,18 +698,21 @@ function TrustBar() {
 
 function HomePage({ tenantSlug }: { tenantSlug: string }) {
   const siteBase = useSiteBase();
+  const { data: homeAreaRows } = useListPublicAreas(tenantSlug);
   const origin = useSiteOrigin();
   const { data, isLoading } = useGetPublicSite(tenantSlug);
   if (isLoading) return <Spinner/>;
   if (!data) return <div className="p-8 text-center text-slate-500">Site not found</div>;
   const { tenant, settings, featuredServices, featuredReviews, recentCaseStudies, featuredBeforeAfter, globalFaqs } = data as any;
+  const brand = brandCopy(tenant, settings);
+  const homeAreas = ((homeAreaRows as any[]) || []).map(a => a.name).filter(Boolean) as string[];
   const services = featuredServices?.length ? featuredServices : STATIC_SERVICES;
   const reviewList = (featuredReviews as any[]) || [];
   const avgRating = reviewList.length ? Math.round((reviewList.reduce((s, r) => s + r.rating, 0) / reviewList.length) * 10) / 10 : undefined;
 
   return (
     <div>
-      <PageSEO title={`${tenant?.name || 'AMO Rendering'} | Silicone Render Specialists — Grays, Essex & London`} description={settings?.seoDescription || "AMO Rendering provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across Grays, Thurrock, Essex and London. Request a free quote today."} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
+      <PageSEO title={`${brand.name} | Silicone Render Specialists — ${brand.reach}`} description={settings?.seoDescription || `${brand.name} provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across ${brand.reach}. Request a free quote today.`} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
       <JsonLd data={localBusinessSchema(tenant, settings, origin, avgRating, reviewList.length)}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
@@ -704,20 +734,20 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 pt-32 pb-24 md:pt-40 md:pb-32 w-full">
           <div className="max-w-2xl space-y-7">
             <div className="inline-flex items-center gap-2 rounded-full border border-[#1F8CFF]/40 bg-[#1F8CFF]/15 px-4 py-1.5 text-xs font-semibold text-[#8EC8FF] tracking-wide uppercase">
-              Silicone Render Specialists · Grays, Thurrock
+              Silicone Render Specialists{brand.hasBase ? ` · ${brand.base}` : ""}
             </div>
             <h1 className="text-4xl sm:text-5xl xl:text-6xl font-bold text-white leading-tight tracking-tight drop-shadow-sm">
               Transform Tired Exterior Walls With Premium Silicone Rendering
             </h1>
             <p className="text-lg text-slate-200 leading-relaxed">
-              AMO Rendering provides silicone rendering, monocouche render, K Rend, external wall insulation and pebbledash removal for homes and properties across Grays, Thurrock, Essex and London.
+              {brand.name} provides silicone rendering, monocouche render, K Rend, external wall insulation and pebbledash removal for homes and properties across {brand.reach}.
             </p>
             <div className="flex flex-wrap gap-4">
               <BlueBtn href={`${siteBase}/quote`} className="h-12 px-8 text-base">Request a Free Quote</BlueBtn>
               <OutlineBtn href={`${siteBase}/gallery`} dark>View Before &amp; After Work</OutlineBtn>
             </div>
             <div className="grid grid-cols-2 gap-3 pt-2">
-              {["Based in Grays, Thurrock","Serving Essex & London","Silicone Render Specialists","Photo Quotes Available"].map(t => (
+              {[brand.hasBase ? `Based in ${brand.base}` : null, `Serving ${brand.area}`, "Silicone Render Specialists","Photo Quotes Available"].filter(Boolean).map(t => (
                 <div key={t} className="flex items-center gap-2 text-sm text-slate-200">
                   <CheckIcon color="#8EC8FF"/>
                   {t}
@@ -728,7 +758,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      <TrustBar/>
+      <TrustBar base={brand.base} area={brand.area}/>
 
       {/* Transformations */}
       <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
@@ -745,15 +775,15 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           <div className="rounded-3xl overflow-hidden shadow-xl border border-slate-200 bg-white">
             <img
               src="/ba-silicone.webp"
-              alt="Silicone render before and after — Essex property transformation by AMO Rendering"
+              alt={`Silicone render before and after — property transformation by ${brand.name}`}
               className="w-full object-cover"
             />
             {/* Trust strip below the image */}
             <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100">
               {[
-                { icon: "🛡️", label: "Up to 15-Year Guarantee", sub: "Written & backed by AMO" },
+                { icon: "🛡️", label: "Up to 15-Year Guarantee", sub: `Written & backed by ${brand.name}` },
                 { icon: "🌧️", label: "Weather-Resistant Finish", sub: "Silicone repels rain & damp" },
-                { icon: "📍", label: "Essex & London", sub: "Local specialists, fast quotes" },
+                { icon: "📍", label: brand.area, sub: "Local specialists, fast quotes" },
                 { icon: "📸", label: "Free Photo Quote", sub: "Upload photos, get a price" },
               ].map(({ icon, label, sub }) => (
                 <div key={label} className="px-6 py-5 flex items-start gap-3">
@@ -772,7 +802,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             {[
               { num: "100+", label: "Projects Completed" },
               { num: "15yr", label: "Guarantee Available" },
-              { num: "Essex", label: "& London Coverage" },
+              { num: brand.area, label: "Coverage" },
               { num: "5★", label: "Average Customer Rating" },
             ].map(({ num, label }) => (
               <div key={label} className="rounded-2xl bg-white border border-slate-200 py-6 text-center shadow-sm">
@@ -787,25 +817,25 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
             {[
               {
                 src: "/ba-monocouche.webp",
-                alt: "Monocouche render before and after — Essex bungalow transformation",
+                alt: "Monocouche render before and after — bungalow transformation",
                 title: "Monocouche Render",
                 tag: "Seamless. Low Maintenance.",
               },
               {
                 src: "/ba-krend.webp",
-                alt: "K Rend silicone render before and after — Essex detached home",
+                alt: "K Rend silicone render before and after — detached home",
                 title: "K Rend System",
                 tag: "Original Silicone Render",
               },
               {
                 src: "/ba-pebbledash.webp",
-                alt: "Pebbledash removal and render before and after — Essex semi",
+                alt: "Pebbledash removal and render before and after — semi-detached home",
                 title: "Pebbledash Removal",
                 tag: "Complete Strip & Render",
               },
               {
                 src: "/ba-ewi.webp",
-                alt: "EWI external wall insulation before and after — Essex semi",
+                alt: "EWI external wall insulation before and after — semi-detached home",
                 title: "EWI Systems",
                 tag: "Insulate & Transform",
               },
@@ -837,7 +867,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-12">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>What We Do</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Rendering Services For Homes &amp; Properties Across Essex And London</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Rendering Services For Homes &amp; Properties Across {brand.area}</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {services.slice(0, 6).map((s: any) => (
@@ -857,14 +887,14 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      {/* Why Choose AMO */}
+      {/* Why choose this business */}
       <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
           <div className="space-y-6">
             <p className="text-sm font-semibold uppercase tracking-widest" style={{ color: BLUE }}>Why Choose Us</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Why Homeowners Choose AMO Rendering</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Why Homeowners Choose {brand.name}</h2>
             <ul className="space-y-4">
-              {WHY_POINTS.map(p => (
+              {whyPoints(brand.base, brand.area).map(p => (
                 <li key={p} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
                   <span className="text-base" style={{ color: TEXT }}>{p}</span>
@@ -958,10 +988,10 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-10">
             <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Service Area</p>
-            <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Rendering Services Across Essex And London</h2>
+            <h2 className="text-3xl sm:text-4xl font-bold" style={{ color: TEXT }}>Rendering Services Across {brand.area}</h2>
           </div>
           <div className="flex flex-wrap gap-3 justify-center">
-            {ALL_AREAS.map(a => (
+            {homeAreas.map(a => (
               <a key={a} href={`${siteBase}/areas`} className="rounded-full border border-slate-200 bg-white px-5 py-2 text-sm font-medium hover:border-[#1F8CFF] hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a}</a>
             ))}
           </div>
@@ -975,7 +1005,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6">
             <div className="text-center mb-12">
               <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: "#8EC8FF" }}>Reviews</p>
-              <h2 className="text-3xl sm:text-4xl font-bold">Trusted By Homeowners Across Essex And London</h2>
+              <h2 className="text-3xl sm:text-4xl font-bold">Trusted By Homeowners Across {brand.area}</h2>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {featuredReviews.map((r: any) => (
@@ -1019,11 +1049,11 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         </section>
       )}
 
-      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
+      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone} businessName={tenant?.name}/>
 
       <section style={{ backgroundColor: BLUE }} className="py-14">
         <div className="max-w-3xl mx-auto px-4 text-center text-white space-y-5">
-          <h2 className="text-3xl font-bold">Transform Your Exterior With AMO Rendering</h2>
+          <h2 className="text-3xl font-bold">Transform Your Exterior With {brand.name}</h2>
           <a href={`${siteBase}/quote`} className="inline-flex items-center rounded-md bg-white px-8 py-3 text-sm font-bold hover:bg-slate-50 transition-colors" style={{ color: BLUE }}>Get My Free Quote</a>
         </div>
       </section>
@@ -1043,14 +1073,15 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: services, isLoading } = useListPublicServices(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const list = (services as any[])?.length ? (services as any[]) : STATIC_SERVICES;
 
   return (
     <div>
-      <PageSEO title="Rendering Services | AMO Rendering — Essex & London" description="Expert rendering services across Essex and London — silicone render, monocouche, K Rend, EWI, pebbledash removal and repair. Get a free quote."/>
+      <PageSEO title={`Rendering Services | ${brand.name} — ${brand.area}`} description={`Expert rendering services across ${brand.area} — silicone render, monocouche, K Rend, EWI, pebbledash removal and repair. Get a free quote.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Services Across Essex & London" title="Rendering Services Across Essex & London" subtitle="Specialist exterior rendering services for homeowners and properties across Grays, Thurrock, Essex and London."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb={`Rendering Services Across ${brand.area}`} title={`Rendering Services Across ${brand.area}`} subtitle={`Specialist exterior rendering services for homeowners and properties across ${brand.reach}.`}/>
 
       {/* Service Photo Cards */}
       <section className="py-16 bg-white">
@@ -1058,7 +1089,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>What We Do</p>
             <h2 className="text-3xl font-bold" style={{ color: TEXT }}>Choose The Right Render System For Your Property</h2>
-            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed" style={{ color: MUTED }}>Every property is different. AMO Rendering helps you choose the right approach based on existing surface condition, desired finish and long-term performance.</p>
+            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed" style={{ color: MUTED }}>Every property is different. {brand.name} helps you choose the right approach based on existing surface condition, desired finish and long-term performance.</p>
           </div>
           {isLoading ? <Spinner/> : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -1127,7 +1158,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="space-y-6 text-white">
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: "#8EC8FF" }}>How We Help</p>
             <h2 className="text-3xl font-bold">Not Sure Which Rendering Service You Need?</h2>
-            <p className="text-slate-300 leading-relaxed">Customers often know the problem — not the solution. AMO can review photos of your property, discuss the existing wall condition and guide you towards the most suitable option for your budget and finish goals.</p>
+            <p className="text-slate-300 leading-relaxed">Customers often know the problem — not the solution. {brand.name} can review photos of your property, discuss the existing wall condition and guide you towards the most suitable option for your budget and finish goals.</p>
             <div className="space-y-6">
               {[{ n: 1, title: "Send photos", body: "Show the current exterior wall condition so we can assess what's there." },{ n: 2, title: "Discuss finish", body: "Choose the appearance and render type that suits your property and budget." },{ n: 3, title: "Get a quote", body: "Receive clear next steps and a price based on the work required." }].map(step => (
                 <div key={step.n} className="flex items-start gap-4">
@@ -1145,7 +1176,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="grid grid-cols-2 gap-3">
             {["/svc-silicone.webp", "/svc-monocouche.webp", "/svc-krend.webp", "/svc-pebbledash.webp"].map((src, i) => (
               <div key={i} className="rounded-xl overflow-hidden" style={{ height: 170 }}>
-                <img src={src} alt="AMO Rendering work" loading="lazy" width={1200} height={1200} className="w-full h-full object-cover"/>
+                <img src={src} alt={`${brand.name} work`} loading="lazy" width={1200} height={1200} className="w-full h-full object-cover"/>
               </div>
             ))}
           </div>
@@ -1156,7 +1187,7 @@ function ServicesPage({ tenantSlug }: { tenantSlug: string }) {
       <section className="py-14 bg-white">
         <div className="max-w-3xl mx-auto px-4 text-center space-y-5">
           <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Send Photos For A Rendering Quote</h2>
-          <p style={{ color: MUTED }}>Tell AMO what your property needs and upload clear photos of the exterior walls.</p>
+          <p style={{ color: MUTED }}>Tell {brand.name} what your property needs and upload clear photos of the exterior walls.</p>
           <BlueBtn href={`${siteBase}/quote`}>Request A Quote</BlueBtn>
         </div>
       </section>
@@ -1176,6 +1207,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: service, isLoading } = useGetPublicService(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const s = service as any;
   const staticService = STATIC_SERVICES.find(ss => ss.slug === slug);
   const fallback = staticService || { name: slug.split('-').map(w => w[0].toUpperCase() + w.slice(1)).join(' '), desc: "", tagline: "", benefits: [] };
@@ -1186,22 +1218,22 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
 
   return (
     <div>
-      <PageSEO title={`${name} in Essex & London | AMO Rendering`} description={description || `Professional ${name} service across Essex and London. AMO Rendering — free quotes available.`}/>
+      <PageSEO title={`${name} in ${brand.area} | ${brand.name}`} description={description || `Professional ${name} service across ${brand.area}. ${brand.name} — free quotes available.`}/>
       <JsonLd data={{
         "@context": "https://schema.org",
         "@type": "Service",
         serviceType: name,
-        name: `${name} in Essex & London`,
-        description: description || `Professional ${name} service across Essex and London.`,
-        areaServed: ["Grays", "Thurrock", "Essex", "London"],
-        provider: { "@type": "HomeAndConstructionBusiness", name: tenant?.name || "AMO Rendering" },
+        name: `${name} in ${brand.area}`,
+        description: description || `Professional ${name} service across ${brand.area}.`,
+        areaServed: brand.areasServed,
+        provider: { "@type": "HomeAndConstructionBusiness", name: brand.name },
       }}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
       {isLoading ? <Spinner/> : (
         <>
-          <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb={`${name} in Essex & London`} title={`${name} in Essex & London`} subtitle={description || `Expert ${name} for homeowners and properties across Grays, Thurrock, Essex and London.`}/>
+          <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb={`${name} in ${brand.area}`} title={`${name} in ${brand.area}`} subtitle={description || `Expert ${name} for homeowners and properties across ${brand.reach}.`}/>
 
           {/* Main content + sidebar */}
           <section className="py-16 bg-white">
@@ -1213,7 +1245,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                     <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: BLUE }}>Service Detail</p>
                     <h2 className="text-2xl font-bold" style={{ color: TEXT }}>What Is {name}?</h2>
                     <p className="leading-relaxed" style={{ color: MUTED }}>{description || `${name} is a professional exterior rendering service that improves the appearance and protection of your property's exterior walls.`}</p>
-                    <p className="leading-relaxed" style={{ color: MUTED }}>AMO Rendering works with homeowners and property owners who want a cleaner, sharper and more modern exterior finish. The focus is not just applying render — it is improving the way the property looks and helping protect exterior walls with the right system.</p>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>{brand.name} works with homeowners and property owners who want a cleaner, sharper and more modern exterior finish. The focus is not just applying render — it is improving the way the property looks and helping protect exterior walls with the right system.</p>
                   </div>
 
                   {/* Why choose */}
@@ -1229,7 +1261,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                         ))}
                         <li className="flex items-start gap-3">
                           <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
-                          <span className="text-sm" style={{ color: TEXT }}>Suitable for Essex and London properties</span>
+                          <span className="text-sm" style={{ color: TEXT }}>Suitable for properties across {brand.area}</span>
                         </li>
                         <li className="flex items-start gap-3">
                           <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
@@ -1247,7 +1279,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                         <div className="relative">
                           <img
                             src={baImg}
-                            alt={`${name} before and after — Essex property transformation`}
+                            alt={`${name} before and after — property transformation`}
                             className="w-full object-cover"
                           />
                           <div className="absolute top-3 left-3 flex gap-2 pointer-events-none">
@@ -1257,10 +1289,10 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                         </div>
                         <div className="p-5">
                           <div className="flex items-center gap-2 mb-2">
-                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>Essex</span>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{brand.area}</span>
                             <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-[#E8F3FF]" style={{ color: BLUE }}>{name}</span>
                           </div>
-                          <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Real transformation — Essex property</h3>
+                          <h3 className="font-semibold text-sm" style={{ color: TEXT }}>Real transformation — local property</h3>
                           <p className="text-xs mt-1" style={{ color: MUTED }}>See the full difference a quality render makes. <a href={`${siteBase}/gallery`} className="font-semibold" style={{ color: BLUE }}>View more before &amp; afters →</a></p>
                         </div>
                       </div>
@@ -1289,7 +1321,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                 <aside className="space-y-6">
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote for {name}</h3>
-                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
+                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell {brand.name} what exterior finish you want.</p>
                     <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
                     <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
                   </div>
@@ -1300,8 +1332,8 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                     ))}
                   </div>
                   <div className="rounded-2xl p-6 space-y-3 text-white" style={{ backgroundColor: NAVY }}>
-                    <h3 className="font-bold">Based in Grays, Thurrock</h3>
-                    <p className="text-sm text-slate-400">Serving Essex and London. Photo-based quotes available.</p>
+                    <h3 className="font-bold">{brand.hasBase ? `Based in ${brand.base}` : "Local specialists"}</h3>
+                    <p className="text-sm text-slate-400">Serving {brand.area}. Photo-based quotes available.</p>
                     <a href={`${siteBase}/areas`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>View Areas Covered →</a>
                   </div>
                 </aside>
@@ -1309,7 +1341,7 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
             </div>
           </section>
 
-          <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
+          <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone} businessName={tenant?.name}/>
         </>
       )}
 
@@ -1328,13 +1360,14 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: areas, isLoading } = useListPublicAreas(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
 
   const areaList: any[] = (areas as any[])?.length
     ? (areas as any[])
     : ALL_AREAS.map(a => ({
         name: a,
         slug: a.toLowerCase().replace(/\s+/g, '-'),
-        county: a === 'London' ? 'Greater London' : 'Essex',
+        county: brand.area,
         description: `Silicone rendering, K Rend, monocouche render, EWI and pebbledash removal for properties in ${a} and nearby areas.`,
       }));
 
@@ -1343,10 +1376,10 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
-      <PageSEO title="Areas We Cover | AMO Rendering — Essex & London" description="AMO Rendering covers Grays, Thurrock, Essex, London, Basildon, Romford, Chelmsford and surrounding areas. Local rendering specialists."/>
+      <PageSEO title={`Areas We Cover | ${brand.name} — ${brand.area}`} description={`${brand.name} covers ${areaList.slice(0, 6).map((a: any) => a.name).join(", ")} and surrounding areas. Local rendering specialists.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Areas We Cover" title="Local Rendering Across Essex & London" subtitle="AMO Rendering is based in Grays, Thurrock. We cover Essex, Greater London and surrounding areas for all rendering services."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Areas We Cover" title={`Local Rendering Across ${brand.area}`} subtitle={`${brand.name}${brand.hasBase ? ` is based in ${brand.base}.` : "."} We cover ${brand.area} and surrounding areas for all rendering services.`}/>
 
       {/* Photo area cards */}
       <section className="py-16 bg-white">
@@ -1354,7 +1387,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="text-center mb-12">
             <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Where We Work</p>
             <h2 className="text-3xl font-bold" style={{ color: TEXT }}>Rendering Services Near You</h2>
-            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed" style={{ color: MUTED }}>From Grays and Thurrock through Essex and into London, AMO Rendering provides specialist exterior rendering across the region.</p>
+            <p className="mt-4 max-w-2xl mx-auto text-sm leading-relaxed" style={{ color: MUTED }}>{brand.name} provides specialist exterior rendering across {brand.reach}.</p>
           </div>
           {isLoading ? <Spinner/> : (
             <>
@@ -1380,7 +1413,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
                       {/* county badge */}
                       <div className="absolute top-3 left-3">
                         <span className="text-[10px] font-bold uppercase tracking-widest px-2.5 py-1 rounded-full text-white" style={{ backgroundColor: BLUE }}>
-                          {a.county || 'Essex'}
+                          {a.county || brand.area}
                         </span>
                       </div>
                       {/* text */}
@@ -1408,7 +1441,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
                       >
                         <div>
                           <p className="text-sm font-bold group-hover:text-[#1F8CFF] transition-colors" style={{ color: TEXT }}>{a.name}</p>
-                          <p className="text-xs mt-0.5" style={{ color: MUTED }}>{a.county || 'Essex'}</p>
+                          <p className="text-xs mt-0.5" style={{ color: MUTED }}>{a.county || brand.area}</p>
                         </div>
                         <svg className="w-4 h-4 flex-shrink-0" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={2.5} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/></svg>
                       </a>
@@ -1428,19 +1461,19 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="grid grid-cols-2 gap-3">
             {["/gal-monocouche-grays.webp","/gal-romford.webp","/gal-krend-chelmsford.webp","/gal-brentwood-silicone.webp"].map((src, i) => (
               <div key={i} className="rounded-xl overflow-hidden" style={{ height: 180 }}>
-                <img src={src} alt="AMO Rendering local work" loading="lazy" width={1200} height={1200} className="w-full h-full object-cover"/>
+                <img src={src} alt={`${brand.name} local work`} loading="lazy" width={1200} height={1200} className="w-full h-full object-cover"/>
               </div>
             ))}
           </div>
           <div className="space-y-6">
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: BLUE }}>Why Local Matters</p>
-            <h2 className="text-3xl font-bold" style={{ color: TEXT }}>Based in Grays, Serving the Region</h2>
-            <p className="text-sm leading-relaxed" style={{ color: MUTED }}>AMO Rendering operates from Grays, Thurrock — meaning short travel times, consistent quality and a team that understands the property types, weather conditions and rendering challenges specific to Essex and London homes.</p>
+            <h2 className="text-3xl font-bold" style={{ color: TEXT }}>{brand.hasBase ? `Based in ${brand.base}, Serving the Region` : "Serving the Region"}</h2>
+            <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{brand.name} operates {brand.hasBase ? `from ${brand.base} ` : ""}across {brand.area} — meaning short travel times, consistent quality and a team that understands the property types, weather conditions and rendering challenges specific to homes in the area.</p>
             <ul className="space-y-4">
               {[
-                { title: "Quick response across Essex", body: "Our Grays base puts us within easy reach of Basildon, Chelmsford, Brentwood, Romford and central London." },
+                { title: `Quick response across ${brand.area}`, body: `${brand.hasBase ? `Our ${brand.base} base puts us` : "We are"} within easy reach of every area we cover.` },
                 { title: "Familiar with local property types", body: "We regularly work on 1930s semis, new-builds, commercial renders and period properties across the region." },
-                { title: "Known in the local area", body: "Reviews from Grays, Thurrock, Romford and Brentwood customers reflect a consistent standard of work." },
+                { title: "Known in the local area", body: "Reviews from customers across the areas we cover reflect a consistent standard of work." },
               ].map(p => (
                 <li key={p.title} className="flex items-start gap-3">
                   <div className="mt-0.5 flex-shrink-0"><CheckIcon color={BLUE}/></div>
@@ -1462,7 +1495,7 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="text-center mb-10">
             <p className="text-xs font-semibold uppercase tracking-widest mb-3" style={{ color: '#8EC8FF' }}>Available Across All Areas</p>
             <h2 className="text-2xl font-bold text-white">Every Service, Wherever You Are</h2>
-            <p className="mt-3 text-sm text-slate-400 max-w-xl mx-auto">AMO Rendering offers all render systems across Essex and London — no area is limited to a single service.</p>
+            <p className="mt-3 text-sm text-slate-400 max-w-xl mx-auto">{brand.name} offers all render systems across {brand.area} — no area is limited to a single service.</p>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             {STATIC_SERVICES.map(s => (
@@ -1477,13 +1510,13 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
 
       {/* Team CTA */}
       <section className="relative py-20 overflow-hidden">
-        <img src="/amo-team.webp" alt="AMO Rendering team" className="absolute inset-0 w-full h-full object-cover object-center"/>
+        <img src={settings?.aboutImageUrl || settings?.heroImageUrl || "/amo-team.webp"} alt={`${brand.name} team`} className="absolute inset-0 w-full h-full object-cover object-center"/>
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(10,22,40,0.88) 0%, rgba(10,22,40,0.60) 60%, transparent 100%)' }}/>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
           <div className="max-w-lg space-y-5">
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: '#8EC8FF' }}>Ready To Start?</p>
             <h2 className="text-3xl font-bold text-white">Get A Free Quote For Your Property</h2>
-            <p className="text-slate-300 text-sm leading-relaxed">Tell AMO where you are and what you need. We'll review your photos, advise on the best render system and provide a clear price.</p>
+            <p className="text-slate-300 text-sm leading-relaxed">Tell {brand.name} where you are and what you need. We'll review your photos, advise on the best render system and provide a clear price.</p>
             <div className="flex flex-wrap gap-3 pt-2">
               <BlueBtn href={`${siteBase}/quote`}>Request A Free Quote</BlueBtn>
               <OutlineBtn href={settings?.phone ? `tel:${settings.phone}` : `${siteBase}/contact`} dark>{settings?.phone ? "Call Us" : "Contact Us"}</OutlineBtn>
@@ -1503,16 +1536,18 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const { data: allAreas } = useListPublicAreas(tenantSlug);
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: area, isLoading } = useGetPublicArea(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const a = area as any;
   const areaName = a?.name || slug.split('-').map((w: string) => w[0].toUpperCase() + w.slice(1)).join(' ');
 
   return (
     <div>
-      <PageSEO title={`Rendering in ${areaName} | AMO Rendering`} description={a?.description || `Professional silicone rendering, monocouche, K Rend and pebbledash removal in ${areaName}. AMO Rendering — free quotes available.`}/>
+      <PageSEO title={`Rendering in ${areaName} | ${brand.name}`} description={a?.description || `Professional silicone rendering, monocouche, K Rend and pebbledash removal in ${areaName}. ${brand.name} — free quotes available.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -1527,8 +1562,8 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
                   <div className="space-y-4">
                     <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: BLUE }}>Local Rendering</p>
                     <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Exterior Rendering Services in {areaName}</h2>
-                    <p className="leading-relaxed" style={{ color: MUTED }}>AMO Rendering provides professional exterior rendering services for homeowners and property owners in {areaName}. The focus is on transforming tired walls, dated pebbledash and failing exterior finishes into cleaner, sharper and more modern rendered surfaces.</p>
-                    <p className="leading-relaxed" style={{ color: MUTED }}>Whether your property needs silicone rendering, K Rend, monocouche render, pebbledash removal or render repairs, AMO can review your property details and help identify the right next step.</p>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>{brand.name} provides professional exterior rendering services for homeowners and property owners in {areaName}. The focus is on transforming tired walls, dated pebbledash and failing exterior finishes into cleaner, sharper and more modern rendered surfaces.</p>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>Whether your property needs silicone rendering, K Rend, monocouche render, pebbledash removal or render repairs, {brand.name} can review your property details and help identify the right next step.</p>
                   </div>
 
                   <div className="space-y-4">
@@ -1545,7 +1580,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
 
                   <div className="space-y-4">
                     <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Local Project Style</h2>
-                    <p className="leading-relaxed" style={{ color: MUTED }}>Many properties across Essex and London benefit from a cleaner external finish. Rendering can improve kerb appeal, refresh dated walls and create a more consistent property exterior.</p>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>Many properties across {brand.area} benefit from a cleaner external finish. Rendering can improve kerb appeal, refresh dated walls and create a more consistent property exterior.</p>
                     {a?.content && <p className="leading-relaxed" style={{ color: MUTED }}>{a.content}</p>}
                   </div>
 
@@ -1562,14 +1597,15 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
                 <aside className="space-y-6">
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote in {areaName}</h3>
-                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell AMO what exterior finish you want.</p>
+                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell {brand.name} what exterior finish you want.</p>
                     <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
                     <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
                     <h3 className="font-bold text-sm" style={{ color: TEXT }}>Other Areas</h3>
-                    {["Grays","Thurrock","Essex","London","Basildon","Brentwood","Romford"].filter(n => n.toLowerCase() !== slug).map(n => (
-                      <a key={n} href={`${siteBase}/areas/${n.toLowerCase()}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{n}</a>
+                    {(((allAreas as any[])?.length ? (allAreas as any[]).map(x => x.name) : ALL_AREAS) as string[])
+                      .filter(n => n.toLowerCase().replace(/\s+/g, '-') !== slug).slice(0, 7).map(n => (
+                      <a key={n} href={`${siteBase}/areas/${n.toLowerCase().replace(/\s+/g, '-')}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{n}</a>
                     ))}
                   </div>
                 </aside>
@@ -1607,21 +1643,22 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SHOWCASE_ITEMS = [
-  { src: "/ba-silicone.webp",    alt: "Silicone render before and after — Essex detached home",  title: "Silicone Render",      tag: "Silicone Rendering",   span: "md:col-span-2" },
-  { src: "/ba-krend.webp",       alt: "K Rend before and after — Essex detached home",           title: "K Rend System",        tag: "K Rend",               span: "" },
-  { src: "/ba-monocouche.webp",  alt: "Monocouche render before and after — Essex bungalow",     title: "Monocouche Render",    tag: "Monocouche",           span: "" },
-  { src: "/ba-pebbledash.webp",  alt: "Pebbledash removal before and after — Essex semi",        title: "Pebbledash Removal",   tag: "Pebbledash Removal",   span: "" },
-  { src: "/ba-ewi.webp",         alt: "EWI before and after — Essex semi-detached",              title: "EWI Systems",          tag: "EWI",                  span: "" },
+  { src: "/ba-silicone.webp",    alt: "Silicone render before and after — detached home",  title: "Silicone Render",      tag: "Silicone Rendering",   span: "md:col-span-2" },
+  { src: "/ba-krend.webp",       alt: "K Rend before and after — detached home",           title: "K Rend System",        tag: "K Rend",               span: "" },
+  { src: "/ba-monocouche.webp",  alt: "Monocouche render before and after — bungalow",     title: "Monocouche Render",    tag: "Monocouche",           span: "" },
+  { src: "/ba-pebbledash.webp",  alt: "Pebbledash removal before and after — semi-detached home",        title: "Pebbledash Removal",   tag: "Pebbledash Removal",   span: "" },
+  { src: "/ba-ewi.webp",         alt: "EWI before and after — semi-detached home",              title: "EWI Systems",          tag: "EWI",                  span: "" },
 ];
 
 function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: images, isLoading } = useBrowsePublicGallery(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
 
   return (
     <div>
-      <PageSEO title="Before & After Rendering Gallery | AMO Rendering" description="See real rendering transformations across Essex and London. Silicone render, monocouche and EWI before and after photos from AMO Rendering."/>
+      <PageSEO title={`Before & After Rendering Gallery | ${brand.name}`} description={`See real rendering transformations across ${brand.area}. Silicone render, monocouche and EWI before and after photos from ${brand.name}.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -1634,7 +1671,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div className="space-y-3">
               <h1 className="text-4xl font-bold">Before &amp; After Transformations</h1>
-              <p className="text-lg text-slate-300 max-w-2xl">Real properties across Essex and London — see exactly what professional rendering does to tired pebbledash and failing exterior walls.</p>
+              <p className="text-lg text-slate-300 max-w-2xl">Real properties across {brand.area} — see exactly what professional rendering does to tired pebbledash and failing exterior walls.</p>
             </div>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center shrink-0">
               {[{ num: "100+", label: "Projects" },{ num: "5★", label: "Rated" },{ num: "15yr", label: "Guarantee" },{ num: "Free", label: "Quotes" }].map(s => (
@@ -1708,8 +1745,8 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
             {/* Image */}
             <div className="rounded-2xl overflow-hidden shadow-xl">
               <img
-                src="/amo-team.webp"
-                alt="The AMO Rendering team — Essex rendering specialists"
+                src={settings?.aboutImageUrl || settings?.heroImageUrl || "/amo-team.webp"}
+                alt={`The ${brand.name} team`}
                 className="w-full object-cover"
               />
             </div>
@@ -1717,14 +1754,14 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
             <div className="space-y-7">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: BLUE }}>Meet The Team</p>
-                <h2 className="text-3xl font-bold leading-snug" style={{ color: TEXT }}>Essex Rendering Specialists — Built On Trust</h2>
+                <h2 className="text-3xl font-bold leading-snug" style={{ color: TEXT }}>Rendering Specialists — Built On Trust</h2>
                 <p className="mt-4 leading-relaxed" style={{ color: MUTED }}>Every job is handled by our own trained, uniformed team — never subcontracted. We show up on time, work cleanly and don't leave until you're happy with the result.</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 {[
                   { icon: "🛡️", title: "Up to 15-Year Guarantee", body: "Written guarantee on every job we complete." },
                   { icon: "👷", title: "Our Own Team Only", body: "No subcontractors. The same crew start to finish." },
-                  { icon: "📍", title: "Based in Grays, Essex", body: "Local specialists — we know the area and its properties." },
+                  { icon: "📍", title: brand.hasBase ? `Based in ${brand.base}` : "Locally based", body: "Local specialists — we know the area and its properties." },
                   { icon: "📸", title: "Free Photo Quote", body: "Send us photos and we'll price your job, no obligation." },
                 ].map(({ icon, title, body }) => (
                   <div key={title} className="rounded-xl bg-white border border-slate-200 p-4 space-y-1 shadow-sm">
@@ -1762,7 +1799,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
             <div className="max-w-7xl mx-auto px-4 sm:px-6">
               <div className="mb-10">
                 <p className="text-sm font-semibold uppercase tracking-widest mb-2" style={{ color: BLUE }}>Project Portfolio</p>
-                <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Work Across Essex & London</h2>
+                <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Work Across {brand.area}</h2>
               </div>
               {segments.map((seg, si) => (
                 <div key={si}>
@@ -1805,7 +1842,7 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
         );
       })()}
 
-      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
+      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone} businessName={tenant?.name}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
@@ -1821,17 +1858,18 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: reviews, isLoading } = useListPublicReviews(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const list = (reviews as any[]) || [];
   const avgRating = list?.length ? Math.round(list.reduce((s, r) => s + r.rating, 0) / list.length * 10) / 10 : 5;
 
   return (
     <div>
-      <PageSEO title="Customer Reviews | AMO Rendering — Essex & London" description="Read verified customer reviews from homeowners across Essex and London. AMO Rendering — trusted rendering specialists."/>
+      <PageSEO title={`Customer Reviews | ${brand.name} — ${brand.area}`} description={`Read verified customer reviews from homeowners across ${brand.area}. ${brand.name} — trusted rendering specialists.`}/>
       {list.length > 0 && (
         <JsonLd data={{
           "@context": "https://schema.org",
           "@type": "HomeAndConstructionBusiness",
-          name: tenant?.name || "AMO Rendering",
+          name: brand.name,
           aggregateRating: { "@type": "AggregateRating", ratingValue: avgRating, reviewCount: list.length },
           review: list.slice(0, 20).map((r: any) => ({
             "@type": "Review",
@@ -1851,7 +1889,7 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
             <a href={siteBase || '/'} className="hover:text-white">{tenant?.name || "Home"}</a>
             <span>/</span><span>Reviews</span>
           </div>
-          <h1 className="text-4xl font-bold">AMO Rendering Reviews</h1>
+          <h1 className="text-4xl font-bold">{brand.name} Reviews</h1>
           <p className="text-lg text-slate-300 max-w-2xl">Customer feedback from homeowners looking for cleaner exterior finishes, better communication and modern rendering work.</p>
           {list.length > 0 && (
             <div className="flex items-center gap-4 pt-2">
@@ -1891,9 +1929,9 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
       {/* Trust badges */}
       <section style={{ backgroundColor: LIGHT_BG }} className="py-12">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 text-center space-y-8">
-          <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Why Homeowners Trust AMO Rendering</h2>
+          <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Why Homeowners Trust {brand.name}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[{ title: "Local Specialists", body: "Based in Grays, Thurrock — not a national call centre." },{ title: "Photo-Based Quotes", body: "Upload property photos for an accurate quote." },{ title: "Clear Communication", body: "Updates from first enquiry to finished project." },{ title: "Modern Finishes", body: "Clean, durable render systems applied correctly." }].map(t => (
+            {[{ title: "Local Specialists", body: brand.hasBase ? `Based in ${brand.base} — not a national call centre.` : "Independent local specialists — not a national call centre." },{ title: "Photo-Based Quotes", body: "Upload property photos for an accurate quote." },{ title: "Clear Communication", body: "Updates from first enquiry to finished project." },{ title: "Modern Finishes", body: "Clean, durable render systems applied correctly." }].map(t => (
               <div key={t.title} className="rounded-xl bg-white border border-slate-200 p-5 space-y-2">
                 <div className="w-8 h-8 rounded-full flex items-center justify-center mx-auto" style={{ backgroundColor: BLUE }}><CheckIcon color="white"/></div>
                 <h3 className="font-bold text-sm" style={{ color: TEXT }}>{t.title}</h3>
@@ -1904,7 +1942,7 @@ function ReviewsPage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
+      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone} businessName={tenant?.name}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
@@ -1920,13 +1958,14 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: caseStudies, isLoading } = useListPublicCaseStudies(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
 
   return (
     <div>
-      <PageSEO title="Rendering Case Studies | AMO Rendering — Essex & London" description="Detailed rendering project case studies from across Essex and London. See the challenge, solution and results from real AMO Rendering projects."/>
+      <PageSEO title={`Rendering Case Studies | ${brand.name} — ${brand.area}`} description={`Detailed rendering project case studies from across ${brand.area}. See the challenge, solution and results from real ${brand.name} projects.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Case Studies" title="Rendering Case Studies" subtitle="Detailed examples of rendering projects across Essex and London, showing the problem, solution and finished exterior result."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Case Studies" title="Rendering Case Studies" subtitle={`Detailed examples of rendering projects across ${brand.area}, showing the problem, solution and finished exterior result.`}/>
 
       {/* Case study cards */}
       <section className="py-16 bg-white">
@@ -1969,7 +2008,7 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
           <div className="space-y-5">
             <p className="text-xs font-semibold uppercase tracking-widest" style={{ color: BLUE }}>What Case Studies Show</p>
             <h2 className="text-2xl font-bold" style={{ color: TEXT }}>More Than Just A Finished Photo</h2>
-            <p className="text-sm leading-relaxed" style={{ color: MUTED }}>Each case study outlines the original problem — what the property looked like and why the homeowner wanted to change it — and the solution chosen by AMO Rendering. Then the result: what the property looks like now and what the customer achieved.</p>
+            <p className="text-sm leading-relaxed" style={{ color: MUTED }}>Each case study outlines the original problem — what the property looked like and why the homeowner wanted to change it — and the solution chosen by {brand.name}. Then the result: what the property looks like now and what the customer achieved.</p>
           </div>
           <div className="space-y-4">
             {[{ title: "The Problem", body: "What the existing surface looked like and why it needed attention." },{ title: "The Solution", body: "Which render system was selected and how it was applied." },{ title: "The Result", body: "The completed exterior and the outcome for the homeowner." }].map(s => (
@@ -1985,7 +2024,7 @@ function CaseStudiesPage({ tenantSlug }: { tenantSlug: string }) {
         </div>
       </section>
 
-      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone}/>
+      <QuoteCTASection tenantSlug={tenantSlug} phone={settings?.phone} businessName={tenant?.name}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
@@ -2001,11 +2040,12 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: cs, isLoading } = useGetPublicCaseStudy(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const c = cs as any;
 
   return (
     <div>
-      <PageSEO title={c ? `${c.title} | AMO Rendering` : "Case Study | AMO Rendering"} description={c?.tagline || "Detailed rendering project case study from AMO Rendering — see the challenge, solution and results."}/>
+      <PageSEO title={c ? `${c.title} | ${brand.name}` : `Case Study | ${brand.name}`} description={c?.tagline || `Detailed rendering project case study from ${brand.name} — see the challenge, solution and results.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
 
@@ -2072,7 +2112,7 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
 
                   <div className="space-y-3">
                     <h2 className="text-xl font-bold" style={{ color: TEXT }}>The Solution</h2>
-                    <p className="leading-relaxed" style={{ color: MUTED }}>{c.solution || "AMO Rendering reviewed the exterior condition and selected a suitable rendering approach. The aim was to create a clean, consistent finish that improved the look of the property while supporting external wall protection."}</p>
+                    <p className="leading-relaxed" style={{ color: MUTED }}>{c.solution || `${brand.name} reviewed the exterior condition and selected a suitable rendering approach. The aim was to create a clean, consistent finish that improved the look of the property while supporting external wall protection.`}</p>
                   </div>
 
                   {/* Before/After */}
@@ -2110,9 +2150,9 @@ function CaseStudyDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: s
                     <a href={`${siteBase}/case-studies`} className="block text-sm py-2 font-semibold" style={{ color: BLUE }}>← Back to all case studies</a>
                   </div>
                   <div className="rounded-2xl p-6 space-y-3 text-white" style={{ backgroundColor: NAVY }}>
-                    <h3 className="font-bold">Based in Grays, Thurrock</h3>
-                    <p className="text-sm text-slate-400">Free quotes available for Essex and London properties.</p>
-                    <a href={`${siteBase}/contact`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>Contact AMO →</a>
+                    <h3 className="font-bold">{brand.hasBase ? `Based in ${brand.base}` : "Local specialists"}</h3>
+                    <p className="text-sm text-slate-400">Free quotes available for properties across {brand.area}.</p>
+                    <a href={`${siteBase}/contact`} className="block text-sm font-semibold" style={{ color: "#8EC8FF" }}>Contact us →</a>
                   </div>
                 </aside>
               </div>
@@ -2136,10 +2176,11 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: faqs, isLoading } = useListPublicFaqs(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
 
   return (
     <div>
-      <PageSEO title="Rendering FAQs | AMO Rendering — Essex & London" description="Answers to common questions about rendering, including silicone render, monocouche, K Rend, pebbledash removal and EWI."/>
+      <PageSEO title={`Rendering FAQs | ${brand.name} — ${brand.area}`} description="Answers to common questions about rendering, including silicone render, monocouche, K Rend, pebbledash removal and EWI."/>
       {(faqs as any[])?.length > 0 && (
         <JsonLd data={{
           "@context": "https://schema.org",
@@ -2190,8 +2231,8 @@ function FaqsPage({ tenantSlug }: { tenantSlug: string }) {
         <div className="max-w-3xl mx-auto px-4 sm:px-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="rounded-2xl bg-white border border-slate-200 p-7 space-y-4">
             <h3 className="font-bold text-lg" style={{ color: TEXT }}>Still Have Questions?</h3>
-            <p className="text-sm" style={{ color: MUTED }}>Send AMO a message and we'll respond with the information you need.</p>
-            <BlueBtn href={`${siteBase}/contact`}>Contact AMO</BlueBtn>
+            <p className="text-sm" style={{ color: MUTED }}>Send {brand.name} a message and we'll respond with the information you need.</p>
+            <BlueBtn href={`${siteBase}/contact`}>Contact us</BlueBtn>
           </div>
           <div className="rounded-2xl bg-white border border-slate-200 p-7 space-y-4">
             <h3 className="font-bold text-lg" style={{ color: TEXT }}>Ready To Get A Quote?</h3>
@@ -2247,6 +2288,7 @@ function defaultPrivacySections(tenantName: string, contact: string): { heading:
 function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "privacy" }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const tenantName = tenant?.name || "this business";
   const contact = [settings?.phone, settings?.email, settings?.address].filter(Boolean).join(" · ");
   const customContent = kind === "terms" ? settings?.termsContent : settings?.privacyContent;
@@ -2328,10 +2370,11 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: posts, isLoading } = useBrowsePublicBlog(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
 
   return (
     <div>
-      <PageSEO title="Rendering Advice & Guides | AMO Rendering Blog" description="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation across Essex and London."/>
+      <PageSEO title={`Rendering Advice & Guides | ${brand.name} Blog`} description={`Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation across ${brand.area}.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Advice & Guides" title="Rendering Advice & Guides" subtitle="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation."/>
@@ -2391,11 +2434,12 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: post, isLoading } = useGetPublicBlogPost(tenantSlug, slug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const p = post as any;
 
   return (
     <div>
-      <PageSEO title={p ? `${p.title} | AMO Rendering` : "Blog | AMO Rendering"} description={p?.excerpt || "Rendering advice and tips from AMO Rendering — specialists in silicone render, monocouche and EWI across Essex and London."}/>
+      <PageSEO title={p ? `${p.title} | ${brand.name}` : `Blog | ${brand.name}`} description={p?.excerpt || `Rendering advice and tips from ${brand.name} — specialists in silicone render, monocouche and EWI across ${brand.area}.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} alwaysOpaque/>
 
@@ -2423,7 +2467,7 @@ function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }
                   <div className="prose prose-slate max-w-none leading-relaxed" style={{ color: TEXT }}>{p.content}</div>
                   <div className="rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: LIGHT_BG }}>
                     <h3 className="text-xl font-bold" style={{ color: TEXT }}>Ready to transform your property?</h3>
-                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos for a free rendering quote from AMO.</p>
+                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos for a free rendering quote from {brand.name}.</p>
                     <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
                   </div>
                 </article>
@@ -2465,6 +2509,7 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const { data: pageData, isLoading, isError } = useGetPublicPaymentPage(token);
   const chargeMutation = useChargePublicPaymentLink();
   const actionMutation = useSubmitPublicQuoteAction();
@@ -2795,6 +2840,7 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const mutation = useSubmitQuoteRequest();
   const [form, setForm] = useState(QUOTE_FORM_DEFAULTS);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -3326,13 +3372,14 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
 function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const isConstruction = tenant?.industry === 'construction';
   const isRendering = (tenant?.industry || 'rendering') === 'rendering';
-  const businessName = tenant?.name || "our team";
+  const businessName = brand.name;
   return (
     <div>
       <PageSEO
-        title={isRendering ? `Get a Free Rendering Quote | ${tenant?.name || "Rendering Specialists"}` : `Request A Free Quote | ${tenant?.name || "Get In Touch"}`}
+        title={isRendering ? `Get a Free Rendering Quote | ${brand.name} — ${brand.area}` : `Request A Free Quote | ${brand.name}`}
         description={isConstruction
           ? `Request a free quote from ${businessName}. Tell us about your project — from new builds to renovations — and we'll come back with a detailed quotation.`
           : isRendering
@@ -3358,6 +3405,7 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
 function CalculatorPage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   return (
     <div>
       <PageSEO title={`Cost Calculator | ${tenant?.name || "Get an Instant Estimate"}`} description={`Build an instant, indicative estimate for your project with ${tenant?.name || "our team"} and get it emailed to you.`}/>
@@ -3376,9 +3424,11 @@ function CalculatorPage({ tenantSlug }: { tenantSlug: string }) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function ContactPage({ tenantSlug }: { tenantSlug: string }) {
+  const { data: contactAreaRows } = useListPublicAreas(tenantSlug);
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const mutation = useSubmitContact();
   const [form, setForm] = useState({ senderName: '', senderEmail: '', senderPhone: '', subject: '', message: '' });
   const [submitted, setSubmitted] = useState(false);
@@ -3399,10 +3449,10 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
-      <PageSEO title="Contact AMO Rendering | Rendering Specialists — Essex & London" description="Get in touch with AMO Rendering to discuss your property and rendering options. Based in Grays, Thurrock — serving Essex and London."/>
+      <PageSEO title={`Contact ${brand.name} | Rendering Specialists — ${brand.area}`} description={`Get in touch with ${brand.name} to discuss your property and rendering options.${brand.hasBase ? ` Based in ${brand.base} —` : ""} serving ${brand.area}.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Contact AMO Rendering" title="Contact AMO Rendering" subtitle="Speak to AMO Rendering about silicone rendering, K Rend, EWI, pebbledash removal or render repairs across Essex and London."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb={`Contact ${brand.name}`} title={`Contact ${brand.name}`} subtitle={`Speak to ${brand.name} about silicone rendering, K Rend, EWI, pebbledash removal or render repairs across ${brand.area}.`}/>
 
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -3443,7 +3493,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
               <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: NAVY }}>
                 <h3 className="font-bold">Areas We Cover</h3>
                 <div className="flex flex-wrap gap-2">
-                  {["Grays","Thurrock","Essex","London","Basildon","Romford"].map(a => (
+                  {(((contactAreaRows as any[]) || []).map(a => a.name).filter(Boolean) as string[]).slice(0, 6).map(a => (
                     <span key={a} className="text-xs px-3 py-1 rounded-full border border-slate-700 text-slate-300">{a}</span>
                   ))}
                 </div>
@@ -3475,7 +3525,7 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
                       {["Quote request","Service question","Existing project","General enquiry"].map(o => <option key={o} value={o}>{o}</option>)}
                     </select>
                   </div>
-                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Message *</label><textarea required rows={5} className={inputCls} placeholder="How can AMO help?" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}/></div>
+                  <div><label className="block text-xs font-semibold uppercase tracking-wide mb-1" style={{ color: MUTED }}>Message *</label><textarea required rows={5} className={inputCls} placeholder="How can we help?" value={form.message} onChange={e => setForm({ ...form, message: e.target.value })}/></div>
                   <button type="submit" disabled={mutation.isPending} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>
                     {mutation.isPending ? 'Sending...' : 'Send Message'}
                   </button>
@@ -3501,6 +3551,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
+  const brand = brandCopy(tenant, settings);
   const mutation = useCreateVisualiserRequest();
   const [form, setForm] = useState({ firstName: '', lastName: '', email: '', phone: '', address: '', colourPreference: '', notes: '', photoUrls: [] as string[] });
   const [submitted, setSubmitted] = useState(false);
@@ -3521,10 +3572,10 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
-      <PageSEO title="Render Visualiser | AMO Rendering — See Your Property Transformed" description="Upload a photo of your property and AMO Rendering will show you what new render could look like. Free visualisation service — Essex and London."/>
+      <PageSEO title={`Render Visualiser | ${brand.name} — See Your Property Transformed`} description={`Upload a photo of your property and ${brand.name} will show you what new render could look like. Free visualisation service — ${brand.area}.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Render Visualiser Request" title="Render Visualiser Request" subtitle="Upload your property photos, choose a render finish and tell AMO what exterior look you want to achieve."/>
+      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Render Visualiser Request" title="Render Visualiser Request" subtitle={`Upload your property photos, choose a render finish and tell ${brand.name} what exterior look you want to achieve.`}/>
 
       <section className="py-16 bg-white">
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
@@ -3534,7 +3585,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
             <div className="space-y-6">
               <div className="rounded-2xl border border-slate-200 p-7 space-y-6 bg-white shadow-sm">
                 <h2 className="text-xl font-bold" style={{ color: TEXT }}>Choose Your Finish Direction</h2>
-                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>This service helps AMO understand your preferred style. Upload photos and choose a finish and colour direction.</p>
+                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>This service helps {brand.name} understand your preferred style. Upload photos and choose a finish and colour direction.</p>
 
                 <div>
                   <h3 className="font-bold text-sm mb-3" style={{ color: TEXT }}>Popular colour directions</h3>
@@ -3569,7 +3620,7 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
               <div className="rounded-2xl p-7 space-y-4 text-white" style={{ backgroundColor: NAVY }}>
                 <h3 className="font-bold">How The Visualiser Works</h3>
                 <div className="space-y-3">
-                  {[{ n: 1, text: "Upload a clear photo of your property's exterior." },{ n: 2, text: "Choose a render finish and colour direction." },{ n: 3, text: "AMO applies the chosen finish digitally to your photo." },{ n: 4, text: "You receive a visualisation to help decide." }].map(s => (
+                  {[{ n: 1, text: "Upload a clear photo of your property's exterior." },{ n: 2, text: "Choose a render finish and colour direction." },{ n: 3, text: `${brand.name} applies the chosen finish digitally to your photo.` },{ n: 4, text: "You receive a visualisation to help decide." }].map(s => (
                     <div key={s.n} className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: BLUE }}>{s.n}</div>
                       <p className="text-sm text-slate-300">{s.text}</p>
