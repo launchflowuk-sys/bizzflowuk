@@ -2731,6 +2731,16 @@ const PLANNING_STATUSES = ["Planning Approved","Planning Application Submitted",
 const URGENCY_OPTIONS = ["Emergency","Planned Work"];
 const CONSTRUCTION_BUDGETS = ["Under £10,000","£10,000–£25,000","£25,000–£50,000","£50,000–£100,000","More Than £100,000","Not Sure"];
 
+// Landscaping / groundworks quote options (tenant.industry === 'landscaping', e.g. KD Essex).
+// The service list is NOT hardcoded — it comes from the tenant's own published services.
+const GARDEN_SIZES = ["Under 20m²","20–50m²","50–100m²","100–200m²","More Than 200m²","Not Sure"];
+const CURRENT_SURFACES = ["Lawn or Soil","Old Patio Slabs","Block Paving","Concrete","Tarmac","Gravel","Decking","Mixed or Overgrown","Not Sure"];
+const LEVEL_CHANGES = ["Flat","Gentle Slope","Steep Slope","Split Levels","Not Sure"];
+const WASTE_REMOVAL_OPTIONS = ["Yes, please take it away","No, I will deal with it","Not Sure"];
+const LANDSCAPING_FEATURES = ["Steps","Retaining Wall","Raised Beds","Drainage or Soakaway","Lighting","Turf or Artificial Grass","Fencing","Gates","Planting","Shed or Base"];
+const LANDSCAPING_ACCESS = ["Straight Through the House","Side Gate","Rear or Side Access","Alleyway Only","Wide Access for a Machine","Restricted Parking","Not Sure"];
+const LANDSCAPING_BUDGETS = ["Under £2,500","£2,500–£5,000","£5,000–£10,000","£10,000–£20,000","More Than £20,000","Not Sure"];
+
 function SectionHeading({ children }: { children: React.ReactNode }) {
   return <h2 className="font-bold text-base pt-2 first:pt-0 border-t border-slate-100 first:border-t-0 mt-2 first:mt-0" style={{ color: TEXT }}>{children}</h2>;
 }
@@ -2768,6 +2778,9 @@ const QUOTE_FORM_DEFAULTS = {
   timeframe: '', budget: '', notes: '',
   // Construction-industry fields (unused for rendering tenants)
   clientType: '', projectDescription: '', planningStatus: '', hasDrawings: '', urgency: '',
+  // Landscaping-industry fields (unused for every other industry)
+  gardenSize: '', currentSurface: '', levelChange: '', drainageIssues: '', wasteRemoval: '',
+  desiredFeatures: [] as string[],
   photoUrls: [] as string[],
   consentAgreed: false,
 };
@@ -2796,8 +2809,26 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
   const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--qf-accent)] focus:border-[var(--qf-accent)] transition";
   const labelCls = "block text-xs font-semibold uppercase tracking-wide mb-1";
   const gridCls = "grid grid-cols-1 sm:grid-cols-2 gap-4";
-  const isConstruction = tenant?.industry === 'construction';
-  const isEwi = !isConstruction && form.serviceInterest === "External Wall Insulation";
+  // One branch per industry, and a GENERIC fallback for anything else.
+  //
+  // This used to be a two-way branch — construction, or "else". "Else" was AMO Rendering's
+  // copy and AMO Rendering's questions, so KD Essex (landscaping) was asking customers about
+  // storeys and existing render, over AMO's name. Never let an industry fall through into
+  // another client's form: an unrecognised industry gets the neutral branch below.
+  const industry = tenant?.industry || 'rendering';
+  const isConstruction = industry === 'construction';
+  const isLandscaping = industry === 'landscaping';
+  const isRendering = industry === 'rendering';
+  const isGeneric = !isConstruction && !isLandscaping && !isRendering;
+  const businessName = tenant?.name || "our team";
+
+  // Landscaping and generic tenants pick from their OWN published services rather than a
+  // hardcoded list, so a new client never inherits somebody else's menu.
+  const { data: serviceRows } = useListPublicServices(tenantSlug);
+  const tenantServices = ((serviceRows as any[]) || []).map(r => r?.name).filter(Boolean) as string[];
+  const serviceChoices = tenantServices.length > 0 ? [...tenantServices, "Not Sure"] : ["Not Sure"];
+
+  const isEwi = isRendering && form.serviceInterest === "External Wall Insulation";
   const isCommercial = form.propertyType === "Commercial Property";
   const isElectrical = isConstruction && form.serviceInterest === "Electrical Services";
   const isBusinessClient = form.clientType === "Commercial" || form.clientType === "Institutional";
@@ -2813,12 +2844,20 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
       if (!form.clientType) e.clientType = "Please select a client type";
       if (!form.serviceInterest) e.serviceInterest = "Please select a service";
       if (!form.projectDescription.trim()) e.projectDescription = "Please tell us about the project";
-    } else {
+    } else if (isLandscaping) {
+      // Deliberately only two required questions. Everything else that helps price the job is
+      // optional — this form sits behind paid clicks and a wall of required selects loses them.
+      if (!form.serviceInterest) e.serviceInterest = "Please select a service";
+      if (!form.gardenSize) e.gardenSize = "Please give us a rough size";
+    } else if (isRendering) {
       if (!form.propertyType) e.propertyType = "Please select a property type";
       if (!form.areaToRender) e.areaToRender = "Please select the area to be rendered";
       if (!form.numberOfStoreys) e.numberOfStoreys = "Please select the number of storeys";
       if (!form.serviceInterest) e.serviceInterest = "Please select a service";
       if (!form.existingSurface) e.existingSurface = "Please select the existing surface";
+    } else {
+      if (!form.serviceInterest) e.serviceInterest = "Please select a service";
+      if (!form.projectDescription.trim()) e.projectDescription = "Please tell us about the job";
     }
     if (!form.timeframe) e.timeframe = "Please select a preferred timeframe";
     if (!form.consentAgreed) e.consentAgreed = "Please confirm you agree before submitting";
@@ -2852,13 +2891,19 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
             <aside className="lg:col-span-2 space-y-6">
               <div className="rounded-2xl border border-slate-200 p-7 space-y-5 bg-white shadow-sm">
                 <h2 className="text-xl font-bold" style={{ color: TEXT }}>Get A Clearer Starting Point</h2>
-                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{isConstruction
-                  ? `The more detail you provide, the easier it is for ${tenant?.name || "our team"} to understand the scope of the works and give you an accurate price.`
-                  : "The more detail you provide, the easier it is for AMO to understand your exterior walls, current surface and desired finish."}</p>
+                <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{
+                  isConstruction ? `The more detail you provide, the easier it is for ${businessName} to understand the scope of the works and give you an accurate price.`
+                  : isLandscaping ? `The more detail you provide, the easier it is for ${businessName} to understand the ground, the levels and what you want it to look like when it is finished.`
+                  : isRendering ? `The more detail you provide, the easier it is for ${businessName} to understand your exterior walls, current surface and desired finish.`
+                  : `The more detail you provide, the easier it is for ${businessName} to understand the job and give you an accurate price.`}</p>
                 <ul className="space-y-3">
                   {(isConstruction
                     ? ["Describe the project and works required","Tell us your planning status if you know it","Upload photos, sketches or drawings","Add your postcode and timeframe"]
-                    : ["Upload front, side and rear photos","Tell us your existing surface","Select the service you are interested in","Add your postcode and timeframe"]).map(b => (
+                    : isLandscaping
+                    ? ["Photos of the area as it is now","Tell us the rough size and the levels","Select the service you are interested in","Add your postcode and timeframe"]
+                    : isRendering
+                    ? ["Upload front, side and rear photos","Tell us your existing surface","Select the service you are interested in","Add your postcode and timeframe"]
+                    : ["Describe the job and what you need","Upload any photos you have","Select the service you are interested in","Add your postcode and timeframe"]).map(b => (
                     <li key={b} className="flex items-start gap-2">
                       <div className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ backgroundColor: accent }}><CheckIcon color="white"/></div>
                       <span className="text-sm" style={{ color: TEXT }}>{b}</span>
@@ -2871,7 +2916,11 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
                 <div className="space-y-3">
                   {(isConstruction
                     ? [{ n: 1, text: "Your project details and any drawings are reviewed." },{ n: 2, text: "We may call you to clarify the scope of the works." },{ n: 3, text: "You receive a quote based on the work required." }]
-                    : [{ n: 1, text: "AMO reviews your photos and property details." },{ n: 2, text: "A suitable rendering option is recommended." },{ n: 3, text: "You receive a quote based on the work required." }]).map(s => (
+                    : isLandscaping
+                    ? [{ n: 1, text: `${businessName} reviews your photos and the size of the job.` },{ n: 2, text: "We come and check the levels, the access and where the water goes." },{ n: 3, text: "You receive a written quote with the build-up specified." }]
+                    : isRendering
+                    ? [{ n: 1, text: `${businessName} reviews your photos and property details.` },{ n: 2, text: "A suitable rendering option is recommended." },{ n: 3, text: "You receive a quote based on the work required." }]
+                    : [{ n: 1, text: `${businessName} reviews your enquiry.` },{ n: 2, text: "We may call you to clarify what is needed." },{ n: 3, text: "You receive a quote based on the work required." }]).map(s => (
                     <div key={s.n} className="flex items-start gap-3">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 text-xs font-bold" style={{ backgroundColor: accent }}>{s.n}</div>
                       <p className="text-sm text-slate-300">{s.text}</p>
@@ -2943,7 +2992,7 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
                     </div>
                   </>)}
 
-                  {!isConstruction && (<>
+                  {isRendering && (<>
                   <div className={gridCls}>
                     <div id="qf-propertyType">
                       <label className={labelCls} style={{ color: MUTED }}>Property Type *</label>
@@ -2998,6 +3047,60 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
                     </div>
                   </div>
                   </>)}
+
+                  {isLandscaping && (<>
+                  <div className={gridCls}>
+                    <div id="qf-serviceInterest">
+                      <label className={labelCls} style={{ color: MUTED }}>Service Required *</label>
+                      <select className={inputCls} value={form.serviceInterest} onChange={f('serviceInterest')}>
+                        <option value="">Select service...</option>
+                        {serviceChoices.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <FieldError message={errors.serviceInterest}/>
+                    </div>
+                    <div id="qf-gardenSize">
+                      <label className={labelCls} style={{ color: MUTED }}>Approximate Size of the Area *</label>
+                      <select className={inputCls} value={form.gardenSize} onChange={f('gardenSize')}>
+                        <option value="">Select...</option>
+                        {GARDEN_SIZES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      <FieldError message={errors.gardenSize}/>
+                    </div>
+                  </div>
+                  <div className={gridCls}>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>What Is There Now?</label>
+                      <select className={inputCls} value={form.currentSurface} onChange={f('currentSurface')}>
+                        <option value="">Select...</option>
+                        {CURRENT_SURFACES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className={labelCls} style={{ color: MUTED }}>Levels</label>
+                      <select className={inputCls} value={form.levelChange} onChange={f('levelChange')}>
+                        <option value="">Select...</option>
+                        {LEVEL_CHANGES.map(t => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  </>)}
+
+                  {isGeneric && (<>
+                  <div id="qf-serviceInterest">
+                    <label className={labelCls} style={{ color: MUTED }}>Service Required *</label>
+                    <select className={inputCls} value={form.serviceInterest} onChange={f('serviceInterest')}>
+                      <option value="">Select service...</option>
+                      {serviceChoices.map(t => <option key={t} value={t}>{t}</option>)}
+                    </select>
+                    <FieldError message={errors.serviceInterest}/>
+                  </div>
+                  <div id="qf-projectDescription">
+                    <label className={labelCls} style={{ color: MUTED }}>Tell Us About the Job *</label>
+                    <textarea rows={4} className={inputCls} placeholder="What needs doing, and anything we should know before pricing it." value={form.projectDescription} onChange={f('projectDescription')}/>
+                    <FieldError message={errors.projectDescription}/>
+                  </div>
+                  </>)}
+
                   <div id="qf-timeframe">
                     <label className={labelCls} style={{ color: MUTED }}>Preferred Timeframe *</label>
                     <select className={inputCls} value={form.timeframe} onChange={f('timeframe')}>
@@ -3057,7 +3160,7 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
                         <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Anything else about the property, site access or timings…" value={form.notes} onChange={f('notes')}/></div>
                       </>)}
 
-                      {!isConstruction && (<>
+                      {isRendering && (<>
                       <div>
                         <label className={labelCls} style={{ color: MUTED }}>Approximate Wall Area</label>
                         <select className={inputCls} value={form.wallArea} onChange={f('wallArea')}>
@@ -3141,10 +3244,53 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
                       <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Tell us anything else about your property, existing walls, access or the work required…" value={form.notes} onChange={f('notes')}/></div>
                       </>)}
 
+                      {isLandscaping && (<>
+                      <div className={gridCls}>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Does It Hold Water After Rain?</label>
+                          <select className={inputCls} value={form.drainageIssues} onChange={f('drainageIssues')}>
+                            <option value="">Select...</option>
+                            {YES_NO_NOTSURE.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className={labelCls} style={{ color: MUTED }}>Do You Need the Waste Taking Away?</label>
+                          <select className={inputCls} value={form.wasteRemoval} onChange={f('wasteRemoval')}>
+                            <option value="">Select...</option>
+                            {WASTE_REMOVAL_OPTIONS.map(t => <option key={t} value={t}>{t}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>Anything Else You Want Included</label>
+                        <CheckboxGroup options={LANDSCAPING_FEATURES} values={form.desiredFeatures} onChange={v => setForm({ ...form, desiredFeatures: v })}/>
+                      </div>
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>Access to the Back</label>
+                        <CheckboxGroup options={LANDSCAPING_ACCESS} values={form.accessConditions} onChange={v => setForm({ ...form, accessConditions: v })}/>
+                      </div>
+                      <div>
+                        <label className={labelCls} style={{ color: MUTED }}>Optional Budget Range</label>
+                        <select className={inputCls} value={form.budget} onChange={f('budget')}>
+                          <option value="">Select...</option>
+                          {LANDSCAPING_BUDGETS.map(t => <option key={t} value={t}>{t}</option>)}
+                        </select>
+                      </div>
+                      <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Access, timings, anything you have already been quoted." value={form.notes} onChange={f('notes')}/></div>
+                      </>)}
+
+                      {isGeneric && (<>
+                      <div><label className={labelCls} style={{ color: MUTED }}>Additional Notes</label><textarea rows={3} className={inputCls} placeholder="Anything else we should know before pricing the job." value={form.notes} onChange={f('notes')}/></div>
+                      </>)}
+
                       <MultiFileUpload
                         tenantSlug={tenantSlug}
                         label="Upload photos or documents"
-                        hint={isConstruction
+                        hint={isLandscaping
+                          ? "Photos of the area as it is now, from a couple of angles, plus anything you have been quoted already. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
+                          : isGeneric
+                          ? "Anything that helps us understand the job — photos, sketches or documents. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
+                          : isConstruction
                           ? "Upload site photos, sketches, drawings or plans — anything that helps us understand the project. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"
                           : "Upload clear photos of the front, rear, sides and any damaged areas. Photos help us provide a faster and more accurate quotation. Up to 10 files · JPG, PNG, HEIC, PDF or Word · max 10MB each"}
                         onChange={urls => setForm({ ...form, photoUrls: urls })}
@@ -3181,21 +3327,27 @@ function QuotePage({ tenantSlug }: { tenantSlug: string }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
   const isConstruction = tenant?.industry === 'construction';
+  const isRendering = (tenant?.industry || 'rendering') === 'rendering';
+  const businessName = tenant?.name || "our team";
   return (
     <div>
       <PageSEO
-        title={isConstruction ? `Request A Free Quote | ${tenant?.name || "Get In Touch"}` : "Get a Free Rendering Quote | AMO Rendering — Essex & London"}
+        title={isRendering ? `Get a Free Rendering Quote | ${tenant?.name || "Rendering Specialists"}` : `Request A Free Quote | ${tenant?.name || "Get In Touch"}`}
         description={isConstruction
-          ? `Request a free quote from ${tenant?.name || "our team"}. Tell us about your project — from new builds to renovations — and we'll come back with a detailed quotation.`
-          : "Request a free rendering quote from AMO Rendering. Upload photos of your property and we'll recommend the right render system."}/>
+          ? `Request a free quote from ${businessName}. Tell us about your project — from new builds to renovations — and we'll come back with a detailed quotation.`
+          : isRendering
+          ? `Request a free rendering quote from ${businessName}. Upload photos of your property and we'll recommend the right render system.`
+          : `Request a free quote from ${businessName}. Tell us about the job and we'll come back with a price.`}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <PageHero tenantSlug={tenantSlug} tenant={tenant}
-        crumb={isConstruction ? "Request A Quote" : "Request A Rendering Quote"}
-        title={isConstruction ? "Request A Free Quote" : "Request A Rendering Quote"}
+        crumb={isRendering ? "Request A Rendering Quote" : "Request A Quote"}
+        title={isRendering ? "Request A Rendering Quote" : "Request A Free Quote"}
         subtitle={isConstruction
-          ? `Tell us about your project and ${tenant?.name || "our team"} will assess the works and come back with a detailed quotation.`
-          : "Tell us about your property and upload photos so AMO Rendering can assess the work and recommend the right render system."}/>
+          ? `Tell us about your project and ${businessName} will assess the works and come back with a detailed quotation.`
+          : isRendering
+          ? `Tell us about your property and upload photos so ${businessName} can assess the work and recommend the right render system.`
+          : `Tell us about the job and ${businessName} will come back with a price.`}/>
       <QuoteFormSection tenantSlug={tenantSlug}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>

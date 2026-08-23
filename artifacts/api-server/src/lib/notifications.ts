@@ -93,6 +93,13 @@ export interface NotificationContext {
   planningStatus?: string;
   hasDrawings?: string;
   urgency?: string;
+  // Landscaping (KD Essex) fields
+  gardenSize?: string;
+  currentSurface?: string;
+  levelChange?: string;
+  drainageIssues?: string;
+  wasteRemoval?: string;
+  desiredFeatures?: string[];
 }
 
 async function getTenantAndSettings(tenantId: number) {
@@ -203,6 +210,12 @@ export async function fireNotification(ctx: NotificationContext): Promise<void> 
             planningStatus: ctx.planningStatus,
             hasDrawings: ctx.hasDrawings,
             urgency: ctx.urgency,
+            gardenSize: ctx.gardenSize,
+            currentSurface: ctx.currentSurface,
+            levelChange: ctx.levelChange,
+            drainageIssues: ctx.drainageIssues,
+            wasteRemoval: ctx.wasteRemoval,
+            desiredFeatures: ctx.desiredFeatures,
           }), smtp, { tenantId: ctx.tenantId, event: ctx.event });
         }
         if (doAdminSms) {

@@ -126,6 +126,13 @@ async function handleQuoteRequest(req: any, res: any, slug: string) {
       planningStatus: lead[0].planningStatus ?? undefined,
       hasDrawings: lead[0].hasDrawings ?? undefined,
       urgency: lead[0].urgency ?? undefined,
+      // Landscaping (KD Essex) fields
+      gardenSize: lead[0].gardenSize ?? undefined,
+      currentSurface: lead[0].currentSurface ?? undefined,
+      levelChange: lead[0].levelChange ?? undefined,
+      drainageIssues: lead[0].drainageIssues ?? undefined,
+      wasteRemoval: lead[0].wasteRemoval ?? undefined,
+      desiredFeatures: (lead[0].desiredFeatures as string[] | null) ?? undefined,
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 }

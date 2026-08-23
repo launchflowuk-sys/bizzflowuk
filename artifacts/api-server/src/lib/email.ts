@@ -96,6 +96,13 @@ export function buildLeadNewAdminEmail(opts: {
   planningStatus?: string;
   hasDrawings?: string;
   urgency?: string;
+  // Landscaping (KD Essex) fields
+  gardenSize?: string;
+  currentSurface?: string;
+  levelChange?: string;
+  drainageIssues?: string;
+  wasteRemoval?: string;
+  desiredFeatures?: string[];
 }): EmailPayload {
   const name = `${opts.firstName} ${opts.lastName}`.trim();
   const accent = opts.brand.primaryColor || "#f97316";
@@ -120,6 +127,12 @@ export function buildLeadNewAdminEmail(opts: {
     ["Planning / Building Regs", opts.planningStatus],
     ["Has Drawings / Plans", opts.hasDrawings],
     ["Urgency", opts.urgency],
+    ["Approximate Size of Area", opts.gardenSize],
+    ["What Is There Now", opts.currentSurface],
+    ["Levels", opts.levelChange],
+    ["Holds Water After Rain", opts.drainageIssues],
+    ["Waste Removal", opts.wasteRemoval],
+    ["Features Wanted", opts.desiredFeatures?.length ? opts.desiredFeatures.join(", ") : undefined],
     ["Existing Surface", opts.existingSurface],
     ["Current Condition", opts.currentCondition?.length ? opts.currentCondition.join(", ") : undefined],
     ["Desired Finish", opts.desiredFinish],

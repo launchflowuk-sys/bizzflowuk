@@ -4228,7 +4228,7 @@ function SettingsPage() {
               <input type="password" className={inputCls} placeholder={s?.smtpPass === "" ? "•••••••• saved — leave blank to keep" : "Enter password"} value={smtpPass} onChange={e => setSmtpPass(e.target.value)} autoComplete="new-password" />
               <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved password</p>
             </div>
-            <div className="col-span-1 sm:col-span-2">{field("smtpFrom", "From Address", "text", `e.g. AMO Rendering <info@amorendering.co.uk>`)}</div>
+            <div className="col-span-1 sm:col-span-2">{field("smtpFrom", "From Address", "text", `e.g. Your Business Name <info@yourbusiness.co.uk>`)}</div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
             <button type="button" onClick={handleTestEmail} disabled={testEmailMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">

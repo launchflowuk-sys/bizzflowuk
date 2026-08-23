@@ -20,6 +20,11 @@ export default function TenantSiteRouter(props: { forcedSlug?: string; forcedBas
   // template before we know the industry would flash the wrong design entirely.
   if (isLoading && !data) return null;
 
+  // No tenant row at all (API error, blip, unknown slug). Render nothing rather
+  // than falling through: the last branch is the RENDERING template, so a failed
+  // lookup used to serve one client's site under another client's URL.
+  if (!data) return null;
+
   if (industry === "construction") return <ConstructionSiteApp {...props} />;
   if (industry === "landscaping") return <LandscapingSiteApp {...props} />;
   return <PublicSiteApp {...props} />;
