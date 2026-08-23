@@ -32,6 +32,9 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   "email", "phone", "address", "city", "description",
   "serviceBase", "serviceArea",
   "socialFacebook", "socialInstagram", "socialTwitter", "socialLinkedin",
+  // The site-wide SEO pair. These were missing, so the CMS fields silently did nothing on every
+  // tenant's home page and the hardcoded fallback always won.
+  "seoTitle", "seoDescription",
   "googleAnalyticsId", "googleAdsConversionId", "googleAdsConversionLabel", "termsContent", "privacyContent",
   "createdAt", "updatedAt",
 ]);

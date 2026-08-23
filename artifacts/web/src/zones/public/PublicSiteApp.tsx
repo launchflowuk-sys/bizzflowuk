@@ -712,7 +712,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
-      <PageSEO title={`${brand.name} | Silicone Render Specialists — ${brand.reach}`} description={settings?.seoDescription || `${brand.name} provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across ${brand.reach}. Request a free quote today.`} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
+      <PageSEO title={settings?.seoTitle || `${brand.name} | Silicone Render Specialists — ${brand.reach}`} description={settings?.seoDescription || `${brand.name} provides expert silicone render, monocouche, K Rend, EWI and pebbledash removal across ${brand.reach}. Request a free quote today.`} siteName={tenant?.name} image={settings?.heroImageUrl || settings?.logoUrl}/>
       <JsonLd data={localBusinessSchema(tenant, settings, origin, avgRating, reviewList.length)}/>
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
