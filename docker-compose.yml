@@ -24,6 +24,14 @@ services:
       # One-time password recovery for mark@amorendering.co.uk. Set it in Coolify, deploy, log in,
       # then remove it. Passed to the runtime container so the seed can reset the password.
       MARK_LOGIN_PASSWORD: ${MARK_LOGIN_PASSWORD:-}
+      # Break-glass for the platform admin (/admin). SEED_ADMIN_PASSWORD cannot do this —
+      # ensurePlatformUsers uses onConflictDoNothing and never touches an existing account.
+      # PLATFORM_ADMIN_PASSWORD create-or-RESETS the account and forces it to SUPER_ADMIN with
+      # tenantId null; PLATFORM_ADMIN_EMAIL retargets it at a different login. Set in Coolify,
+      # deploy, log in, then REMOVE — while set, every deploy resets that password, so a change
+      # made in the app is silently reverted on the next boot.
+      PLATFORM_ADMIN_PASSWORD: ${PLATFORM_ADMIN_PASSWORD:-}
+      PLATFORM_ADMIN_EMAIL: ${PLATFORM_ADMIN_EMAIL:-}
     volumes:
       - api-uploads:/data/uploads
     networks:
