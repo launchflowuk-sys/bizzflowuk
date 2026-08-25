@@ -484,6 +484,9 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
             src={logoSrc}
             alt={tenant?.name || "Logo"}
             className="h-14 sm:h-16 w-auto object-contain transition-all duration-300"
+            // Over the hero the nav is transparent and a tenant's logo may be dark-on-dark. We only
+            // store one logo per tenant, so lift it off the image rather than demand a light variant.
+            style={isOpaque ? undefined : { filter: "drop-shadow(0 1px 6px rgba(0,0,0,0.55))" }}
           />
           ) : (
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight" style={{ color: linkColor }}>
