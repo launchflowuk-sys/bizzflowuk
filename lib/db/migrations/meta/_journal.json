@@ -183,6 +183,13 @@
       "when": 1786700000000,
       "tag": "0025_amo_rendering_real_address",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1786800000000,
+      "tag": "0026_user_invites",
+      "breakpoints": true
     }
   ]
 }

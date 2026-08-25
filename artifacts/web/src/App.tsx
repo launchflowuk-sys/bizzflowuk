@@ -148,6 +148,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 // ---------------------------------------------------------------------------
 // Zone lazy imports
 // ---------------------------------------------------------------------------
+const AcceptInvitePage = lazy(() => import("@/zones/admin/AcceptInvitePage"));
 const DashboardApp = lazy(() => import("@/zones/dashboard/DashboardApp"));
 const PortalApp = lazy(() => import("@/zones/portal/PortalApp"));
 const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
@@ -326,6 +327,8 @@ function AppRoutes() {
       <Suspense fallback={<ZoneLoader />}>
         <Switch>
           <Route path="/" component={LandingPage} />
+          {/* Public: the invite token is the credential, so this must sit outside the signed-in gate. */}
+          <Route path="/accept-invite" component={AcceptInvitePage} />
           <Route path="/sign-in">{() => isSignedIn ? <RoleRouter /> : <LoginForm />}</Route>
           <Route path="/dashboard/*?" component={DashboardApp} />
           <Route path="/portal/*?" component={PortalApp} />

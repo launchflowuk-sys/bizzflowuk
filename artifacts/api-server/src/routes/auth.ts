@@ -1,6 +1,7 @@
 import { Router } from "express";
+import crypto from "node:crypto";
 import bcrypt from "bcryptjs";
-import { db } from "@workspace/db";
+import { db, userInvitesTable } from "@workspace/db";
 import { usersTable, userTenantsTable, tenantsTable, tenantSettingsTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireAuth, signAuthToken } from "../middlewares/auth";
@@ -122,6 +123,58 @@ router.post("/login", loginRateLimiter, async (req, res) => {
 
 router.post("/logout", (_req, res) => {
   res.json({ ok: true });
+});
+
+
+// ---------------------------------------------------------------------------
+// Invitations — how an account gets its first password
+// ---------------------------------------------------------------------------
+const hashInvite = (raw: string) => crypto.createHash("sha256").update(raw).digest("hex");
+
+/** Look up a pending invite so the page can greet the person by name before they set a password. */
+router.get("/invite/:token", loginRateLimiter, async (req, res) => {
+  try {
+    const [invite] = await db.select().from(userInvitesTable)
+      .where(eq(userInvitesTable.tokenHash, hashInvite(String(req.params.token))))
+      .limit(1);
+    if (!invite || invite.acceptedAt || invite.expiresAt.getTime() < Date.now()) {
+      res.status(404).json({ error: "This invitation has already been used or has expired" });
+      return;
+    }
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, invite.userId)).limit(1);
+    if (!user) { res.status(404).json({ error: "This invitation is no longer valid" }); return; }
+    res.json({ email: user.email, firstName: user.firstName });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+/**
+ * Accept an invitation: the invited person sets their own password and is signed straight in.
+ * The invite is consumed in the same step, so a link cannot be replayed.
+ */
+router.post("/accept-invite", loginRateLimiter, async (req, res) => {
+  try {
+    const { token, password } = req.body as { token?: string; password?: string };
+    if (!token || !password) { res.status(400).json({ error: "Token and password are required" }); return; }
+    if (password.length < 10) { res.status(400).json({ error: "Choose a password of at least 10 characters" }); return; }
+
+    const [invite] = await db.select().from(userInvitesTable)
+      .where(eq(userInvitesTable.tokenHash, hashInvite(token)))
+      .limit(1);
+    if (!invite || invite.acceptedAt || invite.expiresAt.getTime() < Date.now()) {
+      res.status(400).json({ error: "This invitation has already been used or has expired" });
+      return;
+    }
+
+    const hash = await bcrypt.hash(password, 12);
+    await db.update(usersTable).set({ passwordHash: hash }).where(eq(usersTable.id, invite.userId));
+    await db.update(userInvitesTable).set({ acceptedAt: new Date() }).where(eq(userInvitesTable.id, invite.id));
+
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, invite.userId)).limit(1);
+    res.json({
+      token: signAuthToken(user.id),
+      user: { id: user.id, email: user.email, role: user.role, firstName: user.firstName, lastName: user.lastName, tenantId: user.tenantId },
+    });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 export default router;

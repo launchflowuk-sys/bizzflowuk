@@ -1,4 +1,5 @@
 import { useAuthCtx } from "@/lib/auth";
+import { InviteUserPanel } from "./InviteUserPanel";
 import { useGetMe, useGetPlatformStats, useListTenants, useCreateTenant, useGetTenant, useUpdateTenant, useDeleteTenant, useSuspendTenant, useGetTenantStats, useListUsers, useUpdateUser } from "@workspace/api-client-react";
 import { useState } from "react";
 import { Switch, Route, Link, useLocation, Redirect } from "wouter";
@@ -297,6 +298,7 @@ function UsersPage() {
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-bold text-slate-900">Users</h1>
+      <InviteUserPanel tenants={tenantList} onCreated={() => qc.invalidateQueries({ queryKey: getListUsersQueryKey() })} />
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden">
         {isLoading ? <div className="p-8 text-center text-slate-400">Loading...</div> : (
           <div className="overflow-x-auto">
