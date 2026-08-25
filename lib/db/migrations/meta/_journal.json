@@ -176,6 +176,13 @@
       "when": 1786600000000,
       "tag": "0024_amo_rendering_own_assets",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1786700000000,
+      "tag": "0025_amo_rendering_real_address",
+      "breakpoints": true
     }
   ]
 }

@@ -3497,7 +3497,10 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
                   {(settings?.address || settings?.city) && (
                     <div>
                       <p className="font-semibold" style={{ color: TEXT }}>Location</p>
-                      <p style={{ color: MUTED }}>{[settings?.address, settings?.city].filter(Boolean).join(", ")}</p>
+                      {/* Don't append the town when the stored address already ends with it —
+                          a full address like "324 Long Lane, Grays, RM16 2QH" would otherwise
+                          render "…, Grays, RM16 2QH, Grays". */}
+                      <p style={{ color: MUTED }}>{[settings?.address, settings?.city].filter(Boolean).filter((v: string, i: number, a: string[]) => i === 0 || !a[0]?.toLowerCase().includes(String(v).toLowerCase())).join(", ")}</p>
                     </div>
                   )}
                 </div>
