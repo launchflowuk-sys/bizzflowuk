@@ -241,11 +241,18 @@ function RoleRouter() {
 // ---------------------------------------------------------------------------
 function DomainRouteGuard({ children }: { children: React.ReactNode }) {
   const hostname = window.location.hostname;
-  const platformDomain = import.meta.env.VITE_PLATFORM_DOMAIN || "";
+  // Falls back to the platform's own domain when the build-time var is absent, matching the
+  // PUBLIC_BASE_URL || "https://bizzflowuk.com" convention already used across the API.
+  // Without a default this evaluated to "", so the platform domain was NOT recognised as a known
+  // host: every visitor to bizzflowuk.com fired resolve-domain against its own hostname, logged a
+  // 404 in the console, and — because the guard renders <ZoneLoader/> while that request is in
+  // flight — waited on a round-trip that could only ever fail before anything painted.
+  const platformDomain = import.meta.env.VITE_PLATFORM_DOMAIN || "bizzflowuk.com";
   const isKnownHost =
     hostname === "localhost" ||
     hostname === "127.0.0.1" ||
-    (platformDomain !== "" && hostname === platformDomain) ||
+    hostname === platformDomain ||
+    hostname === `www.${platformDomain}` ||
     /^\d+\.\d+\.\d+\.\d+$/.test(hostname);
 
   const { data, isLoading, isError } = useResolveTenantDomain(
