@@ -17,6 +17,16 @@ import { PriceCalculatorSection } from "./PriceCalculator";
 
 const GREEN = "#7DB93F";       // brand green (sampled from logo) — icons, decorative, on-dark accents
 const GREEN_MID = "#6BA332";   // large headline accent words on white (≥3:1)
+/**
+ * Tenant-owned imagery for the editorial blocks, most-specific first. The construction template
+ * used to hardcode one tenant's real photographs (team portraits, client meetings) as the stand-in
+ * for every tenant, so a new client's "our team" section showed another company's staff. Blocks
+ * that get nothing back render without the image rather than borrowing one.
+ */
+function tenantImages(settings: any): string[] {
+  return [settings?.aboutImageUrl, settings?.heroImageUrl].filter(Boolean) as string[];
+}
+
 const GREEN_DEEP = "#4F7A26";  // buttons + small accent text on white (≥4.5:1)
 const INK = "#161B12";         // dark panels / footer (green-tinted charcoal)
 const TEXT = "#232B20";
@@ -240,7 +250,7 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
         "@type": "GeneralContractor",
         name: tenant?.name || "",
         telephone: phone || undefined,
-        address: tenant?.address ? { "@type": "PostalAddress", addressLocality: tenant?.city || undefined, addressRegion: "Essex", streetAddress: tenant.address } : undefined,
+        address: tenant?.address ? { "@type": "PostalAddress", addressLocality: tenant?.city || undefined, addressRegion: settings?.serviceArea || undefined, streetAddress: tenant.address } : undefined,
         url: tenant?.website || undefined,
         foundingDate: "2011",
       }}/>
@@ -340,11 +350,13 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
               </a>
             </div>
             <div className="lg:col-span-2 relative rounded-2xl overflow-hidden min-h-[420px] lg:self-stretch">
-              <img src="/amo-services/amo-services-new-builds-uk.webp" alt={`${tenant?.name || "Construction"} site in progress`} loading="lazy" className="absolute inset-0 w-full h-full object-cover"/>
+              {tenantImages(settings)[0]
+                ? <img src={tenantImages(settings)[0]} alt={`${tenant?.name || "Construction"} site in progress`} loading="lazy" className="absolute inset-0 w-full h-full object-cover"/>
+                : <div className="absolute inset-0" style={{ backgroundColor: GREEN_DEEP }}/>}
               <div className="absolute top-5 right-5 rounded-2xl p-5 w-48 shadow-xl" style={{ backgroundColor: "rgba(22,27,18,0.94)" }}>
                 <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest mb-3" style={{ color: GREEN }}><PinIcon/> Serving</p>
                 <div className="space-y-2.5">
-                  {(areaNames.length ? areaNames : ["Grays", "Thurrock", "Essex", "London"]).map(a => (
+                  {(areaNames.length ? areaNames : [settings?.serviceBase, settings?.serviceArea, settings?.city].filter(Boolean)).map((a: string) => (
                     <p key={a} className="flex items-center gap-2 text-sm font-semibold text-white"><span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: GREEN }}/>{a}</p>
                   ))}
                 </div>
@@ -357,11 +369,16 @@ function HomePage({ tenantSlug }: { tenantSlug: string }) {
       {/* Why choose us / about */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div className="grid grid-cols-2 gap-4">
-            <img src="/amo-services/amo-services-team-portrait-1600x1200.webp" alt={`The ${tenant?.name || ""} team`} loading="lazy" className="rounded-2xl w-full h-64 object-cover col-span-2"/>
-            <img src="/amo-services/amo-services-craftsmanship-detail-1200x1200.webp" alt="Detail of finished work" loading="lazy" className="rounded-2xl w-full h-44 object-cover"/>
-            <img src="/amo-services/amo-services-client-consultation-1600x1067.webp" alt="Discussing plans with a client" loading="lazy" className="rounded-2xl w-full h-44 object-cover"/>
-          </div>
+          {tenantImages(settings).length > 0 && (
+            <div className="grid grid-cols-2 gap-4">
+              {tenantImages(settings).slice(0, 1).map((src, i) => (
+                <img key={i} src={src} alt={`The ${tenant?.name || ""} team`} loading="lazy" className="rounded-2xl w-full h-64 object-cover col-span-2"/>
+              ))}
+              {tenantImages(settings).slice(1, 3).map((src, i) => (
+                <img key={i} src={src} alt="Our work" loading="lazy" className="rounded-2xl w-full h-44 object-cover"/>
+              ))}
+            </div>
+          )}
           <div>
             <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.18em] mb-3" style={{ color: GREEN_DEEP }}>Why Choose {tenant?.name || "Us"}</p>
             <h2 className="text-3xl sm:text-4xl font-extrabold leading-tight" style={{ color: TEXT }}>
@@ -571,7 +588,9 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
       <PageSEO title={`About Us | ${tenant?.name || ""}`} description={settings?.aboutText || tenant?.description || ""}/>
       <section className="py-16 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 space-y-14">
-          <img src="/amo-services/amo-services-team-hero-1920x960.webp" alt={`The ${tenant?.name || ""} team on site`} className="rounded-2xl w-full aspect-[2/1] object-cover"/>
+          {tenantImages(settings)[0] && (
+            <img src={tenantImages(settings)[0]} alt={`The ${tenant?.name || ""} team on site`} className="rounded-2xl w-full aspect-[2/1] object-cover"/>
+          )}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <p className="text-xs sm:text-sm font-bold uppercase tracking-[0.18em] mb-3" style={{ color: GREEN_DEEP }}>Our Story</p>
@@ -593,9 +612,9 @@ function AboutPage({ tenantSlug }: { tenantSlug: string }) {
               <a href={`${siteBase}/quote`} className="mt-8 inline-flex items-center rounded-lg px-7 py-3.5 text-sm font-bold text-white transition-opacity hover:opacity-90" style={{ backgroundColor: GREEN_DEEP }}>Get A Free Quote</a>
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <img src="/amo-services/amo-services-client-consultation-1600x1067.webp" alt="Consulting with a client over drawings" loading="lazy" className="rounded-2xl w-full h-52 object-cover"/>
-              <img src="/amo-services/amo-services-craftsmanship-detail-1200x1200.webp" alt="Close-up of quality workmanship" loading="lazy" className="rounded-2xl w-full h-52 object-cover"/>
-              <img src="/amo-services/amo-services-completed-project-banner-1920x800.webp" alt="A completed project" loading="lazy" className="rounded-2xl w-full h-40 object-cover col-span-2"/>
+              {tenantImages(settings).slice(0, 2).map((src, i) => (
+                <img key={i} src={src} alt="Our work" loading="lazy" className="rounded-2xl w-full h-52 object-cover"/>
+              ))}
             </div>
           </div>
         </div>
@@ -653,7 +672,9 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
                 <a href={`${siteBase}/quote`} className="inline-flex items-center rounded-lg px-6 py-3 text-sm font-bold transition-opacity hover:opacity-90" style={{ backgroundColor: GREEN, color: INK }}>Request A Detailed Quote</a>
               </div>
             </div>
-            <img src="/amo-services/amo-services-client-consultation-1600x1067.webp" alt="Talking through project plans" loading="lazy" className="rounded-2xl w-full aspect-[3/2] object-cover"/>
+            {tenantImages(settings)[0] && (
+              <img src={tenantImages(settings)[0]} alt="Talking through project plans" loading="lazy" className="rounded-2xl w-full aspect-[3/2] object-cover"/>
+            )}
           </div>
           <div>
             {sent ? (

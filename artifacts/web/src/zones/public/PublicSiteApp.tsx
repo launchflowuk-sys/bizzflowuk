@@ -173,13 +173,19 @@ function localBusinessSchema(tenant: any, settings: any, siteUrl: string, avgRat
   };
 }
 
-export function Spinner() {
+/**
+ * Loading state for the shared rendering template. Deliberately unbranded by default: it renders
+ * while `useGetPublicSite` is still in flight, so the tenant's own logo and colour are not known
+ * yet. It used to hardcode one tenant's logo and brand blue, which every other tenant inherited.
+ * Callers that DO already have settings can pass them.
+ */
+export function Spinner({ logoUrl, color }: { logoUrl?: string | null; color?: string | null } = {}) {
   return (
     <div className="flex min-h-[300px] items-center justify-center">
       <div className="relative w-24 h-24 flex items-center justify-center">
-        <img src="/amo-logo-icon.webp" alt="Loading" width={64} height={64} className="w-16 h-16 object-contain" />
+        {logoUrl ? <img src={logoUrl} alt="Loading" width={64} height={64} className="w-16 h-16 object-contain" /> : null}
         <svg className="absolute inset-0 w-24 h-24 animate-spin" viewBox="0 0 96 96" fill="none">
-          <circle cx="48" cy="48" r="44" stroke="#1F8CFF" strokeWidth="4" strokeLinecap="round" strokeDasharray="69 207"/>
+          <circle cx="48" cy="48" r="44" stroke={color || "#94A3B8"} strokeWidth="4" strokeLinecap="round" strokeDasharray="69 207"/>
         </svg>
       </div>
     </div>
@@ -464,20 +470,26 @@ function SiteNav({ tenant, settings, tenantSlug, alwaysOpaque }: any) {
   const linkColor = isOpaque ? TEXT : "#ffffff";
   const burgerColor = isOpaque ? TEXT : "#ffffff";
   const burgerHover = isOpaque ? "hover:bg-slate-100" : "hover:bg-white/10";
-  const logoSrc = isOpaque
-    ? (settings?.logoUrl || "/amo-logo-dark.webp")
-    : (settings?.logoUrl || "/amo-logo-icon.webp");
+  // No cross-tenant image fallback: a tenant with no logo set shows its name as a wordmark rather
+  // than another tenant's logo file.
+  const logoSrc = settings?.logoUrl || null;
 
   return (
     <nav className={navClass}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-20 flex items-center justify-between xl:grid xl:grid-cols-3">
         {/* Left — logo */}
         <a href={siteBase || '/'} className="flex-shrink-0">
+          {logoSrc ? (
           <img
             src={logoSrc}
             alt={tenant?.name || "Logo"}
             className="h-14 sm:h-16 w-auto object-contain transition-all duration-300"
           />
+          ) : (
+            <span className="text-xl sm:text-2xl font-extrabold tracking-tight" style={{ color: linkColor }}>
+              {tenant?.name || ""}
+            </span>
+          )}
         </a>
         {/* Centre — nav links (desktop 1280px+) */}
         <div className="hidden xl:flex items-center justify-center gap-6 text-sm font-medium">
@@ -1509,8 +1521,10 @@ function AreasPage({ tenantSlug }: { tenantSlug: string }) {
       </section>
 
       {/* Team CTA */}
-      <section className="relative py-20 overflow-hidden">
-        <img src={settings?.aboutImageUrl || settings?.heroImageUrl || "/amo-team.webp"} alt={`${brand.name} team`} className="absolute inset-0 w-full h-full object-cover object-center"/>
+      <section className="relative py-20 overflow-hidden" style={{ backgroundColor: '#0A1628' }}>
+        {(settings?.aboutImageUrl || settings?.heroImageUrl) && (
+          <img src={settings?.aboutImageUrl || settings?.heroImageUrl} alt={`${brand.name} team`} className="absolute inset-0 w-full h-full object-cover object-center"/>
+        )}
         <div className="absolute inset-0" style={{ background: 'linear-gradient(to right, rgba(10,22,40,0.88) 0%, rgba(10,22,40,0.60) 60%, transparent 100%)' }}/>
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6">
           <div className="max-w-lg space-y-5">
@@ -1742,14 +1756,16 @@ function GalleryPage({ tenantSlug }: { tenantSlug: string }) {
       <section style={{ backgroundColor: LIGHT_BG }} className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-            {/* Image */}
-            <div className="rounded-2xl overflow-hidden shadow-xl">
-              <img
-                src={settings?.aboutImageUrl || settings?.heroImageUrl || "/amo-team.webp"}
-                alt={`The ${brand.name} team`}
-                className="w-full object-cover"
-              />
-            </div>
+            {/* Image — omitted until the tenant uploads their own; no cross-tenant stand-in. */}
+            {(settings?.aboutImageUrl || settings?.heroImageUrl) && (
+              <div className="rounded-2xl overflow-hidden shadow-xl">
+                <img
+                  src={settings?.aboutImageUrl || settings?.heroImageUrl}
+                  alt={`The ${brand.name} team`}
+                  className="w-full object-cover"
+                />
+              </div>
+            )}
             {/* Trust content */}
             <div className="space-y-7">
               <div>
