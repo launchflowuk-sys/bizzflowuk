@@ -79,9 +79,49 @@ async function ensurePlatformUsers(): Promise<void> {
   }
 }
 
+/**
+ * Break-glass recovery for the platform seat.
+ *
+ * ensurePlatformUsers uses onConflictDoNothing and deliberately never resets an existing
+ * password — an earlier version used onConflictDoUpdate and silently reset real admin passwords
+ * to a hardcoded value on every boot. Correct, but it left no way back in: re-setting
+ * SEED_ADMIN_PASSWORD does nothing to an account that already exists, so a lost platform password
+ * meant /admin was unreachable and nobody could issue invites.
+ *
+ * Set PLATFORM_ADMIN_PASSWORD to create-or-reset the platform admin, and make sure the account is
+ * actually SUPER_ADMIN with no tenant scoping (a TENANT_ADMIN lands on a single business
+ * dashboard, not /admin). PLATFORM_ADMIN_EMAIL overrides which account, so a second person can be
+ * promoted rather than everything hanging on one login.
+ *
+ * ⚠ REMOVE THE VARIABLE ONCE YOU ARE BACK IN. While it is set, every deploy resets that password,
+ * so any change made in the app is silently reverted on the next boot.
+ */
+async function resetPlatformAdminIfRequested(): Promise<void> {
+  const password = process.env["PLATFORM_ADMIN_PASSWORD"];
+  if (!password) return;
+
+  const email = (process.env["PLATFORM_ADMIN_EMAIL"] || "launchflowuk@gmail.com").toLowerCase().trim();
+  const hash = await bcrypt.hash(password, 12);
+
+  const [existing] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, email)).limit(1);
+
+  if (existing) {
+    await db.update(usersTable)
+      .set({ passwordHash: hash, role: "SUPER_ADMIN" as const, tenantId: null })
+      .where(eq(usersTable.id, existing.id));
+    logger.warn({ email }, "PLATFORM_ADMIN_PASSWORD set — password reset and role forced to SUPER_ADMIN. REMOVE this env var now.");
+  } else {
+    await db.insert(usersTable)
+      .values({ email, firstName: "Platform", lastName: "Admin", role: "SUPER_ADMIN" as const, tenantId: null, passwordHash: hash })
+      .onConflictDoNothing({ target: usersTable.email });
+    logger.warn({ email }, "PLATFORM_ADMIN_PASSWORD set — platform admin created. REMOVE this env var now.");
+  }
+}
+
 export async function runSeedFixIfNeeded(): Promise<void> {
   try {
     await ensurePlatformUsers();
+    await resetPlatformAdminIfRequested();
   } catch (err) {
     logger.error({ err }, "ensurePlatformUsers failed — non-fatal");
   }
