@@ -17,6 +17,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
+let _onUnauthorized: (() => void) | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -40,6 +41,21 @@ export function setBaseUrl(url: string | null): void {
  * NOTE: This function should never be used in web applications where session
  * token cookies are automatically associated with API calls by the browser.
  */
+/**
+ * Register a callback invoked when the server rejects a request that WE believed was
+ * authenticated (a token was attached and the response was 401).
+ *
+ * Without this the client can sit in a broken half-signed-in state: a stored token that the
+ * server no longer accepts — expired, or signed with a previous SESSION_SECRET — still looks
+ * like a session to the app, so it renders the dashboard shell while every single request 401s
+ * and the user is never offered the login form again.
+ *
+ * Pass `null` to clear the handler.
+ */
+export function setUnauthorizedHandler(fn: (() => void) | null): void {
+  _onUnauthorized = fn;
+}
+
 export function setAuthTokenGetter(getter: AuthTokenGetter | null): void {
   _authTokenGetter = getter;
 }
@@ -351,10 +367,12 @@ export async function customFetch<T = unknown>(
 
   // Attach bearer token when an auth getter is configured and no
   // Authorization header has been explicitly provided.
+  let sentWithToken = headers.has("authorization");
   if (_authTokenGetter && !headers.has("authorization")) {
     const token = await _authTokenGetter();
     if (token) {
       headers.set("authorization", `Bearer ${token}`);
+      sentWithToken = true;
     }
   }
 
@@ -363,6 +381,9 @@ export async function customFetch<T = unknown>(
   const response = await fetch(input, { ...init, method, headers });
 
   if (!response.ok) {
+    // Only when we actually presented a token: a 401 on an anonymous request is just a public
+    // endpoint saying no, and must not tear down a session that was never claimed.
+    if (response.status === 401 && sentWithToken) _onUnauthorized?.();
     const errorData = await parseErrorBody(response, method);
     throw new ApiError(response, errorData, requestInfo);
   }

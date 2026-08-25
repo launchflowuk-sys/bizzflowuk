@@ -3,8 +3,8 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wo
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useGetMe, setAuthTokenGetter, useResolveTenantDomain } from "@workspace/api-client-react";
-import { AuthProvider, useAuthCtx, getStoredToken } from "@/lib/auth";
+import { useGetMe, setAuthTokenGetter, setUnauthorizedHandler, useResolveTenantDomain } from "@workspace/api-client-react";
+import { AuthProvider, useAuthCtx, getStoredToken, clearStoredToken } from "@/lib/auth";
 
 import NotFound from "@/pages/not-found";
 
@@ -16,6 +16,18 @@ const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
 // Wire the API client to read our JWT on every request
 setAuthTokenGetter(() => Promise.resolve(getStoredToken()));
+
+// A stored token the server no longer accepts (expired, or signed with a previous
+// SESSION_SECRET) used to leave the app permanently half-signed-in: isSignedIn is only
+// "a token string exists in localStorage", never "the server agrees", so the dashboard shell
+// rendered while every request 401'd and the login form was unreachable. Drop the dead token
+// and send the user back to sign in.
+setUnauthorizedHandler(() => {
+  if (!getStoredToken()) return;
+  clearStoredToken();
+  const signInPath = `${basePath}/sign-in`;
+  if (window.location.pathname !== signInPath) window.location.replace(signInPath);
+});
 
 // ---------------------------------------------------------------------------
 // Login form
