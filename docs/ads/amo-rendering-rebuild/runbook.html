@@ -1,0 +1,231 @@
+<title>AMO Rendering Account Recovery</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=Public+Sans:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#FFFFFF; --raised:#F5F8FB; --ink:#0E1620; --body:#33414F; --muted:#5F6E7D;
+    --line:#DCE4EC; --line-soft:#EBF0F5;
+    --accent:#1265C4; --accent-soft:#E7F1FC;
+    --signal:#B23E0B; --signal-soft:#FBEDE5;
+    --ok:#15803D; --ok-soft:#E7F4EC;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0B1219; --raised:#131E29; --ink:#EAF1F8; --body:#BCC9D6; --muted:#8899A8;
+      --line:#243343; --line-soft:#1B2836;
+      --accent:#5FAAFF; --accent-soft:#152B42;
+      --signal:#F08A55; --signal-soft:#33200F;
+      --ok:#5FC584; --ok-soft:#12291B;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0B1219; --raised:#131E29; --ink:#EAF1F8; --body:#BCC9D6; --muted:#8899A8;
+    --line:#243343; --line-soft:#1B2836;
+    --accent:#5FAAFF; --accent-soft:#152B42;
+    --signal:#F08A55; --signal-soft:#33200F;
+    --ok:#5FC584; --ok-soft:#12291B;
+  }
+
+  *{box-sizing:border-box}
+  body{
+    background:var(--ground); color:var(--body);
+    font-family:"Public Sans",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    font-size:16px; line-height:1.65; margin:0;
+    padding:clamp(1.5rem,5vw,4rem) clamp(1.1rem,5vw,2rem) 6rem;
+  }
+  .wrap{max-width:52rem;margin:0 auto;display:flex;flex-direction:column;gap:3rem}
+  h1,h2,h3{font-family:Archivo,var(--ground),sans-serif;color:var(--ink);text-wrap:balance;margin:0;line-height:1.2}
+  h1{font-size:clamp(1.9rem,4.4vw,2.7rem);font-weight:700;letter-spacing:-.02em}
+  h2{font-size:1.3rem;font-weight:600;letter-spacing:-.01em}
+  h3{font-size:1.02rem;font-weight:600}
+  p{margin:0}
+  a{color:var(--accent)}
+  code{font-family:ui-monospace,"SF Mono",Menlo,monospace;font-size:.88em;background:var(--raised);
+    border:1px solid var(--line-soft);border-radius:4px;padding:.08em .38em;color:var(--ink)}
+
+  .eyebrow{font-size:.7rem;font-weight:600;letter-spacing:.13em;text-transform:uppercase;color:var(--muted)}
+  header{display:flex;flex-direction:column;gap:.85rem;border-bottom:2px solid var(--ink);padding-bottom:1.6rem}
+  .lede{font-size:1.06rem;color:var(--body);max-width:44rem}
+
+  section{display:flex;flex-direction:column;gap:1.1rem}
+  .phase{display:flex;gap:1rem;align-items:baseline;border-bottom:1px solid var(--line);padding-bottom:.7rem}
+  .phase .n{font-family:Archivo,sans-serif;font-weight:700;font-size:.82rem;color:var(--accent);
+    font-variant-numeric:tabular-nums;flex:0 0 auto;padding-top:.15rem}
+
+  .card{background:var(--raised);border:1px solid var(--line);border-radius:8px;padding:1.15rem 1.3rem;
+    display:flex;flex-direction:column;gap:.6rem}
+  .card.alert{background:var(--signal-soft);border-color:var(--signal)}
+  .card.alert h3{color:var(--signal)}
+  .card.good{background:var(--ok-soft);border-color:var(--ok)}
+  .card.good h3{color:var(--ok)}
+
+  ol,ul{margin:0;padding-left:1.3rem;display:flex;flex-direction:column;gap:.5rem}
+  li{padding-left:.2rem}
+  li::marker{color:var(--muted);font-variant-numeric:tabular-nums}
+
+  .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;min-width:30rem}
+  th,td{text-align:left;padding:.62rem .85rem;border-bottom:1px solid var(--line-soft);vertical-align:top}
+  th{font-family:Archivo,sans-serif;font-size:.7rem;letter-spacing:.09em;text-transform:uppercase;
+    color:var(--muted);background:var(--raised);font-weight:600}
+  tr:last-child td{border-bottom:none}
+  td.v{font-variant-numeric:tabular-nums;white-space:nowrap}
+
+  .files{display:grid;gap:.65rem}
+  .file{display:flex;gap:.8rem;align-items:baseline;border:1px solid var(--line);border-radius:6px;padding:.7rem .9rem;background:var(--raised)}
+  .file code{background:none;border:none;padding:0;font-weight:600;color:var(--accent)}
+  .file span{font-size:.88rem;color:var(--muted)}
+  .ask{border-left:3px solid var(--accent);padding-left:1rem;display:flex;flex-direction:column;gap:.55rem}
+  footer{border-top:1px solid var(--line);padding-top:1.2rem;font-size:.85rem;color:var(--muted)}
+</style>
+
+<div class="wrap">
+
+<header>
+  <p class="eyebrow">Contingency runbook · 25 August 2026</p>
+  <h1>AMO Rendering account recovery</h1>
+  <p class="lede">The Google account <code>amorendering@gmail.com</code> was deactivated and an appeal is
+  running. The full campaign structure was captured from the Ads API before access was lost, so the
+  campaign can be rebuilt into a new account from the files listed here.</p>
+</header>
+
+<section>
+  <div class="phase"><span class="n">01</span><h2>What survived, and what didn't</h2></div>
+  <div class="card good">
+    <h3>Recoverable in full</h3>
+    <p>Every structural detail was read from the live account earlier today: 7 ad groups, 40 keywords
+    with match types and bids, 90 campaign negatives, all 7 responsive search ads with complete
+    headline and description sets, final URLs, budget, bid strategy, ad schedule and geo target IDs.
+    All of it is in the CSVs below.</p>
+  </div>
+  <div class="card alert">
+    <h3>Not recoverable</h3>
+    <ul>
+      <li><strong>Conversion tracking.</strong> <code>AW-789899807</code> / <code>luoSCOq8vtIcEJ_U0_gC</code>
+      belongs to the dead account. A new account issues a new ID and label, and BizzFlow must be updated
+      to match — see step 04.</li>
+      <li><strong>Performance history.</strong> Quality Score and any learning start from zero. With
+      manual CPC this matters less than it would on smart bidding.</li>
+      <li><strong>Billing setup and account history.</strong> Rebuild from scratch.</li>
+    </ul>
+  </div>
+  <p>Nothing was serving anyway — all 7 ads were paused, so no live spend or lead flow was lost to the
+  deactivation itself.</p>
+</section>
+
+<section>
+  <div class="phase"><span class="n">02</span><h2>Check this today, before the appeal resolves</h2></div>
+  <div class="card alert">
+    <h3>Is the Google Business Profile on the same account?</h3>
+    <p>AMO Rendering's listing was verified only recently. If <code>amorendering@gmail.com</code> owns
+    or manages that profile, the deactivation may have taken the listing with it — and for a local
+    trade, a verified GBP is worth more than the ad account.</p>
+    <p>Check now whether the listing still appears in Search and Maps, and whether any other email has
+    manager access. If it doesn't, add a second owner from a different account the moment access
+    returns. A profile with one owner on one Gmail is a single point of failure.</p>
+  </div>
+  <p>Also worth confirming: whether the Ads account itself sat under
+  <code>launchflowuk@gmail.com</code> rather than the deactivated address. The Supermetrics connection
+  ran through <code>launchflowuk@gmail.com</code>, so account access may be less damaged than it looks.
+  That is worth five minutes before assuming a full rebuild.</p>
+</section>
+
+<section>
+  <div class="phase"><span class="n">03</span><h2>If the appeal succeeds</h2></div>
+  <p>Nothing here needs to run. Go straight back to the outstanding job: the 7 ads are
+  <strong>approved but paused</strong>, and the campaign cannot serve until they are enabled in the
+  Ads UI — Campaign → Ads → select all → Edit → Enable. Do not edit them through the API; any edit
+  recreates an ad as paused and wipes its history.</p>
+</section>
+
+<section>
+  <div class="phase"><span class="n">04</span><h2>If the appeal fails — rebuild</h2></div>
+  <ol>
+    <li>Create the new Google Ads account on the new email. Set billing.</li>
+    <li>Create one Search campaign named <strong>AMO - Rendering Services</strong> with the settings
+    in the table below. Set it up <strong>paused</strong>.</li>
+    <li>Open Google Ads Editor, get the new account, then import in this order:
+    <strong>keywords first, then the responsive search ads.</strong> Review the proposed-changes
+    screen before posting — it is the only preview you get.</li>
+    <li>Apply <code>negative-keywords.csv</code> as a campaign-level list before anything goes live.</li>
+    <li>Recreate the conversion action ("Quote Request Submitted"). Copy the new conversion ID and
+    label.</li>
+    <li>Put those into BizzFlow: dashboard → Settings → <code>googleAdsConversionId</code> and
+    <code>googleAdsConversionLabel</code> for the AMO Rendering tenant. <strong>Until this is done the
+    campaign cannot measure a single lead.</strong></li>
+    <li>Add the call asset with the existing approved number, <code>01375 506071</code>, at account
+    level. Keep phone numbers out of ad text — that is what put four ads into limited approval on the
+    original build.</li>
+    <li>Fire one real test enquiry through <code>/free-quote</code> and confirm the conversion records
+    in Ads, not just GA4. Only then enable.</li>
+  </ol>
+</section>
+
+<section>
+  <div class="phase"><span class="n">05</span><h2>Campaign settings</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Setting</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td>Campaign type</td><td>Search only</td></tr>
+      <tr><td>Display Network</td><td><strong>Off</strong></td></tr>
+      <tr><td>Search partners</td><td><strong>Off</strong></td></tr>
+      <tr><td>Bidding</td><td>Manual CPC</td></tr>
+      <tr><td>Daily budget</td><td class="v">£15.00</td></tr>
+      <tr><td>Default max CPC</td><td class="v">£2.50 — £2.00 on Render Repairs</td></tr>
+      <tr><td>Location targeting</td><td>Presence — "people in", not "interested in"</td></tr>
+      <tr><td>Geo target IDs</td><td class="v">1006500, 1006561, 1006621, 1006747, 1007165, 9197981, 9198576</td></tr>
+      <tr><td>Language</td><td>English</td></tr>
+      <tr><td>Ad schedule</td><td>Mon–Fri 06:00–23:00 · Sat–Sun 10:00–23:00</td></tr>
+      <tr><td>Auto-apply recommendations</td><td><strong>Off</strong> — it re-enables broad match and Display</td></tr>
+    </tbody>
+  </table></div>
+  <p style="font-size:.88rem;color:var(--muted)">The geo IDs are Google's own location codes, carried
+  across verbatim from the original campaign. Editor accepts them directly, so the targeting comes back
+  identical without anyone having to re-pick towns from a map.</p>
+</section>
+
+<section>
+  <div class="phase"><span class="n">06</span><h2>Ad groups</h2></div>
+  <div class="tbl"><table>
+    <thead><tr><th>Ad group</th><th>Keywords</th><th>Max CPC</th><th>Landing page</th></tr></thead>
+    <tbody>
+      <tr><td>House Rendering</td><td class="v">11</td><td class="v">£2.50</td><td><code>/free-quote</code></td></tr>
+      <tr><td>Silicone Render</td><td class="v">6</td><td class="v">£2.50</td><td><code>/free-quote/silicone</code></td></tr>
+      <tr><td>Monocouche Render</td><td class="v">4</td><td class="v">£2.50</td><td><code>/free-quote/monocouche</code></td></tr>
+      <tr><td>K-Rend</td><td class="v">5</td><td class="v">£2.50</td><td><code>/free-quote/k-rend</code></td></tr>
+      <tr><td>External Wall Insulation</td><td class="v">5</td><td class="v">£2.50</td><td><code>/free-quote/ewi</code></td></tr>
+      <tr><td>Pebble Dash Removal</td><td class="v">5</td><td class="v">£2.50</td><td><code>/free-quote/pebble-dash</code></td></tr>
+      <tr><td>Render Repairs</td><td class="v">4</td><td class="v">£2.00</td><td><code>/free-quote/repairs</code></td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <div class="phase"><span class="n">07</span><h2>The files</h2></div>
+  <div class="files">
+    <div class="file"><code>keywords.csv</code><span>40 keywords · phrase and exact only, no broad · bids and final URLs included</span></div>
+    <div class="file"><code>negative-keywords.csv</code><span>90 campaign negatives — colours, suppliers, DIY, trade brands, out-of-area towns, recruitment</span></div>
+    <div class="file"><code>responsive-search-ads.csv</code><span>7 RSAs · 8–9 headlines and 3–4 descriptions each · no phone numbers in copy</span></div>
+  </div>
+  <p style="font-size:.88rem;color:var(--muted)">All three live in
+  <code>docs/ads/amo-rendering-rebuild/</code> in the BizzFlow repo, so they are versioned and cannot
+  be lost with an email account again.</p>
+</section>
+
+<section>
+  <div class="phase"><span class="n">08</span><h2>What I need from you</h2></div>
+  <div class="ask">
+    <p><strong>The new email address</strong>, once you have it — I can regenerate the files against a
+    new account name if anything needs to change.</p>
+    <p><strong>The GBP answer from step 02</strong> — whether the listing survived. That changes the
+    priority order more than anything else here.</p>
+    <p><strong>A Supermetrics decision.</strong> The trial expired on 17 August, so performance
+    reporting is unavailable either way. A new account will need reconnecting regardless.</p>
+  </div>
+</section>
+
+<footer>
+  Structure captured from Google Ads campaign 24044145596, account 2078060180, on 25 August 2026 —
+  before access was lost. Rebuild files are versioned in the BizzFlow repository.
+</footer>
+
+</div>
