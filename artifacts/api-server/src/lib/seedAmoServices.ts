@@ -179,8 +179,18 @@ async function ensureMarkMultiTenant(): Promise<void> {
     await db.update(usersTable).set({ tenantId: rendering.id }).where(eq(usersTable.id, mark.id));
   }
 
-  // Retire the redundant services-only login. Delete only if it has no dependent data.
-  const [old] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, "mark@amoservices.co.uk")).limit(1);
+  // Retire the redundant services-only login.
+  //
+  // ⚠ This ran on EVERY boot and deletes a user row. A JWT stays cryptographically valid for 30
+  // days, but tryBearerAuth resolves it to a user by id — so the moment this deleted the account,
+  // any browser still holding its token got 401 on every single endpoint including /auth/me,
+  // while the client still believed it was signed in. That is exactly how Mark's laptop ended up
+  // "logged into a different account" with an empty dashboard. It has already done its job on
+  // production; it is now opt-in so a routine deploy can never silently delete a live login again.
+  const retireLegacyLogin = process.env["RETIRE_LEGACY_AMO_LOGIN"] === "1";
+  const [old] = retireLegacyLogin
+    ? await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, "mark@amoservices.co.uk")).limit(1)
+    : [undefined];
   if (old && old.id !== mark.id) {
     try {
       await db.delete(userTenantsTable).where(eq(userTenantsTable.userId, old.id));

@@ -1,6 +1,7 @@
 import { db } from "@workspace/db";
-import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, faqsTable } from "@workspace/db";
+import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, faqsTable, usersTable, userTenantsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { logger } from "./logger";
 
 /**
@@ -454,5 +455,54 @@ export async function seedKdEssexIfMissing(): Promise<void> {
   } catch (err) {
     // Never let a seed failure stop the server booting; the other tenants must stay up.
     logger.error({ err }, "KD Essex seed failed");
+  }
+}
+
+/**
+ * Give KD Essex its own dashboard login.
+ *
+ * Deliberately NOT part of seedKdEssexIfMissing: that function returns early once the tenant row
+ * exists, and it already does on production — so anything added inside it would never run again.
+ * This is keyed on the user instead, and is called separately on boot.
+ *
+ * Scoped to the KD Essex tenant only. The user_tenants row grants exactly one business, so this
+ * login can never switch into AMO Rendering or AMO Services: POST /auth/switch-tenant checks
+ * membership and 403s without it.
+ *
+ * Never overwrites an existing user — no password, role or tenant reassignment on an account that
+ * is already there, so a routine deploy cannot lock the client out of their own dashboard. To
+ * reset the password later, clear the row or add a deliberate recovery path; do not make this
+ * function mutate it.
+ */
+export async function ensureKdEssexAdmin(): Promise<void> {
+  try {
+    const [tenant] = await db.select({ id: tenantsTable.id }).from(tenantsTable).where(eq(tenantsTable.slug, SLUG)).limit(1);
+    if (!tenant) return;
+
+    const email = "info@kdessexlandscapes.co.uk";
+    const [existing] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, email)).limit(1);
+
+    let userId = existing?.id;
+    if (!userId) {
+      const password = process.env["KD_ADMIN_PASSWORD"];
+      if (!password) {
+        logger.warn(`${email} missing and KD_ADMIN_PASSWORD unset — KD Essex has no dashboard login yet`);
+        return;
+      }
+      const hash = await bcrypt.hash(password, 12);
+      await db.insert(usersTable)
+        .values({ email, firstName: "KD Essex", lastName: "", role: "TENANT_ADMIN" as const, tenantId: tenant.id, passwordHash: hash })
+        .onConflictDoNothing({ target: usersTable.email });
+      const [created] = await db.select({ id: usersTable.id }).from(usersTable).where(eq(usersTable.email, email)).limit(1);
+      userId = created?.id;
+      if (userId) logger.info(`${email} created as KD Essex TENANT_ADMIN`);
+    }
+    if (!userId) return;
+
+    await db.insert(userTenantsTable)
+      .values([{ userId, tenantId: tenant.id, role: "TENANT_ADMIN" as const }])
+      .onConflictDoNothing();
+  } catch (err) {
+    logger.error({ err }, "KD Essex admin provisioning failed");
   }
 }
