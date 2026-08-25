@@ -18,6 +18,7 @@ const DEFAULT_JSON_ACCEPT = "application/json, application/problem+json";
 let _baseUrl: string | null = null;
 let _authTokenGetter: AuthTokenGetter | null = null;
 let _onUnauthorized: (() => void) | null = null;
+let _tenantIdGetter: (() => string | null) | null = null;
 
 /**
  * Set a base URL that is prepended to every relative request URL
@@ -52,6 +53,20 @@ export function setBaseUrl(url: string | null): void {
  *
  * Pass `null` to clear the handler.
  */
+/**
+ * Register a getter for the caller's ACTIVE business id, sent as `X-Tenant-Id`.
+ *
+ * The active business used to be a column on the user row, which made it global to the account:
+ * switching business on a laptop silently switched it on that user's phone too. Holding it per
+ * client makes it per-device. The server still validates membership on every request, so this
+ * header can only ever select a business the user already belongs to.
+ *
+ * Pass `null` to clear the getter.
+ */
+export function setTenantIdGetter(fn: (() => string | null) | null): void {
+  _tenantIdGetter = fn;
+}
+
 export function setUnauthorizedHandler(fn: (() => void) | null): void {
   _onUnauthorized = fn;
 }
@@ -367,6 +382,11 @@ export async function customFetch<T = unknown>(
 
   // Attach bearer token when an auth getter is configured and no
   // Authorization header has been explicitly provided.
+  if (_tenantIdGetter && !headers.has("x-tenant-id")) {
+    const tid = _tenantIdGetter();
+    if (tid) headers.set("x-tenant-id", tid);
+  }
+
   let sentWithToken = headers.has("authorization");
   if (_authTokenGetter && !headers.has("authorization")) {
     const token = await _authTokenGetter();

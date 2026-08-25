@@ -73,11 +73,14 @@ router.post("/switch-tenant", requireAuth, async (req, res) => {
       .limit(1);
     if (!membership.length) { res.status(403).json({ error: "You do not have access to that business" }); return; }
 
-    const updated = await db.update(usersTable)
-      .set({ tenantId, role: membership[0].role })
-      .where(eq(usersTable.id, userId))
-      .returning();
-    const u = updated[0];
+    // Deliberately does NOT write tenantId back to the user row. That made the active business a
+    // property of the ACCOUNT, so switching on one device changed it on every other device that
+    // account was signed in on. The client now holds its own selection and presents it as
+    // X-Tenant-Id, which requireAuth re-validates against user_tenants on every request. All this
+    // endpoint does is confirm membership and echo the resulting identity back.
+    const [u] = await db.select().from(usersTable).where(eq(usersTable.id, userId)).limit(1);
+    if (!u) { res.status(401).json({ error: "Unauthorized" }); return; }
+    Object.assign(u, { tenantId, role: membership[0].role });
     const businesses = await getUserBusinesses(userId);
     res.json({ id: u.id, email: u.email, role: u.role, firstName: u.firstName, lastName: u.lastName, tenantId: u.tenantId, clerkId: u.clerkId, avatarUrl: u.avatarUrl ?? null, businesses });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

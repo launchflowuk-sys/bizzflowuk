@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
-import { useAuthCtx } from "@/lib/auth";
+import { useAuthCtx, setActiveTenantId } from "@/lib/auth";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import {
@@ -410,6 +410,9 @@ function BusinessSwitcher() {
     if (tenantId === activeTenantId || switchMutation.isPending) return;
     try {
       await switchMutation.mutateAsync({ data: { tenantId } } as any);
+      // Persist to THIS device only. The server no longer records an active business against the
+      // account, so the selection has to be held here and sent with each request.
+      setActiveTenantId(tenantId);
       // Hard-reload the dashboard so the WHOLE app re-initialises for the newly active business.
       // Invalidating the cache alone raced: the active-business highlight (from /me) and the page
       // data refetch independently, so you could end up with one business highlighted while the

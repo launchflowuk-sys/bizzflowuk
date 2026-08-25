@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
-import { usersTable } from "@workspace/db";
-import { eq, SQL } from "drizzle-orm";
+import { usersTable, userTenantsTable } from "@workspace/db";
+import { eq, and, SQL } from "drizzle-orm";
 
 export interface AuthUser {
   id: number;
@@ -36,7 +36,22 @@ export async function tryBearerAuth(req: Request): Promise<AuthUser | null> {
     const token = authHeader.slice(7);
     const payload = jwt.verify(token, JWT_SECRET) as { userId: number };
     const users = await db.select().from(usersTable).where(eq(usersTable.id, payload.userId)).limit(1);
-    return users[0] ?? null;
+    const user = users[0];
+    if (!user) return null;
+
+    // The caller may nominate which of THEIR businesses this device is working in. Never trust it:
+    // it only takes effect after confirming a user_tenants row, so the header can't be used to
+    // reach a business the user isn't a member of. Anything unrecognised falls back to the
+    // account's own tenant rather than 401ing, so a revoked membership can't lock someone out.
+    const requested = Number(req.headers["x-tenant-id"]);
+    if (Number.isFinite(requested) && requested !== user.tenantId) {
+      const [membership] = await db.select({ role: userTenantsTable.role })
+        .from(userTenantsTable)
+        .where(and(eq(userTenantsTable.userId, user.id), eq(userTenantsTable.tenantId, requested)))
+        .limit(1);
+      if (membership) return { ...user, tenantId: requested, role: membership.role };
+    }
+    return user;
   } catch {
     return null;
   }
