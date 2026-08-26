@@ -3587,6 +3587,9 @@ function VisualiserPage({ tenantSlug }: { tenantSlug: string }) {
     e.preventDefault();
     try {
       await mutation.mutateAsync({ data: { ...form, tenantSlug } } as any);
+      // A visualiser request carries name, email, phone, address and photos — it is a lead, not a
+      // browse. Paid traffic is now sent here, so it has to count like the quote form does.
+      fireQuoteRequestConversion(settings?.googleAdsConversionId, settings?.googleAdsConversionLabel);
       setSubmitted(true);
       window.scrollTo(0, 0); // confirmation replaces the form — land at the top, not the footer
     } catch {}

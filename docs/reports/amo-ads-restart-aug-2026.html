@@ -1,0 +1,298 @@
+<title>AMO Ads Restart</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap">
+
+<style>
+  :root{
+    --ground:#F5F7F6;
+    --raised:#FFFFFF;
+    --ink:#141A19;
+    --body:#4B5654;
+    --muted:#7C8684;
+    --line:#DFE4E2;
+    --line-soft:#EDF0EE;
+    --accent:#0F6B57;
+    --accent-soft:#E4F0EC;
+    --flag:#9C4E1B;
+    --flag-soft:#F7ECE3;
+  }
+  @media (prefers-color-scheme:dark){
+    :root:not([data-theme="light"]){
+      --ground:#0D1211;
+      --raised:#161E1D;
+      --ink:#EDF2F0;
+      --body:#B7C2BF;
+      --muted:#828E8B;
+      --line:#26312F;
+      --line-soft:#1C2524;
+      --accent:#5CC3A6;
+      --accent-soft:#122A24;
+      --flag:#E09257;
+      --flag-soft:#2B1D12;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0D1211;
+    --raised:#161E1D;
+    --ink:#EDF2F0;
+    --body:#B7C2BF;
+    --muted:#828E8B;
+    --line:#26312F;
+    --line-soft:#1C2524;
+    --accent:#5CC3A6;
+    --accent-soft:#122A24;
+    --flag:#E09257;
+    --flag-soft:#2B1D12;
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    background:var(--ground);
+    color:var(--body);
+    font-family:"Source Serif 4",Georgia,"Times New Roman",serif;
+    font-size:17px;
+    line-height:1.66;
+    margin:0;
+    padding:clamp(1.6rem,5vw,4.5rem) clamp(1.1rem,5vw,2rem) 5rem;
+  }
+
+  .wrap{
+    max-width:41rem;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:3.4rem;
+  }
+
+  h1,h2,h3,.label,.eyebrow,th,.stat-n,.tl-when{
+    font-family:"Bricolage Grotesque",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+  }
+  h1,h2,h3{color:var(--ink);margin:0;text-wrap:balance;line-height:1.14;}
+  h1{font-size:clamp(2rem,5.4vw,2.9rem);font-weight:700;letter-spacing:-.025em;}
+  h2{font-size:1.32rem;font-weight:600;letter-spacing:-.012em;}
+  h3{font-size:1rem;font-weight:600;letter-spacing:-.005em;}
+  p{margin:0;}
+  strong{color:var(--ink);font-weight:600;}
+
+  .eyebrow{
+    font-size:.7rem;font-weight:600;letter-spacing:.15em;
+    text-transform:uppercase;color:var(--accent);
+  }
+
+  header{
+    display:flex;flex-direction:column;gap:1rem;
+    border-bottom:2px solid var(--ink);padding-bottom:1.7rem;
+  }
+  .lede{font-size:1.1rem;color:var(--body);}
+  .meta{
+    font-family:"Bricolage Grotesque",sans-serif;
+    font-size:.78rem;color:var(--muted);
+    letter-spacing:.03em;
+  }
+
+  section{display:flex;flex-direction:column;gap:1.05rem;}
+
+  .tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--raised);}
+  table{border-collapse:collapse;width:100%;min-width:26rem;font-size:.94rem;}
+  th,td{text-align:left;padding:.72rem .95rem;border-bottom:1px solid var(--line-soft);vertical-align:top;}
+  th{
+    font-size:.66rem;font-weight:600;letter-spacing:.11em;text-transform:uppercase;
+    color:var(--muted);background:var(--ground);
+  }
+  td{color:var(--body);}
+  td:first-child{color:var(--ink);font-weight:600;}
+  .num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink);}
+  th.num{text-align:right;}
+  tr.total td{border-bottom:none;border-top:2px solid var(--line);color:var(--ink);font-weight:600;}
+
+  ul{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:.62rem;}
+  li{padding-left:.15rem;}
+  li::marker{color:var(--accent);}
+
+  .card{
+    background:var(--raised);border:1px solid var(--line);border-radius:10px;
+    padding:1.15rem 1.35rem;display:flex;flex-direction:column;gap:.55rem;
+  }
+  .card.flagged{background:var(--flag-soft);border-color:var(--flag);}
+  .card.flagged h3{color:var(--flag);}
+
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(9rem,1fr));gap:.8rem;}
+  .stat{
+    background:var(--raised);border:1px solid var(--line);border-radius:10px;
+    padding:.95rem 1.05rem;display:flex;flex-direction:column;gap:.15rem;
+  }
+  .stat-n{
+    font-size:1.5rem;font-weight:700;color:var(--accent);
+    font-variant-numeric:tabular-nums;letter-spacing:-.02em;line-height:1.1;
+  }
+  .stat-l{font-size:.83rem;color:var(--muted);}
+
+  .tl{display:flex;flex-direction:column;gap:0;}
+  .tl-row{
+    display:grid;grid-template-columns:8.5rem 1fr;gap:1.1rem;
+    padding:.85rem 0;border-bottom:1px solid var(--line-soft);
+  }
+  .tl-row:last-child{border-bottom:none;}
+  .tl-when{
+    font-size:.76rem;font-weight:600;letter-spacing:.05em;text-transform:uppercase;
+    color:var(--accent);padding-top:.22rem;
+  }
+  .tl-what{color:var(--body);font-size:.97rem;}
+
+  @media (max-width:34rem){
+    .tl-row{grid-template-columns:1fr;gap:.25rem;}
+  }
+
+  .ask{
+    border-left:3px solid var(--accent);padding-left:1.15rem;
+    display:flex;flex-direction:column;gap:.5rem;
+  }
+
+  footer{
+    border-top:1px solid var(--line);padding-top:1.3rem;
+    font-size:.86rem;color:var(--muted);
+    display:flex;flex-direction:column;gap:.35rem;
+  }
+  footer .sig{color:var(--ink);font-weight:600;}
+  footer .lf{font-family:"Bricolage Grotesque",sans-serif;font-size:.74rem;letter-spacing:.09em;text-transform:uppercase;}
+  footer .lf span{color:var(--accent);}
+</style>
+
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">AMO Rendering &middot; Google Ads</div>
+    <h1>Your ads are back on</h1>
+    <p class="lede">Where things stand after the account business last week, what I've changed on the budget, and what to expect over the next few weeks.</p>
+    <div class="meta">26 August 2026 &middot; from Shoji</div>
+  </header>
+
+  <section>
+    <h2>What happened</h2>
+    <p>Google deactivated your <strong>amorendering@gmail.com</strong> account last week, and that took the ads account down with it. I appealed it. Google have now put it back.</p>
+    <p>Nothing was lost. All three campaigns, the keywords, the ads and the tracking are exactly as we set them up, and your <strong>£800 of Google credit is still sitting there</strong>. And because the ads happened to be paused while all this was going on, the whole episode didn't cost you a penny.</p>
+    <p>I'd taken a full copy of the campaign setup before we lost access, so if the appeal had gone the other way I could have rebuilt the lot in an afternoon. Didn't need it — but it's saved in your project files either way.</p>
+  </section>
+
+  <section>
+    <h2>What's running now</h2>
+    <p>Three campaigns, live from today.</p>
+    <div class="tbl">
+      <table>
+        <thead>
+          <tr>
+            <th>Campaign</th>
+            <th>What it goes after</th>
+            <th class="num">Per day</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Core</td>
+            <td>House rendering, and people searching in Grays specifically</td>
+            <td class="num">£10</td>
+          </tr>
+          <tr>
+            <td>Systems</td>
+            <td>Silicone, monocouche and K&#8209;Rend by name</td>
+            <td class="num">£5</td>
+          </tr>
+          <tr>
+            <td>Repairs</td>
+            <td>Cracked render, pebbledash removal</td>
+            <td class="num">£3</td>
+          </tr>
+          <tr class="total">
+            <td>Total</td>
+            <td>&nbsp;</td>
+            <td class="num">£18</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p>The most that can ever go out in a month is about <strong>£550</strong>, and the credit takes care of a good chunk of that. There's no way for it to quietly overspend.</p>
+  </section>
+
+  <section>
+    <h2>Why I halved the budget</h2>
+    <p>We had this set at £35 a day. I've brought it down to £18, and the reasoning is worth two minutes of your time.</p>
+    <p>At £35 a day your credit is gone in about three weeks. At £18 it lasts around six. That extra time is the whole point — the first few weeks of any campaign, Google shows your ads against a load of searches that <em>sound</em> right but aren't. People hunting colour charts, DIY guides, suppliers, students doing coursework. My job is to spot those and block them, one week at a time.</p>
+    <p>More weeks of credit means more of that cleaning done <strong>before</strong> you're spending your own money rather than after. Same ads, same targeting, just a slower burn and a sharper campaign at the end of it.</p>
+  </section>
+
+  <section>
+    <h2>What's set up under the bonnet</h2>
+    <div class="stats">
+      <div class="stat"><div class="stat-n">46</div><div class="stat-l">keywords, tightly matched</div></div>
+      <div class="stat"><div class="stat-n">167</div><div class="stat-l">searches blocked</div></div>
+      <div class="stat"><div class="stat-n">7</div><div class="stat-l">ads, one per service</div></div>
+      <div class="stat"><div class="stat-n">£2.50</div><div class="stat-l">most you pay per visit</div></div>
+    </div>
+    <ul>
+      <li><strong>No broad matching.</strong> Your ads only show on searches close to what someone actually types when they're looking to hire a renderer — not anything Google decides is vaguely related.</li>
+      <li><strong>167 blocked searches</strong>, covering colour charts, DIY guides, suppliers and trade brands, grant and ECO4 hunters, towns you don't cover, and people looking for a job rather than a quote.</li>
+      <li><strong>A capped price per click</strong> — £2.50, or £2 on repair searches. You never pay more than that for a visit, so there are no nasty surprises.</li>
+      <li><strong>Tap&#8209;to&#8209;call on 01375&nbsp;506071.</strong> Anyone on a mobile can ring you straight from the ad without going near the website.</li>
+      <li><strong>Both enquiry forms and phone calls are counted.</strong> That's the important one — it means we can see which searches produce actual work, not just which ones produce clicks.</li>
+      <li><strong>Targeting is people physically in your areas</strong>, not people who are merely "interested in" them. Cuts out a lot of waste on its own.</li>
+      <li>Each service points at its own quote page, so somebody searching monocouche lands on a monocouche page rather than your homepage.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What to expect</h2>
+    <p>Roughly <strong>seven visits a day</strong> to your quote pages. Once it settles down, that should land somewhere around <strong>two to five enquiries a week</strong>.</p>
+    <div class="card flagged">
+      <h3>Two honest caveats</h3>
+      <p>Week one is always the noisiest. Some of those early clicks will be junk — that's normal, and it's exactly what the first prune is for. Don't read anything into it.</p>
+      <p>And don't judge the campaign on a handful of clicks. Give it a month before either of us draws a conclusion. Anyone who tells you they can read a Google Ads campaign in three days is guessing.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>What happens next</h2>
+    <div class="tl">
+      <div class="tl-row">
+        <div class="tl-when">This week</div>
+        <div class="tl-what">Ads run. I deliberately leave it alone and let it gather data — changing things now would just muddy what we learn.</div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-when">2 September</div>
+        <div class="tl-what">First prune. I go through every single search that triggered your ads and block the rubbish.</div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-when">Weekly after</div>
+        <div class="tl-what">Same again, every week for the first month. This is where most of the improvement comes from.</div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-when">End of Sept</div>
+        <div class="tl-what">Proper report — what it actually cost per enquiry, and where the budget should go next.</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Three things I need from you</h2>
+    <div class="ask">
+      <h3>1. Answer fast</h3>
+      <p>Rendering enquiries go to whoever gets back first — it's that blunt. If you're up a scaffold, a text back within the hour still wins the job. A callback the next morning usually doesn't.</p>
+    </div>
+    <div class="ask">
+      <h3>2. Ask every customer for a review</h3>
+      <p>Your Google listing is brand new and has none yet. Every job you finish, ask. Genuinely — this will do more for your ads than anything I can change inside the account.</p>
+    </div>
+    <div class="ask">
+      <h3>3. Send me photos</h3>
+      <p>Before and afters, whenever you've got them. They go straight onto the quote pages, and they're the single thing that makes someone trust a quote from a company they've never heard of.</p>
+    </div>
+  </section>
+
+  <footer>
+    <p>Any questions, just ring me.</p>
+    <p class="sig">Shoji</p>
+    <p class="lf">Powered by <span>LaunchFlow</span></p>
+  </footer>
+
+</div>
