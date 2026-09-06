@@ -2,6 +2,7 @@ import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as 
 import { useGetPublicSite, useListPublicServices, useListPublicAreas, useBrowsePublicGallery, useListPublicBeforeAfter, useListPublicReviews, useListPublicCaseStudies, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost, useGetPublicService, useGetPublicArea, useGetPublicCaseStudy, useSubmitContact, useSubmitQuoteRequest, useCreateVisualiserRequest, useRequestUploadUrl, useGetPublicPaymentPage, useChargePublicPaymentLink, useSubmitPublicQuoteAction, useListPublicPriceItems } from "@workspace/api-client-react";
 import { useState, useRef, useEffect, createContext, useContext } from "react";
 import { initGoogleTag, updateConsent, fireQuoteRequestConversion } from "./analytics";
+import { BlogIndexBody, BlogArticleBody } from "./blog/BlogSections";
 import { PriceCalculatorSection } from "./PriceCalculator";
 import LandingPage from "./LandingPage";
 export const SiteBaseCtx = createContext('');
@@ -2380,9 +2381,10 @@ export function CookieBanner({ siteBase }: { siteBase: string }) {
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BLOG LIST PAGE
-// ─────────────────────────────────────────────────────────────────────────────
+// ---------------------------------------------------------------------------
+// BLOG - list + article. Both bodies come from the shared blog module so all three
+// tenant templates stay one design; only the chrome below is template-specific.
+// ---------------------------------------------------------------------------
 
 function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
   const siteBase = useSiteBase();
@@ -2393,127 +2395,53 @@ function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
 
   return (
     <div>
-      <PageSEO title={`Rendering Advice & Guides | ${brand.name} Blog`} description={`Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation across ${brand.area}.`}/>
+      <PageSEO
+        title={`Advice & Guides | ${brand.name}`}
+        description={`Practical guidance from ${brand.name} on planning, pricing and living through work on your property${brand.area ? ` across ${brand.area}` : ""}.`}
+      />
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
-      <PageHero tenantSlug={tenantSlug} tenant={tenant} crumb="Rendering Advice & Guides" title="Rendering Advice & Guides" subtitle="Helpful guidance for homeowners considering silicone rendering, exterior wall finishes, pebbledash removal and property transformation."/>
-
-      {/* Blog posts */}
-      <section className="py-16 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
-          {isLoading ? <Spinner/> : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(posts as any[])?.map((post: any) => (
-                <a key={post.id} href={`${siteBase}/blog/${post.slug}`} className="group rounded-2xl border border-slate-200 overflow-hidden hover:shadow-lg transition-all bg-white">
-                  {post.heroImageUrl
-                    ? <img src={post.heroImageUrl} alt={post.title} loading="lazy" width={400} height={208} className="w-full h-52 object-cover group-hover:scale-105 transition-transform duration-300"/>
-                    : <div className="w-full h-52 flex items-center justify-center" style={{ backgroundColor: BLUE + "08" }}><svg className="w-12 h-12 opacity-20" style={{ color: BLUE }} fill="none" stroke="currentColor" strokeWidth={1} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/></svg></div>
-                  }
-                  <div className="p-5 space-y-2">
-                    <div className="text-xs font-semibold uppercase tracking-wide" style={{ color: BLUE }}>Rendering Guide</div>
-                    <h2 className="font-bold group-hover:text-[#1F8CFF] transition-colors line-clamp-2" style={{ color: TEXT }}>{post.title}</h2>
-                    {post.excerpt && <p className="text-sm line-clamp-2" style={{ color: MUTED }}>{post.excerpt}</p>}
-                    <div className="flex items-center gap-3 text-xs pt-2" style={{ color: MUTED }}>
-                      {post.authorName && <span>{post.authorName}</span>}
-                      {post.readTime && <span>{post.readTime} min read</span>}
-                    </div>
-                    <span className="text-xs font-semibold" style={{ color: BLUE }}>Read Article →</span>
-                  </div>
-                </a>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section style={{ backgroundColor: LIGHT_BG }} className="py-14">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center space-y-5">
-          <h2 className="text-2xl font-bold" style={{ color: TEXT }}>Ready to Get Started?</h2>
-          <p style={{ color: MUTED }}>Request a free quote or upload photos of your property for a more detailed assessment.</p>
-          <div className="flex flex-wrap gap-3 justify-center">
-            <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
-            <OutlineBtn href={`${siteBase}/visualiser`}>Render Visualiser</OutlineBtn>
-          </div>
-        </div>
-      </section>
-
+      <PageHero
+        tenantSlug={tenantSlug}
+        tenant={tenant}
+        crumb="Advice & Guides"
+        title="Advice & Guides"
+        subtitle={`Straight answers to the questions ${brand.name} gets asked most - what the work involves, what drives the price, and how to tell a good quote from a cheap one.`}
+      />
+      <BlogIndexBody posts={posts as any[]} siteBase={siteBase} tenant={tenant} settings={settings} isLoading={isLoading}/>
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// BLOG POST PAGE
-// ─────────────────────────────────────────────────────────────────────────────
-
 function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
   const siteBase = useSiteBase();
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { data: post, isLoading } = useGetPublicBlogPost(tenantSlug, slug);
+  const { data: posts } = useBrowsePublicBlog(tenantSlug);
+  const { data: services } = useListPublicServices(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
   const brand = brandCopy(tenant, settings);
   const p = post as any;
 
   return (
     <div>
-      <PageSEO title={p ? `${p.title} | ${brand.name}` : `Blog | ${brand.name}`} description={p?.excerpt || `Rendering advice and tips from ${brand.name} — specialists in silicone render, monocouche and EWI across ${brand.area}.`}/>
+      <PageSEO
+        title={p ? (p.seoTitle || `${p.title} | ${brand.name}`) : `Advice & Guides | ${brand.name}`}
+        description={p?.seoDescription || p?.excerpt || `Advice from ${brand.name}${brand.area ? `, serving ${brand.area}` : ""}.`}
+      />
       <TopBar tenant={tenant} settings={settings}/>
       <SiteNav tenant={tenant} settings={settings} tenantSlug={tenantSlug} alwaysOpaque/>
-
-      {isLoading ? <Spinner/> : p ? (
-        <>
-          {p.heroImageUrl && <img src={p.heroImageUrl} alt={p.title} width={1200} height={256} className="w-full h-64 object-cover"/>}
-          <section className="py-16 bg-white">
-            <div className="max-w-7xl mx-auto px-4 sm:px-6">
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                <article className="lg:col-span-2 space-y-6">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 text-xs" style={{ color: MUTED }}>
-                      <a href={`${siteBase}/blog`} className="font-semibold hover:text-[#1F8CFF]">← Blog</a>
-                      <span>/</span>
-                      <span className="font-semibold uppercase tracking-wide" style={{ color: BLUE }}>Rendering Guide</span>
-                    </div>
-                    <h1 className="text-3xl font-bold" style={{ color: TEXT }}>{p.title}</h1>
-                    <div className="flex items-center gap-4 text-sm" style={{ color: MUTED }}>
-                      {p.authorName && <span>By {p.authorName}</span>}
-                      {p.readTime && <span>{p.readTime} min read</span>}
-                      {p.publishedAt && <span>{new Date(p.publishedAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</span>}
-                    </div>
-                    {p.excerpt && <p className="text-lg font-medium leading-relaxed border-l-4 pl-4" style={{ color: TEXT, borderColor: BLUE }}>{p.excerpt}</p>}
-                  </div>
-                  <div className="prose prose-slate max-w-none leading-relaxed" style={{ color: TEXT }}>{p.content}</div>
-                  <div className="rounded-2xl p-8 text-center space-y-4" style={{ backgroundColor: LIGHT_BG }}>
-                    <h3 className="text-xl font-bold" style={{ color: TEXT }}>Ready to transform your property?</h3>
-                    <p className="text-sm" style={{ color: MUTED }}>Upload property photos for a free rendering quote from {brand.name}.</p>
-                    <BlueBtn href={`${siteBase}/quote`}>Request a Free Quote</BlueBtn>
-                  </div>
-                </article>
-
-                <aside className="space-y-6">
-                  <div className="rounded-2xl border border-slate-200 p-6 space-y-4 bg-white shadow-sm">
-                    <h3 className="font-bold" style={{ color: TEXT }}>Get A Free Quote</h3>
-                    <p className="text-sm" style={{ color: MUTED }}>Upload photos of your property and tell us about the finish you want.</p>
-                    <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
-                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>Our Services</h3>
-                    {STATIC_SERVICES.map(s => (
-                      <a key={s.slug} href={`${siteBase}/services/${s.slug}`} className="block text-sm py-2 border-b border-slate-100 last:border-0 hover:text-[#1F8CFF] transition-colors" style={{ color: MUTED }}>{s.name}</a>
-                    ))}
-                  </div>
-                  <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
-                    <h3 className="font-bold text-sm" style={{ color: TEXT }}>More Guides</h3>
-                    <a href={`${siteBase}/blog`} className="block text-sm font-semibold" style={{ color: BLUE }}>← Back to all guides</a>
-                  </div>
-                </aside>
-              </div>
-            </div>
-          </section>
-        </>
-      ) : <div className="p-8 text-center" style={{ color: MUTED }}>Post not found</div>}
-
+      <BlogArticleBody
+        post={p}
+        posts={posts as any[]}
+        siteBase={siteBase}
+        tenant={tenant}
+        settings={settings}
+        services={services as any[]}
+        isLoading={isLoading}
+      />
       <SiteFooter tenant={tenant} settings={settings} tenantSlug={tenantSlug}/>
       <MobileBar tenantSlug={tenantSlug} phone={settings?.phone}/>
     </div>

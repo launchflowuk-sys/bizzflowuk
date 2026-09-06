@@ -1,11 +1,12 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
-import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useListPublicCaseStudies, useGetPublicCaseStudy, useListPublicFaqs, useListPublicBeforeAfter, useSubmitContact, useListPublicPriceItems } from "@workspace/api-client-react";
+import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useListPublicCaseStudies, useGetPublicCaseStudy, useListPublicFaqs, useListPublicBeforeAfter, useSubmitContact, useListPublicPriceItems, useBrowsePublicBlog, useGetPublicBlogPost } from "@workspace/api-client-react";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { createPortal } from "react-dom";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, useSiteOrigin, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
 import { PriceCalculatorSection } from "./PriceCalculator";
 import BeforeAfterGallery, { type BeforeAfterItem } from "./landing/BeforeAfterGallery";
+import { BlogIndexBody, BlogArticleBody } from "./blog/BlogSections";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // LANDSCAPING & GROUNDWORKS SITE TEMPLATE (tenant.industry === 'landscaping')
@@ -345,8 +346,14 @@ const NAV_LINKS = [
   { href: "/projects", label: "Projects" },
   { href: "/about", label: "About Us" },
   { href: "/areas", label: "Areas We Cover" },
+  { href: "/blog", label: "Guides" },
   { href: "/contact", label: "Contact" },
 ];
+
+/** Nav links minus anything the tenant has switched off in the dashboard. */
+function navLinksFor(settings: any) {
+  return settings?.showBlog === false ? NAV_LINKS.filter(l => l.href !== "/blog") : NAV_LINKS;
+}
 
 /**
  * Splits the hero headline into a dark line and a green line, per the client's mockup
@@ -534,8 +541,8 @@ function KDNav({ tenant, settings, tenantSlug }: { tenant: any; settings: any; t
   const phone = settings?.phone || tenant?.phone;
   const { data: priceItems } = useListPublicPriceItems(tenantSlug || "");
   const links = ((priceItems as any[]) || []).length > 0
-    ? [...NAV_LINKS.slice(0, 3), { href: "/calculator", label: "Cost Guide" }, ...NAV_LINKS.slice(3)]
-    : NAV_LINKS;
+    ? [...navLinksFor(settings).slice(0, 3), { href: "/calculator", label: "Cost Guide" }, ...navLinksFor(settings).slice(3)]
+    : navLinksFor(settings);
 
   return (
     <>
@@ -2024,6 +2031,44 @@ function ContactPage({ tenantSlug }: { tenantSlug: string }) {
   );
 }
 
+function BlogListPage({ tenantSlug }: { tenantSlug: string }) {
+  const siteBase = useSiteBase();
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { data: posts, isLoading } = useBrowsePublicBlog(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  const name = tenant?.name || "our team";
+  return (
+    <Shell tenantSlug={tenantSlug}>
+      <PageSEO title={`Advice & Guides | ${name}`} description={`Practical guidance from ${name} on planning, pricing and living through work on your garden and grounds.`}/>
+      <PageHead
+        title="Advice & Guides"
+        intro={`Straight answers to the questions we get asked most - what the work involves, what drives the price, and how to tell a good quote from a cheap one.`}
+      />
+      <BlogIndexBody posts={posts as any[]} siteBase={siteBase} tenant={tenant} settings={settings} isLoading={isLoading}/>
+    </Shell>
+  );
+}
+
+function BlogPostPage({ tenantSlug, slug }: { tenantSlug: string; slug: string }) {
+  const siteBase = useSiteBase();
+  const { data: siteData } = useGetPublicSite(tenantSlug);
+  const { data: post, isLoading } = useGetPublicBlogPost(tenantSlug, slug);
+  const { data: posts } = useBrowsePublicBlog(tenantSlug);
+  const { data: services } = useListPublicServices(tenantSlug);
+  const { tenant, settings } = (siteData as any) || {};
+  const p = post as any;
+  const name = tenant?.name || "our team";
+  return (
+    <Shell tenantSlug={tenantSlug}>
+      <PageSEO
+        title={p ? (p.seoTitle || `${p.title} | ${name}`) : `Advice & Guides | ${name}`}
+        description={p?.seoDescription || p?.excerpt || `Advice from ${name}.`}
+      />
+      <BlogArticleBody post={p} posts={posts as any[]} siteBase={siteBase} tenant={tenant} settings={settings} services={services as any[]} isLoading={isLoading}/>
+    </Shell>
+  );
+}
+
 function LegalPage({ tenantSlug, kind }: { tenantSlug: string; kind: "terms" | "privacy" }) {
   const { data: siteData } = useGetPublicSite(tenantSlug);
   const { tenant, settings } = (siteData as any) || {};
@@ -2143,6 +2188,8 @@ export default function LandscapingSiteApp({ forcedSlug, forcedBase, forcedOrigi
         <Route path="/about">{() => <AboutPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/quote">{() => <QuotePage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/calculator">{() => <CalculatorPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/blog">{() => <BlogListPage tenantSlug={tenantSlug}/>}</Route>
+        <Route path="/blog/:slug">{(p: any) => <BlogPostPage tenantSlug={tenantSlug} slug={p.slug}/>}</Route>
         <Route path="/contact">{() => <ContactPage tenantSlug={tenantSlug}/>}</Route>
         <Route path="/terms">{() => <LegalPage tenantSlug={tenantSlug} kind="terms"/>}</Route>
         <Route path="/privacy">{() => <LegalPage tenantSlug={tenantSlug} kind="privacy"/>}</Route>

@@ -44,7 +44,12 @@ const ROUTE_PREFETCHERS: Array<{
   { pattern: /^\/projects\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicCaseStudiesQueryOptions(t)) },
   { pattern: /^\/reviews\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicReviewsQueryOptions(t)) },
   { pattern: /^\/faqs\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getListPublicFaqsQueryOptions(t)) },
-  { pattern: /^\/blog\/([^/]+)\/?$/, prefetch: (t, m, qc) => qc.prefetchQuery(getGetPublicBlogPostQueryOptions(t, m[1])) },
+  // The article page also renders a "More guides" list, so the index query is prefetched here too
+  // — without it that block pops in after hydration on an otherwise fully server-rendered page.
+  { pattern: /^\/blog\/([^/]+)\/?$/, prefetch: (t, m, qc) => Promise.all([
+      qc.prefetchQuery(getGetPublicBlogPostQueryOptions(t, m[1])),
+      qc.prefetchQuery(getBrowsePublicBlogQueryOptions(t)),
+    ]) },
   { pattern: /^\/blog\/?$/, prefetch: (t, _m, qc) => qc.prefetchQuery(getBrowsePublicBlogQueryOptions(t)) },
 ];
 

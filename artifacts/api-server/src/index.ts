@@ -3,6 +3,7 @@ import { logger } from "./lib/logger";
 import { runSeedFixIfNeeded } from "./lib/seedFix";
 import { seedAmoServicesIfMissing } from "./lib/seedAmoServices";
 import { seedKdEssexIfMissing, ensureKdEssexAdmin } from "./lib/seedKdEssex";
+import { seedBlogPostsIfMissing } from "./lib/seedBlogPosts";
 import { clearAllPageCache } from "./lib/pageCache";
 
 const rawPort = process.env["PORT"];
@@ -23,6 +24,7 @@ runSeedFixIfNeeded()
   .then(() => seedAmoServicesIfMissing())
   .then(() => seedKdEssexIfMissing())
   .then(() => ensureKdEssexAdmin())
+  .then(() => seedBlogPostsIfMissing())
   .then(() => clearAllPageCache().catch((err) => logger.error({ err }, "Page cache clear failed — non-fatal, stale pages may persist")))
   .then(() => {
   app.listen(port, (err) => {

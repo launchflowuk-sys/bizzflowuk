@@ -412,7 +412,7 @@ export async function seedKdEssexIfMissing(): Promise<void> {
       trustBadges: ["Free written quote", "Full build-up specified", "Site left clean daily", "Photos welcome with enquiries"],
       showReviews: true,
       showGallery: true,
-      showBlog: false,
+      showBlog: true,
       showBeforeAfter: true,
       quoteRefPrefix: "KD",
     });
