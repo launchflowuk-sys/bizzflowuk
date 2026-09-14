@@ -6,6 +6,7 @@ import { seedKdEssexIfMissing, ensureKdEssexAdmin } from "./lib/seedKdEssex";
 import { seedBlogPostsIfMissing } from "./lib/seedBlogPosts";
 import { seedBpsPlumbingIfMissing } from "./lib/seedBpsPlumbing";
 import { syncBpsContent } from "./lib/syncBpsContent";
+import { startAutomationScheduler } from "./lib/automations/scheduler";
 import { clearAllPageCache } from "./lib/pageCache";
 
 const rawPort = process.env["PORT"];
@@ -29,6 +30,7 @@ runSeedFixIfNeeded()
   .then(() => seedBpsPlumbingIfMissing())
   .then(() => syncBpsContent())
   .then(() => seedBlogPostsIfMissing())
+  .then(() => startAutomationScheduler())
   .then(() => clearAllPageCache().catch((err) => logger.error({ err }, "Page cache clear failed — non-fatal, stale pages may persist")))
   .then(() => {
   app.listen(port, (err) => {
