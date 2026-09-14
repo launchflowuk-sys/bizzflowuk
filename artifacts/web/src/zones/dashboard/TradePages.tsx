@@ -43,6 +43,18 @@ function PageHead({ title, sub, action }: { title: string; sub?: string; action?
   );
 }
 
+/**
+ * Page padding, matching the rest of the dashboard.
+ *
+ * Every existing page wraps its content in `p-4 sm:p-6`. These pages returned a
+ * bare fragment, so their headings sat flush against the edge of the screen while
+ * every other page was inset — subtle, and exactly the kind of thing that makes a
+ * product feel assembled rather than designed.
+ */
+function Page({ children }: { children: React.ReactNode }) {
+  return <div className="p-4 sm:p-6">{children}</div>;
+}
+
 function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`bg-white border border-slate-200 rounded-[20px] ${className}`}>{children}</div>;
 }
@@ -126,13 +138,13 @@ export function InvoicesPage() {
     } finally { setCreating(false); }
   }
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorNote message={error} />;
+  if (loading) return <Page><Loading /></Page>;
+  if (error) return <Page><ErrorNote message={error} /></Page>;
 
   const rows = data ?? [];
 
   return (
-    <>
+<Page>
       <PageHead
         title="Invoices"
         sub="Raise it, send it, and see what is actually outstanding."
@@ -194,8 +206,7 @@ export function InvoicesPage() {
           </div>
         </Card>
       )}
-    </>
-  );
+    </Page>  );
 }
 
 export function InvoiceDetailPage() {
@@ -207,8 +218,8 @@ export function InvoiceDetailPage() {
   const [note, setNote] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorNote message={error} />;
+  if (loading) return <Page><Loading /></Page>;
+  if (error) return <Page><ErrorNote message={error} /></Page>;
   if (!data) return null;
 
   const locked = data.status === "void";
@@ -241,7 +252,7 @@ export function InvoiceDetailPage() {
   }
 
   return (
-    <>
+<Page>
       <PageHead
         title={data.reference}
         sub={`${INVOICE_STATUS_LABEL[data.status] ?? data.status} · ${money(data.total)} · ${money(data.outstanding)} outstanding`}
@@ -362,8 +373,7 @@ export function InvoiceDetailPage() {
           </Card>
         </div>
       </div>
-    </>
-  );
+    </Page>  );
 }
 
 // ── Expenses ─────────────────────────────────────────────────────────────────
@@ -390,11 +400,11 @@ export function ExpensesPage() {
     finally { setBusy(false); }
   }
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorNote message={error} />;
+  if (loading) return <Page><Loading /></Page>;
+  if (error) return <Page><ErrorNote message={error} /></Page>;
 
   return (
-    <>
+<Page>
       <PageHead title="Expenses" sub="What goes out, so the cash flow forecast tells the truth." />
 
       <Card className="p-5 mb-5">
@@ -452,8 +462,7 @@ export function ExpensesPage() {
           </div>
         </Card>
       )}
-    </>
-  );
+    </Page>  );
 }
 
 // ── Schedule ─────────────────────────────────────────────────────────────────
@@ -493,7 +502,7 @@ export function SchedulePage() {
   const todayKey = new Date().toISOString().slice(0, 10);
 
   return (
-    <>
+<Page>
       <PageHead
         title="Schedule"
         sub="Every booked job, and who is on it."
@@ -535,7 +544,7 @@ export function SchedulePage() {
           <>
             <div className="grid grid-cols-7 gap-px mb-px">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => (
-                <div key={d} className="text-[11.5px] font-semibold uppercase tracking-[0.05em] text-slate-400 text-center py-2">{d}</div>
+                <div key={d} className="text-[10px] sm:text-[11.5px] font-semibold uppercase tracking-[0.05em] text-slate-400 text-center py-1.5 sm:py-2">{d.slice(0, 3)}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-[14px] overflow-hidden">
@@ -544,11 +553,21 @@ export function SchedulePage() {
                 const jobs = byDay.get(key) ?? [];
                 const isToday = key === todayKey;
                 return (
-                  <div key={i} className={`bg-white min-h-[104px] p-2 ${inMonth ? "" : "opacity-40"}`}>
-                    <div className={`text-[13px] font-semibold mb-1.5 ${isToday ? "inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 text-white" : "text-slate-500"}`}>
+                  <div key={i} className={`bg-white min-h-[64px] sm:min-h-[104px] p-1 sm:p-2 ${inMonth ? "" : "opacity-40"}`}>
+                    <div className={`text-[12px] sm:text-[13px] font-semibold mb-1 sm:mb-1.5 text-center sm:text-left ${isToday ? "inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-900 text-white" : "text-slate-500"}`}>
                       {date.getDate()}
                     </div>
-                    <div className="space-y-1">
+                    {/* Phones: dots, because a ~50px cell turns any label into an
+                        ellipsis. The agenda list underneath carries the detail. */}
+                    {jobs.length > 0 && (
+                      <div className="flex sm:hidden flex-wrap gap-1 justify-center mt-1"
+                        title={jobs.map(j => `${timeOf(j.scheduledStart)} ${j.title}`).join(", ")}>
+                        {jobs.slice(0, 4).map(j => <span key={j.id} className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />)}
+                        {jobs.length > 4 && <span className="text-[10px] text-slate-400 leading-none">+{jobs.length - 4}</span>}
+                      </div>
+                    )}
+
+                    <div className="hidden sm:block space-y-1">
                       {jobs.slice(0, 3).map(j => (
                         <div key={j.id} className="text-[12px] leading-tight px-1.5 py-1 rounded-[8px] bg-sky-50 border border-sky-100 text-sky-900 truncate"
                           title={`${timeOf(j.scheduledStart)} ${j.title}${j.assignedTo ? ` — ${j.assignedTo.name}` : ""}`}>
@@ -593,8 +612,7 @@ export function SchedulePage() {
             body="Give a project a start date on its own page and it appears here, with whoever it is assigned to." />
         </div>
       )}
-    </>
-  );
+    </Page>  );
 }
 
 // ── Certificates ─────────────────────────────────────────────────────────────
@@ -604,14 +622,14 @@ export function CertificatesPage() {
   const { data, loading, error, reload } = useApi<any[]>("/certificates");
   const { data: types } = useApi<any[]>("/certificates/types");
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorNote message={error} />;
+  if (loading) return <Page><Loading /></Page>;
+  if (error) return <Page><ErrorNote message={error} /></Page>;
 
   const rows = data ?? [];
   const dueSoon = rows.filter(r => r.status === "issued" && (daysUntil(r.expiresAt) ?? 999) <= 60);
 
   return (
-    <>
+<Page>
       <PageHead
         title="Certificates"
         sub="Compliance records — issue them, send them, and get booked for next year automatically."
@@ -676,8 +694,7 @@ export function CertificatesPage() {
           Available types: {(types ?? []).map(t => t.label).join(" · ")}
         </p>
       )}
-    </>
-  );
+    </Page>  );
 }
 
 // ── Automations ──────────────────────────────────────────────────────────────
@@ -687,8 +704,8 @@ export function AutomationsPage() {
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorNote message={error} />;
+  if (loading) return <Page><Loading /></Page>;
+  if (error) return <Page><ErrorNote message={error} /></Page>;
 
   const rules: any[] = data?.rules ?? [];
   const groups = [...new Set(rules.map(r => r.group))];
@@ -714,7 +731,7 @@ export function AutomationsPage() {
   }
 
   return (
-    <>
+<Page>
       <PageHead
         title="Automations"
         sub="BizzFlow does these for you. Each one asks a few questions first, so you know exactly what goes out in your name before it is switched on."
@@ -749,8 +766,8 @@ export function AutomationsPage() {
                 <div key={r.key} className={`p-5 ${i < arr.length - 1 ? "border-b border-slate-100" : ""}`}>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2.5 flex-wrap">
-                        <h3 className="text-[16px] font-bold text-slate-900">{r.label}</h3>
+                      <h3 className="text-[16px] font-bold text-slate-900">{r.label}</h3>
+                      <div className="mt-1.5">
                         {r.enabled ? <Pill tone="good">On</Pill> : <Pill>Not set up</Pill>}
                       </div>
                       <p className="mt-1.5 text-[14.5px] text-slate-600 max-w-[62ch] leading-relaxed">{r.description}</p>
@@ -790,8 +807,7 @@ export function AutomationsPage() {
           </div>
         ))}
       </div>
-    </>
-  );
+    </Page>  );
 }
 
 // ── Cash flow ────────────────────────────────────────────────────────────────
@@ -800,8 +816,8 @@ export function CashFlowPage() {
   const { data, loading, error } = useApi<any>("/money/cash-flow");
   const { data: vat } = useApi<any>("/money/vat-position");
 
-  if (loading) return <Loading />;
-  if (error) return <ErrorNote message={error} />;
+  if (loading) return <Page><Loading /></Page>;
+  if (error) return <Page><ErrorNote message={error} /></Page>;
   if (!data) return null;
 
   const series: any[] = data.series ?? [];
@@ -810,7 +826,7 @@ export function CashFlowPage() {
   const safe = Number(data.safeToSpend);
 
   return (
-    <>
+<Page>
       <PageHead
         title="Cash flow"
         sub={`Next ${data.weeks} weeks. ${data.basis}`}
@@ -893,6 +909,5 @@ export function CashFlowPage() {
           <p className="mt-3 text-[14.5px] text-slate-600">{vat.note}</p>
         </Card>
       )}
-    </>
-  );
+    </Page>  );
 }
