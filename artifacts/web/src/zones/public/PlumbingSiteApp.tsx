@@ -638,15 +638,15 @@ function AreaDetail({ tenant, settings, services, reviews }: any) {
         description={area.seoDescription || area.description || `Plumbing and heating services in ${area.name}${area.county ? `, ${area.county}` : ""}.`}
       />
       <section className="py-[70px]" style={{ background: PALE_2 }}>
-        <div className="mx-auto max-w-[760px] px-5 sm:px-8">
+        <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
           <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>
             {(area.county || "SERVICE AREA").toUpperCase()}
           </p>
-          <h1 className="font-bold" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>
+          <h1 className="font-bold max-w-[820px]" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>
             Plumbing &amp; heating in {area.name}
           </h1>
           {(area.description || settings?.serviceBase) && (
-            <p className="mt-5 text-[17px] leading-[1.75]" style={{ color: BODY }}>
+            <p className="mt-5 text-[17px] leading-[1.75] max-w-[680px]" style={{ color: BODY }}>
               {area.description || `We work across ${area.name} from our base in ${settings.serviceBase}.`}
             </p>
           )}
@@ -655,7 +655,7 @@ function AreaDetail({ tenant, settings, services, reviews }: any) {
 
       {area.content && (
         <section className="py-[60px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[760px] px-5 sm:px-8 text-[16px] leading-[1.8] whitespace-pre-line" style={{ color: TEXT }}>
+          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 text-[16px] leading-[1.8] whitespace-pre-line max-w-full" style={{ color: TEXT }}>
             {area.content}
           </div>
         </section>
@@ -675,11 +675,11 @@ function ClosingCta({ settings }: { settings: any }) {
   const phone = settings?.phone;
   return (
     <section className="quote-cta py-[80px]" style={{ background: BLUE }}>
-      <div className="wrap mx-auto max-w-[1300px] px-5 sm:px-8 text-center">
-        <h2 className="font-bold text-white mx-auto max-w-[760px]" style={{ fontSize: "clamp(30px,4vw,48px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
+      <div className="wrap mx-auto max-w-[1300px] px-5 sm:px-8">
+        <h2 className="font-bold text-white max-w-[760px]" style={{ fontSize: "clamp(30px,4vw,48px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
           {settings?.closingHeadline || "A warmer home is one conversation away."}
         </h2>
-        <div className="mt-9 flex flex-wrap items-center justify-center gap-4">
+        <div className="mt-9 flex flex-wrap items-center gap-4">
           <QuoteButton/>
           {phone && <a href={telHref(phone)} className="bps-pipe text-white font-semibold text-[16px]">or call {phone}</a>}
         </div>
@@ -912,10 +912,10 @@ function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
 function PageHead({ eyebrow, title, intro }: { eyebrow?: string; title: string; intro?: string }) {
   return (
     <section className="py-[70px]" style={{ background: PALE_2 }}>
-      <div className="mx-auto max-w-[760px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
         {eyebrow && <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>{eyebrow.toUpperCase()}</p>}
-        <h1 className="font-bold" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>{title}</h1>
-        {intro && <p className="mt-5 text-[17px] leading-[1.75]" style={{ color: BODY }}>{intro}</p>}
+        <h1 className="font-bold max-w-[820px]" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>{title}</h1>
+        {intro && <p className="mt-5 text-[17px] leading-[1.75] max-w-[680px]" style={{ color: BODY }}>{intro}</p>}
       </div>
     </section>
   );
@@ -969,7 +969,7 @@ function ReviewsPage({ tenant, settings, reviews }: any) {
           // No invented testimonials. An empty state that tells the truth beats
           // filler that would also put false rating schema on the page.
           <section className="py-[70px]" style={{ background: "#fff" }}>
-            <div className="mx-auto max-w-[760px] px-5 sm:px-8">
+            <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
               <p className="text-[16px] leading-[1.8]" style={{ color: BODY }}>
                 We're collecting reviews from recent customers and will publish them here as they come in.
                 {settings?.phone ? " In the meantime, call and ask us for references — we're happy to give them." : ""}
@@ -1023,7 +1023,7 @@ function LegalPage({ tenant, title, body }: { tenant: any; title: string; body?:
       <PageSEO title={`${title} — ${tenant?.name}`} description={`${title} for ${tenant?.name}.`} noindex/>
       <PageHead title={title}/>
       <section className="py-[56px]" style={{ background: "#fff" }}>
-        <div className="mx-auto max-w-[760px] px-5 sm:px-8 text-[15.5px] leading-[1.8] whitespace-pre-line" style={{ color: TEXT }}>
+        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 text-[15.5px] leading-[1.8] whitespace-pre-line" style={{ color: TEXT }}>
           {body || "This page is being prepared."}
         </div>
       </section>
