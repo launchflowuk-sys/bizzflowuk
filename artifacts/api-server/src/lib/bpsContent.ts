@@ -25,6 +25,7 @@ export type BpsService = {
   description: string;
   content: string;
   /** The "what's included" tick boxes. Rendered as a checklist on the service page. */
+  heroImageUrl?: string;
   benefits: string[];
   processSteps?: Array<{ title: string; description: string }>;
 };
@@ -33,6 +34,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Boiler Installation",
     slug: "boiler-installation",
+    heroImageUrl: "/bps/new-boiler-installation.webp",
     tagline: "A new boiler, sized for your home and explained before we start",
     description:
       "New boiler installations across Grays, Thurrock and south Essex, fitted by Gas Safe registered engineers and covered by a 10-year warranty.",
@@ -56,6 +58,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Boiler Repair",
     slug: "boiler-repair",
+    heroImageUrl: "/bps/boiler-repair.webp",
     tagline: "No heating or hot water? Fixed price, no hidden costs",
     description:
       "Fixed-price boiler repairs covering the call-out, all labour and parts. Most faults are diagnosed and fixed on the first visit.",
@@ -73,6 +76,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Boiler Servicing",
     slug: "boiler-servicing",
+    heroImageUrl: "/bps/essex-boiler-service.webp",
     tagline: "An annual service that keeps the warranty valid",
     description:
       "Annual boiler servicing for almost any make, with a written record of everything tested. Required by most manufacturers to keep your warranty valid.",
@@ -91,6 +95,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Central Heating Installation",
     slug: "central-heating-installation",
+    heroImageUrl: "/bps/boiler-install.webp",
     tagline: "The whole system, not just the box on the wall",
     description:
       "Complete central heating systems — boiler, radiators, pipework and controls — installed across Essex by Gas Safe registered engineers.",
@@ -108,6 +113,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Central Heating Repairs",
     slug: "central-heating-repairs",
+    heroImageUrl: "/bps/ch1.webp",
     tagline: "Cold rooms, noisy pipes and pressure that will not hold",
     description:
       "Repairs to heating systems across Essex — cold radiators, failing pumps and valves, pressure loss and the faults that come back.",
@@ -125,6 +131,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Radiator Repairs & Installation",
     slug: "radiator-repairs",
+    heroImageUrl: "/bps/rads-repairs-grays.webp",
     tagline: "Repaired, replaced or moved — with the room warm at the end",
     description:
       "Radiator repair, replacement and relocation, including advice on the right size and position for each room.",
@@ -142,6 +149,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Bathroom Installation",
     slug: "bathroom-installation",
+    heroImageUrl: "/bps/kitchen.webp",
     tagline: "From the first idea to the final seal",
     description:
       "Complete bathroom installation across Essex — design, plumbing, tiling and finish, handled by one team from start to finish.",
@@ -160,6 +168,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Toilet Repairs",
     slug: "toilet-repairs",
+    heroImageUrl: "/bps/toilets.webp",
     tagline: "Leaking, running or blocked — usually sorted the same day",
     description:
       "Toilet repair and replacement across Essex, including leaks, blockages, running cisterns and failed flush mechanisms.",
@@ -177,6 +186,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Leaks & Blockages",
     slug: "leaks-blockages",
+    heroImageUrl: "/bps/pflush-engineer.webp",
     tagline: "Found, fixed, and left dry",
     description:
       "Leak detection and blockage clearing across Essex — tracing the source without pulling the house apart.",
@@ -194,6 +204,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Drainage Solutions",
     slug: "drainage-solutions",
+    heroImageUrl: "/bps/drains.webp",
     tagline: "Blockages, overflows and floods, at a price agreed first",
     description:
       "Drain unblocking and drainage repairs across Essex, with fixed prices agreed before the work starts.",
@@ -210,6 +221,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Gas Installation",
     slug: "gas-installation",
+    heroImageUrl: "/bps/gasmeter1.webp",
     tagline: "Meters and gas appliances installed, moved or removed",
     description:
       "Gas meter installation, relocation and removal, plus gas appliance connection, by Gas Safe registered engineers.",
@@ -227,6 +239,7 @@ export const BPS_SERVICES: BpsService[] = [
   {
     name: "Gas Safety Certificates",
     slug: "gas-safety-certificates",
+    heroImageUrl: "/bps/gas-certificates.webp",
     tagline: "Landlord certificates, sent to you the same day",
     description:
       "Landlord gas safety certificates (CP12) across Essex. Every gas appliance checked by a Gas Safe registered engineer, certificate issued electronically.",

@@ -106,8 +106,9 @@ function QuoteButton({ children = "Get a free quote", className = "" }: { childr
   );
 }
 
-function Header({ tenant, settings }: { tenant: any; settings: any }) {
+function Header({ tenant, settings, services, areas }: { tenant: any; settings: any; services?: any[]; areas?: any[] }) {
   const [open, setOpen] = useState(false);
+  const [mega, setMega] = useState<null | "services" | "areas">(null);
   const [closing, setClosing] = useState(false);
   const [, navigate] = useLocation();
   const base = useSiteBase();
@@ -133,7 +134,7 @@ function Header({ tenant, settings }: { tenant: any; settings: any }) {
   }, [open]);
 
   return (
-    <header className="bps-header sticky top-0 z-50">
+    <header className="bps-header sticky top-0 z-50 relative">
       <div className="mx-auto max-w-[1300px] px-5 sm:px-8 h-[86px] lg:h-[96px] flex items-center justify-between gap-6">
         <Link href="/" className="flex items-center gap-3 shrink-0">
           {settings?.logoUrl
@@ -141,9 +142,32 @@ function Header({ tenant, settings }: { tenant: any; settings: any }) {
             : <span className="text-white font-bold text-[22px] tracking-[-0.02em]">{tenant?.name}</span>}
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-7" aria-label="Main">
-          {NAV_LINKS.map(l => (
-            <Link key={l.href} href={l.href} className="bps-pipe text-[15px] font-medium text-white/85 hover:text-white transition-colors">{l.label}</Link>
+        {/* Desktop menu. Services and Areas open a panel listing every page we
+            have, because a trade site's whole job is getting somebody to the
+            page for their problem in their town — burying twelve services
+            behind one "Services" link is how that fails. */}
+        <nav className="hidden lg:flex items-center gap-7 h-full" aria-label="Main" onMouseLeave={() => setMega(null)}>
+          <Link href="/" className="bps-pipe text-[15px] font-medium text-white/85 hover:text-white transition-colors">Home</Link>
+
+          <div className="relative h-full flex items-center" onMouseEnter={() => setMega("services")}>
+            <Link href="/services" className="bps-pipe text-[15px] font-medium text-white/85 hover:text-white transition-colors inline-flex items-center gap-1.5">
+              Services
+              <Icon d="M6 9l6 6 6-6" className="w-3.5 h-3.5" color="currentColor" strokeWidth={2.4}/>
+            </Link>
+          </div>
+
+          {(areas || []).length > 0 && (
+            <div className="relative h-full flex items-center" onMouseEnter={() => setMega("areas")}>
+              <Link href="/services" className="bps-pipe text-[15px] font-medium text-white/85 hover:text-white transition-colors inline-flex items-center gap-1.5">
+                Areas
+                <Icon d="M6 9l6 6 6-6" className="w-3.5 h-3.5" color="currentColor" strokeWidth={2.4}/>
+              </Link>
+            </div>
+          )}
+
+          {NAV_LINKS.filter(l => !["/", "/services"].includes(l.href)).map(l => (
+            <Link key={l.href} href={l.href} onMouseEnter={() => setMega(null)}
+              className="bps-pipe text-[15px] font-medium text-white/85 hover:text-white transition-colors">{l.label}</Link>
           ))}
         </nav>
 
@@ -167,6 +191,63 @@ function Header({ tenant, settings }: { tenant: any; settings: any }) {
           </button>
         </div>
       </div>
+
+
+      {/* Mega panel, desktop only. Rendered outside the nav so it can span the
+          full width rather than being trapped in a menu item. */}
+      {mega && (
+        <div className="bps-mega hidden lg:block absolute left-0 right-0 top-full" onMouseLeave={() => setMega(null)} onMouseEnter={() => setMega(mega)}>
+          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 py-8">
+            {mega === "services" && (
+              <>
+                <div className="flex items-baseline justify-between mb-5">
+                  <p className="text-[11.5px] font-bold tracking-[0.12em] uppercase" style={{ color: BLUE_BRIGHT }}>Everything we do</p>
+                  <Link href="/services" className="bps-pipe text-[13.5px] font-semibold text-white/70 hover:text-white">See all services</Link>
+                </div>
+                <div className="grid grid-cols-3 gap-x-8 gap-y-1">
+                  {(services || []).map((s: any) => (
+                    <Link key={s.slug} href={`/services/${s.slug}`} onClick={() => setMega(null)}
+                      className="bps-mega-item group flex items-start gap-3 rounded-[14px] px-3 py-2.5">
+                      <span className="bps-mega-icon shrink-0"><ServiceIcon slug={s.slug} className="w-5 h-5" color="#fff"/></span>
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-[14.5px] text-white truncate">{s.name}</span>
+                        {s.tagline && <span className="block text-[12.5px] text-white/55 truncate">{s.tagline}</span>}
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+
+            {mega === "areas" && (
+              <>
+                <div className="flex items-baseline justify-between mb-5">
+                  <p className="text-[11.5px] font-bold tracking-[0.12em] uppercase" style={{ color: BLUE_BRIGHT }}>
+                    {settings?.serviceBase ? `Based in ${settings.serviceBase}` : "Where we work"}
+                  </p>
+                  {settings?.phone && (
+                    <a href={telHref(settings.phone)} className="bps-pipe text-[13.5px] font-semibold text-white/70 hover:text-white">
+                      Not listed? Call {settings.phone}
+                    </a>
+                  )}
+                </div>
+                <div className="grid grid-cols-4 gap-x-8 gap-y-1">
+                  {(areas || []).map((a: any) => (
+                    <Link key={a.slug} href={`/areas/${a.slug}`} onClick={() => setMega(null)}
+                      className="bps-mega-item group flex items-start gap-3 rounded-[14px] px-3 py-2.5">
+                      <span className="bps-mega-icon shrink-0"><Icon d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11zM12 12a2 2 0 100-4 2 2 0 000 4z" className="w-5 h-5" color="#fff"/></span>
+                      <span className="min-w-0">
+                        <span className="block font-semibold text-[14.5px] text-white truncate">{a.name}</span>
+                        <span className="block text-[12.5px] text-white/55 truncate">Plumbers in {a.name}</span>
+                      </span>
+                    </Link>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {open && (
         <div className={`bps-drawer-root lg:hidden ${closing ? "is-closing" : ""}`}>
@@ -195,7 +276,27 @@ function Header({ tenant, settings }: { tenant: any; settings: any }) {
               ))}
             </div>
 
-            <div className="bps-drawer-foot" style={{ ["--i" as any]: NAV_LINKS.length }}>
+            {(services || []).length > 0 && (
+              <div className="bps-drawer-group" style={{ ["--i" as any]: NAV_LINKS.length }}>
+                <p className="bps-drawer-grouphead">Our services</p>
+                {(services || []).map((s: any) => (
+                  <button key={s.slug} type="button" className="bps-drawer-sub"
+                    onClick={() => closeDrawer(() => navigate(`/services/${s.slug}`))}>{s.name}</button>
+                ))}
+              </div>
+            )}
+
+            {(areas || []).length > 0 && (
+              <div className="bps-drawer-group" style={{ ["--i" as any]: NAV_LINKS.length + 1 }}>
+                <p className="bps-drawer-grouphead">Where we work</p>
+                {(areas || []).map((a: any) => (
+                  <button key={a.slug} type="button" className="bps-drawer-sub"
+                    onClick={() => closeDrawer(() => navigate(`/areas/${a.slug}`))}>{a.name}</button>
+                ))}
+              </div>
+            )}
+
+            <div className="bps-drawer-foot" style={{ ["--i" as any]: NAV_LINKS.length + 2 }}>
               {phone && (
                 <a href={telHref(phone)} className="bps-drawer-call">
                   <PhoneIcon color="#fff" className="w-5 h-5"/>
@@ -664,35 +765,141 @@ function HomePage({ tenant, settings, services, areas, reviews }: any) {
   );
 }
 
-function ServiceDetail({ tenant, settings }: any) {
+function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
   const { slug } = useParams<{ slug: string }>();
   const { data } = useGetPublicService(tenant?.slug, slug);
   const service = data as any;
+  const phone = settings?.phone;
+
   if (!service) return null;
+
+  const others = (services || []).filter((s: any) => s.slug !== service.slug).slice(0, 6);
+  const hero = service.heroImageUrl || settings?.heroImageUrl;
+
   return (
     <>
-      <PageSEO title={`${service.name} — ${tenant?.name}`} description={service.description || service.tagline}/>
-      <section className="py-[70px]" style={{ background: PALE_2 }}>
-        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 max-w-[760px]">
-          <ServiceIcon slug={service.slug} className="w-10 h-10"/>
-          <h1 className="mt-5 font-bold" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>{service.name}</h1>
-          {service.tagline && <p className="mt-4 text-[17px] leading-[1.7]" style={{ color: BODY }}>{service.tagline}</p>}
+      <PageSEO
+        title={service.seoTitle || `${service.name} — ${tenant?.name}`}
+        description={service.seoDescription || service.description || service.tagline || ""}
+        image={hero}
+      />
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "Service",
+        name: service.name,
+        description: service.description,
+        provider: { "@type": "Plumber", name: tenant?.name, telephone: settings?.phone },
+        areaServed: (areas || []).map((a: any) => a.name),
+      }}/>
+
+      {/* Full-bleed hero, the same shape as the homepage, so an inner page never
+          feels like a different website. */}
+      <section className="bps-inner-hero relative isolate overflow-hidden" style={{ background: NAVY }} aria-labelledby="svc-heading">
+        {hero && <img className="bps-hero-photo absolute inset-0 -z-20 h-full w-full object-cover" src={hero} alt="" fetchPriority="high" decoding="async"/>}
+        <div className="bps-hero-shade absolute inset-0 -z-10" aria-hidden="true"/>
+
+        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 py-[64px] lg:py-[92px]">
+          <nav className="bps-rise flex items-center gap-2 text-[13px] text-white/60 mb-5" aria-label="Breadcrumb" style={{ animationDelay: "40ms" }}>
+            <Link href="/" className="bps-pipe hover:text-white">Home</Link>
+            <span aria-hidden="true">/</span>
+            <Link href="/services" className="bps-pipe hover:text-white">Services</Link>
+            <span aria-hidden="true">/</span>
+            <span className="text-white/85">{service.name}</span>
+          </nav>
+
+          <div className="max-w-[660px]">
+            <h1 id="svc-heading" className="bps-rise font-bold text-white" style={{ fontSize: "clamp(34px,5vw,62px)", lineHeight: 1.07, letterSpacing: "-0.045em", animationDelay: "120ms" }}>
+              {service.name}
+            </h1>
+            {service.tagline && (
+              <p className="bps-rise mt-5 text-[18px] leading-[1.65] text-white/85" style={{ animationDelay: "210ms" }}>
+                {service.tagline}
+              </p>
+            )}
+            <div className="bps-rise mt-8 flex flex-wrap items-center gap-4" style={{ animationDelay: "300ms" }}>
+              <QuoteButton>Get a free quote</QuoteButton>
+              {phone && (
+                <a href={telHref(phone)} className="bps-drop inline-flex items-center gap-3 h-12 px-5 rounded-[14px] border text-white font-semibold text-[15px]" style={{ borderColor: "rgba(255,255,255,.34)" }}>
+                  <PhoneIcon color="#fff"/>
+                  <span className="flex flex-col leading-tight text-left">
+                    <span className="text-[11.5px] font-normal text-white/60">Need us now?</span>
+                    <span>{phone}</span>
+                  </span>
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       </section>
-      {service.content && (
-        <section className="py-[64px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[760px] px-5 sm:px-8 text-[16.5px] leading-[1.85] whitespace-pre-line" style={{ color: TEXT }}>
-            {String(service.content).split("\n\n").map((para: string, i: number) =>
-              para.startsWith("## ")
-                ? <h2 key={i} className="font-bold mt-10 mb-3 first:mt-0" style={{ color: TEXT, fontSize: "clamp(21px,2.4vw,27px)", letterSpacing: "-0.03em" }}>{para.slice(3)}</h2>
-                : <p key={i} className="mb-5">{para}</p>,
+
+      <TrustStrip settings={settings}/>
+
+      {/* Body beside a quote card that follows you down the page. The point of a
+          service page is the enquiry, so the enquiry should never scroll away. */}
+      <section className="py-[72px]" style={{ background: "#fff" }}>
+        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid lg:grid-cols-[minmax(0,1fr)_340px] gap-12">
+          <div className="min-w-0">
+            {service.content
+              ? String(service.content).split("\n\n").map((para: string, i: number) =>
+                  para.startsWith("## ")
+                    ? <h2 key={i} className="font-bold mt-11 mb-3 first:mt-0" style={{ color: TEXT, fontSize: "clamp(22px,2.6vw,29px)", letterSpacing: "-0.03em" }}>{para.slice(3)}</h2>
+                    : <p key={i} className="mb-5 text-[16.5px] leading-[1.85]" style={{ color: TEXT }}>{para}</p>)
+              : service.description && <p className="text-[16.5px] leading-[1.85]" style={{ color: TEXT }}>{service.description}</p>}
+
+            {Array.isArray(service.benefits) && service.benefits.length > 0 && (
+              <div className="mt-10">
+                <h2 className="font-bold mb-6" style={{ color: TEXT, fontSize: "clamp(22px,2.6vw,29px)", letterSpacing: "-0.03em" }}>
+                  What&rsquo;s included
+                </h2>
+                <ul className="tick-list grid sm:grid-cols-2 gap-x-8 gap-y-1">
+                  {service.benefits.map((t: string, i: number) => (
+                    <li key={i} className="tick-row" style={{ ["--i" as any]: i }}>
+                      <span className="tick-box" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                          <path className="tick-path" d="M5 12.5l4.5 4.5L19 7.5"/>
+                        </svg>
+                      </span>
+                      <span className="tick-text">{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
             )}
           </div>
-        </section>
-      )}
 
-      <BenefitsList items={service.benefits} heading={`What's included with ${service.name.toLowerCase()}`}/>
+          <aside className="lg:sticky lg:top-[112px] h-fit">
+            <div className="rounded-[22px] p-6" style={{ background: NAVY }}>
+              <h3 className="font-bold text-white text-[20px]" style={{ letterSpacing: "-0.025em" }}>
+                Get a price for {service.name.toLowerCase()}
+              </h3>
+              <p className="mt-2.5 text-[14.5px] leading-[1.7] text-white/70">
+                Tell us what you need and we&rsquo;ll come back with a written price. No obligation.
+              </p>
+              <QuoteButton className="mt-5 w-full justify-center"/>
+              {phone && (
+                <a href={telHref(phone)} className="bps-drop mt-3 flex items-center justify-center gap-2.5 h-12 rounded-[14px] border text-white font-semibold text-[15px]" style={{ borderColor: "rgba(255,255,255,.3)" }}>
+                  <PhoneIcon color="#fff"/>{phone}
+                </a>
+              )}
+              {Array.isArray(settings?.trustBadges) && settings.trustBadges.length > 0 && (
+                <ul className="mt-6 pt-5 space-y-2.5 border-t" style={{ borderColor: "rgba(255,255,255,.14)" }}>
+                  {(settings.trustBadges as string[]).slice(0, 4).map((b, i) => (
+                    <li key={i} className="flex items-start gap-2.5 text-[13.5px] text-white/75">
+                      <span className="mt-0.5 shrink-0"><Icon d="M5 12.5l4.5 4.5L19 7.5" className="w-4 h-4" color={BLUE_BRIGHT} strokeWidth={3}/></span>
+                      {b}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </aside>
+        </div>
+      </section>
+
       <ProcessSteps steps={service.processSteps}/>
+      <Reviews reviews={reviews} heading="What our customers say"/>
+      <ServicesGrid services={others} heading="Other things we do" intro={settings?.serviceArea ? `We cover the lot, right across ${settings.serviceArea}.` : undefined}/>
+      <Areas areas={areas} settings={settings} services={services}/>
       <EmergencyPanel settings={settings}/>
       <ClosingCta settings={settings}/>
     </>
@@ -876,7 +1083,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
       <SiteBaseCtx.Provider value={base}>
         <WouterRouter base={base} ssrPath={props.ssrPath}>
           <div className="min-h-screen flex flex-col" style={{ background: "#fff", color: TEXT, fontFamily: "Arial, Helvetica, system-ui, sans-serif" }}>
-            <Header tenant={tenant} settings={settings}/>
+            <Header tenant={tenant} settings={settings} services={shared.services} areas={shared.areas}/>
             <main className="flex-1">
               <Switch>
                 <Route path="/"><HomePage {...shared}/></Route>

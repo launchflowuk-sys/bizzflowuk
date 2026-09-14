@@ -50,6 +50,7 @@ export async function syncBpsContent(): Promise<void> {
         tagline: s.tagline,
         description: s.description,
         content: s.content,
+        heroImageUrl: s.heroImageUrl ?? null,
         benefits: s.benefits,
         processSteps: s.processSteps ?? [],
         published: true,
@@ -62,7 +63,7 @@ export async function syncBpsContent(): Promise<void> {
     const bare = !row.content && (!Array.isArray(row.benefits) || row.benefits.length === 0);
     if (bare) {
       await db.update(servicesTable)
-        .set({ tagline: s.tagline, description: s.description, content: s.content, benefits: s.benefits, processSteps: s.processSteps ?? [], sortOrder: i + 1 })
+        .set({ tagline: s.tagline, description: s.description, content: s.content, heroImageUrl: s.heroImageUrl ?? null, benefits: s.benefits, processSteps: s.processSteps ?? [], sortOrder: i + 1 })
         .where(eq(servicesTable.id, row.id));
       filled++;
     }

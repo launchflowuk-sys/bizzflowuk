@@ -435,13 +435,21 @@
    ========================================================================== */
 
 /* hamburger to X, morphed rather than swapped */
+/* The display here fights Tailwind's `lg:hidden`: both are single-class
+   selectors, so source order decides, and this sheet loads after Tailwind's
+   utilities. Result: the burger stayed visible on desktop and clicking it did
+   nothing, because the drawer it opens is correctly hidden there. Scoped to the
+   mobile range so it cannot win that fight. */
+@media (max-width:1023.98px){
+  .bps-burger{ display:inline-flex }
+}
 .bps-burger{
   position:relative;
   width:46px; height:46px;
   border-radius:13px;
   background:rgba(255,255,255,.1);
   border:1px solid rgba(255,255,255,.14);
-  display:inline-flex; align-items:center; justify-content:center;
+  align-items:center; justify-content:center;
   flex-direction:column; gap:5px;
   cursor:pointer;
 }
@@ -789,4 +797,78 @@
   .tick-box{ opacity:1 !important; transform:none !important; animation:none !important }
   .tick-path{ stroke-dashoffset:0 !important; animation:none !important }
   .step-card{ transition:none }
+}
+
+
+/* ============================================================================
+   17. MEGA MENU + INNER HERO
+   ========================================================================== */
+
+/* Inner pages get a shorter hero than the homepage — enough for a headline and
+   a call to action without pushing the content itself below the fold. */
+.bps-inner-hero{ min-height:340px; display:grid; align-items:center }
+@media (min-width:1024px){ .bps-inner-hero{ min-height:420px } }
+
+/* The homepage wash is 95% opaque across most of the width, because that hero is
+   a composite with people on the right. On an inner page the photograph IS the
+   subject, so that treatment simply painted over it. This one darkens from the
+   bottom-left, enough for white text to hold while the job photo still reads. */
+.bps-inner-hero .bps-hero-shade{
+  background:
+    linear-gradient(105deg, rgba(9,27,42,.93) 0%, rgba(9,27,42,.78) 38%, rgba(9,27,42,.42) 68%, rgba(9,27,42,.26) 100%),
+    linear-gradient(0deg, rgba(9,27,42,.55) 0%, rgba(9,27,42,.10) 55%, rgba(9,27,42,.30) 100%);
+}
+@media (max-width:640px){
+  .bps-inner-hero .bps-hero-shade{
+    background:linear-gradient(180deg, rgba(9,27,42,.80) 0%, rgba(9,27,42,.88) 100%);
+  }
+}
+
+.bps-mega{
+  background:linear-gradient(180deg, #0C1D30 0%, #102333 100%);
+  border-top:1px solid rgba(255,255,255,.08);
+  box-shadow:0 26px 50px -24px rgba(0,0,0,.75);
+  animation:bpsMegaIn 200ms var(--bps-ease-settle) both;
+}
+@keyframes bpsMegaIn{
+  from{ opacity:0; transform:translateY(-8px) }
+  to  { opacity:1; transform:none }
+}
+
+.bps-mega-item{ transition:background 200ms ease-out, transform 240ms var(--bps-ease-settle) }
+.bps-mega-icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:34px; height:34px; border-radius:11px;
+  background:linear-gradient(140deg, var(--bps-blue-bright), var(--bps-blue));
+  transition:transform 260ms var(--bps-ease-settle);
+}
+@media (hover:hover) and (pointer:fine){
+  .bps-mega-item:hover{ background:rgba(255,255,255,.06); transform:translateX(2px) }
+  .bps-mega-item:hover .bps-mega-icon{ transform:scale(1.08) rotate(-4deg) }
+}
+
+/* Drawer sub-lists, so a phone reaches every service and town too. */
+.bps-drawer-group{
+  animation:bpsDrawerItem 420ms var(--bps-ease-settle) both;
+  animation-delay:calc(140ms + var(--i) * 52ms);
+  padding-top:18px;
+}
+.bps-drawer-grouphead{
+  margin:0 0 6px;
+  font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--bps-blue-bright);
+}
+.bps-drawer-sub{
+  display:block; width:100%; text-align:left;
+  padding:11px 4px; border:0; background:none; cursor:pointer;
+  color:rgba(255,255,255,.76); font-size:15.5px;
+  border-bottom:1px solid rgba(255,255,255,.06);
+  transition:color 180ms ease-out, padding-left 220ms var(--bps-ease-settle);
+}
+.bps-drawer-sub:hover,
+.bps-drawer-sub:active{ color:#fff; padding-left:8px }
+
+@media (prefers-reduced-motion:reduce){
+  .bps-mega, .bps-drawer-group{ animation:none !important }
+  .bps-mega-item, .bps-mega-icon, .bps-drawer-sub{ transition:none !important }
 }
