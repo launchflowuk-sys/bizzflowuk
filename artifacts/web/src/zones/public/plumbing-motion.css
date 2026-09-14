@@ -1,0 +1,418 @@
+/* ============================================================================
+   BPS Plumbing & Heating — trade-specific motion layer
+   ----------------------------------------------------------------------------
+   Layers ON TOP of the supplied BpsHero.module.css + MotionEnhancements.
+   Load this AFTER globals.css. Nothing here replaces the approved design:
+   every animation ends on the approved colour and the approved position.
+
+   The idea: generic SaaS motion (fade, lift, zoom) is what every template does.
+   These five behaviours could only belong to a plumbing and heating company —
+   heat, flow, pressure and water. That is the difference between "nice site"
+   and Brandon telling people about it.
+
+   Rules held throughout:
+     - transform / opacity / colour only. No layout shift, no reflow.
+     - hover effects gated behind (hover:hover) and (pointer:fine).
+     - everything collapses to a static, visible end state under reduced motion.
+     - no JS required for any hover; the observer file only handles reveals.
+   ========================================================================== */
+
+:root{
+  --bps-navy:#102333;
+  --bps-orange:#F0882D;
+  --bps-blue:#0892CF;
+  --bps-blue-bright:#35BAF2;
+  --bps-control:#087EAE;
+  --bps-border:#DCE4E9;
+  --bps-body:#667581;
+
+  /* heat, for the thermal effects — warm but never garish on navy */
+  --bps-ember:#FFB05C;
+  --bps-flame:#F0882D;
+
+  --bps-ease-settle:cubic-bezier(.2,.7,.2,1);
+  --bps-ease-flow:cubic-bezier(.65,0,.35,1);
+}
+
+/* ============================================================================
+   1. THE SIGNATURE MOMENT — "warmth." warms up
+   ----------------------------------------------------------------------------
+   The headline is "Goodbye worries. / Hello, warmth." so the accent word should
+   actually warm. A band of ember sweeps through the word once on load and
+   settles to the approved bright blue. Final colour is unchanged from the
+   approved design — this only adds the moment of ignition.
+
+   Markup: the hero already wraps the word in a <span>. Add class "bps-warm".
+       Hello, <span class="bps-warm">warmth.</span>
+   ========================================================================== */
+
+.bps-warm{
+  /* The gradient IS the text fill. Cold blue at both ends, ember in the middle,
+     so when the band has swept past, the word is exactly the approved colour. */
+  background-image:linear-gradient(
+    100deg,
+    var(--bps-blue-bright) 0%,
+    var(--bps-blue-bright) 32%,
+    var(--bps-ember)       46%,
+    var(--bps-flame)       50%,
+    var(--bps-ember)       54%,
+    var(--bps-blue-bright) 68%,
+    var(--bps-blue-bright) 100%
+  );
+  background-size:280% 100%;
+  background-position:100% 0;          /* resting: cold */
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+  -webkit-text-fill-color:transparent;
+
+  animation:bpsWarmSweep 2200ms var(--bps-ease-settle) 620ms both;
+}
+
+@keyframes bpsWarmSweep{
+  from{ background-position:100% 0 }
+  to  { background-position:0% 0 }
+}
+
+/* A single, slow ember breath underneath — the word holds a little heat after
+   the sweep. One cycle only; nothing on this page loops forever. */
+.bps-warm::after{
+  content:"";
+  position:absolute;
+  inset:-0.12em -0.18em;
+  border-radius:0.28em;
+  background:radial-gradient(60% 120% at 50% 55%, rgba(240,136,45,.34), transparent 72%);
+  opacity:0;
+  z-index:-1;
+  pointer-events:none;
+  animation:bpsEmberBreath 2600ms ease-out 900ms both;
+}
+.bps-warm{ position:relative; isolation:isolate }
+
+@keyframes bpsEmberBreath{
+  0%  { opacity:0 }
+  38% { opacity:1 }
+  100%{ opacity:0 }
+}
+
+/* ============================================================================
+   2. PIPE FLOW — links fill like water travelling through a pipe
+   ----------------------------------------------------------------------------
+   A plain underline slide is the generic version. This one has a leading bead:
+   a brighter dot runs ahead of the fill, the way water pushes an air pocket.
+   Applies to nav links, service links and footer links.
+   ========================================================================== */
+
+@media (hover:hover) and (pointer:fine){
+
+  .bps-pipe{
+    position:relative;
+    text-decoration:none;
+  }
+
+  /* the pipe wall — always present, very faint, so the channel reads as a route */
+  .bps-pipe::before{
+    content:"";
+    position:absolute;
+    left:0; right:0; bottom:-3px;
+    height:2px;
+    border-radius:2px;
+    background:currentColor;
+    opacity:.14;
+    transform:scaleY(.5);
+  }
+
+  /* the water */
+  .bps-pipe::after{
+    content:"";
+    position:absolute;
+    left:0; bottom:-3px;
+    height:2px;
+    width:100%;
+    border-radius:2px;
+    background:linear-gradient(90deg,
+      var(--bps-blue) 0%,
+      var(--bps-blue) 76%,
+      var(--bps-blue-bright) 92%,
+      #BDEBFF 100%);            /* the bead, running at the head of the flow */
+    transform:scaleX(0);
+    transform-origin:left center;
+    transition:transform 420ms var(--bps-ease-flow);
+  }
+
+  .bps-pipe:hover::after,
+  .bps-pipe:focus-visible::after{ transform:scaleX(1) }
+
+  /* leaving drains the other way — it does not snap back */
+  .bps-pipe::after{ transform-origin:right center }
+  .bps-pipe:hover::after,
+  .bps-pipe:focus-visible::after{ transform-origin:left center }
+}
+
+/* ============================================================================
+   3. DROPLET — the phone / emergency action ripples like a drop hitting water
+   ----------------------------------------------------------------------------
+   Two rings, offset, expanding and fading. Restrained: 600ms, no repeat, and it
+   sits behind the label so the number is never obscured.
+   ========================================================================== */
+
+.bps-drop{ position:relative; isolation:isolate; overflow:visible }
+
+@media (hover:hover) and (pointer:fine){
+  .bps-drop::before,
+  .bps-drop::after{
+    content:"";
+    position:absolute;
+    left:50%; top:50%;
+    width:100%; aspect-ratio:1;
+    margin-left:-50%; margin-top:-50%;
+    border-radius:50%;
+    border:1.5px solid var(--bps-blue-bright);
+    opacity:0;
+    z-index:-1;
+    pointer-events:none;
+    transform:scale(.62);
+  }
+
+  .bps-drop:hover::before,
+  .bps-drop:focus-visible::before{ animation:bpsRipple 620ms var(--bps-ease-flow) both }
+
+  .bps-drop:hover::after,
+  .bps-drop:focus-visible::after { animation:bpsRipple 620ms var(--bps-ease-flow) 130ms both }
+}
+
+@keyframes bpsRipple{
+  0%  { transform:scale(.62); opacity:.85 }
+  100%{ transform:scale(1.55); opacity:0 }
+}
+
+/* ============================================================================
+   4. THERMAL RISE — service cards heat from the bottom edge
+   ----------------------------------------------------------------------------
+   Instead of the standard 6px lift with a grey shadow, warmth bleeds upward
+   from the base of the card, the way heat comes off a radiator. The lift stays
+   (it is in the approved spec) — this adds the heat behind it.
+
+   Targets the existing .service-card class, so no markup change is needed.
+   ========================================================================== */
+
+.service-card{ position:relative; isolation:isolate }
+
+.service-card::after{
+  content:"";
+  position:absolute;
+  left:0; right:0; bottom:0;
+  height:58%;
+  border-radius:inherit;
+  background:linear-gradient(to top,
+    rgba(240,136,45,.13) 0%,
+    rgba(240,136,45,.05) 42%,
+    transparent 100%);
+  opacity:0;
+  z-index:-1;
+  pointer-events:none;
+  transition:opacity 420ms ease-out;
+}
+
+/* the hot line along the base — the element actually doing the heating */
+.service-card::before{
+  content:"";
+  position:absolute;
+  left:14%; right:14%; bottom:0;
+  height:2px;
+  border-radius:2px;
+  background:linear-gradient(90deg,
+    transparent, var(--bps-flame), var(--bps-ember), var(--bps-flame), transparent);
+  opacity:0;
+  transform:scaleX(.4);
+  transition:opacity 340ms ease-out, transform 520ms var(--bps-ease-flow);
+}
+
+@media (hover:hover) and (pointer:fine){
+  .service-card:hover::after,
+  .service-card:focus-within::after { opacity:1 }
+  .service-card:hover::before,
+  .service-card:focus-within::before{ opacity:1; transform:scaleX(1) }
+}
+
+/* ============================================================================
+   5. RADIATOR WARM-THROUGH — the trust strip comes up to temperature
+   ----------------------------------------------------------------------------
+   Four items: Gas Safe registered / 24_7 emergency / Free quotes / Fully insured.
+   They warm left to right on reveal, like a radiator filling. Each item's icon
+   carries the heat; the text stays exactly as designed.
+
+   Markup: add class "bps-rad" to the strip, nothing to the children.
+   ========================================================================== */
+
+.bps-rad > *{
+  --bps-rad-delay:0ms;
+}
+.bps-rad > *:nth-child(1){ --bps-rad-delay:0ms }
+.bps-rad > *:nth-child(2){ --bps-rad-delay:130ms }
+.bps-rad > *:nth-child(3){ --bps-rad-delay:260ms }
+.bps-rad > *:nth-child(4){ --bps-rad-delay:390ms }
+
+.bps-rad[data-reveal="visible"] > * svg,
+.bps-rad[data-reveal="visible"] > * [data-icon]{
+  animation:bpsWarmThrough 1100ms var(--bps-ease-settle) var(--bps-rad-delay) both;
+}
+
+@keyframes bpsWarmThrough{
+  0%  { color:var(--bps-body);   transform:translateY(3px) }
+  45% { color:var(--bps-flame);  transform:translateY(0) }
+  100%{ color:var(--bps-blue);   transform:translateY(0) }
+}
+
+/* ============================================================================
+   6. SCROLL REVEAL — shared with MotionEnhancements' data-reveal contract
+   ----------------------------------------------------------------------------
+   The supplied observer sets data-reveal="visible". We keep that exact contract
+   so the two layers cooperate instead of fighting. Elements are VISIBLE by
+   default and only hidden once JS confirms it will reveal them — so a JS failure
+   leaves a fully readable page.
+   ========================================================================== */
+
+[data-reveal="pending"]{
+  opacity:0;
+  transform:translateY(22px);
+}
+
+[data-reveal="visible"]{
+  opacity:1;
+  transform:none;
+  transition:opacity 650ms ease-out, transform 650ms var(--bps-ease-settle);
+}
+
+/* ============================================================================
+   7. REDUCED MOTION — everything above collapses to its end state
+   ----------------------------------------------------------------------------
+   Not "less motion": no motion. Colours land on the approved values, content is
+   visible immediately, no delays.
+   ========================================================================== */
+
+@media (prefers-reduced-motion:reduce){
+
+  .bps-warm{
+    animation:none;
+    background-image:none;
+    background:none;
+    color:var(--bps-blue-bright);
+    -webkit-text-fill-color:var(--bps-blue-bright);
+  }
+  .bps-warm::after{ animation:none; opacity:0 }
+
+  .bps-pipe::after{ transition:none }
+
+  .bps-drop::before,
+  .bps-drop::after{ animation:none !important; opacity:0 }
+
+  .service-card::after,
+  .service-card::before{ transition:none }
+
+  .bps-rad[data-reveal="visible"] > * svg,
+  .bps-rad[data-reveal="visible"] > * [data-icon]{
+    animation:none;
+    color:var(--bps-blue);
+  }
+
+  [data-reveal="pending"],
+  [data-reveal="visible"]{
+    opacity:1 !important;
+    transform:none !important;
+    transition:none !important;
+  }
+}
+
+/* Windows high-contrast / forced colours: drop decoration entirely so the
+   system palette is never fought. */
+@media (forced-colors:active){
+  .bps-warm{ background:none; color:LinkText; -webkit-text-fill-color:LinkText }
+  .bps-drop::before, .bps-drop::after,
+  .service-card::after, .service-card::before{ display:none }
+}
+
+/* ============================================================================
+   8. HERO — the approved load sequence
+   ----------------------------------------------------------------------------
+   Ported from the supplied BpsHero.module.css. The photo settles once (never a
+   looping zoom) and the copy rises in a short stagger. Delays are set inline
+   per element so the order stays visible in the component.
+   ========================================================================== */
+
+.bps-hero{ min-height:640px; display:grid; align-items:center }
+@media (min-width:1400px){ .bps-hero{ min-height:710px } }
+@media (max-width:1024px){ .bps-hero{ min-height:570px } }
+@media (max-width:640px) { .bps-hero{ min-height:auto } }
+
+.bps-hero-photo{
+  animation:bpsPhotoSettle 1400ms var(--bps-ease-settle) both;
+}
+@keyframes bpsPhotoSettle{
+  from{ transform:scale(1.035) }
+  to  { transform:scale(1) }
+}
+
+/* Strong behind the text, light over the faces. */
+.bps-hero-shade{
+  background:linear-gradient(90deg,
+    rgba(9,27,42,.95) 0%,
+    rgba(9,27,42,.91) 38%,
+    rgba(9,27,42,.62) 55%,
+    rgba(9,27,42,.20) 72%,
+    rgba(9,27,42,.03) 100%);
+}
+@media (max-width:640px){
+  .bps-hero-shade{
+    background:linear-gradient(180deg,
+      rgba(9,27,42,.95) 0%,
+      rgba(9,27,42,.86) 46%,
+      rgba(9,27,42,.55) 100%);
+  }
+}
+
+.bps-rise{ animation:bpsRise 700ms var(--bps-ease-settle) both }
+@keyframes bpsRise{
+  from{ opacity:0; transform:translateY(18px) }
+  to  { opacity:1; transform:none }
+}
+
+/* Primary action: lift, brighten, and a highlight sliding across once. */
+@media (hover:hover) and (pointer:fine){
+  .bps-quote{ position:relative; overflow:hidden; transition:transform 220ms ease-out, filter 220ms ease-out, box-shadow 220ms ease-out }
+  .bps-quote::after{
+    content:"";
+    position:absolute; inset:0;
+    background:linear-gradient(105deg, transparent 38%, rgba(255,255,255,.34) 50%, transparent 62%);
+    transform:translateX(-120%);
+    pointer-events:none;
+  }
+  .bps-quote:hover,
+  .bps-quote:focus-visible{
+    transform:translateY(-3px);
+    filter:brightness(1.06);
+    box-shadow:0 10px 22px -12px rgba(240,136,45,.85);
+  }
+  .bps-quote:hover::after,
+  .bps-quote:focus-visible::after{ animation:bpsSheen 600ms ease-out both }
+
+  .bps-quote-arrow{ transition:transform 220ms ease-out }
+  .bps-quote:hover .bps-quote-arrow{ transform:translate(2px,-2px) }
+}
+@keyframes bpsSheen{ to{ transform:translateX(120%) } }
+
+/* Focus is never hover-dependent — it must survive in the dark hero. */
+.bps-quote:focus-visible,
+.bps-drop:focus-visible,
+.bps-pipe:focus-visible{
+  outline:2px solid #fff;
+  outline-offset:3px;
+  border-radius:8px;
+}
+
+@media (prefers-reduced-motion:reduce){
+  .bps-hero-photo,
+  .bps-rise{ animation:none !important; opacity:1 !important; transform:none !important }
+  .bps-quote{ transition:none }
+  .bps-quote::after{ animation:none !important; opacity:0 }
+}

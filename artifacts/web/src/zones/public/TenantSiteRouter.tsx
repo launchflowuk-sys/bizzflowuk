@@ -3,6 +3,7 @@ import { useGetPublicSite } from "@workspace/api-client-react";
 import PublicSiteApp from "./PublicSiteApp";
 import ConstructionSiteApp from "./ConstructionSiteApp";
 import LandscapingSiteApp from "./LandscapingSiteApp";
+import PlumbingSiteApp from "./PlumbingSiteApp";
 
 /**
  * Picks the public-site template for a tenant by industry. The site query is
@@ -27,5 +28,6 @@ export default function TenantSiteRouter(props: { forcedSlug?: string; forcedBas
 
   if (industry === "construction") return <ConstructionSiteApp {...props} />;
   if (industry === "landscaping") return <LandscapingSiteApp {...props} />;
+  if (industry === "plumbing") return <PlumbingSiteApp {...props} />;
   return <PublicSiteApp {...props} />;
 }

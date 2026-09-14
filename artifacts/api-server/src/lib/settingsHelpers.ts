@@ -36,6 +36,10 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   // tenant's home page and the hardcoded fallback always won.
   "seoTitle", "seoDescription",
   "googleAnalyticsId", "googleAdsConversionId", "googleAdsConversionLabel", "termsContent", "privacyContent",
+  // Trust badges are public-facing copy a tenant writes about itself ("Gas Safe
+  // registered", "Fully insured") and the plumbing template renders them in the
+  // strip under the hero. Presentation only — nothing operational.
+  "trustBadges",
   "createdAt", "updatedAt",
 ]);
 
