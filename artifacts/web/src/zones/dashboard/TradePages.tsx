@@ -4,6 +4,9 @@ import {
   api, useApi, money, shortDate, dayMonth, timeOf, daysUntil,
   INVOICE_STATUS_LABEL, INVOICE_STATUS_TONE,
 } from "./tradeApi";
+import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
+import { StatCard } from "@/components/StatCard";
+import { FileText, AlarmClock, CheckCircle2 } from "lucide-react";
 
 /**
  * The trade modules: Invoices, Expenses, Schedule, Certificates, Automations.
@@ -15,17 +18,32 @@ import {
 
 // ── Shared bits ──────────────────────────────────────────────────────────────
 
-const TONE: Record<string, string> = {
-  good: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  warn: "bg-amber-50 text-amber-700 border-amber-200",
-  bad: "bg-red-50 text-red-700 border-red-200",
-  muted: "bg-slate-100 text-slate-600 border-slate-200",
-  info: "bg-sky-50 text-sky-700 border-sky-200",
+/**
+ * The same solid pill as everywhere else, behind this module's existing tone
+ * names so the call sites do not have to change.
+ *
+ * `Pill` is used for two different things here and only one of them is a
+ * status: `<Pill tone="info">{engineer.name}</Pill>` is a label, and a
+ * bordered wash was fine for that. The two look the same on screen now, which
+ * is the point — one pill shape, one weight, one set of grounds.
+ */
+const PILL_TONE: Record<string, StatusTone> = {
+  good: "success",
+  warn: "warn",
+  bad: "danger",
+  muted: "neutral",
+  info: "info",
 };
 
-function Pill({ tone = "muted", children }: { tone?: keyof typeof TONE | string; children: React.ReactNode }) {
+function Pill({ tone = "muted", children }: { tone?: string; children: React.ReactNode }) {
   return (
-    <span className={`inline-flex items-center px-2.5 py-1 rounded-full border text-[12px] font-semibold ${TONE[tone] ?? TONE.muted}`}>
+    <span
+      className={`inline-flex items-center px-2.5 py-1 rounded-full text-[13px] font-semibold text-white ${
+        { success: "bg-state-success", warn: "bg-state-warning", danger: "bg-state-danger", neutral: "bg-state-neutral", info: "bg-state-info" }[
+          PILL_TONE[tone] ?? "neutral"
+        ]
+      }`}
+    >
       {children}
     </span>
   );
@@ -151,19 +169,15 @@ export function InvoicesPage() {
         action={<Btn onClick={createDraft} disabled={creating}>New invoice</Btn>}
       />
 
-      <div className="grid sm:grid-cols-3 gap-4 mb-6">
-        <Card className="p-5">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.05em] text-slate-500">Outstanding</p>
-          <p className="mt-1.5 text-[30px] font-bold tabular-nums text-slate-900">{money(totals.outstanding)}</p>
-        </Card>
-        <Card className={`p-5 ${totals.overdue > 0 ? "border-red-200 bg-red-50/40" : ""}`}>
-          <p className="text-[12px] font-semibold uppercase tracking-[0.05em] text-slate-500">Overdue</p>
-          <p className={`mt-1.5 text-[30px] font-bold tabular-nums ${totals.overdue > 0 ? "text-red-600" : "text-slate-900"}`}>{money(totals.overdue)}</p>
-        </Card>
-        <Card className="p-5">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.05em] text-slate-500">Paid this month</p>
-          <p className="mt-1.5 text-[30px] font-bold tabular-nums text-emerald-700">{money(totals.paidThisMonth)}</p>
-        </Card>
+      {/* Red text on a white card was easy to miss in a page of white cards.
+          Overdue money is the one figure on this screen that needs a person, so
+          it takes the alarm ground and says so — and drops back to navy the
+          moment it reaches zero, because a vivid 0 reads as data when it is
+          really the absence of it. */}
+      <div className="grid gap-4 sm:grid-cols-3 mb-6">
+        <StatCard label="Outstanding" value={money(totals.outstanding)} hint="raised and not yet paid" category="money" icon={FileText} />
+        <StatCard label="Overdue" value={money(totals.overdue)} hint="past its due date" attention={totals.overdue > 0} icon={AlarmClock} />
+        <StatCard label="Paid this month" value={money(totals.paidThisMonth)} hint="cleared funds" category="money" icon={CheckCircle2} />
       </div>
 
       {rows.length === 0 ? (
@@ -679,7 +693,7 @@ export function CertificatesPage() {
                           {r.status === "issued" && left !== null && (left < 0 ? " · expired" : ` · ${left}d`)}
                         </Pill>
                       </td>
-                      <td className="px-5 py-3.5"><Pill tone={r.status === "issued" ? "good" : "muted"}>{r.status}</Pill></td>
+                      <td className="px-5 py-3.5"><StatusBadge value={r.status} /></td>
                     </tr>
                   );
                 })}

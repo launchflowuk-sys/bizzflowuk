@@ -63,13 +63,13 @@ export default function AcceptInvitePage() {
   }
 
   const inputCls =
-    "w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#1F8CFF]";
+    "w-full rounded-lg border border-white/15 bg-white/5 px-3.5 py-2.5 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-auth-500";
 
   return (
     <div className="min-h-[100dvh] flex items-center justify-center bg-[#0A121C] px-5 py-12">
       <div className="w-full max-w-sm space-y-6">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-sm">L</div>
+          <div className="w-9 h-9 rounded-lg bg-auth-500 flex items-center justify-center font-bold text-white text-sm">L</div>
           <span className="text-white font-bold text-xl tracking-tight">BizzFlow</span>
         </div>
 
@@ -113,7 +113,7 @@ export default function AcceptInvitePage() {
             {error && <p className="text-sm text-red-400">{error}</p>}
 
             <button type="submit" disabled={busy}
-              className="w-full h-11 rounded-lg bg-[#1F8CFF] text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">
+              className="w-full h-11 rounded-lg bg-auth-500 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-60">
               {busy ? "Setting your password…" : "Set password and sign in"}
             </button>
           </form>

@@ -66,18 +66,18 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
     <div className="min-h-[100dvh] flex bg-[#0A121C]">
       <div className="hidden lg:flex lg:w-[52%] flex-col justify-between p-12 bg-gradient-to-br from-[#0A121C] via-[#0d1a2e] to-[#0A121C] border-r border-white/5 relative overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-[#1F8CFF]/8 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-[#1F8CFF]/5 rounded-full blur-[100px] translate-x-1/4 translate-y-1/4" />
+          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-auth-500/8 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-auth-500/5 rounded-full blur-[100px] translate-x-1/4 translate-y-1/4" />
         </div>
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <div className="w-9 h-9 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-sm">L</div>
+            <div className="w-9 h-9 rounded-lg bg-auth-500 flex items-center justify-center font-bold text-white text-sm">L</div>
             <span className="text-white font-bold text-xl tracking-tight">BizzFlow</span>
           </div>
           <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 bg-[#1F8CFF]/10 border border-[#1F8CFF]/20 rounded-full px-4 py-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#1F8CFF]" />
-              <span className="text-[#1F8CFF] text-xs font-semibold tracking-wider uppercase">Home Improvement Platform</span>
+            <div className="inline-flex items-center gap-2 bg-auth-500/10 border border-auth-500/20 rounded-full px-4 py-1.5">
+              <div className="w-1.5 h-1.5 rounded-full bg-auth-500" />
+              <span className="text-auth-500 text-xs font-semibold tracking-wider uppercase">Home Improvement Platform</span>
             </div>
             <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
               The operating system for trades businesses
@@ -105,7 +105,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       </div>
       <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 bg-[#0A121C]">
         <div className="flex items-center gap-2 mb-8 lg:hidden">
-          <div className="w-8 h-8 rounded-lg bg-[#1F8CFF] flex items-center justify-center font-bold text-white text-xs">L</div>
+          <div className="w-8 h-8 rounded-lg bg-auth-500 flex items-center justify-center font-bold text-white text-xs">L</div>
           <span className="text-white font-bold text-lg tracking-tight">BizzFlow</span>
         </div>
         <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5">
@@ -121,7 +121,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             <input
               type="email" value={email} onChange={e => setEmail(e.target.value)}
               required autoComplete="email" placeholder="you@example.com"
-              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-[#1F8CFF] focus:ring-1 focus:ring-[#1F8CFF] transition"
+              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-auth-500 focus:ring-1 focus:ring-auth-500 transition"
             />
           </div>
           <div className="space-y-2">
@@ -129,12 +129,12 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
             <input
               type="password" value={password} onChange={e => setPassword(e.target.value)}
               required autoComplete="current-password" placeholder="••••••••"
-              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-[#1F8CFF] focus:ring-1 focus:ring-[#1F8CFF] transition"
+              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-auth-500 focus:ring-1 focus:ring-auth-500 transition"
             />
           </div>
           <button
             type="submit" disabled={loading}
-            className="w-full rounded-xl bg-[#1F8CFF] hover:bg-[#1a7ae6] disabled:opacity-60 px-4 py-3 text-white font-semibold text-sm transition"
+            className="w-full rounded-xl bg-auth-500 hover:bg-auth-600 disabled:opacity-60 px-4 py-3 text-white font-semibold text-sm transition"
           >
             {loading ? "Signing in…" : "Sign in"}
           </button>

@@ -33,6 +33,64 @@
   --color-brand-700: #C2410C;
 }
 
+/* ----------------------------------------------------------------------------
+   Auth-screen accent.
+
+   The sign-in and accept-invite screens have never used the orange above — they
+   are blue, and always have been. That is a split nobody decided on; it just
+   happened. Naming it is the first step to fixing it: when the new palette
+   arrives these two blocks collapse into one, and that merge is then a
+   deliberate act rather than a find-and-replace over twenty-five files.
+
+   Not included here: the #1F8CFF inside PublicSiteApp.tsx. That is the default
+   public template's colour and it faces a tenant's customers, not us. It should
+   be reading the tenant's own primaryColor and does not — a separate bug.
+   -------------------------------------------------------------------------- */
+@theme {
+  --color-auth-500: #1F8CFF;
+  --color-auth-600: #1A7AE6;
+}
+
+/* ----------------------------------------------------------------------------
+   KPI grounds and the state vocabulary.
+
+   Ported from LaunchOS (apps/web/DESIGN.md), where these were derived rather
+   than picked: every ground below carries white text with the ratio calculated,
+   and every state trio clears AA on white. They are reproduced verbatim because
+   re-deriving them by eye would only lose that property.
+
+   Two ideas worth keeping whole, not just the hex values:
+
+   1. A KPI card is DARK on a light canvas. It reads as the important thing
+      precisely because everything around it is white. Darkening the rest of the
+      dashboard to match would destroy the effect it exists for.
+
+   2. A status pill is SOLID — saturated ground, white label. The pale tinted
+      pill BizzFlow uses today cannot be told from its neighbour at a glance,
+      which is the whole job of a status. The word is always present too, so the
+      state survives greyscale and never depends on hue alone.
+
+   None of this is the brand colour. These are category and state hues, so they
+   are unaffected when brand-* changes.
+   -------------------------------------------------------------------------- */
+@theme {
+  /* KPI card grounds. White on each: 18.93 / 5.41 / 4.56 / 6.13. */
+  --color-kpi-navy:   #0B1020;
+  --color-kpi-cobalt: #2457FF;
+  --color-kpi-purple: #7857FF;
+  --color-kpi-teal:   #0D6E63;
+  --color-kpi-coral:  #B3242F;  /* the alarm ground */
+  --color-kpi-amber:  #8A5200;  /* the warning ground */
+
+  /* Solid pill grounds. White label on each; ratios neutral 7.77, info 5.83,
+     warning 6.76, danger 7.23, success 6.57. */
+  --color-state-neutral: oklch(0.44 0.02 262);
+  --color-state-info:    oklch(0.50 0.15 245);
+  --color-state-warning: oklch(0.48 0.12 62);
+  --color-state-danger:  oklch(0.48 0.19 25);
+  --color-state-success: oklch(0.46 0.13 155);
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

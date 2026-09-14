@@ -35,6 +35,9 @@ import {
   getListBlogPostsQueryKey, getListTeamMembersQueryKey, getListSentEmailsQueryKey, getListContactMessagesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { StatusBadge } from "@/components/StatusBadge";
+import { StatCard, type StatCardProps } from "@/components/StatCard";
+import { Users, Wallet, Calculator, HardHat } from "lucide-react";
 
 // ─── Toast system ─────────────────────────────────────────────────────────────
 type ToastMsg = { id: number; text: string; type: "success" | "error" };
@@ -185,18 +188,18 @@ function SaveCancelBar({ onCancel, isPending, label = "Save" }: { onCancel: () =
   );
 }
 
+/**
+ * Kept as a named component so ~30 call sites stay as they are, but the pale
+ * tints are gone: it is the platform pill now.
+ *
+ * The old map painted "New" blue-100, "Contacted" indigo-100 and "Quote Sent"
+ * amber-100 — three washes nobody could separate at a glance down a column,
+ * which is the one job a status has. StatusBadge normalises the Title Case
+ * display strings this component is called with ("Survey Booked") to the same
+ * tones the stored lowercase values get.
+ */
 function Badge({ status }: { status: string }) {
-  const colors: Record<string, string> = {
-    New: "bg-blue-100 text-blue-700", Contacted: "bg-indigo-100 text-indigo-700",
-    "Survey Booked": "bg-purple-100 text-purple-700", "Quote Sent": "bg-amber-100 text-amber-700",
-    Won: "bg-green-100 text-green-700", Lost: "bg-red-100 text-red-700",
-    Draft: "bg-slate-100 text-slate-700", Sent: "bg-blue-100 text-blue-700",
-    Accepted: "bg-green-100 text-green-700", Rejected: "bg-red-100 text-red-700",
-    "In Progress": "bg-blue-100 text-blue-700", Completed: "bg-green-100 text-green-700",
-    Enquiry: "bg-slate-100 text-slate-700", Scheduled: "bg-purple-100 text-purple-700",
-    "Quote Approved": "bg-teal-100 text-teal-700",
-  };
-  return <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${colors[status] || "bg-slate-100 text-slate-700"}`}>{status}</span>;
+  return <StatusBadge value={status} />;
 }
 
 function SignOutButton() {
@@ -625,11 +628,19 @@ function DashboardHome() {
     });
   }
 
-  const kpis = [
-    { label: "New Leads", value: s?.newLeads ?? "-", sub: "awaiting action", href: "/dashboard/leads", icon: "M17 20h5v-2a4 4 0 00-3-3.87M9 20H4v-2a4 4 0 013-3.87m6-1.13a4 4 0 10-4-4 4 4 0 004 4z" },
-    { label: "Pipeline Value", value: money(pipelineValue), sub: "in open quotes", href: "/dashboard/quotes", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V7m0 9v1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
-    { label: "Calculator Estimates", value: calcCount, sub: "from your calculator", href: "/dashboard/leads", icon: "M9 7h6m-6 4h6m-6 4h4M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" },
-    { label: "Active Projects", value: s?.activeProjects ?? "-", sub: "in progress", href: "/dashboard/projects", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
+  /**
+   * Four figures, four grounds.
+   *
+   * These were white cards on a white page: nothing on the screen said where to
+   * look first. A dark saturated panel reads as the important thing precisely
+   * because everything under it is white — which is also why the panels below
+   * stay white, and darkening them to match would undo the whole effect.
+   */
+  const kpis: StatCardProps[] = [
+    { label: "New leads", value: s?.newLeads ?? "—", hint: "awaiting action", href: "/dashboard/leads", category: "work", icon: Users },
+    { label: "Pipeline value", value: money(pipelineValue), hint: "in open quotes", href: "/dashboard/quotes", category: "money", icon: Wallet },
+    { label: "Estimates", value: calcCount, hint: "from your calculator", href: "/dashboard/leads", category: "automation", icon: Calculator },
+    { label: "Active projects", value: s?.activeProjects ?? "—", hint: "in progress", href: "/dashboard/projects", category: "overview", icon: HardHat },
   ];
 
   return (
@@ -641,17 +652,8 @@ function DashboardHome() {
 
       <TodoPanel todos={todos} />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-        {kpis.map(k => (
-          <Link key={k.label} href={k.href} className="group rounded-2xl bg-white p-4 sm:p-5 border border-slate-200 block hover:shadow-lg hover:-translate-y-0.5 transition-all">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: "var(--brand-tint)" }}>
-              <svg className="w-5 h-5" style={{ color: "var(--brand-ink)" }} fill="none" stroke="currentColor" strokeWidth={1.8} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d={k.icon} /></svg>
-            </div>
-            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 tabular-nums tracking-tight">{k.value}</div>
-            <div className="text-xs font-semibold text-slate-700 mt-1">{k.label}</div>
-            <div className="text-[11px] text-slate-400">{k.sub}</div>
-          </Link>
-        ))}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {kpis.map(k => <StatCard key={k.label} {...k} />)}
       </div>
       {upcomingSurveys.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
