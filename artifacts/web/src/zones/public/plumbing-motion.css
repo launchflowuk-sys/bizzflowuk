@@ -340,7 +340,7 @@
    per element so the order stays visible in the component.
    ========================================================================== */
 
-.bps-hero{ min-height:640px; display:grid; align-items:center }
+.bps-hero{ min-height:640px; display:flex; flex-direction:column; justify-content:center }
 @media (min-width:1400px){ .bps-hero{ min-height:710px } }
 @media (max-width:1024px){ .bps-hero{ min-height:570px } }
 @media (max-width:640px) { .bps-hero{ min-height:auto } }
@@ -806,7 +806,7 @@
 
 /* Inner pages get a shorter hero than the homepage — enough for a headline and
    a call to action without pushing the content itself below the fold. */
-.bps-inner-hero{ min-height:340px; display:grid; align-items:center }
+.bps-inner-hero{ min-height:340px; display:flex; flex-direction:column; justify-content:center }
 @media (min-width:1024px){ .bps-inner-hero{ min-height:420px } }
 
 /* The homepage wash is 95% opaque across most of the width, because that hero is
@@ -982,4 +982,28 @@
 .bg-share{ transition:color 200ms ease-out, border-color 200ms ease-out, transform 220ms var(--bps-ease-settle) }
 @media (hover:hover) and (pointer:fine){
   .bg-share:hover{ transform:translateY(-2px) }
+}
+
+
+/* ============================================================================
+   20. THE HERO ALIGNMENT BUG
+   ----------------------------------------------------------------------------
+   Both heroes were `display:grid` with the content container carrying Tailwind's
+   `mx-auto` (margin-inline:auto). In CSS Grid an item with auto inline margins
+   stops stretching, shrinks to fit its content, and then centres in its track —
+   so the container never reached its 1400px width. It collapsed to the width of
+   the 670px text block and sat in the middle of the screen: (1400-670)/2 = 365px
+   of false indent, on every page, on every hero.
+
+   Only the heroes were grid, which is why the trust strip and every other
+   section aligned correctly and the hero did not — and why changing the
+   container width could never fix it.
+
+   Flex column instead, and the content container is told explicitly to fill the
+   width so no future auto margin can shrink it again.
+   ========================================================================== */
+
+.bps-hero > div:not([aria-hidden="true"]),
+.bps-inner-hero > div:not([aria-hidden="true"]){
+  width:100%;
 }
