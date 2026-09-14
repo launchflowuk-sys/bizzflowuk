@@ -39,7 +39,7 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   // Trust badges are public-facing copy a tenant writes about itself ("Gas Safe
   // registered", "Fully insured") and the plumbing template renders them in the
   // strip under the hero. Presentation only — nothing operational.
-  "trustBadges",
+  "trustBadges", "whatsappNumber",
   "createdAt", "updatedAt",
 ]);
 

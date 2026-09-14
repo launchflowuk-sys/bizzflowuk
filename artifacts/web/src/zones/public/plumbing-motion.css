@@ -911,3 +911,75 @@
 @media (prefers-reduced-motion:reduce){
   .contact-card, .contact-icon{ transition:none !important }
 }
+
+
+/* ============================================================================
+   19. PHONE PILL + FLOATING WHATSAPP
+   ========================================================================== */
+
+/* The number used to sit as text in the header, so a longer one made the bar
+   taller and pushed the nav around. This stays one fixed-height control and
+   grows sideways instead. */
+.bps-phone-pill{
+  height:46px; padding:0 5px 0 5px;
+  border-radius:999px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.16);
+  color:#fff; text-decoration:none;
+  gap:0;
+  transition:background 240ms ease-out, border-color 240ms ease-out, padding-right 320ms var(--bps-ease-settle);
+}
+.bps-phone-ic{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:36px; height:36px; border-radius:999px; flex:none;
+  background:linear-gradient(140deg, var(--bps-blue-bright), var(--bps-blue));
+}
+.bps-phone-num{
+  display:inline-block; overflow:hidden; white-space:nowrap;
+  max-width:0; opacity:0;
+  font-weight:700; font-size:16px; letter-spacing:-0.01em;
+  transition:max-width 360ms var(--bps-ease-settle), opacity 240ms ease-out, margin 360ms var(--bps-ease-settle);
+}
+.bps-phone-pill:hover,
+.bps-phone-pill:focus-visible{ background:rgba(255,255,255,.16); border-color:rgba(255,255,255,.3); padding-right:16px }
+.bps-phone-pill:hover .bps-phone-num,
+.bps-phone-pill:focus-visible .bps-phone-num{ max-width:190px; opacity:1; margin-left:10px }
+
+/* No hover on a touch device, so show the number outright rather than hiding a
+   phone number behind a gesture that does not exist there. */
+@media (hover:none){
+  .bps-phone-num{ max-width:190px; opacity:1; margin-left:10px }
+  .bps-phone-pill{ padding-right:16px }
+}
+
+.bps-wa{
+  position:fixed; right:18px; bottom:18px; z-index:70;
+  display:inline-flex; align-items:center; gap:0;
+  height:56px; padding:0 15px; border-radius:999px;
+  background:#25D366; color:#fff; text-decoration:none;
+  box-shadow:0 12px 28px -10px rgba(37,211,102,.75);
+  transition:transform 260ms var(--bps-ease-settle), box-shadow 260ms ease-out, padding-right 320ms var(--bps-ease-settle);
+}
+.bps-wa-label{
+  display:inline-block; overflow:hidden; white-space:nowrap;
+  max-width:0; opacity:0; font-weight:700; font-size:15px;
+  transition:max-width 340ms var(--bps-ease-settle), opacity 220ms ease-out, margin 340ms var(--bps-ease-settle);
+}
+@media (hover:hover) and (pointer:fine){
+  .bps-wa:hover{ transform:translateY(-3px); box-shadow:0 18px 34px -12px rgba(37,211,102,.85) }
+  .bps-wa:hover .bps-wa-label{ max-width:130px; opacity:1; margin-left:10px }
+}
+/* Clear of the cookie banner and iPhone home indicator. */
+@media (max-width:640px){
+  .bps-wa{ right:14px; bottom:calc(14px + env(safe-area-inset-bottom)); height:52px; padding:0 13px }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .bps-phone-pill, .bps-phone-num, .bps-wa, .bps-wa-label{ transition:none !important }
+}
+
+/* Share buttons on the guides. */
+.bg-share{ transition:color 200ms ease-out, border-color 200ms ease-out, transform 220ms var(--bps-ease-settle) }
+@media (hover:hover) and (pointer:fine){
+  .bg-share:hover{ transform:translateY(-2px) }
+}

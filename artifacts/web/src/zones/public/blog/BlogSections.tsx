@@ -63,6 +63,67 @@ function postLabel(post: Post): string {
 // INDEX
 // ─────────────────────────────────────────────────────────────────────────────
 
+
+/**
+ * Sharing.
+ *
+ * Plain share URLs rather than the platforms' own SDKs: those load third-party
+ * script on every page, track the reader before they have clicked anything, and
+ * are the usual reason a fast page stops being fast. These are links.
+ *
+ * `compact` is the version that sits on a card, where the row competes with the
+ * title and should not shout.
+ */
+function ShareRow({ url, title, theme, compact }: { url: string; title: string; theme: any; compact?: boolean }) {
+  const u = encodeURIComponent(url);
+  const t = encodeURIComponent(title);
+  const size = compact ? 30 : 38;
+  const icon = compact ? 14 : 17;
+
+  const targets = [
+    { name: "WhatsApp", href: `https://wa.me/?text=${t}%20${u}`,
+      d: "M20.5 3.5A10 10 0 003.6 15.2L2.5 21.5l6.4-1.1A10 10 0 1020.5 3.5zM12 20a8 8 0 01-4-1.1l-.3-.2-3.1.5.6-3-.2-.3A8 8 0 1112 20zm4.4-5.6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.7.9-.3.2-.5 0a6.5 6.5 0 01-1.9-1.2 7.3 7.3 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5.2-.4v-.4l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 00-.7.3A2.9 2.9 0 006 10a5 5 0 001.1 2.7 11.5 11.5 0 004.4 3.9 8.3 8.3 0 001.5.5 3.5 3.5 0 001.6.1 2.6 2.6 0 001.7-1.2 2.1 2.1 0 00.2-1.2c-.1-.1-.2-.2-.4-.3z" },
+    { name: "Facebook", href: `https://www.facebook.com/sharer/sharer.php?u=${u}`,
+      d: "M22 12a10 10 0 10-11.6 9.9v-7H7.9V12h2.5V9.8c0-2.5 1.5-3.9 3.8-3.9 1.1 0 2.2.2 2.2.2v2.5h-1.3c-1.2 0-1.6.8-1.6 1.6V12h2.8l-.4 2.9h-2.4v7A10 10 0 0022 12z" },
+    { name: "X", href: `https://twitter.com/intent/tweet?url=${u}&text=${t}`,
+      d: "M18.2 2.2h3.3l-7.2 8.2 8.5 11.3h-6.7l-5.2-6.9-6 6.9H1.6l7.7-8.8L1.1 2.2h6.8l4.7 6.3zm-1.2 17.6h1.8L7.1 4.1H5.1z" },
+    { name: "LinkedIn", href: `https://www.linkedin.com/sharing/share-offsite/?url=${u}`,
+      d: "M4.98 3.5a2.5 2.5 0 11-.02 5 2.5 2.5 0 01.02-5zM3 9h4v12H3zM10 9h3.8v1.7h.05a4.2 4.2 0 013.75-2.05c4 0 4.75 2.6 4.75 6V21h-4v-5.5c0-1.3 0-3-1.85-3s-2.15 1.45-2.15 2.9V21h-4z" },
+    { name: "Email", href: `mailto:?subject=${t}&body=${u}`,
+      d: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
+  ];
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: compact ? ".35rem" : ".5rem", flexWrap: "wrap" }}>
+      {!compact && (
+        <span style={{ fontSize: ".8rem", fontWeight: 700, letterSpacing: ".06em", textTransform: "uppercase", color: theme.muted, marginRight: ".25rem" }}>
+          Share
+        </span>
+      )}
+      {targets.map(s => (
+        <a
+          key={s.name}
+          href={s.href}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Share on ${s.name}`}
+          title={`Share on ${s.name}`}
+          className="bg-share"
+          onClick={(e) => e.stopPropagation()}
+          style={{
+            width: size, height: size, borderRadius: "10px",
+            display: "inline-flex", alignItems: "center", justifyContent: "center",
+            border: `1px solid ${theme.line}`, color: theme.muted, background: theme.ground,
+            textDecoration: "none", flex: "none",
+          }}
+        >
+          <svg width={icon} height={icon} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d={s.d}/></svg>
+        </a>
+      ))}
+    </div>
+  );
+}
+
 export function BlogIndexBody({ posts, siteBase, tenant, settings, isLoading }: {
   posts: Post[] | undefined; siteBase: string; tenant: Tenant; settings: Settings; isLoading?: boolean;
 }) {
@@ -72,8 +133,53 @@ export function BlogIndexBody({ posts, siteBase, tenant, settings, isLoading }: 
   const contactHref = `${siteBase}/contact`;
   const phone = settings?.phone;
 
+  const totalMinutes = list.reduce((sum, p: any) => sum + (Number(p.readTime) || 4), 0);
+  const latest = list[0] as any;
+
   return (
     <>
+      {/* The index used to open straight into cards, with nothing to say what
+          these are or who wrote them. A reader arriving from search needs to
+          know in one line whether this is worth their time. */}
+      <section style={{ background: theme.ink, padding: "4rem 0 3.25rem", position: "relative", overflow: "hidden" }}>
+        <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "0 1.25rem", position: "relative" }}>
+          <p style={{ fontSize: ".75rem", fontWeight: 800, letterSpacing: ".14em", textTransform: "uppercase", color: theme.accent, margin: 0 }}>
+            Guides
+          </p>
+          <h1 style={{
+            margin: ".65rem 0 0", color: "#fff", fontWeight: 800,
+            fontSize: "clamp(2rem,4.4vw,3.2rem)", lineHeight: 1.08, letterSpacing: "-.035em", maxWidth: "20ch",
+          }}>
+            Straight answers, from the people doing the work
+          </h1>
+          <p style={{ margin: "1.1rem 0 0", color: "rgba(255,255,255,.75)", fontSize: "1.05rem", lineHeight: 1.7, maxWidth: "58ch" }}>
+            The questions {tenant?.name || "we"} get asked most, answered properly — no hedging, no filler.
+            Written by the engineers on the tools, not by a marketing department.
+          </p>
+
+          {list.length > 0 && (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: "2rem", marginTop: "2rem", paddingTop: "1.5rem", borderTop: "1px solid rgba(255,255,255,.14)" }}>
+              <div>
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: "1.6rem", lineHeight: 1 }}>{list.length}</div>
+                <div style={{ color: "rgba(255,255,255,.6)", fontSize: ".85rem", marginTop: ".3rem" }}>
+                  {list.length === 1 ? "guide" : "guides"}
+                </div>
+              </div>
+              <div>
+                <div style={{ color: "#fff", fontWeight: 800, fontSize: "1.6rem", lineHeight: 1 }}>{totalMinutes}</div>
+                <div style={{ color: "rgba(255,255,255,.6)", fontSize: ".85rem", marginTop: ".3rem" }}>minutes of reading</div>
+              </div>
+              {latest?.publishedAt && (
+                <div>
+                  <div style={{ color: "#fff", fontWeight: 800, fontSize: "1.6rem", lineHeight: 1 }}>{fmtDate(latest.publishedAt)}</div>
+                  <div style={{ color: "rgba(255,255,255,.6)", fontSize: ".85rem", marginTop: ".3rem" }}>last updated</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </section>
+
       <section style={{ background: theme.surface, padding: "3.5rem 0" }}>
         <div style={{ maxWidth: "72rem", margin: "0 auto", padding: "0 1.25rem" }}>
           {isLoading ? (
@@ -87,7 +193,7 @@ export function BlogIndexBody({ posts, siteBase, tenant, settings, isLoading }: 
               <div style={{ marginTop: "1.25rem" }}><Btn href={quoteHref} theme={theme}>Get a free quote</Btn></div>
             </div>
           ) : (
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(19rem, 1fr))", gap: "1.5rem" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(19rem, 1fr))", gap: "1.5rem" }} className="bg-cards">
               {list.map((post: Post) => {
                 const seed = seedFrom(post.slug || post.id);
                 const date = fmtDate(post.publishedAt);

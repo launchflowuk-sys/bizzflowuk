@@ -135,7 +135,7 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
 
   return (
     <header className="bps-header sticky top-0 z-50 relative">
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8 h-[86px] lg:h-[96px] flex items-center justify-between gap-6">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8 h-[86px] lg:h-[96px] flex items-center justify-between gap-6">
         <Link href="/" className="flex items-center gap-3 shrink-0">
           {settings?.logoUrl
             ? <img src={settings.logoUrl} alt={tenant?.name || "Home"} className="h-[52px] lg:h-[62px] w-auto"/>
@@ -173,9 +173,17 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
 
         <div className="flex items-center gap-4">
           {phone && (
-            <a href={telHref(phone)} className="hidden md:flex flex-col items-end leading-tight">
-              <span className="text-white font-bold text-[17px] tracking-[-0.01em]">{phone}</span>
-              <span className="text-white/55 text-[11.5px]">Call us direct</span>
+            <a
+              href={telHref(phone)}
+              className="bps-phone-pill hidden md:inline-flex items-center"
+              aria-label={`Call ${phone}`}
+              title={`Call ${phone}`}
+            >
+              <span className="bps-phone-ic"><PhoneIcon color="#fff" className="w-[18px] h-[18px]"/></span>
+              {/* Expands sideways on hover or focus. The header keeps its height
+                  whatever the number's length, and a tap on a touch device still
+                  dials because the whole thing is the link. */}
+              <span className="bps-phone-num">{phone}</span>
             </a>
           )}
           <QuoteButton className="hidden sm:inline-flex"/>
@@ -197,7 +205,7 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
           full width rather than being trapped in a menu item. */}
       {mega && (
         <div className="bps-mega hidden lg:block absolute left-0 right-0 top-full" onMouseLeave={() => setMega(null)} onMouseEnter={() => setMega(mega)}>
-          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 py-8">
+          <div className="mx-auto max-w-[1400px] px-5 sm:px-8 py-8">
             {mega === "services" && (
               <>
                 <div className="flex items-baseline justify-between mb-5">
@@ -343,7 +351,7 @@ function Hero({ tenant, settings }: { tenant: any; settings: any }) {
       {image && <img className="bps-hero-photo absolute inset-0 -z-20 h-full w-full object-cover" style={{ objectPosition: "center right" }} src={image} alt="" fetchPriority="high" decoding="async"/>}
       <div className="bps-hero-shade absolute inset-0 -z-10" aria-hidden="true"/>
 
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8 py-[72px] lg:py-[88px]">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8 py-[72px] lg:py-[88px]">
         <div className="max-w-[670px]">
           <p className="bps-rise text-[12px] font-bold tracking-[0.14em] mb-4" style={{ color: "#D6EBF6", animationDelay: "50ms" }}>
             {(settings?.serviceBase ? `Your local plumbing & heating experts, ${settings.serviceBase}` : "Your local plumbing & heating experts").toUpperCase()}
@@ -395,7 +403,7 @@ function TrustStrip({ settings }: { settings: any }) {
 
   return (
     <section className="border-b" style={{ background: "#fff", borderColor: BORDER }}>
-      <div className="bps-rad mx-auto max-w-[1300px] px-5 sm:px-8 py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
+      <div className="bps-rad mx-auto max-w-[1400px] px-5 sm:px-8 py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
         {items.map((it, i) => (
           <div key={i} className="flex items-center gap-3">
             <span className="shrink-0">{it.icon}</span>
@@ -413,7 +421,7 @@ function ServicesGrid({ services, heading, intro }: { services: any[]; heading?:
   if (!services?.length) return null;
   return (
     <section className="py-[76px]" style={{ background: "#fff" }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="section-heading max-w-[640px]">
           <h2 className="font-bold" style={{ color: TEXT, fontSize: "clamp(30px,3.6vw,42px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
             {heading || "What we do"}
@@ -490,7 +498,7 @@ function ProcessSteps({ steps }: { steps?: Array<{ title: string; description: s
   if (!Array.isArray(steps) || steps.length === 0) return null;
   return (
     <section className="py-[70px]" style={{ background: "#fff" }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         <h2 className="section-heading font-bold mb-10" style={{ color: TEXT, fontSize: "clamp(24px,2.8vw,32px)", letterSpacing: "-0.035em" }}>
           How it works
         </h2>
@@ -515,7 +523,7 @@ function EmergencyPanel({ settings }: { settings: any }) {
   if (!phone) return null;
   return (
     <section className="py-[56px]" style={{ background: PALE }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="emergency rounded-[24px] px-7 py-9 sm:px-10 sm:py-11 flex flex-col lg:flex-row lg:items-center gap-7 lg:gap-10" style={{ background: NAVY }}>
           <div className="flex-1 min-w-0">
             <h2 className="font-bold text-white" style={{ fontSize: "clamp(26px,3vw,36px)", letterSpacing: "-0.035em", lineHeight: 1.15 }}>
@@ -540,7 +548,7 @@ function Reviews({ reviews, heading }: { reviews: any[]; heading?: string }) {
   if (!reviews?.length) return null;
   return (
     <section className="py-[76px]" style={{ background: REVIEW_BG }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         {heading !== "" && (
           <h2 className="section-heading font-bold max-w-[640px]" style={{ color: TEXT, fontSize: "clamp(30px,3.6vw,42px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
             {heading || "What our customers say"}
@@ -580,7 +588,7 @@ function Areas({ areas, settings, services }: { areas: any[]; settings: any; ser
 
   return (
     <section className="py-[84px]" style={{ background: PALE_2 }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="section-heading max-w-[660px]">
           <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>
             {base ? `BASED IN ${String(base).toUpperCase()}` : "COVERAGE"}
@@ -662,7 +670,7 @@ function AreaDetail({ tenant, settings, services, reviews, areas }: any) {
         {hero && <img className="bps-hero-photo absolute inset-0 -z-20 h-full w-full object-cover" src={hero} alt="" fetchPriority="high" decoding="async"/>}
         <div className="bps-hero-shade absolute inset-0 -z-10" aria-hidden="true"/>
 
-        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 py-[64px] lg:py-[92px]">
+        <div className="mx-auto max-w-[1400px] px-5 sm:px-8 py-[64px] lg:py-[92px]">
           <nav className="bps-rise flex items-center gap-2 text-[13px] text-white/60 mb-5" aria-label="Breadcrumb" style={{ animationDelay: "40ms" }}>
             <Link href="/" className="bps-pipe hover:text-white">Home</Link>
             <span aria-hidden="true">/</span>
@@ -701,7 +709,7 @@ function AreaDetail({ tenant, settings, services, reviews, areas }: any) {
 
       {area.content && (
         <section className="py-[72px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid lg:grid-cols-[minmax(0,1fr)_340px] gap-12">
+          <div className="mx-auto max-w-[1400px] px-5 sm:px-8 grid lg:grid-cols-[minmax(0,1fr)_340px] gap-12">
             <div className="min-w-0">
               {String(area.content).split("\n\n").map((para: string, i: number) => (
                 <p key={i} className="mb-5 text-[16.5px] leading-[1.85]" style={{ color: TEXT }}>{para}</p>
@@ -735,7 +743,7 @@ function AreaDetail({ tenant, settings, services, reviews, areas }: any) {
 
       {nearby.length > 0 && (
         <section className="py-[70px]" style={{ background: PALE_2 }}>
-          <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+          <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
             <h2 className="section-heading font-bold" style={{ color: TEXT, fontSize: "clamp(24px,2.8vw,32px)", letterSpacing: "-0.035em" }}>
               We also cover
             </h2>
@@ -764,7 +772,7 @@ function ClosingCta({ settings }: { settings: any }) {
   const phone = settings?.phone;
   return (
     <section className="quote-cta py-[80px]" style={{ background: BLUE }}>
-      <div className="wrap mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="wrap mx-auto max-w-[1400px] px-5 sm:px-8">
         <h2 className="font-bold text-white max-w-[760px]" style={{ fontSize: "clamp(30px,4vw,48px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
           {settings?.closingHeadline || "A warmer home is one conversation away."}
         </h2>
@@ -777,12 +785,48 @@ function ClosingCta({ settings }: { settings: any }) {
   );
 }
 
+/**
+ * Floating WhatsApp button.
+ *
+ * Renders only when the tenant has a mobile number — a landline would open
+ * WhatsApp to a chat that does not exist. UK numbers are normalised to the
+ * international form WhatsApp requires.
+ */
+function WhatsAppFloat({ settings, tenant }: { settings: any; tenant: any }) {
+  const raw = settings?.whatsappNumber || settings?.phone;
+  if (!raw) return null;
+
+  const digits = String(raw).replace(/[^\d+]/g, "");
+  const intl = digits.startsWith("+") ? digits.slice(1)
+    : digits.startsWith("0") ? `44${digits.slice(1)}`
+    : digits;
+  // A landline cannot receive WhatsApp. UK mobiles are 447xxxxxxxxx.
+  if (!/^447\d{9}$/.test(intl)) return null;
+
+  const text = encodeURIComponent(`Hi ${tenant?.name || ""}, I found you online and wanted to ask about`.trim());
+
+  return (
+    <a
+      href={`https://wa.me/${intl}?text=${text}`}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="bps-wa"
+      aria-label="Message us on WhatsApp"
+    >
+      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="w-7 h-7">
+        <path d="M20.5 3.5A10 10 0 003.6 15.2L2.5 21.5l6.4-1.1A10 10 0 1020.5 3.5zM12 20a8 8 0 01-4-1.1l-.3-.2-3.1.5.6-3-.2-.3A8 8 0 1112 20zm4.4-5.6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.7.9-.3.2-.5 0a6.5 6.5 0 01-1.9-1.2 7.3 7.3 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5.2-.4v-.4l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 00-.7.3A2.9 2.9 0 006 10a5 5 0 001.1 2.7 11.5 11.5 0 004.4 3.9 8.3 8.3 0 001.5.5 3.5 3.5 0 001.6.1 2.6 2.6 0 001.7-1.2 2.1 2.1 0 00.2-1.2c-.1-.1-.2-.2-.4-.3z"/>
+      </svg>
+      <span className="bps-wa-label">WhatsApp us</span>
+    </a>
+  );
+}
+
 // ── Footer ───────────────────────────────────────────────────────────────────
 
 function Footer({ tenant, settings, services }: { tenant: any; settings: any; services: any[] }) {
   return (
     <footer className="pt-[64px] pb-9" style={{ background: NAVY }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         <div className="grid md:grid-cols-3 gap-10 pb-10 border-b" style={{ borderColor: "rgba(255,255,255,.12)" }}>
           <div>
             {settings?.logoUrl
@@ -887,7 +931,7 @@ function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
         {hero && <img className="bps-hero-photo absolute inset-0 -z-20 h-full w-full object-cover" src={hero} alt="" fetchPriority="high" decoding="async"/>}
         <div className="bps-hero-shade absolute inset-0 -z-10" aria-hidden="true"/>
 
-        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 py-[64px] lg:py-[92px]">
+        <div className="mx-auto max-w-[1400px] px-5 sm:px-8 py-[64px] lg:py-[92px]">
           <nav className="bps-rise flex items-center gap-2 text-[13px] text-white/60 mb-5" aria-label="Breadcrumb" style={{ animationDelay: "40ms" }}>
             <Link href="/" className="bps-pipe hover:text-white">Home</Link>
             <span aria-hidden="true">/</span>
@@ -926,7 +970,7 @@ function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
       {/* Body beside a quote card that follows you down the page. The point of a
           service page is the enquiry, so the enquiry should never scroll away. */}
       <section className="py-[72px]" style={{ background: "#fff" }}>
-        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid lg:grid-cols-[minmax(0,1fr)_340px] gap-12">
+        <div className="mx-auto max-w-[1400px] px-5 sm:px-8 grid lg:grid-cols-[minmax(0,1fr)_340px] gap-12">
           <div className="min-w-0">
             {service.content
               ? String(service.content).split("\n\n").map((para: string, i: number) =>
@@ -1001,7 +1045,7 @@ function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
 function PageHead({ eyebrow, title, intro }: { eyebrow?: string; title: string; intro?: string }) {
   return (
     <section className="py-[70px]" style={{ background: PALE_2 }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
         {eyebrow && <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>{eyebrow.toUpperCase()}</p>}
         <h1 className="font-bold max-w-[820px]" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>{title}</h1>
         {intro && <p className="mt-5 text-[17px] leading-[1.75] max-w-[680px]" style={{ color: BODY }}>{intro}</p>}
@@ -1018,7 +1062,7 @@ function AboutPage({ tenant, settings, services, areas }: any) {
       <TrustStrip settings={settings}/>
       {settings?.aboutImageUrl && (
         <section className="py-[56px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+          <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
             <img src={settings.aboutImageUrl} alt={tenant?.name} className="w-full rounded-[22px]"/>
           </div>
         </section>
@@ -1058,7 +1102,7 @@ function ReviewsPage({ tenant, settings, reviews }: any) {
           // No invented testimonials. An empty state that tells the truth beats
           // filler that would also put false rating schema on the page.
           <section className="py-[70px]" style={{ background: "#fff" }}>
-            <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+            <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
               <p className="text-[16px] leading-[1.8]" style={{ color: BODY }}>
                 We're collecting reviews from recent customers and will publish them here as they come in.
                 {settings?.phone ? " In the meantime, call and ask us for references — we're happy to give them." : ""}
@@ -1101,7 +1145,7 @@ function ContactPage({ tenantSlug, tenant, settings }: any) {
 
       {rows.length > 0 && (
         <section className="py-[56px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="mx-auto max-w-[1400px] px-5 sm:px-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
             {rows.map(r => {
               const card = (
                 <>
@@ -1135,7 +1179,7 @@ function LegalPage({ tenant, title, body }: { tenant: any; title: string; body?:
       <PageSEO title={`${title} — ${tenant?.name}`} description={`${title} for ${tenant?.name}.`} noindex/>
       <PageHead title={title}/>
       <section className="py-[56px]" style={{ background: "#fff" }}>
-        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 text-[15.5px] leading-[1.8] whitespace-pre-line" style={{ color: TEXT }}>
+        <div className="mx-auto max-w-[1400px] px-5 sm:px-8 text-[15.5px] leading-[1.8] whitespace-pre-line" style={{ color: TEXT }}>
           {body || "This page is being prepared."}
         </div>
       </section>
@@ -1215,6 +1259,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
               </Switch>
             </main>
             <Footer tenant={tenant} settings={settings} services={shared.services}/>
+            <WhatsAppFloat settings={settings} tenant={tenant}/>
             <CookieBanner siteBase={base}/>
           </div>
         </WouterRouter>

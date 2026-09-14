@@ -76,6 +76,9 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   cisRate: numeric("cis_rate", { precision: 5, scale: 2 }).default("20"),
   invoiceTerms: text("invoice_terms"),
   paymentDays: integer("payment_days").notNull().default(14),
+
+  /** Separate from `phone`, because a landline cannot receive WhatsApp (0037). */
+  whatsappNumber: text("whatsapp_number"),
   // Per-event, per-channel notification toggles
   notifyLeadNewEmail: boolean("notify_lead_new_email").default(true),
   notifyLeadNewSms: boolean("notify_lead_new_sms").default(true),
