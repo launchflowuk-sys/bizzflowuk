@@ -22,7 +22,7 @@ export function InviteUserPanel({ tenants, onCreated }: { tenants: any[]; onCrea
 
   const f = (k: keyof typeof form) => (e: any) => setForm({ ...form, [k]: e.target.value });
   const inputCls =
-    "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400";
+    "w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400";
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -69,7 +69,7 @@ export function InviteUserPanel({ tenants, onCreated }: { tenants: any[]; onCrea
     return (
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 items-center rounded-lg bg-orange-500 px-4 text-sm font-semibold text-white hover:bg-orange-400"
+        className="inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-400"
       >
         + Invite user
       </button>
@@ -112,7 +112,7 @@ export function InviteUserPanel({ tenants, onCreated }: { tenants: any[]; onCrea
             This is the only time the link is shown — it can&apos;t be recovered later. If it&apos;s lost, issue a new
             one from the user&apos;s row.
           </p>
-          <button onClick={() => setInvite(null)} className="text-sm font-semibold text-orange-600 hover:underline">
+          <button onClick={() => setInvite(null)} className="text-sm font-semibold text-brand-600 hover:underline">
             Invite someone else
           </button>
         </div>
@@ -179,7 +179,7 @@ export function InviteUserPanel({ tenants, onCreated }: { tenants: any[]; onCrea
           <button
             type="submit"
             disabled={busy}
-            className="inline-flex h-10 items-center rounded-lg bg-orange-500 px-4 text-sm font-semibold text-white hover:bg-orange-400 disabled:opacity-60"
+            className="inline-flex h-10 items-center rounded-lg bg-brand-500 px-4 text-sm font-semibold text-white hover:bg-brand-400 disabled:opacity-60"
           >
             {busy ? "Creating…" : "Create login and get invite link"}
           </button>

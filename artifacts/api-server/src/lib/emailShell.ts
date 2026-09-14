@@ -1,3 +1,13 @@
+/**
+ * The accent an email uses when the tenant has not chosen one.
+ *
+ * Email clients cannot read CSS custom properties, so this cannot come from the
+ * stylesheet the way the app's `brand-*` scale does — it has to be a literal.
+ * It is the one literal, though: keep it in step with --color-brand-500 in
+ * artifacts/web/src/index.css so a branded email and the dashboard agree.
+ */
+export const BRAND_FALLBACK_COLOR = "#F97316";
+
 // Shared branded HTML email shell — every customer/admin email in the platform renders through
 // this so tenants get a consistent, modern, mobile-first look using their own logo/colors instead
 // of the plain-text emails the app shipped with originally. Table-based layout + inline styles for
@@ -26,7 +36,7 @@ function normalizeBrand(brand: BrandConfig) {
   return {
     tenantName: brand.tenantName,
     logoUrl: brand.logoUrl || undefined,
-    primary: brand.primaryColor || "#f97316",
+    primary: brand.primaryColor || BRAND_FALLBACK_COLOR,
     dark: brand.secondaryColor || "#1e293b",
     phone: brand.phone || undefined,
     email: brand.email || undefined,
@@ -43,7 +53,7 @@ function normalizeBrand(brand: BrandConfig) {
 }
 
 /** A single icon+label+value row, e.g. "📞 Phone — 01234 567890". */
-export function emailInfoRow(icon: string, label: string, value: string, accent = "#f97316"): string {
+export function emailInfoRow(icon: string, label: string, value: string, accent = BRAND_FALLBACK_COLOR): string {
   return `
     <tr>
       <td style="padding:6px 0" valign="top">
@@ -61,7 +71,7 @@ export function emailInfoRow(icon: string, label: string, value: string, accent 
 }
 
 /** A vertical, numbered "What happens next" list. */
-export function emailStepsList(steps: string[], accent = "#f97316"): string {
+export function emailStepsList(steps: string[], accent = BRAND_FALLBACK_COLOR): string {
   return `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:8px 0">
       ${steps.map((step, i) => `
@@ -102,7 +112,7 @@ export function emailDataTable(rows: Array<[label: string, value: string | undef
     </table>`;
 }
 
-export function emailButton(label: string, url: string, color = "#f97316"): string {
+export function emailButton(label: string, url: string, color = BRAND_FALLBACK_COLOR): string {
   return `
     <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:20px 0">
       <tr><td style="border-radius:8px;background:${color}">

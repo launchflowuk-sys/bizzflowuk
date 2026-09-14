@@ -252,8 +252,12 @@ function mixHex(rgb: [number, number, number], target: [number, number, number],
   const m = (a: number, b: number) => Math.round(a + (b - a) * amt);
   return "#" + [m(rgb[0], target[0]), m(rgb[1], target[1]), m(rgb[2], target[2])].map(x => x.toString(16).padStart(2, "0")).join("");
 }
+/** Matches --color-brand-500 in index.css. The maths below needs a literal, so
+ *  this is the one place the platform colour is repeated as a hex. */
+const BRAND_FALLBACK = "#F97316";
+
 function brandVars(color?: string | null): React.CSSProperties {
-  const brand = color || "#f97316";
+  const brand = color || BRAND_FALLBACK;
   const rgb = hexToRgb(brand);
   const lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
   const ink = mixHex(rgb, [0, 0, 0], lum > 0.5 ? 0.48 : 0.28);   // darken more for light brands (e.g. green) → readable on white
@@ -1779,7 +1783,7 @@ function RichTextEditor({ onChange }: { onChange: (html: string) => void }) {
         .email-rich-editor blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75em; margin: 0.5em 0; color: #64748b; }
         .email-rich-editor ul { list-style: disc; padding-left: 1.5em; }
         .email-rich-editor ol { list-style: decimal; padding-left: 1.5em; }
-        .email-rich-editor a { color: #f97316; text-decoration: underline; }
+        .email-rich-editor a { color: var(--brand, #F97316); text-decoration: underline; }
       `}</style>
     </div>
   );

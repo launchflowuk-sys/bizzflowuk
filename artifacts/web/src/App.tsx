@@ -299,7 +299,7 @@ function LandingPage() {
         <a href={`${basePath}/sign-in`} className="text-sm text-slate-400 hover:text-white transition-colors">Sign in</a>
       </nav>
       <div className="max-w-7xl mx-auto px-6 py-24 text-center space-y-8">
-        <div className="inline-flex items-center rounded-full border border-orange-500/30 bg-orange-500/10 px-3 py-1 text-xs text-orange-400 font-medium">
+        <div className="inline-flex items-center rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs text-brand-400 font-medium">
           Built for home improvement professionals
         </div>
         <h1 className="text-5xl sm:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
@@ -309,7 +309,7 @@ function LandingPage() {
           Websites, CRM, quotes, projects, customer portal — everything a modern trades business needs.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-          <a href={`${basePath}/sign-in`} className="inline-flex h-12 items-center justify-center rounded-md bg-orange-500 px-8 text-sm font-semibold text-white shadow-lg hover:bg-orange-400 transition-colors">Sign in</a>
+          <a href={`${basePath}/sign-in`} className="inline-flex h-12 items-center justify-center rounded-md bg-brand-500 px-8 text-sm font-semibold text-white shadow-lg hover:bg-brand-400 transition-colors">Sign in</a>
           <a href={`${basePath}/site/amo-rendering`} className="inline-flex h-12 items-center justify-center rounded-md border border-slate-700 bg-transparent px-8 text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors">View demo site</a>
         </div>
       </div>

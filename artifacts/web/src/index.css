@@ -6,6 +6,33 @@
 @import "@fontsource-variable/public-sans";
 @plugin "@tailwindcss/typography";
 
+/* ----------------------------------------------------------------------------
+   BizzFlow brand scale.
+
+   The platform's own chrome — the admin console, the customer portal, the
+   marketing shell, the sign-in screen — was painted with Tailwind's stock
+   `orange-*` utilities in 46 places. That made the brand colour a find-and-
+   replace across four files rather than a decision recorded in one.
+
+   These are the ONLY values to change when the brand colour changes. Every
+   platform surface reads `brand-*`, so a new palette is this block and nothing
+   else.
+
+   Note what this is NOT: a tenant's own colour. Each tenant stores its own
+   `primaryColor` and the public site templates use that. BPS's #F0882D lives in
+   plumbing-motion.css and belongs to Brandon, not to us — leave it alone.
+   -------------------------------------------------------------------------- */
+@theme {
+  --color-brand-50:  #FFF7ED;
+  --color-brand-100: #FFEDD5;
+  --color-brand-200: #FED7AA;
+  --color-brand-300: #FDBA74;
+  --color-brand-400: #FB923C;
+  --color-brand-500: #F97316;
+  --color-brand-600: #EA580C;
+  --color-brand-700: #C2410C;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

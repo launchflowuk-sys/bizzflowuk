@@ -26,7 +26,7 @@ function PortalNav({ currentPath }: { currentPath: string }) {
         <div className="font-bold text-sm">Customer Portal</div>
         <div className="flex items-center gap-1">
           {nav.map(n => (
-            <Link key={n.path} href={n.path} className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${currentPath === n.path ? 'bg-orange-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>{n.label}</Link>
+            <Link key={n.path} href={n.path} className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${currentPath === n.path ? 'bg-brand-500 text-white' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}>{n.label}</Link>
           ))}
         </div>
         <SignOutButton />
@@ -38,7 +38,7 @@ function PortalNav({ currentPath }: { currentPath: string }) {
 function PortalOverview() {
   const { data, isLoading } = useGetPortalMe();
   const d = data as any;
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"/></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"/></div>;
   if (!d) return <div className="p-8 text-center text-slate-500">No account data found. Please contact your renderer to enable portal access.</div>;
   const latestProject = d.projects?.[0];
   const latestQuote = d.quotes?.[0];
@@ -78,7 +78,7 @@ function PortalProject() {
   const { data, isLoading } = useGetPortalMe();
   const d = data as any;
   const project = d?.projects?.[0];
-  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"/></div>;
+  if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"/></div>;
   const stages = ['Enquiry', 'Survey Booked', 'Quote Approved', 'Scheduled', 'In Progress', 'Completed'];
   const currentIndex = project ? stages.indexOf(project.status) : -1;
   return (
@@ -95,13 +95,13 @@ function PortalProject() {
             <div className="flex items-center gap-0 overflow-x-auto pb-2">
               {stages.map((stage, i) => (
                 <div key={stage} className="flex items-center flex-shrink-0">
-                  <div className={`flex flex-col items-center ${i <= currentIndex ? 'text-orange-500' : 'text-slate-300'}`}>
-                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${i < currentIndex ? 'bg-orange-500 border-orange-500 text-white' : i === currentIndex ? 'border-orange-500 text-orange-500' : 'border-slate-200 text-slate-300'}`}>
+                  <div className={`flex flex-col items-center ${i <= currentIndex ? 'text-brand-500' : 'text-slate-300'}`}>
+                    <div className={`w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold ${i < currentIndex ? 'bg-brand-500 border-brand-500 text-white' : i === currentIndex ? 'border-brand-500 text-brand-500' : 'border-slate-200 text-slate-300'}`}>
                       {i < currentIndex ? '✓' : i + 1}
                     </div>
                     <span className={`text-xs mt-1 text-center max-w-16 ${i <= currentIndex ? 'text-slate-700' : 'text-slate-400'}`}>{stage}</span>
                   </div>
-                  {i < stages.length - 1 && <div className={`w-8 h-0.5 flex-shrink-0 mt-0 -mt-4 ${i < currentIndex ? 'bg-orange-500' : 'bg-slate-200'}`}/>}
+                  {i < stages.length - 1 && <div className={`w-8 h-0.5 flex-shrink-0 mt-0 -mt-4 ${i < currentIndex ? 'bg-brand-500' : 'bg-slate-200'}`}/>}
                 </div>
               ))}
             </div>
@@ -133,17 +133,17 @@ function PortalMessages() {
           : !(messages as any[])?.length ? <div className="text-center py-8 text-slate-400">No messages yet. Send a message to your renderer below.</div>
           : (messages as any[]).map((m: any) => (
             <div key={m.id} className={`flex ${m.senderRole === 'customer' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-sm rounded-xl px-4 py-3 text-sm ${m.senderRole === 'customer' ? 'bg-orange-500 text-white' : 'bg-slate-100 text-slate-900'}`}>
+              <div className={`max-w-sm rounded-xl px-4 py-3 text-sm ${m.senderRole === 'customer' ? 'bg-brand-500 text-white' : 'bg-slate-100 text-slate-900'}`}>
                 <p>{m.content}</p>
-                <p className={`text-xs mt-1 ${m.senderRole === 'customer' ? 'text-orange-200' : 'text-slate-400'}`}>{m.createdAt ? new Date(m.createdAt).toLocaleString('en-GB') : ''}</p>
+                <p className={`text-xs mt-1 ${m.senderRole === 'customer' ? 'text-brand-200' : 'text-slate-400'}`}>{m.createdAt ? new Date(m.createdAt).toLocaleString('en-GB') : ''}</p>
               </div>
             </div>
           ))}
         </div>
         <div className="border-t border-slate-200 p-4">
           <form onSubmit={handleSubmit} className="flex gap-2">
-            <input value={content} onChange={e => setContent(e.target.value)} placeholder="Type a message..." className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"/>
-            <button type="submit" disabled={mutation.isPending} className="inline-flex items-center rounded-md bg-orange-500 px-4 py-2 text-sm font-medium text-white hover:bg-orange-400 disabled:opacity-50">Send</button>
+            <input value={content} onChange={e => setContent(e.target.value)} placeholder="Type a message..." className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"/>
+            <button type="submit" disabled={mutation.isPending} className="inline-flex items-center rounded-md bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50">Send</button>
           </form>
         </div>
       </div>

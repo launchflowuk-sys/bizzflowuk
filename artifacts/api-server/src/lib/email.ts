@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 import { logger } from "./logger";
-import { renderEmailShell, emailInfoRow, emailStepsList, emailButton, emailDataTable, telHref, type BrandConfig } from "./emailShell";
+import { renderEmailShell, emailInfoRow, emailStepsList, emailButton, emailDataTable, telHref, BRAND_FALLBACK_COLOR, type BrandConfig } from "./emailShell";
 
 export interface SmtpConfig {
   host: string;
@@ -105,7 +105,7 @@ export function buildLeadNewAdminEmail(opts: {
   desiredFeatures?: string[];
 }): EmailPayload {
   const name = `${opts.firstName} ${opts.lastName}`.trim();
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const withOther = (value?: string, other?: string) => (value === "Other" && other ? `Other — ${other}` : value);
   const isEwi = opts.serviceInterest === "External Wall Insulation";
 
@@ -174,7 +174,7 @@ export function buildLeadNewCustomerEmail(opts: {
   estimateItems?: Array<{ name: string; quantity: number; unit: string; unitPrice: string; lineTotal: string }>;
   estimateTotal?: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   const hasEstimate = !!(opts.estimateItems?.length && opts.estimateTotal);
   const infoRows = [
@@ -232,7 +232,7 @@ export function buildSurveyBookedCustomerEmail(opts: {
   /** Human-readable appointment time (e.g. "Friday 25 July, 2:00 pm"). Omitted = "we'll confirm". */
   scheduledFor?: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   const intro = opts.scheduledFor
     ? `Great news, ${opts.firstName}! Your survey is booked for <strong>${opts.scheduledFor}</strong>. If that time doesn't work, just get in touch and we'll rearrange.`
@@ -264,7 +264,7 @@ export function buildPaymentRequestEmail(opts: {
   paymentLinkUrl: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   const bodyHtml = `
     ${emailInfoRow("&#163;", "Amount Requested", opts.amount, accent)}
@@ -293,7 +293,7 @@ export function buildQuoteSentCustomerEmail(opts: {
   remainingBalance?: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   const infoRows = [
     opts.reference ? emailInfoRow("&#128196;", "Quote Reference", opts.reference, accent) : "",
@@ -335,7 +335,7 @@ export function buildQuoteSentAdminEmail(opts: {
   remainingBalance?: string;
   paymentLinkUrl?: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   return {
     to: opts.adminEmail,
     subject: `Quote Sent — ${opts.reference}${opts.customerName ? ` to ${opts.customerName}` : ""}`,
@@ -366,7 +366,7 @@ export function buildQuoteAcceptedAdminEmail(opts: {
   reference: string;
   customerName?: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   return {
     to: opts.adminEmail,
     subject: `Quote Accepted — ${opts.reference}`,
@@ -418,7 +418,7 @@ export function buildPaymentReceivedCustomerEmail(opts: {
   amount: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   return {
     to: opts.to,
@@ -443,7 +443,7 @@ export function buildLeadWonCustomerEmail(opts: {
   firstName: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   return {
     to: opts.to,
@@ -466,7 +466,7 @@ export function buildProjectInProgressCustomerEmail(opts: {
   projectTitle: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   return {
     to: opts.to,
@@ -489,7 +489,7 @@ export function buildProjectCompleteCustomerEmail(opts: {
   projectTitle: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   return {
     to: opts.to,
@@ -513,7 +513,7 @@ export function buildReviewRequestEmail(opts: {
   customTemplate?: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const name = opts.firstName || "there";
   const intro = opts.customTemplate
     ? opts.customTemplate.replace(/\{name\}/g, name).replace(/\{reviewUrl\}/g, opts.reviewUrl).replace(/\n/g, "<br>")
@@ -572,7 +572,7 @@ export function buildContactCustomerEmail(opts: {
   name: string;
   to: string;
 }): EmailPayload {
-  const accent = opts.brand.primaryColor || "#f97316";
+  const accent = opts.brand.primaryColor || BRAND_FALLBACK_COLOR;
   const phone = opts.brand.phone || undefined;
   return {
     to: opts.to,
