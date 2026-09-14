@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, boolean, jsonb, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -65,6 +65,17 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   // Customer-facing prefix for quote references, e.g. "AMO-R" -> AMO-R-0007. Null falls back to
   // "QUO". Per-tenant because the reference appears on the quote the customer receives (0019).
   quoteRefPrefix: text("quote_ref_prefix"),
+
+  // Tax. Off by default — an invoice never shows VAT for a business that has
+  // not told us it is registered (migration 0032).
+  vatRegistered: boolean("vat_registered").notNull().default(false),
+  vatNumber: text("vat_number"),
+  vatRate: numeric("vat_rate", { precision: 5, scale: 2 }).default("20"),
+  cisRegistered: boolean("cis_registered").notNull().default(false),
+  cisUtr: text("cis_utr"),
+  cisRate: numeric("cis_rate", { precision: 5, scale: 2 }).default("20"),
+  invoiceTerms: text("invoice_terms"),
+  paymentDays: integer("payment_days").notNull().default(14),
   // Per-event, per-channel notification toggles
   notifyLeadNewEmail: boolean("notify_lead_new_email").default(true),
   notifyLeadNewSms: boolean("notify_lead_new_sms").default(true),

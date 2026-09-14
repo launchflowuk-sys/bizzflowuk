@@ -23,6 +23,8 @@ import supportRouter from "./support";
 import certificatesRouter from "./certificates";
 import certificatesIssueRouter from "./certificatesIssue";
 import jobsRouter from "./jobs";
+import invoicesRouter from "./invoices";
+import expensesRouter from "./expenses";
 
 const router: IRouter = Router();
 
@@ -30,6 +32,8 @@ router.use(healthRouter);
 router.use(certificatesRouter);
 router.use(certificatesIssueRouter);
 router.use(jobsRouter);
+router.use(invoicesRouter);
+router.use(expensesRouter);
 router.use(storageRouter);
 router.use("/auth", authRouter);
 router.use(tenantsRouter);

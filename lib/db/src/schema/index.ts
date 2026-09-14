@@ -22,3 +22,4 @@ export * from "./sent_emails";
 export * from "./page_render_cache";
 export * from "./user_invites";
 export * from "./certificates";
+export * from "./invoices";

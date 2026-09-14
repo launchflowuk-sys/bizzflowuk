@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,6 +19,8 @@ export const tenantsTable = pgTable("tenants", {
   website: text("website"),
   description: text("description"),
   customDomain: text("custom_domain"),
+  /** Per-tenant module switches. New modules stay dark until enabled (migration 0032). */
+  features: jsonb("features").$type<Record<string, boolean>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 });
