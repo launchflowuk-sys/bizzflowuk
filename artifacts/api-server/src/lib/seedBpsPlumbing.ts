@@ -36,15 +36,15 @@ const SERVICES: Array<{ name: string; slug: string; tagline: string; description
   { name: "Emergency Plumbing", slug: "emergency-plumbing", tagline: "When it can't wait until Monday", description: "Burst pipes, no heat, no hot water. Call and speak to someone who can actually come out." },
 ];
 
-const AREAS: Array<{ name: string; slug: string }> = [
-  { name: "Grays", slug: "grays" },
-  { name: "Thurrock", slug: "thurrock" },
-  { name: "Tilbury", slug: "tilbury" },
-  { name: "Chafford Hundred", slug: "chafford-hundred" },
-  { name: "South Ockendon", slug: "south-ockendon" },
-  { name: "Corringham", slug: "corringham" },
-  { name: "Stanford-le-Hope", slug: "stanford-le-hope" },
-  { name: "Basildon", slug: "basildon" },
+const AREAS: Array<{ name: string; slug: string; description: string }> = [
+  { name: "Grays", slug: "grays", description: "Our home town. Most Grays jobs are seen the same day, and emergencies usually within the hour." },
+  { name: "Thurrock", slug: "thurrock", description: "The whole borough, from Purfleet through to East Tilbury. Boilers, heating, bathrooms and landlord certificates." },
+  { name: "Tilbury", slug: "tilbury", description: "Regular work across Tilbury and the riverside estates, including older systems that need patience rather than replacing." },
+  { name: "Chafford Hundred", slug: "chafford-hundred", description: "Mostly newer builds here — system boilers, pressure faults and bathroom refits." },
+  { name: "South Ockendon", slug: "south-ockendon", description: "Full plumbing and heating cover, with emergency call-outs evenings and weekends." },
+  { name: "Corringham", slug: "corringham", description: "Boiler installs, servicing and repairs across Corringham and Fobbing." },
+  { name: "Stanford-le-Hope", slug: "stanford-le-hope", description: "Heating systems, leaks and blockages, and annual landlord gas safety checks." },
+  { name: "Basildon", slug: "basildon", description: "Planned work and installations across Basildon — call to check timings for urgent jobs." },
 ];
 
 export async function seedBpsPlumbingIfMissing(): Promise<void> {

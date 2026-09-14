@@ -630,3 +630,61 @@
   .bps-drawer, .bps-drawer-scrim, .bps-drawer-link, .bps-drawer-foot{ animation:none !important; opacity:1 !important; transform:none !important }
   .bps-burger span, .service-card, .service-tile, .area-links a, .review-grid article{ transition:none !important }
 }
+
+/* ============================================================================
+   14. COVERAGE CARDS — the local-search section, given real weight
+   ----------------------------------------------------------------------------
+   This was a row of pill chips. For a trade business the coverage section is
+   what wins local search and answers the first question a customer has, so it
+   now carries copy, its own page per town, and the same card craft as services.
+   ========================================================================== */
+
+.area-card{
+  background:#fff;
+  border:1px solid var(--bps-border);
+  text-decoration:none;
+  position:relative; isolation:isolate;
+  transition:transform 320ms var(--bps-ease-settle), box-shadow 320ms ease-out, border-color 320ms ease-out;
+}
+
+.area-pin{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:44px; height:44px; border-radius:14px;
+  background:rgba(8,146,207,.1);
+  border:1px solid rgba(8,146,207,.18);
+  transition:transform 380ms var(--bps-ease-settle), background 320ms ease-out;
+}
+
+.area-more{ color:var(--bps-control) }
+.area-more svg{ transition:transform 240ms var(--bps-ease-settle) }
+
+/* A hairline of brand colour draws along the top edge on hover — the cheapest
+   way to say "this is a link to somewhere" without another border. */
+.area-card::before{
+  content:"";
+  position:absolute; left:18px; right:18px; top:0; height:2px;
+  border-radius:2px;
+  background:linear-gradient(90deg, var(--bps-blue-bright), var(--bps-blue));
+  opacity:0; transform:scaleX(.3); transform-origin:left center;
+  transition:opacity 300ms ease-out, transform 480ms var(--bps-ease-flow);
+}
+
+@media (hover:hover) and (pointer:fine){
+  .area-card:hover{
+    transform:translateY(-5px);
+    border-color:rgba(8,146,207,.42);
+    box-shadow:0 20px 40px -26px rgba(16,35,51,.55);
+  }
+  .area-card:hover::before{ opacity:1; transform:scaleX(1) }
+  .area-card:hover .area-pin{ transform:scale(1.08); background:rgba(8,146,207,.16) }
+  .area-card:hover .area-more svg{ transform:translate(3px,-3px) }
+}
+
+/* Stagger across the row, same rhythm as the service cards. */
+.area-card[data-reveal="visible"]{ transition-delay:0ms }
+.area-links > .area-card:nth-child(3n+2)[data-reveal="visible"]{ transition-delay:90ms }
+.area-links > .area-card:nth-child(3n+3)[data-reveal="visible"]{ transition-delay:180ms }
+
+@media (prefers-reduced-motion:reduce){
+  .area-card, .area-pin, .area-card::before, .area-more svg{ transition:none !important }
+}

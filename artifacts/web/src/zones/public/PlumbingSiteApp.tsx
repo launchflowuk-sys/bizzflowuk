@@ -1,5 +1,5 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
-import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useListPublicReviews, useBrowsePublicBlog, useGetPublicBlogPost } from "@workspace/api-client-react";
+import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useBrowsePublicBlog, useGetPublicBlogPost } from "@workspace/api-client-react";
 import { useEffect, useState } from "react";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
@@ -366,14 +366,16 @@ function EmergencyPanel({ settings }: { settings: any }) {
 
 // ── Reviews ──────────────────────────────────────────────────────────────────
 
-function Reviews({ reviews }: { reviews: any[] }) {
+function Reviews({ reviews, heading }: { reviews: any[]; heading?: string }) {
   if (!reviews?.length) return null;
   return (
     <section className="py-[76px]" style={{ background: REVIEW_BG }}>
       <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
-        <h2 className="section-heading font-bold max-w-[640px]" style={{ color: TEXT, fontSize: "clamp(30px,3.6vw,42px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
-          What our customers say
-        </h2>
+        {heading !== "" && (
+          <h2 className="section-heading font-bold max-w-[640px]" style={{ color: TEXT, fontSize: "clamp(30px,3.6vw,42px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
+            {heading || "What our customers say"}
+          </h2>
+        )}
         <div className="review-grid mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {reviews.slice(0, 6).map((r: any, i: number) => (
             <article key={i} className="rounded-[20px] border p-6" style={{ borderColor: BORDER, background: "#fff" }}>
@@ -394,21 +396,112 @@ function Reviews({ reviews }: { reviews: any[] }) {
 
 // ── Areas ────────────────────────────────────────────────────────────────────
 
-function Areas({ areas }: { areas: any[] }) {
+/**
+ * Coverage is the section that wins local search for a trade business, so it gets
+ * real estate and real content rather than a row of chips. Each area is a card
+ * with its own copy and its own page; the chips version said nothing a customer
+ * could act on and nothing Google could rank.
+ */
+function Areas({ areas, settings, services }: { areas: any[]; settings: any; services?: any[] }) {
   if (!areas?.length) return null;
+  const base = settings?.serviceBase;
+  const phone = settings?.phone;
+  const serviceCount = services?.length ?? 0;
+
   return (
-    <section className="py-[70px]" style={{ background: "#fff" }}>
+    <section className="py-[84px]" style={{ background: PALE_2 }}>
       <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
-        <h2 className="section-heading font-bold" style={{ color: TEXT, fontSize: "clamp(26px,3vw,36px)", letterSpacing: "-0.04em" }}>Where we work</h2>
-        <div className="area-links mt-8 flex flex-wrap gap-2.5">
+        <div className="section-heading max-w-[660px]">
+          <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>
+            {base ? `BASED IN ${String(base).toUpperCase()}` : "COVERAGE"}
+          </p>
+          <h2 className="font-bold" style={{ color: TEXT, fontSize: "clamp(30px,3.6vw,42px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
+            Where we work
+          </h2>
+          <p className="mt-4 text-[16px] leading-[1.75]" style={{ color: BODY }}>
+            {settings?.serviceArea
+              ? `We cover ${settings.serviceArea}. Every town below gets the same engineers, the same call-out, and the same standard of work — there is no "outer area" rate.`
+              : "Every town below gets the same engineers, the same call-out and the same standard of work."}
+          </p>
+        </div>
+
+        <div className="area-links mt-11 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {areas.map((a: any) => (
-            <Link key={a.slug} href={`/areas/${a.slug}`} className="inline-flex items-center gap-2 h-11 px-4 rounded-[12px] border text-[14.5px] font-medium transition-transform" style={{ borderColor: BORDER, color: TEXT }}>
-              <PinIcon/>{a.name}
+            <Link key={a.slug} href={`/areas/${a.slug}`} className="area-card block rounded-[22px] p-6">
+              <span className="area-pin"><PinIcon/></span>
+              <h3 className="mt-4 font-bold text-[19px]" style={{ color: TEXT, letterSpacing: "-0.025em" }}>{a.name}</h3>
+              {a.county && <p className="mt-0.5 text-[13px] font-medium" style={{ color: BLUE_CTRL }}>{a.county}</p>}
+              <p className="mt-3 text-[14.5px] leading-[1.7]" style={{ color: BODY }}>
+                {a.description || (serviceCount
+                  ? `All ${serviceCount} of our services are available in ${a.name}, including emergency call-outs.`
+                  : `Plumbing and heating work across ${a.name}, including emergency call-outs.`)}
+              </p>
+              <span className="area-more mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold">
+                Plumbers in {a.name} <ArrowUpRight className="w-3.5 h-3.5"/>
+              </span>
             </Link>
           ))}
         </div>
+
+        {phone && (
+          <div className="area-note mt-9 flex flex-wrap items-center gap-x-3 gap-y-1 text-[15px]" style={{ color: BODY }}>
+            <span>Not sure if we reach you?</span>
+            <a href={telHref(phone)} className="bps-pipe font-bold" style={{ color: BLUE_CTRL }}>Call {phone} and ask</a>
+          </div>
+        )}
       </div>
     </section>
+  );
+}
+
+// ── Area detail ──────────────────────────────────────────────────────────────
+
+function AreaDetail({ tenant, settings, services, reviews }: any) {
+  const { slug } = useParams<{ slug: string }>();
+  const { data } = useGetPublicArea(tenant?.slug, slug);
+  const area = data as any;
+  if (!area) return null;
+
+  // Reviews left by customers in this town, when we have any. Real ones only —
+  // the section simply doesn't appear otherwise.
+  const local = (reviews || []).filter((r: any) =>
+    r.reviewerLocation && String(r.reviewerLocation).toLowerCase().includes(String(area.name).toLowerCase()));
+
+  return (
+    <>
+      <PageSEO
+        title={area.seoTitle || `Plumbers in ${area.name} — ${tenant?.name}`}
+        description={area.seoDescription || area.description || `Plumbing and heating services in ${area.name}${area.county ? `, ${area.county}` : ""}.`}
+      />
+      <section className="py-[70px]" style={{ background: PALE_2 }}>
+        <div className="mx-auto max-w-[760px] px-5 sm:px-8">
+          <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>
+            {(area.county || "SERVICE AREA").toUpperCase()}
+          </p>
+          <h1 className="font-bold" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>
+            Plumbing &amp; heating in {area.name}
+          </h1>
+          {(area.description || settings?.serviceBase) && (
+            <p className="mt-5 text-[17px] leading-[1.75]" style={{ color: BODY }}>
+              {area.description || `We work across ${area.name} from our base in ${settings.serviceBase}.`}
+            </p>
+          )}
+        </div>
+      </section>
+
+      {area.content && (
+        <section className="py-[60px]" style={{ background: "#fff" }}>
+          <div className="mx-auto max-w-[760px] px-5 sm:px-8 text-[16px] leading-[1.8] whitespace-pre-line" style={{ color: TEXT }}>
+            {area.content}
+          </div>
+        </section>
+      )}
+
+      <ServicesGrid services={services} heading={`What we do in ${area.name}`}/>
+      {local.length > 0 && <Reviews reviews={local} heading={`What ${area.name} customers say`}/>}
+      <EmergencyPanel settings={settings}/>
+      <ClosingCta settings={settings}/>
+    </>
   );
 }
 
@@ -502,7 +595,7 @@ function HomePage({ tenant, settings, services, areas, reviews }: any) {
       <ServicesGrid services={services} heading={settings?.servicesHeading} intro={settings?.servicesIntro}/>
       <EmergencyPanel settings={settings}/>
       <Reviews reviews={reviews}/>
-      <Areas areas={areas}/>
+      <Areas areas={areas} settings={settings} services={services}/>
       <ClosingCta settings={settings}/>
     </>
   );
@@ -532,6 +625,131 @@ function ServiceDetail({ tenant, settings }: any) {
       )}
       <EmergencyPanel settings={settings}/>
       <ClosingCta settings={settings}/>
+    </>
+  );
+}
+
+// ── Standard pages ───────────────────────────────────────────────────────────
+
+/** Shared page opener so every inner page starts the same way. */
+function PageHead({ eyebrow, title, intro }: { eyebrow?: string; title: string; intro?: string }) {
+  return (
+    <section className="py-[70px]" style={{ background: PALE_2 }}>
+      <div className="mx-auto max-w-[760px] px-5 sm:px-8">
+        {eyebrow && <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>{eyebrow.toUpperCase()}</p>}
+        <h1 className="font-bold" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>{title}</h1>
+        {intro && <p className="mt-5 text-[17px] leading-[1.75]" style={{ color: BODY }}>{intro}</p>}
+      </div>
+    </section>
+  );
+}
+
+function AboutPage({ tenant, settings, services, areas }: any) {
+  return (
+    <>
+      <PageSEO title={`About ${tenant?.name}`} description={settings?.aboutText || `About ${tenant?.name}.`}/>
+      <PageHead eyebrow={settings?.serviceBase ? `Local to ${settings.serviceBase}` : undefined} title={`About ${tenant?.name}`} intro={settings?.aboutText}/>
+      <TrustStrip settings={settings}/>
+      {settings?.aboutImageUrl && (
+        <section className="py-[56px]" style={{ background: "#fff" }}>
+          <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+            <img src={settings.aboutImageUrl} alt={tenant?.name} className="w-full rounded-[22px]"/>
+          </div>
+        </section>
+      )}
+      <ServicesGrid services={services} heading="What we do"/>
+      <Areas areas={areas} settings={settings} services={services}/>
+      <EmergencyPanel settings={settings}/>
+      <ClosingCta settings={settings}/>
+    </>
+  );
+}
+
+function ServicesPage({ tenant, settings, services }: any) {
+  return (
+    <>
+      <PageSEO title={`Services — ${tenant?.name}`} description={`Plumbing and heating services from ${tenant?.name}.`}/>
+      <PageHead
+        eyebrow="Services"
+        title="What we do"
+        intro={settings?.serviceArea ? `Boilers, heating, bathrooms and emergencies across ${settings.serviceArea}.` : undefined}
+      />
+      <ServicesGrid services={services}/>
+      <EmergencyPanel settings={settings}/>
+      <ClosingCta settings={settings}/>
+    </>
+  );
+}
+
+function ReviewsPage({ tenant, settings, reviews }: any) {
+  return (
+    <>
+      <PageSEO title={`Reviews — ${tenant?.name}`} description={`What customers say about ${tenant?.name}.`}/>
+      <PageHead eyebrow="Reviews" title="What our customers say"/>
+      {reviews?.length
+        ? <Reviews reviews={reviews} heading=""/>
+        : (
+          // No invented testimonials. An empty state that tells the truth beats
+          // filler that would also put false rating schema on the page.
+          <section className="py-[70px]" style={{ background: "#fff" }}>
+            <div className="mx-auto max-w-[760px] px-5 sm:px-8">
+              <p className="text-[16px] leading-[1.8]" style={{ color: BODY }}>
+                We're collecting reviews from recent customers and will publish them here as they come in.
+                {settings?.phone ? " In the meantime, call and ask us for references — we're happy to give them." : ""}
+              </p>
+            </div>
+          </section>
+        )}
+      <ClosingCta settings={settings}/>
+    </>
+  );
+}
+
+function ContactPage({ tenantSlug, tenant, settings }: any) {
+  const phone = settings?.phone;
+  const rows = [
+    phone && { label: "Phone", value: phone, href: telHref(phone) },
+    settings?.email && { label: "Email", value: settings.email, href: `mailto:${settings.email}` },
+    settings?.address && { label: "Address", value: settings.address },
+    settings?.city && !settings?.address && { label: "Area", value: settings.city },
+  ].filter(Boolean) as Array<{ label: string; value: string; href?: string }>;
+
+  return (
+    <>
+      <PageSEO title={`Contact — ${tenant?.name}`} description={`Get in touch with ${tenant?.name}.`}/>
+      <PageHead eyebrow="Contact" title="Get in touch" intro="Tell us what's going on and we'll come back to you. If it's urgent, call — you'll get a person, not a form."/>
+
+      {rows.length > 0 && (
+        <section className="py-[56px]" style={{ background: "#fff" }}>
+          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            {rows.map(r => (
+              <div key={r.label} className="rounded-[20px] border p-6" style={{ borderColor: BORDER }}>
+                <p className="text-[11px] font-bold tracking-[0.08em] uppercase" style={{ color: BLUE_CTRL }}>{r.label}</p>
+                {r.href
+                  ? <a href={r.href} className="bps-pipe mt-2 inline-block font-bold text-[17px]" style={{ color: TEXT }}>{r.value}</a>
+                  : <p className="mt-2 font-bold text-[17px] leading-[1.5]" style={{ color: TEXT }}>{r.value}</p>}
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <QuoteFormSection tenantSlug={tenantSlug} accent={BLUE_CTRL} panel={NAVY}/>
+      <EmergencyPanel settings={settings}/>
+    </>
+  );
+}
+
+function LegalPage({ tenant, title, body }: { tenant: any; title: string; body?: string }) {
+  return (
+    <>
+      <PageSEO title={`${title} — ${tenant?.name}`} description={`${title} for ${tenant?.name}.`} noindex/>
+      <PageHead title={title}/>
+      <section className="py-[56px]" style={{ background: "#fff" }}>
+        <div className="mx-auto max-w-[760px] px-5 sm:px-8 text-[15.5px] leading-[1.8] whitespace-pre-line" style={{ color: TEXT }}>
+          {body || "This page is being prepared."}
+        </div>
+      </section>
     </>
   );
 }
@@ -592,11 +810,15 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
             <main className="flex-1">
               <Switch>
                 <Route path="/"><HomePage {...shared}/></Route>
-                <Route path="/services"><ServicesGrid services={shared.services} heading="Our services"/></Route>
+                <Route path="/services"><ServicesPage {...shared}/></Route>
                 <Route path="/services/:slug"><ServiceDetail {...shared}/></Route>
-                <Route path="/reviews"><Reviews reviews={shared.reviews}/></Route>
+                <Route path="/reviews"><ReviewsPage {...shared}/></Route>
+                <Route path="/about"><AboutPage {...shared}/></Route>
+                <Route path="/areas/:slug"><AreaDetail {...shared}/></Route>
+                <Route path="/privacy"><LegalPage tenant={tenant} title="Privacy Policy" body={settings?.privacyContent}/></Route>
+                <Route path="/terms"><LegalPage tenant={tenant} title="Terms & Conditions" body={settings?.termsContent}/></Route>
                 <Route path="/get-a-quote"><QuoteFormSection tenantSlug={tenantSlug} accent={BLUE_CTRL} panel={NAVY}/></Route>
-                <Route path="/contact"><QuoteFormSection tenantSlug={tenantSlug} accent={BLUE_CTRL} panel={NAVY}/></Route>
+                <Route path="/contact"><ContactPage tenantSlug={tenantSlug} tenant={tenant} settings={settings}/></Route>
                 <Route path="/blog"><BlogIndexPage tenantSlug={tenantSlug} tenant={tenant} settings={settings}/></Route>
                 <Route path="/blog/:slug"><BlogArticlePage tenantSlug={tenantSlug} tenant={tenant} settings={settings} services={shared.services}/></Route>
                 <Route><HomePage {...shared}/></Route>
