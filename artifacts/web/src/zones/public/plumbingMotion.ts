@@ -31,7 +31,13 @@ const REVEAL_SELECTOR = [
 const REVEAL_THRESHOLD = 0.08;
 const REVEAL_ROOT_MARGIN = "0px 0px -25px 0px";
 
-export function usePlumbingMotion(): void {
+/**
+ * @param contentKey changes once the tenant's services/areas/reviews have loaded.
+ *   Without it the observer scans on mount, finds none of the cards (they render
+ *   after the API resolves) and never reveals anything — the page then looks
+ *   completely static, which is exactly the bug this parameter exists to fix.
+ */
+export function usePlumbingMotion(contentKey: number | string = 0): void {
   useEffect(() => {
     const motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -101,7 +107,7 @@ export function usePlumbingMotion(): void {
       observer?.disconnect();
       observer = null;
     };
-  }, []);
+  }, [contentKey]);
 }
 
 export default usePlumbingMotion;

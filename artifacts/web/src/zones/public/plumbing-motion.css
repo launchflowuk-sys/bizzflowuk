@@ -416,3 +416,217 @@
   .bps-quote{ transition:none }
   .bps-quote::after{ animation:none !important; opacity:0 }
 }
+
+/* ============================================================================
+   9. HEADER — deeper, with a live gradient rather than flat navy
+   ========================================================================== */
+
+.bps-header{
+  background:linear-gradient(120deg, #0A1A2B 0%, var(--bps-navy) 42%, #14304A 100%);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+/* ============================================================================
+   10. MOBILE DRAWER — the showpiece
+   ----------------------------------------------------------------------------
+   Full-height panel from the right, blurred scrim, links flying in on a stagger,
+   and an exit animation that actually plays before unmount. This is the first
+   thing anyone does on a phone, so it gets the most attention, not the least.
+   ========================================================================== */
+
+/* hamburger to X, morphed rather than swapped */
+.bps-burger{
+  position:relative;
+  width:46px; height:46px;
+  border-radius:13px;
+  background:rgba(255,255,255,.1);
+  border:1px solid rgba(255,255,255,.14);
+  display:inline-flex; align-items:center; justify-content:center;
+  flex-direction:column; gap:5px;
+  cursor:pointer;
+}
+.bps-burger span{
+  display:block; width:19px; height:2px; border-radius:2px; background:#fff;
+  transition:transform 280ms var(--bps-ease-settle), opacity 180ms ease-out, width 280ms var(--bps-ease-settle);
+}
+.bps-burger span:nth-child(3){ width:13px; align-self:flex-start; margin-left:13px }
+.bps-burger:hover span:nth-child(3){ width:19px; margin-left:0 }
+.bps-burger.is-open span:nth-child(1){ transform:translateY(7px) rotate(45deg) }
+.bps-burger.is-open span:nth-child(2){ opacity:0; transform:scaleX(.3) }
+.bps-burger.is-open span:nth-child(3){ width:19px; margin-left:0; transform:translateY(-7px) rotate(-45deg) }
+
+.bps-drawer-root{ position:fixed; inset:0; z-index:90 }
+
+.bps-drawer-scrim{
+  position:absolute; inset:0;
+  background:rgba(6,16,27,.62);
+  backdrop-filter:blur(7px);
+  -webkit-backdrop-filter:blur(7px);
+  border:0; padding:0; cursor:pointer;
+  animation:bpsScrimIn 260ms ease-out both;
+}
+@keyframes bpsScrimIn{ from{ opacity:0 } to{ opacity:1 } }
+
+.bps-drawer{
+  position:absolute; top:0; right:0; bottom:0;
+  width:min(88vw, 400px);
+  display:flex; flex-direction:column;
+  padding:20px 22px calc(26px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(120% 60% at 100% 0%, rgba(53,186,242,.20), transparent 60%),
+    linear-gradient(170deg, #12293F 0%, var(--bps-navy) 55%, #0A1826 100%);
+  border-left:1px solid rgba(255,255,255,.1);
+  box-shadow:-24px 0 60px -30px rgba(0,0,0,.9);
+  overflow-y:auto;
+  animation:bpsDrawerIn 340ms var(--bps-ease-settle) both;
+}
+@keyframes bpsDrawerIn{
+  from{ transform:translateX(100%) }
+  to  { transform:none }
+}
+
+.bps-drawer-root.is-closing .bps-drawer{ animation:bpsDrawerOut 250ms ease-in both }
+.bps-drawer-root.is-closing .bps-drawer-scrim{ animation:bpsScrimOut 240ms ease-in both }
+@keyframes bpsDrawerOut{ to{ transform:translateX(100%) } }
+@keyframes bpsScrimOut{ to{ opacity:0 } }
+
+.bps-drawer-head{
+  display:flex; align-items:center; justify-content:space-between;
+  padding-bottom:20px; margin-bottom:6px;
+  border-bottom:1px solid rgba(255,255,255,.1);
+}
+.bps-drawer-x{
+  width:44px; height:44px; border-radius:13px; cursor:pointer;
+  background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.14);
+  display:inline-flex; align-items:center; justify-content:center;
+}
+
+.bps-drawer-links{ display:flex; flex-direction:column; padding-top:8px }
+
+/* Each link flies in on its own delay. The stagger is what makes it feel built
+   rather than toggled. */
+.bps-drawer-link,
+.bps-drawer-foot{
+  animation:bpsDrawerItem 420ms var(--bps-ease-settle) both;
+  animation-delay:calc(140ms + var(--i) * 52ms);
+}
+@keyframes bpsDrawerItem{
+  from{ opacity:0; transform:translateX(26px) }
+  to  { opacity:1; transform:none }
+}
+.bps-drawer-root.is-closing .bps-drawer-link,
+.bps-drawer-root.is-closing .bps-drawer-foot{ animation:none; opacity:1; transform:none }
+
+.bps-drawer-link{
+  display:flex; align-items:center; justify-content:space-between;
+  width:100%; min-height:58px; padding:6px 4px;
+  color:rgba(255,255,255,.92);
+  font-size:20px; font-weight:600; letter-spacing:-0.02em;
+  text-align:left; cursor:pointer;
+  border:0; background:none;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  transition:color 200ms ease-out, padding-left 240ms var(--bps-ease-settle);
+}
+.bps-drawer-link svg{ opacity:.4; transition:opacity 200ms ease-out, transform 240ms var(--bps-ease-settle) }
+.bps-drawer-link:hover,
+.bps-drawer-link:active{ color:#fff; padding-left:10px }
+.bps-drawer-link:hover svg,
+.bps-drawer-link:active svg{ opacity:1; transform:translate(2px,-2px); color:var(--bps-blue-bright) }
+
+.bps-drawer-foot{ margin-top:auto; padding-top:22px; display:flex; flex-direction:column; gap:12px }
+
+.bps-drawer-call{
+  display:flex; align-items:center; gap:13px;
+  min-height:58px; padding:0 18px; border-radius:16px;
+  color:#fff; text-decoration:none;
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.16);
+}
+.bps-drawer-quote{
+  display:inline-flex; align-items:center; justify-content:center; gap:9px;
+  min-height:58px; border-radius:16px; cursor:pointer; border:0;
+  background:linear-gradient(100deg, var(--bps-flame), #FF9E46);
+  color:#fff; font-size:17px; font-weight:700; letter-spacing:-0.01em;
+  box-shadow:0 12px 26px -14px rgba(240,136,45,.95);
+}
+
+/* ============================================================================
+   11. SERVICE CARDS — brand colour, not eight identical white boxes
+   ========================================================================== */
+
+.service-card{
+  background:#fff;
+  border:1px solid var(--bps-border);
+  text-decoration:none;
+  transition:transform 320ms var(--bps-ease-settle), box-shadow 320ms ease-out, border-color 320ms ease-out;
+}
+
+/* The coloured tile is what separates one card from the next at a glance. Three
+   hues cycling by column, all from the brand family, never a random hue. */
+.service-tile{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:56px; height:56px; border-radius:17px;
+  background:linear-gradient(140deg, var(--bps-blue-bright), var(--bps-blue));
+  box-shadow:0 10px 20px -12px rgba(8,146,207,.9);
+  transition:transform 380ms var(--bps-ease-settle), box-shadow 380ms ease-out;
+}
+.service-card:nth-child(3n+2) .service-tile{
+  background:linear-gradient(140deg, #4FC5E8, var(--bps-control));
+  box-shadow:0 10px 20px -12px rgba(8,126,174,.9);
+}
+.service-card:nth-child(3n+3) .service-tile{
+  background:linear-gradient(140deg, var(--bps-ember), var(--bps-flame));
+  box-shadow:0 10px 20px -12px rgba(240,136,45,.9);
+}
+
+.service-more{ color:var(--bps-control); transition:gap 240ms var(--bps-ease-settle) }
+.service-more svg{ transition:transform 240ms var(--bps-ease-settle) }
+
+@media (hover:hover) and (pointer:fine){
+  .service-card:hover{
+    transform:translateY(-6px);
+    border-color:rgba(8,146,207,.42);
+    box-shadow:0 22px 44px -26px rgba(16,35,51,.55);
+  }
+  .service-card:hover .service-tile{ transform:scale(1.07) rotate(-4deg) }
+  .service-card:hover .service-more{ color:var(--bps-flame) }
+  .service-card:hover .service-more svg{ transform:translate(3px,-3px) }
+}
+
+/* ============================================================================
+   12. AREA CHIPS + REVIEW CARDS — small colour lifts
+   ========================================================================== */
+
+.area-links a{ transition:transform 260ms var(--bps-ease-settle), border-color 260ms ease-out, box-shadow 260ms ease-out }
+@media (hover:hover) and (pointer:fine){
+  .area-links a:hover{
+    transform:translateY(-3px);
+    border-color:rgba(8,146,207,.5);
+    box-shadow:0 10px 20px -14px rgba(16,35,51,.6);
+  }
+}
+
+.review-grid article{ transition:transform 300ms var(--bps-ease-settle), box-shadow 300ms ease-out }
+@media (hover:hover) and (pointer:fine){
+  .review-grid article:hover{ transform:translateY(-4px); box-shadow:0 18px 36px -24px rgba(16,35,51,.5) }
+}
+
+/* ============================================================================
+   13. SCROLL REVEAL — bigger travel so it actually reads as motion
+   ----------------------------------------------------------------------------
+   The earlier 22px rise was too polite to notice on a phone. Cards also stagger
+   across the row rather than all arriving together.
+   ========================================================================== */
+
+[data-reveal="pending"]{ opacity:0; transform:translateY(38px) scale(.985) }
+[data-reveal="visible"]{
+  opacity:1; transform:none;
+  transition:opacity 700ms ease-out, transform 760ms var(--bps-ease-settle);
+}
+.service-card:nth-child(3n+2)[data-reveal="visible"]{ transition-delay:90ms }
+.service-card:nth-child(3n+3)[data-reveal="visible"]{ transition-delay:180ms }
+
+@media (prefers-reduced-motion:reduce){
+  .bps-drawer, .bps-drawer-scrim, .bps-drawer-link, .bps-drawer-foot{ animation:none !important; opacity:1 !important; transform:none !important }
+  .bps-burger span, .service-card, .service-tile, .area-links a, .review-grid article{ transition:none !important }
+}

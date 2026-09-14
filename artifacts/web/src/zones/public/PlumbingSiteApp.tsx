@@ -104,68 +104,111 @@ function QuoteButton({ children = "Get a free quote", className = "" }: { childr
 
 function Header({ tenant, settings }: { tenant: any; settings: any }) {
   const [open, setOpen] = useState(false);
+  const [closing, setClosing] = useState(false);
   const [, navigate] = useLocation();
   const base = useSiteBase();
   const phone = settings?.phone;
 
-  // Close on navigation — a sheet left open over the new page is the classic
-  // mobile-menu bug and it reads as broken rather than fast.
+  // Play the exit animation before unmounting, otherwise the drawer vanishes
+  // instantly and all the care in the open animation is thrown away on close.
+  function closeDrawer(then?: () => void) {
+    setClosing(true);
+    window.setTimeout(() => { setOpen(false); setClosing(false); then?.(); }, 260);
+  }
+
   useEffect(() => {
-    function onKey(e: KeyboardEvent) { if (e.key === "Escape") setOpen(false); }
-    if (open) document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    function onKey(e: KeyboardEvent) { if (e.key === "Escape") closeDrawer(); }
+    if (open) {
+      document.addEventListener("keydown", onKey);
+      document.body.style.overflow = "hidden";   // no scrolling the page behind the drawer
+    }
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
   }, [open]);
 
   return (
-    <header className="sticky top-0 z-50" style={{ background: NAVY }}>
-      <div className="mx-auto max-w-[1300px] px-5 sm:px-8 h-[74px] flex items-center justify-between gap-6">
+    <header className="bps-header sticky top-0 z-50">
+      <div className="mx-auto max-w-[1300px] px-5 sm:px-8 h-[86px] lg:h-[96px] flex items-center justify-between gap-6">
         <Link href="/" className="flex items-center gap-3 shrink-0">
           {settings?.logoUrl
-            ? <img src={settings.logoUrl} alt={tenant?.name || "Home"} className="h-9 w-auto"/>
-            : <span className="text-white font-bold text-[18px] tracking-[-0.02em]">{tenant?.name}</span>}
+            ? <img src={settings.logoUrl} alt={tenant?.name || "Home"} className="h-[52px] lg:h-[62px] w-auto"/>
+            : <span className="text-white font-bold text-[22px] tracking-[-0.02em]">{tenant?.name}</span>}
         </Link>
 
         <nav className="hidden lg:flex items-center gap-7" aria-label="Main">
           {NAV_LINKS.map(l => (
-            <Link key={l.href} href={l.href} className="bps-pipe text-[14.5px] font-medium text-white/85 hover:text-white transition-colors">{l.label}</Link>
+            <Link key={l.href} href={l.href} className="bps-pipe text-[15px] font-medium text-white/85 hover:text-white transition-colors">{l.label}</Link>
           ))}
         </nav>
 
         <div className="flex items-center gap-4">
           {phone && (
-            <a href={telHref(phone)} className="hidden md:flex flex-col items-end leading-tight group">
-              <span className="text-white font-semibold text-[15px] tracking-[-0.01em]">{phone}</span>
+            <a href={telHref(phone)} className="hidden md:flex flex-col items-end leading-tight">
+              <span className="text-white font-bold text-[17px] tracking-[-0.01em]">{phone}</span>
               <span className="text-white/55 text-[11.5px]">Call us direct</span>
             </a>
           )}
           <QuoteButton className="hidden sm:inline-flex"/>
+
           <button
             type="button"
-            className="lg:hidden inline-flex items-center justify-center h-11 w-11 rounded-[12px] text-white"
-            style={{ background: "rgba(255,255,255,.1)" }}
+            className={`bps-burger lg:hidden ${open ? "is-open" : ""}`}
             aria-expanded={open}
             aria-label={open ? "Close menu" : "Open menu"}
-            onClick={() => setOpen(v => !v)}
+            onClick={() => (open ? closeDrawer() : setOpen(true))}
           >
-            <Icon d={open ? "M18 6L6 18M6 6l12 12" : "M4 7h16M4 12h16M4 17h16"} className="w-5 h-5" color="#fff" strokeWidth={2}/>
+            <span/><span/><span/>
           </button>
         </div>
       </div>
 
       {open && (
-        <div className="lg:hidden border-t" style={{ background: NAVY, borderColor: "rgba(255,255,255,.12)" }}>
-          <nav className="mx-auto max-w-[1300px] px-5 py-4 flex flex-col" aria-label="Mobile">
-            {NAV_LINKS.map(l => (
+        <div className={`bps-drawer-root lg:hidden ${closing ? "is-closing" : ""}`}>
+          <button type="button" className="bps-drawer-scrim" aria-label="Close menu" onClick={() => closeDrawer()}/>
+
+          <nav className="bps-drawer" aria-label="Mobile">
+            <div className="bps-drawer-head">
+              {settings?.logoUrl && <img src={settings.logoUrl} alt="" className="h-[46px] w-auto"/>}
+              <button type="button" className="bps-drawer-x" aria-label="Close menu" onClick={() => closeDrawer()}>
+                <Icon d="M18 6L6 18M6 6l12 12" className="w-5 h-5" color="#fff" strokeWidth={2.2}/>
+              </button>
+            </div>
+
+            <div className="bps-drawer-links">
+              {NAV_LINKS.map((l, i) => (
+                <button
+                  key={l.href}
+                  type="button"
+                  className="bps-drawer-link"
+                  style={{ ["--i" as any]: i }}
+                  onClick={() => closeDrawer(() => navigate(`${base}${l.href}`))}
+                >
+                  <span>{l.label}</span>
+                  <ArrowUpRight className="w-4 h-4"/>
+                </button>
+              ))}
+            </div>
+
+            <div className="bps-drawer-foot" style={{ ["--i" as any]: NAV_LINKS.length }}>
+              {phone && (
+                <a href={telHref(phone)} className="bps-drawer-call">
+                  <PhoneIcon color="#fff" className="w-5 h-5"/>
+                  <span className="flex flex-col leading-tight text-left">
+                    <span className="text-[11.5px] font-normal text-white/60">Need us now?</span>
+                    <span className="text-[17px] font-bold">{phone}</span>
+                  </span>
+                </a>
+              )}
               <button
-                key={l.href}
                 type="button"
-                className="text-left text-white/90 text-[16px] py-3 border-b"
-                style={{ borderColor: "rgba(255,255,255,.08)" }}
-                onClick={() => { setOpen(false); navigate(`${base}${l.href}`); }}
-              >{l.label}</button>
-            ))}
-            {phone && <a href={telHref(phone)} className="mt-4 inline-flex items-center gap-2 h-12 px-5 rounded-[14px] justify-center font-semibold text-white" style={{ background: "rgba(255,255,255,.12)" }}><PhoneIcon color="#fff"/>{phone}</a>}
-            <QuoteButton className="mt-3 justify-center"/>
+                className="bps-drawer-quote"
+                onClick={() => closeDrawer(() => navigate(`${base}/get-a-quote`))}
+              >
+                Get a free quote <ArrowUpRight/>
+              </button>
+            </div>
           </nav>
         </div>
       )}
@@ -268,19 +311,23 @@ function ServicesGrid({ services, heading, intro }: { services: any[]; heading?:
         </div>
 
         <div className="mt-11 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {services.map((s: any) => (
+          {services.map((s: any, i: number) => (
             <Link
               key={s.slug}
               href={`/services/${s.slug}`}
-              className="service-card group block rounded-[20px] border p-6 transition-transform"
-              style={{ borderColor: BORDER, background: "#fff" }}
+              className="service-card group block rounded-[22px] p-6"
+              style={{ ["--i" as any]: i % 3 }}
             >
-              <ServiceIcon slug={s.slug}/>
-              <h3 className="mt-5 font-bold text-[18px]" style={{ color: TEXT, letterSpacing: "-0.02em" }}>{s.name}</h3>
+              {/* Brand-coloured icon tile. A bare line icon on white was the thing
+                  that made every card read the same at a glance. */}
+              <span className="service-tile">
+                <ServiceIcon slug={s.slug} className="w-7 h-7" color="#fff"/>
+              </span>
+              <h3 className="mt-5 font-bold text-[19px]" style={{ color: TEXT, letterSpacing: "-0.025em" }}>{s.name}</h3>
               {(s.tagline || s.description) && (
                 <p className="mt-2 text-[14.5px] leading-[1.7]" style={{ color: BODY }}>{s.tagline || s.description}</p>
               )}
-              <span className="mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-semibold" style={{ color: BLUE_CTRL }}>
+              <span className="service-more mt-5 inline-flex items-center gap-1.5 text-[13.5px] font-bold">
                 Find out more <ArrowUpRight className="w-3.5 h-3.5"/>
               </span>
             </Link>
@@ -525,7 +572,8 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
   const tenant = (site as any)?.tenant;
   const settings = (site as any)?.settings;
 
-  usePlumbingMotion();
+  // Re-scan once the tenant content has arrived, otherwise the observer finds no cards.
+  usePlumbingMotion((services?.length ?? 0) + (areas?.length ?? 0) + (reviews?.length ?? 0));
 
   useEffect(() => {
     if (settings?.googleAnalyticsId) initGoogleTag(settings.googleAnalyticsId);
