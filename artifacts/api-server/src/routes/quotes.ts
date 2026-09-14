@@ -5,7 +5,7 @@ import { quotesTable, quoteItemsTable, projectsTable, leadsTable, customersTable
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
-import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { sanitizeUpdate, coerceTimestamps } from "../lib/sanitizeUpdate";
 import { ensureCustomerForQuote } from "../lib/customerSync";
 import { deleteQuotesDeep } from "../lib/cascadeDelete";
 
@@ -96,7 +96,7 @@ router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
     const before = await db.select().from(quotesTable)
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
       .limit(1);
-    const q = await db.update(quotesTable).set(sanitizeUpdate(req.body))
+    const q = await db.update(quotesTable).set(sanitizeUpdate(coerceTimestamps(req.body)))
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
       .returning();
     if (!q.length) { res.status(404).json({ error: "Not found" }); return; }
@@ -203,7 +203,7 @@ router.patch("/quotes/:id/items/:itemId", requireTenantAccess, async (req, res) 
 
     // `total` is derived, never taken from the client: the quote subtotal is the sum of these,
     // so a caller that edits quantity but forgets total would silently misprice the whole quote.
-    const patch = sanitizeUpdate(req.body) as Record<string, unknown>;
+    const patch = sanitizeUpdate(coerceTimestamps(req.body)) as Record<string, unknown>;
     const quantity = patch.quantity ?? existing[0].quantity;
     const unitPrice = patch.unitPrice ?? existing[0].unitPrice;
     patch.total = (Number(quantity) * Number(unitPrice)).toFixed(2);

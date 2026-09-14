@@ -72,6 +72,23 @@ async function nextReference(tenantId: number): Promise<string> {
   return `${base}-${String(max + 1).padStart(4, "0")}`;
 }
 
+/**
+ * The tenant's registration is the authority on VAT — nothing else can override
+ * it. A quote carries vatRate 20 by schema default, so before this a business
+ * that is not VAT registered got 20% added to an invoice converted from a quote:
+ * VAT it cannot legally charge, on a document going to a customer. Caught by the
+ * full-flow smoke test.
+ */
+export function resolveVatRate(
+  tenantRate: string | null,
+  requested: string | number | null | undefined,
+): string | null {
+  if (tenantRate === null) return null;                 // not registered: never VAT
+  if (requested === undefined) return tenantRate;        // not specified: tenant default
+  if (requested === null || requested === "") return null; // explicitly none
+  return String(requested);
+}
+
 /** Tenant VAT and CIS settings. Absent means not registered, so no VAT is charged. */
 async function taxSettings(tenantId: number): Promise<{ vatRate: string | null; cisRate: string | null }> {
   const [s] = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
@@ -110,9 +127,15 @@ async function recalc(invoiceId: number, tenantId: number) {
     .where(eq(invoiceItemsTable.invoiceId, invoiceId)).orderBy(invoiceItemsTable.sortOrder);
 
   const tax = await taxSettings(tenantId);
+  const effectiveVat = resolveVatRate(tax.vatRate, inv.vatRate ?? undefined);
   const totals = computeTotals(
-    items.map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, vatRate: i.vatRate })),
-    inv.vatRate ?? tax.vatRate,
+    // Per-line rates are dropped entirely when the tenant is not registered —
+    // otherwise a stale line rate would reintroduce VAT on the next edit.
+    items.map(i => ({
+      description: i.description, quantity: i.quantity, unitPrice: i.unitPrice,
+      vatRate: effectiveVat === null ? null : i.vatRate,
+    })),
+    effectiveVat,
     tax.cisRate,
   );
 
@@ -186,7 +209,7 @@ router.post("/invoices", requireTenantAccess, async (req: any, res) => {
     const tenantId = tid(req);
 
     const tax = await taxSettings(tenantId);
-    const effectiveVat = input.vatRate === undefined ? tax.vatRate : input.vatRate;
+    const effectiveVat = resolveVatRate(tax.vatRate, input.vatRate);
     const totals = computeTotals(input.items ?? [], effectiveVat, tax.cisRate);
 
     const issuedOn = input.issuedOn ?? new Date().toISOString().slice(0, 10);
@@ -206,7 +229,7 @@ router.post("/invoices", requireTenantAccess, async (req: any, res) => {
       status: "draft",
       issuedOn,
       dueOn,
-      vatRate: effectiveVat === null || effectiveVat === undefined ? null : String(effectiveVat),
+      vatRate: effectiveVat,
       subtotal: totals.subtotal,
       vatAmount: totals.vatAmount,
       cisDeduction: totals.cisDeduction,
@@ -259,7 +282,8 @@ router.post("/quotes/:id/convert-invoice", requireTenantAccess, async (req: any,
       .where(eq(quoteItemsTable.quoteId, quoteId)).orderBy(quoteItemsTable.sortOrder);
 
     const tax = await taxSettings(tenantId);
-    const effectiveVat = quote.vatRate ?? tax.vatRate;
+    // The quote's rate only counts if the tenant is actually VAT registered.
+    const effectiveVat = resolveVatRate(tax.vatRate, quote.vatRate ?? undefined);
     const totals = computeTotals(
       qItems.map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice })),
       effectiveVat, tax.cisRate,
@@ -276,7 +300,7 @@ router.post("/quotes/:id/convert-invoice", requireTenantAccess, async (req: any,
       status: "draft",
       issuedOn,
       dueOn: due.toISOString().slice(0, 10),
-      vatRate: effectiveVat === null ? null : String(effectiveVat),
+      vatRate: effectiveVat,
       subtotal: totals.subtotal,
       vatAmount: totals.vatAmount,
       cisDeduction: totals.cisDeduction,
@@ -330,7 +354,11 @@ router.patch("/invoices/:id", requireTenantAccess, async (req: any, res) => {
     // deleted line survives into a sent invoice.
     if (input.items) {
       const tax = await taxSettings(tenantId);
-      const totals = computeTotals(input.items, input.vatRate === undefined ? (inv.vatRate ?? tax.vatRate) : input.vatRate, tax.cisRate);
+      const lineVat = resolveVatRate(tax.vatRate, input.vatRate === undefined ? (inv.vatRate ?? undefined) : input.vatRate);
+      const totals = computeTotals(
+        input.items.map(i => ({ ...i, vatRate: lineVat === null ? null : i.vatRate })),
+        lineVat, tax.cisRate,
+      );
       await db.delete(invoiceItemsTable).where(eq(invoiceItemsTable.invoiceId, id));
       if (totals.lines.length) {
         await db.insert(invoiceItemsTable).values(totals.lines.map((l, i) => ({

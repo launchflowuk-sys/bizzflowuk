@@ -4,7 +4,7 @@ import { projectsTable, projectUpdatesTable, customersTable } from "@workspace/d
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
-import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { sanitizeUpdate, coerceTimestamps } from "../lib/sanitizeUpdate";
 import { deleteProjectsDeep } from "../lib/cascadeDelete";
 
 const router = Router();
@@ -40,7 +40,7 @@ router.patch("/projects/:id", requireTenantAccess, async (req, res) => {
     const before = await db.select().from(projectsTable)
       .where(and(eq(projectsTable.id, Number(req.params.id)), tenantFilter(req, projectsTable.tenantId)))
       .limit(1);
-    const updateData: any = sanitizeUpdate(req.body);
+    const updateData: any = sanitizeUpdate(coerceTimestamps(req.body));
     if (req.body.status === "Completed" && !before[0]?.completedAt) {
       updateData.completedAt = new Date();
     }

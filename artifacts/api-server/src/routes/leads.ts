@@ -4,7 +4,7 @@ import { leadsTable, leadNotesTable, quotesTable, quoteItemsTable, projectsTable
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
-import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { sanitizeUpdate, coerceTimestamps } from "../lib/sanitizeUpdate";
 import { buildRelativeObjectUrl } from "../lib/objectStorage";
 import { deleteLeadsDeep } from "../lib/cascadeDelete";
 import { nextQuoteReference } from "./quotes";
@@ -89,7 +89,7 @@ router.patch("/leads/:id", requireTenantAccess, async (req, res) => {
     const before = await db.select().from(leadsTable)
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .limit(1);
-    const l = await db.update(leadsTable).set(sanitizeUpdate(req.body))
+    const l = await db.update(leadsTable).set(sanitizeUpdate(coerceTimestamps(req.body)))
       .where(and(eq(leadsTable.id, Number(req.params.id)), tenantFilter(req, leadsTable.tenantId)))
       .returning();
     if (!l.length) { res.status(404).json({ error: "Not found" }); return; }
