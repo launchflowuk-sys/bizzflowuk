@@ -71,7 +71,7 @@ export async function seedBpsPlumbingIfMissing(): Promise<void> {
     tenantId: tenant.id,
     logoUrl: "/bps-logo.svg",
     primaryColor: BRAND_BLUE,
-    heroImageUrl: "/bps-team-van-hero.png",
+    heroImageUrl: "/bps-team-van-hero.webp",
     aboutText: "Local plumbing and heating engineers working across Grays, Thurrock and south Essex. Boilers, heating, bathrooms and emergencies — handled by the same two people from first call to final check.",
     phone: "07866 149 276",
     email: "info@bpsplumbingandheating.com",

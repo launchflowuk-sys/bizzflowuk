@@ -190,6 +190,13 @@
       "when": 1786800000000,
       "tag": "0026_user_invites",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1786900000000,
+      "tag": "0027_bps_hero_webp",
+      "breakpoints": true
     }
   ]
 }
