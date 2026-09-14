@@ -87,9 +87,13 @@ function telHref(phone?: string | null): string {
   return `tel:${digits}`;
 }
 
+/**
+ * The surrounding <Router base={siteBase}> already resolves hrefs against the
+ * base, so hrefs here stay plain. Prepending the base as well produced
+ * /site/bps/site/bps/about and every link silently went nowhere.
+ */
 function Link({ href, children, className, ...rest }: any) {
-  const base = useSiteBase();
-  return <WouterLink href={`${base}${href}`} className={className} {...rest}>{children}</WouterLink>;
+  return <WouterLink href={href} className={className} {...rest}>{children}</WouterLink>;
 }
 
 /** Orange primary action. 48px tall so it agrees with the fields beside it. */
@@ -183,7 +187,7 @@ function Header({ tenant, settings }: { tenant: any; settings: any }) {
                   type="button"
                   className="bps-drawer-link"
                   style={{ ["--i" as any]: i }}
-                  onClick={() => closeDrawer(() => navigate(`${base}${l.href}`))}
+                  onClick={() => closeDrawer(() => navigate(l.href))}
                 >
                   <span>{l.label}</span>
                   <ArrowUpRight className="w-4 h-4"/>
@@ -204,7 +208,7 @@ function Header({ tenant, settings }: { tenant: any; settings: any }) {
               <button
                 type="button"
                 className="bps-drawer-quote"
-                onClick={() => closeDrawer(() => navigate(`${base}/get-a-quote`))}
+                onClick={() => closeDrawer(() => navigate("/get-a-quote"))}
               >
                 Get a free quote <ArrowUpRight/>
               </button>
