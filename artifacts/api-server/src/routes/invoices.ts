@@ -53,7 +53,9 @@ const paymentSchema = z.object({
 async function nextReference(tenantId: number): Promise<string> {
   const [settings] = await db.select({ prefix: tenantSettingsTable.quoteRefPrefix })
     .from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
-  const base = `${(settings?.prefix || "INV").toUpperCase()}-INV`;
+  // A tenant with no prefix set gets a plain "INV-0001" rather than "INV-INV-0001".
+  const prefix = settings?.prefix ? settings.prefix.toUpperCase() : null;
+  const base = prefix ? `${prefix}-INV` : "INV";
 
   const rows = await db.select({ reference: invoicesTable.reference })
     .from(invoicesTable)
