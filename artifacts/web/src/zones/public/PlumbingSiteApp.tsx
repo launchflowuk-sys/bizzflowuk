@@ -620,49 +620,132 @@ function Areas({ areas, settings, services }: { areas: any[]; settings: any; ser
 
 // ── Area detail ──────────────────────────────────────────────────────────────
 
-function AreaDetail({ tenant, settings, services, reviews }: any) {
+function AreaDetail({ tenant, settings, services, reviews, areas }: any) {
   const { slug } = useParams<{ slug: string }>();
   const { data } = useGetPublicArea(tenant?.slug, slug);
   const area = data as any;
+  const phone = settings?.phone;
+
   if (!area) return null;
 
-  // Reviews left by customers in this town, when we have any. Real ones only —
-  // the section simply doesn't appear otherwise.
+  const hero = area.heroImageUrl || settings?.heroImageUrl;
+
+  // Reviews left by customers in this town, where we have any. Real ones only —
+  // the section simply does not appear otherwise.
   const local = (reviews || []).filter((r: any) =>
     r.reviewerLocation && String(r.reviewerLocation).toLowerCase().includes(String(area.name).toLowerCase()));
+
+  const nearby = (areas || []).filter((a: any) => a.slug !== area.slug);
 
   return (
     <>
       <PageSEO
         title={area.seoTitle || `Plumbers in ${area.name} — ${tenant?.name}`}
-        description={area.seoDescription || area.description || `Plumbing and heating services in ${area.name}${area.county ? `, ${area.county}` : ""}.`}
+        description={area.seoDescription || area.description || `Plumbing and heating in ${area.name}.`}
+        image={hero}
       />
-      <section className="py-[70px]" style={{ background: PALE_2 }}>
-        <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
-          <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_CTRL }}>
-            {(area.county || "SERVICE AREA").toUpperCase()}
-          </p>
-          <h1 className="font-bold max-w-[820px]" style={{ color: TEXT, fontSize: "clamp(32px,4.4vw,52px)", letterSpacing: "-0.04em", lineHeight: 1.1 }}>
-            Plumbing &amp; heating in {area.name}
-          </h1>
-          {(area.description || settings?.serviceBase) && (
-            <p className="mt-5 text-[17px] leading-[1.75] max-w-[680px]" style={{ color: BODY }}>
-              {area.description || `We work across ${area.name} from our base in ${settings.serviceBase}.`}
+      <JsonLd data={{
+        "@context": "https://schema.org",
+        "@type": "Plumber",
+        name: tenant?.name,
+        telephone: settings?.phone,
+        areaServed: { "@type": "City", name: area.name },
+      }}/>
+
+      <section className="bps-inner-hero relative isolate overflow-hidden" style={{ background: NAVY }} aria-labelledby="area-heading">
+        {hero && <img className="bps-hero-photo absolute inset-0 -z-20 h-full w-full object-cover" src={hero} alt="" fetchPriority="high" decoding="async"/>}
+        <div className="bps-hero-shade absolute inset-0 -z-10" aria-hidden="true"/>
+
+        <div className="mx-auto max-w-[1300px] px-5 sm:px-8 py-[64px] lg:py-[92px]">
+          <nav className="bps-rise flex items-center gap-2 text-[13px] text-white/60 mb-5" aria-label="Breadcrumb" style={{ animationDelay: "40ms" }}>
+            <Link href="/" className="bps-pipe hover:text-white">Home</Link>
+            <span aria-hidden="true">/</span>
+            <span className="text-white/85">{area.name}</span>
+          </nav>
+
+          <div className="max-w-[680px]">
+            <p className="bps-rise text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_BRIGHT, animationDelay: "80ms" }}>
+              {(area.county || "SERVICE AREA").toUpperCase()}
             </p>
-          )}
+            <h1 id="area-heading" className="bps-rise font-bold text-white" style={{ fontSize: "clamp(34px,5vw,58px)", lineHeight: 1.07, letterSpacing: "-0.045em", animationDelay: "130ms" }}>
+              Plumbers in {area.name}
+            </h1>
+            {area.description && (
+              <p className="bps-rise mt-5 text-[18px] leading-[1.65] text-white/85" style={{ animationDelay: "220ms" }}>
+                {area.description}
+              </p>
+            )}
+            <div className="bps-rise mt-8 flex flex-wrap items-center gap-4" style={{ animationDelay: "310ms" }}>
+              <QuoteButton>Get a free quote</QuoteButton>
+              {phone && (
+                <a href={telHref(phone)} className="bps-drop inline-flex items-center gap-3 h-12 px-5 rounded-[14px] border text-white font-semibold text-[15px]" style={{ borderColor: "rgba(255,255,255,.34)" }}>
+                  <PhoneIcon color="#fff"/>
+                  <span className="flex flex-col leading-tight text-left">
+                    <span className="text-[11.5px] font-normal text-white/60">Need us now?</span>
+                    <span>{phone}</span>
+                  </span>
+                </a>
+              )}
+            </div>
+          </div>
         </div>
       </section>
 
+      <TrustStrip settings={settings}/>
+
       {area.content && (
-        <section className="py-[60px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 text-[16px] leading-[1.8] whitespace-pre-line max-w-full" style={{ color: TEXT }}>
-            {area.content}
+        <section className="py-[72px]" style={{ background: "#fff" }}>
+          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid lg:grid-cols-[minmax(0,1fr)_340px] gap-12">
+            <div className="min-w-0">
+              {String(area.content).split("\n\n").map((para: string, i: number) => (
+                <p key={i} className="mb-5 text-[16.5px] leading-[1.85]" style={{ color: TEXT }}>{para}</p>
+              ))}
+            </div>
+
+            <aside className="lg:sticky lg:top-[112px] h-fit">
+              <div className="rounded-[22px] p-6" style={{ background: NAVY }}>
+                <h2 className="font-bold text-white text-[20px]" style={{ letterSpacing: "-0.025em" }}>
+                  Need someone in {area.name}?
+                </h2>
+                <p className="mt-2.5 text-[14.5px] leading-[1.7] text-white/70">
+                  Tell us what is going on and we will come back with a written price.
+                </p>
+                <QuoteButton className="mt-5 w-full justify-center"/>
+                {phone && (
+                  <a href={telHref(phone)} className="bps-drop mt-3 flex items-center justify-center gap-2.5 h-12 rounded-[14px] border text-white font-semibold text-[15px]" style={{ borderColor: "rgba(255,255,255,.3)" }}>
+                    <PhoneIcon color="#fff"/>{phone}
+                  </a>
+                )}
+              </div>
+            </aside>
           </div>
         </section>
       )}
 
-      <ServicesGrid services={services} heading={`What we do in ${area.name}`}/>
+      <ServicesGrid services={services} heading={`What we do in ${area.name}`}
+        intro={`Every one of our services is available in ${area.name}, including emergency call-outs.`}/>
+
       {local.length > 0 && <Reviews reviews={local} heading={`What ${area.name} customers say`}/>}
+
+      {nearby.length > 0 && (
+        <section className="py-[70px]" style={{ background: PALE_2 }}>
+          <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+            <h2 className="section-heading font-bold" style={{ color: TEXT, fontSize: "clamp(24px,2.8vw,32px)", letterSpacing: "-0.035em" }}>
+              We also cover
+            </h2>
+            <div className="area-links mt-7 flex flex-wrap gap-2.5">
+              {nearby.map((a: any) => (
+                <Link key={a.slug} href={`/areas/${a.slug}`}
+                  className="inline-flex items-center gap-2 h-11 px-4 rounded-[12px] border bg-white text-[14.5px] font-medium transition-transform"
+                  style={{ borderColor: BORDER, color: TEXT }}>
+                  <PinIcon/>{a.name}
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <EmergencyPanel settings={settings}/>
       <ClosingCta settings={settings}/>
     </>
