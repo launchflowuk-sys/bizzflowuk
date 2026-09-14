@@ -239,6 +239,13 @@
       "when": 1787500000000,
       "tag": "0033_automations",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1787600000000,
+      "tag": "0034_dispatch",
+      "breakpoints": true
     }
   ]
 }

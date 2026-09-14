@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
 import { customersTable } from "./customers";
+import { usersTable } from "./users";
 import { quotesTable } from "./quotes";
 
 export const projectStatusEnum = pgEnum("project_status", ["Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"]);
@@ -20,6 +21,10 @@ export const projectsTable = pgTable("projects", {
   postcode: text("postcode"),
   scheduledStart: timestamp("scheduled_start", { withTimezone: true }),
   scheduledEnd: timestamp("scheduled_end", { withTimezone: true }),
+  /** Dispatch. Points at users (staff), never at the team table (website content). */
+  assignedUserId: integer("assigned_user_id").references(() => usersTable.id),
+  allDay: boolean("all_day").notNull().default(false),
+  colour: text("colour"),
   completedAt: timestamp("completed_at", { withTimezone: true }),
   photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
   warrantyInfo: text("warranty_info"),
@@ -51,3 +56,20 @@ export type Project = typeof projectsTable.$inferSelect;
 export const insertProjectUpdateSchema = createInsertSchema(projectUpdatesTable).omit({ id: true, createdAt: true });
 export type InsertProjectUpdate = z.infer<typeof insertProjectUpdateSchema>;
 export type ProjectUpdate = typeof projectUpdatesTable.$inferSelect;
+
+/**
+ * Private, revocable calendar feed tokens.
+ *
+ * Kept off the users table so revoking a feed never touches the login record.
+ */
+export const calendarFeedsTable = pgTable("calendar_feeds", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull().references(() => tenantsTable.id),
+  userId: integer("user_id").notNull().references(() => usersTable.id),
+  token: text("token").notNull(),
+  label: text("label"),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  lastReadAt: timestamp("last_read_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+export type CalendarFeed = typeof calendarFeedsTable.$inferSelect;
