@@ -7,6 +7,7 @@ import { useGetMe, setAuthTokenGetter, setUnauthorizedHandler, setTenantIdGetter
 import { AuthProvider, useAuthCtx, getStoredToken, clearStoredToken, getActiveTenantId } from "@/lib/auth";
 
 import NotFound from "@/pages/not-found";
+import { BpsLoader } from "@/components/BpsLoader";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -164,12 +165,15 @@ const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
  * fallthrough is exactly how AMO Rendering's mark ended up spinning on every other
  * tenant's site.
  */
-function loaderTenant(): "amo-services" | "amo-rendering" | "kd-essex" | null {
+function loaderTenant(): "amo-services" | "amo-rendering" | "kd-essex" | "bps" | null {
   if (typeof window === "undefined") return null;
   const host = window.location.hostname;
   const path = window.location.pathname;
   const match = (domain: string, slug: string) => host.includes(domain) || path.startsWith(`/site/${slug}`);
 
+  // BPS was missing entirely: tenant #4 has a logo and was still getting the
+  // grey generic spinner on the site its owner is about to show customers.
+  if (match("bpsplumbingandheating", "bps")) return "bps";
   if (match("amoservices", "amo-services")) return "amo-services";
   if (match("kdessexlandscapes", "kd-essex")) return "kd-essex";
   if (match("amorendering", "amo-rendering")) return "amo-rendering";
@@ -193,6 +197,9 @@ function ZoneLoader() {
       </div>
     );
   }
+
+  // BPS — the blue mark holds still and only the flame moves.
+  if (tenant === "bps") return <BpsLoader />;
 
   if (tenant === "amo-services") {
     return (

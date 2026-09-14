@@ -491,3 +491,67 @@
 @media (prefers-reduced-motion: reduce) {
   [aria-hidden="false"] .kd-drawer-item { animation: none; }
 }
+
+
+/* ============================================================================
+   BPS LOADING MARK
+   ----------------------------------------------------------------------------
+   The blue body holds still and only the flame moves — it rises, narrows and
+   settles, which is what a gas flame actually does. Animating the whole logo
+   would just be a pulsing mark and would say nothing about the business.
+
+   `transform-box: fill-box` is the part that makes this work without measuring
+   anything against the 512-unit viewBox: it makes transform-origin relative to
+   the path's own bounding box, so the flame is anchored at its own base with
+   `50% 100%` and no coordinate is hardcoded.
+   ========================================================================== */
+
+.bps-loader {
+  opacity: 0;
+  transition: opacity 260ms ease-out;
+}
+.bps-loader[data-shown="true"] {
+  opacity: 1;
+}
+
+.bps-loader-flame {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: bps-flame 1500ms ease-in-out infinite;
+  /* A warm bloom that breathes with the flame rather than sitting behind it as
+     a static halo. */
+  filter: drop-shadow(0 0 6px rgba(240, 136, 45, 0.45));
+  will-change: transform, opacity;
+}
+
+@keyframes bps-flame {
+  0%,
+  100% {
+    transform: scaleY(1) scaleX(1) translateY(0);
+    opacity: 1;
+  }
+  22% {
+    transform: scaleY(1.1) scaleX(0.965) translateY(-1.5%);
+    opacity: 0.93;
+  }
+  47% {
+    transform: scaleY(0.955) scaleX(1.035) translateY(0.5%);
+    opacity: 1;
+  }
+  71% {
+    transform: scaleY(1.06) scaleX(0.985) translateY(-1%);
+    opacity: 0.95;
+  }
+}
+
+/* A flame that will not stop moving is the exact thing a vestibular trigger
+   warning is about. Anyone who has asked for less motion gets the finished
+   mark, lit, and nothing moving. */
+@media (prefers-reduced-motion: reduce) {
+  .bps-loader,
+  .bps-loader-flame {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1;
+  }
+}
