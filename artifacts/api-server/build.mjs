@@ -50,6 +50,11 @@ async function buildAll() {
       "oracledb",
       "mongodb-client-encryption",
       "nodemailer",
+      // pdfkit resolves its standard fonts through a "#standard-fonts" subpath
+      // import and reads the font files from inside its own package, so bundling
+      // it breaks font loading at runtime with "Cannot find module
+      // '#standard-fonts/Helvetica'". Same class of problem as nodemailer above.
+      "pdfkit",
       "handlebars",
       "knex",
       "typeorm",

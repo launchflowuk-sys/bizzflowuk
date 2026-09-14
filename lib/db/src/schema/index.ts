@@ -21,3 +21,4 @@ export * from "./team";
 export * from "./sent_emails";
 export * from "./page_render_cache";
 export * from "./user_invites";
+export * from "./certificates";

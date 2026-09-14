@@ -5,7 +5,14 @@ import { tenantsTable } from "./tenants";
 import { usersTable } from "./users";
 
 export const leadStatusEnum = pgEnum("lead_status", ["New", "Contacted", "Survey Booked", "Quote Sent", "Won", "Lost"]);
-export const leadSourceEnum = pgEnum("lead_source", ["Website", "Referral", "Google", "Facebook", "Instagram", "Other"]);
+/**
+ * Lead sources are plain strings, not a pg enum (migration 0030).
+ * Adding an enum value needs ALTER TYPE ... ADD VALUE, which cannot run inside a
+ * transaction on some Postgres versions and takes drizzle's whole migration
+ * batch down with it. This list is the UI's suggestions, not a constraint.
+ */
+export const LEAD_SOURCES = ["Website", "Referral", "Google", "Facebook", "Instagram", "Renewal", "Other"] as const;
+export type LeadSource = (typeof LEAD_SOURCES)[number];
 
 /** A single line the visitor picked in the public cost calculator, stored on the lead so
  *  "Convert to Quote" can pre-fill the quote's line items without any re-keying. */
@@ -68,7 +75,7 @@ export const leadsTable = pgTable("leads", {
   surveyCompletedAt: timestamp("survey_completed_at", { withTimezone: true }),
   surveyNotes: text("survey_notes"),
   status: leadStatusEnum("status").notNull().default("New"),
-  source: leadSourceEnum("source").default("Website"),
+  source: text("source").default("Website"),
   assignedToId: integer("assigned_to_id").references(() => usersTable.id),
   budget: text("budget"),
   notes: text("notes"),
