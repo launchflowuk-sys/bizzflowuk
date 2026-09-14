@@ -18,6 +18,14 @@ services:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL is required}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required}
       PRIVATE_UPLOAD_DIR: /data/uploads
+      # Public origin, used to build customer-facing links (payment pages, the
+      # private calendar feed URL). Falls back to bizzflowuk.com if unset.
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://bizzflowuk.com}
+      # Shared secret for the scheduled job endpoints under /internal/jobs/*.
+      # Optional on purpose: while it is unset those endpoints return 404, so a
+      # deploy without it is safe — the automations simply never sweep. Set it in
+      # Coolify and point a daily scheduled task at the automations job.
+      JOBS_SECRET: ${JOBS_SECRET:-}
       # Only used for the one-time platform-admin bootstrap (see seedFix.ts) —
       # safe to remove from the environment after first successful deploy.
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
