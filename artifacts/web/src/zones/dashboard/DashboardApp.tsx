@@ -1,6 +1,6 @@
 import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
 import { useAuthCtx, setActiveTenantId } from "@/lib/auth";
-import { InvoicesPage, InvoiceDetailPage, ExpensesPage, SchedulePage, CertificatesPage, AutomationsPage } from "./TradePages";
+import { InvoicesPage, InvoiceDetailPage, ExpensesPage, SchedulePage, CertificatesPage, AutomationsPage, CashFlowPage } from "./TradePages";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import {
@@ -219,6 +219,7 @@ const NAV_ITEMS = [
   null,
   { path: "/dashboard/schedule", label: "Schedule", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
   { path: "/dashboard/invoices", label: "Invoices", icon: "M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z" },
+  { path: "/dashboard/cash-flow", label: "Cash Flow", icon: "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" },
   { path: "/dashboard/expenses", label: "Expenses", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
   { path: "/dashboard/certificates", label: "Certificates", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
   { path: "/dashboard/automations", label: "Automations", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
@@ -4475,6 +4476,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/invoices/:id" component={InvoiceDetailPage} />
               <Route path="/dashboard/invoices" component={InvoicesPage} />
               <Route path="/dashboard/expenses" component={ExpensesPage} />
+              <Route path="/dashboard/cash-flow" component={CashFlowPage} />
               <Route path="/dashboard/certificates" component={CertificatesPage} />
               <Route path="/dashboard/automations" component={AutomationsPage} />
               <Route path="/dashboard/customers" component={CustomersPage} />

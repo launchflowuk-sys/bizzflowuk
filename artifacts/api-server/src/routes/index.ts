@@ -27,6 +27,7 @@ import invoicesRouter from "./invoices";
 import expensesRouter from "./expenses";
 import automationsRouter from "./automations";
 import scheduleRouter from "./schedule";
+import moneyRouter from "./money";
 
 const router: IRouter = Router();
 
@@ -38,6 +39,7 @@ router.use(invoicesRouter);
 router.use(expensesRouter);
 router.use(automationsRouter);
 router.use(scheduleRouter);
+router.use(moneyRouter);
 router.use(storageRouter);
 router.use("/auth", authRouter);
 router.use(tenantsRouter);

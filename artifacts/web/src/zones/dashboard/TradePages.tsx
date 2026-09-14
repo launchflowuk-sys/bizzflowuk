@@ -793,3 +793,106 @@ export function AutomationsPage() {
     </>
   );
 }
+
+// ── Cash flow ────────────────────────────────────────────────────────────────
+
+export function CashFlowPage() {
+  const { data, loading, error } = useApi<any>("/money/cash-flow");
+  const { data: vat } = useApi<any>("/money/vat-position");
+
+  if (loading) return <Loading />;
+  if (error) return <ErrorNote message={error} />;
+  if (!data) return null;
+
+  const series: any[] = data.series ?? [];
+  // Scale bars to the biggest single figure so a quiet week is not invisible.
+  const peak = Math.max(1, ...series.map(s => Math.max(Number(s.in), Number(s.out))));
+  const safe = Number(data.safeToSpend);
+
+  return (
+    <>
+      <PageHead
+        title="Cash flow"
+        sub={`Next ${data.weeks} weeks. ${data.basis}`}
+      />
+
+      <Card className="p-6 mb-5">
+        <p className="text-[12px] font-semibold uppercase tracking-[0.05em] text-slate-500">
+          Safe to spend, next {data.weeks} weeks
+        </p>
+        <p className={`mt-1 text-[44px] font-bold tabular-nums leading-none ${safe < 0 ? "text-red-600" : "text-slate-900"}`}>
+          {money(data.safeToSpend)}
+        </p>
+        <p className="mt-2 text-[14.5px] text-slate-500">Money you can count on after bills.</p>
+
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mt-6 pt-5 border-t border-slate-200">
+          <div>
+            <p className="text-[13px] text-slate-500">Counted on</p>
+            <p className="text-[19px] font-bold tabular-nums text-slate-900">{money(data.countedOn)}</p>
+            <p className="text-[12.5px] text-slate-400">invoices due</p>
+          </div>
+          <div>
+            <p className="text-[13px] text-slate-500">Going out</p>
+            <p className="text-[19px] font-bold tabular-nums text-slate-900">{money(data.goingOut)}</p>
+            <p className="text-[12.5px] text-slate-400">based on recent spending</p>
+          </div>
+          <div>
+            <p className="text-[13px] text-slate-500">Not counted</p>
+            <p className="text-[19px] font-bold tabular-nums text-slate-500">{money(data.notCounted)}</p>
+            <p className="text-[12.5px] text-slate-400">{data.notCountedLabel}</p>
+          </div>
+          <div>
+            <p className="text-[13px] text-slate-500">Overdue</p>
+            <p className={`text-[19px] font-bold tabular-nums ${Number(data.overdue) > 0 ? "text-red-600" : "text-slate-900"}`}>
+              {money(data.overdue)}
+            </p>
+            <p className="text-[12.5px] text-slate-400">{Number(data.overdue) > 0 ? "chase these" : "nothing overdue"}</p>
+          </div>
+        </div>
+      </Card>
+
+      <Card className="p-6 mb-5">
+        <h2 className="text-[16px] font-bold text-slate-900 mb-1">Week by week</h2>
+        <p className="text-[13.5px] text-slate-500 mb-5">Money in against money out.</p>
+
+        <div className="overflow-x-auto">
+          <div className="flex items-end gap-2 min-w-[620px] h-[180px]">
+            {series.map(s => (
+              <div key={s.week} className="flex-1 flex flex-col items-center justify-end gap-1 h-full" title={`${s.weekStart}: in ${money(s.in)}, out ${money(s.out)}`}>
+                <div className="w-full flex items-end justify-center gap-1 h-full">
+                  <div className="w-1/2 bg-sky-500 rounded-t-[4px] min-h-[2px]" style={{ height: `${(Number(s.in) / peak) * 100}%` }} />
+                  <div className="w-1/2 bg-amber-500 rounded-t-[4px] min-h-[2px]" style={{ height: `${(Number(s.out) / peak) * 100}%` }} />
+                </div>
+                <span className="text-[10.5px] text-slate-400 whitespace-nowrap">{dayMonth(s.weekStart)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-5 mt-4 text-[13px] text-slate-600">
+          <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-sky-500 inline-block" />Money in</span>
+          <span className="flex items-center gap-1.5"><i className="w-2.5 h-2.5 rounded-[3px] bg-amber-500 inline-block" />Money out</span>
+        </div>
+      </Card>
+
+      {vat && (
+        <Card className="p-6">
+          <h2 className="text-[16px] font-bold text-slate-900 mb-1">VAT position</h2>
+          <p className="text-[13.5px] text-slate-500 mb-4">{vat.basis}</p>
+
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
+            <span className="text-[26px] font-bold tabular-nums text-slate-900">{money(vat.rollingTurnover)}</span>
+            <span className="text-[14.5px] text-slate-500">of {money(vat.threshold)} threshold</span>
+          </div>
+
+          <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+            <div className={`h-full rounded-full ${vat.percentOfThreshold >= 80 ? "bg-amber-500" : "bg-emerald-500"}`}
+              style={{ width: `${Math.max(1, vat.percentOfThreshold)}%` }} />
+          </div>
+
+          <p className="mt-3 text-[14.5px] text-slate-600">{vat.note}</p>
+        </Card>
+      )}
+    </>
+  );
+}
