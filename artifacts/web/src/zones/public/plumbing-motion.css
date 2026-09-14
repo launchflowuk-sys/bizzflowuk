@@ -872,3 +872,42 @@
   .bps-mega, .bps-drawer-group{ animation:none !important }
   .bps-mega-item, .bps-mega-icon, .bps-drawer-sub{ transition:none !important }
 }
+
+
+/* ============================================================================
+   18. CONTACT CARDS
+   ----------------------------------------------------------------------------
+   The email was set at the same size as the phone number and overflowed its box.
+   An address is long and a phone number is short; they get their own sizes, and
+   the value wraps rather than being clipped — the address is the thing somebody
+   came to the page for.
+   ========================================================================== */
+
+.contact-card{
+  background:#fff;
+  text-decoration:none;
+  position:relative; isolation:isolate;
+  min-width:0;
+  transition:transform 300ms var(--bps-ease-settle), box-shadow 300ms ease-out, border-color 300ms ease-out;
+}
+
+.contact-icon{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:52px; height:52px; border-radius:16px;
+  background:linear-gradient(140deg, var(--bps-blue-bright), var(--bps-blue));
+  box-shadow:0 10px 20px -12px rgba(8,146,207,.9);
+  transition:transform 380ms var(--bps-ease-settle);
+}
+
+@media (hover:hover) and (pointer:fine){
+  a.contact-card:hover{
+    transform:translateY(-5px);
+    border-color:rgba(8,146,207,.42) !important;
+    box-shadow:0 20px 40px -26px rgba(16,35,51,.55);
+  }
+  a.contact-card:hover .contact-icon{ transform:scale(1.07) rotate(-4deg) }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .contact-card, .contact-icon{ transition:none !important }
+}

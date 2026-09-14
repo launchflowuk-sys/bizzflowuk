@@ -321,6 +321,12 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
   );
 }
 
+function ScrollToTopOnNavigate() {
+  const [location] = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [location]);
+  return null;
+}
+
 // ── Hero ─────────────────────────────────────────────────────────────────────
 
 /**
@@ -1067,12 +1073,26 @@ function ReviewsPage({ tenant, settings, reviews }: any) {
 
 function ContactPage({ tenantSlug, tenant, settings }: any) {
   const phone = settings?.phone;
+  // An email is long and a phone number is short, so they cannot share a type
+  // size without one of them looking wrong or overflowing its box.
   const rows = [
-    phone && { label: "Phone", value: phone, href: telHref(phone) },
-    settings?.email && { label: "Email", value: settings.email, href: `mailto:${settings.email}` },
-    settings?.address && { label: "Address", value: settings.address },
-    settings?.city && !settings?.address && { label: "Area", value: settings.city },
-  ].filter(Boolean) as Array<{ label: string; value: string; href?: string }>;
+    phone && {
+      label: "Phone", value: phone, href: telHref(phone), size: "clamp(24px,2.6vw,30px)",
+      note: "Fastest way to reach us, and you get a person.",
+      icon: <PhoneIcon color="#fff" className="w-5 h-5"/>,
+    },
+    settings?.email && {
+      label: "Email", value: settings.email, href: `mailto:${settings.email}`, size: "clamp(16px,1.6vw,19px)",
+      note: "We read every one and reply the same day.",
+      icon: <Icon d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" className="w-5 h-5" color="#fff"/>,
+    },
+    (settings?.serviceArea || settings?.address || settings?.city) && {
+      label: "Where we work", value: settings.serviceArea || settings.address || settings.city,
+      size: "clamp(18px,1.9vw,22px)",
+      note: settings?.serviceBase ? `Based in ${settings.serviceBase}.` : undefined,
+      icon: <Icon d="M12 21s-7-5.5-7-11a7 7 0 1114 0c0 5.5-7 11-7 11zM12 12a2 2 0 100-4 2 2 0 000 4z" className="w-5 h-5" color="#fff"/>,
+    },
+  ].filter(Boolean) as Array<{ label: string; value: string; href?: string; size: string; note?: string; icon: React.ReactNode }>;
 
   return (
     <>
@@ -1081,15 +1101,24 @@ function ContactPage({ tenantSlug, tenant, settings }: any) {
 
       {rows.length > 0 && (
         <section className="py-[56px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-            {rows.map(r => (
-              <div key={r.label} className="rounded-[20px] border p-6" style={{ borderColor: BORDER }}>
-                <p className="text-[11px] font-bold tracking-[0.08em] uppercase" style={{ color: BLUE_CTRL }}>{r.label}</p>
-                {r.href
-                  ? <a href={r.href} className="bps-pipe mt-2 inline-block font-bold text-[17px]" style={{ color: TEXT }}>{r.value}</a>
-                  : <p className="mt-2 font-bold text-[17px] leading-[1.5]" style={{ color: TEXT }}>{r.value}</p>}
-              </div>
-            ))}
+          <div className="mx-auto max-w-[1300px] px-5 sm:px-8 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {rows.map(r => {
+              const card = (
+                <>
+                  <span className="contact-icon">{r.icon}</span>
+                  <p className="mt-5 text-[11.5px] font-bold tracking-[0.1em] uppercase" style={{ color: BLUE_CTRL }}>{r.label}</p>
+                  {/* break-words, not truncate: an email address is the thing
+                      somebody came for, so it wraps rather than being cut off. */}
+                  <p className="mt-1.5 font-bold leading-[1.25] break-words" style={{ color: TEXT, fontSize: r.size }}>
+                    {r.value}
+                  </p>
+                  {r.note && <p className="mt-2 text-[13.5px]" style={{ color: BODY }}>{r.note}</p>}
+                </>
+              );
+              return r.href
+                ? <a key={r.label} href={r.href} className="contact-card block rounded-[22px] border p-7" style={{ borderColor: BORDER }}>{card}</a>
+                : <div key={r.label} className="contact-card rounded-[22px] border p-7" style={{ borderColor: BORDER }}>{card}</div>;
+            })}
           </div>
         </section>
       )}
@@ -1165,6 +1194,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
     <SiteOriginCtx.Provider value={props.forcedOrigin || ""}>
       <SiteBaseCtx.Provider value={base}>
         <WouterRouter base={base} ssrPath={props.ssrPath}>
+          <ScrollToTopOnNavigate />
           <div className="min-h-screen flex flex-col" style={{ background: "#fff", color: TEXT, fontFamily: "Arial, Helvetica, system-ui, sans-serif" }}>
             <Header tenant={tenant} settings={settings} services={shared.services} areas={shared.areas}/>
             <main className="flex-1">
