@@ -688,3 +688,105 @@
 @media (prefers-reduced-motion:reduce){
   .area-card, .area-pin, .area-card::before, .area-more svg{ transition:none !important }
 }
+
+/* ============================================================================
+   15. TICK LIST — check marks that draw themselves on entry
+   ----------------------------------------------------------------------------
+   The stroke is animated with dasharray so the tick is genuinely drawn rather
+   than faded in. A fade reads as a loading state; a drawn tick reads as
+   something being confirmed, which is what a checklist is saying.
+
+   The box scales up first, the mark draws into it, one row after the next.
+   ========================================================================== */
+
+.tick-row{
+  display:flex; align-items:flex-start; gap:13px;
+  padding:11px 0;
+  border-bottom:1px solid rgba(220,228,233,.75);
+}
+.tick-row:last-child{ border-bottom:0 }
+@media (min-width:640px){
+  /* In two columns the last row of each column should not carry a rule either. */
+  .tick-list > .tick-row:nth-last-child(-n+2){ border-bottom:0 }
+}
+
+.tick-box{
+  flex:none;
+  display:inline-flex; align-items:center; justify-content:center;
+  width:28px; height:28px; border-radius:9px;
+  background:linear-gradient(140deg, var(--bps-blue-bright), var(--bps-blue));
+  color:#fff;
+  box-shadow:0 6px 14px -8px rgba(8,146,207,.95);
+  /* Visible by default. Only a confirmed pending state hides a tick — a base
+     state of opacity:0 meant any environment where the observer never fired
+     left the whole checklist blank. */
+}
+.tick-box svg{ width:17px; height:17px; display:block }
+
+.tick-text{
+  font-size:15.5px; line-height:1.6;
+  color:#142434;
+  padding-top:3px;
+}
+
+/* 34 is comfortably longer than the path, so the mark is fully hidden at rest. */
+.tick-path{ stroke-dasharray:34 }
+
+/* Resting state only applies once JS has confirmed it will reveal the section —
+   see [data-reveal="pending"]. Without that, a JS failure would leave every
+   tick invisible and the list would read as empty. */
+[data-reveal="pending"] .tick-box{ opacity:0; transform:scale(.55) }
+[data-reveal="pending"] .tick-path{ stroke-dashoffset:34 }
+
+[data-reveal="visible"] .tick-box{
+  animation:bpsTickBox 420ms var(--bps-ease-settle) both;
+  animation-delay:calc(var(--i) * 85ms);
+}
+[data-reveal="visible"] .tick-path{
+  animation:bpsTickDraw 460ms var(--bps-ease-flow) both;
+  animation-delay:calc(var(--i) * 85ms + 130ms);
+}
+
+@keyframes bpsTickBox{
+  from{ opacity:0; transform:scale(.55) }
+  60% { opacity:1; transform:scale(1.12) }
+  to  { opacity:1; transform:scale(1) }
+}
+@keyframes bpsTickDraw{
+  from{ stroke-dashoffset:34 }
+  to  { stroke-dashoffset:0 }
+}
+
+
+
+/* ============================================================================
+   16. PROCESS STEPS
+   ========================================================================== */
+
+.step-card{
+  background:#fff;
+  position:relative;
+  transition:transform 300ms var(--bps-ease-settle), box-shadow 300ms ease-out, border-color 300ms ease-out;
+}
+.step-num{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:38px; height:38px; padding:0 10px; border-radius:12px;
+  background:rgba(8,146,207,.1);
+  border:1px solid rgba(8,146,207,.18);
+  color:var(--bps-control);
+  font-weight:700; font-size:14px; letter-spacing:0.02em;
+  font-variant-numeric:tabular-nums;
+}
+@media (hover:hover) and (pointer:fine){
+  .step-card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(8,146,207,.4);
+    box-shadow:0 18px 36px -24px rgba(16,35,51,.5);
+  }
+}
+
+@media (prefers-reduced-motion:reduce){
+  .tick-box{ opacity:1 !important; transform:none !important; animation:none !important }
+  .tick-path{ stroke-dashoffset:0 !important; animation:none !important }
+  .step-card{ transition:none }
+}

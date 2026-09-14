@@ -342,6 +342,65 @@ function ServicesGrid({ services, heading, intro }: { services: any[]; heading?:
   );
 }
 
+// ── Tick list ────────────────────────────────────────────────────────────────
+
+/**
+ * The "what's included" checklist carried over from the original site.
+ *
+ * Each tick draws itself when the list scrolls into view, one after the next.
+ * The stroke is animated with dasharray rather than a fade, so the mark is
+ * actually drawn — a fading tick reads as a loading state, a drawn one reads as
+ * something being confirmed, which is what a checklist is for.
+ */
+function BenefitsList({ items, heading }: { items?: string[] | null; heading?: string }) {
+  if (!Array.isArray(items) || items.length === 0) return null;
+  return (
+    <section className="py-[64px]" style={{ background: PALE_2 }}>
+      <div className="mx-auto max-w-[900px] px-5 sm:px-8">
+        {heading && (
+          <h2 className="section-heading font-bold mb-8" style={{ color: TEXT, fontSize: "clamp(24px,2.8vw,32px)", letterSpacing: "-0.035em" }}>
+            {heading}
+          </h2>
+        )}
+        <ul className="tick-list grid sm:grid-cols-2 gap-x-8 gap-y-1">
+          {items.map((t, i) => (
+            <li key={i} className="tick-row" style={{ ["--i" as any]: i }}>
+              <span className="tick-box" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <path className="tick-path" d="M5 12.5l4.5 4.5L19 7.5"/>
+                </svg>
+              </span>
+              <span className="tick-text">{t}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function ProcessSteps({ steps }: { steps?: Array<{ title: string; description: string }> | null }) {
+  if (!Array.isArray(steps) || steps.length === 0) return null;
+  return (
+    <section className="py-[70px]" style={{ background: "#fff" }}>
+      <div className="mx-auto max-w-[1300px] px-5 sm:px-8">
+        <h2 className="section-heading font-bold mb-10" style={{ color: TEXT, fontSize: "clamp(24px,2.8vw,32px)", letterSpacing: "-0.035em" }}>
+          How it works
+        </h2>
+        <ol className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
+          {steps.map((s, i) => (
+            <li key={i} className="step-card rounded-[20px] border p-6" style={{ borderColor: BORDER }}>
+              <span className="step-num">{String(i + 1).padStart(2, "0")}</span>
+              <h3 className="mt-4 font-bold text-[17px]" style={{ color: TEXT, letterSpacing: "-0.02em" }}>{s.title}</h3>
+              <p className="mt-2 text-[14.5px] leading-[1.7]" style={{ color: BODY }}>{s.description}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
 // ── Emergency panel ──────────────────────────────────────────────────────────
 
 function EmergencyPanel({ settings }: { settings: any }) {
@@ -620,13 +679,20 @@ function ServiceDetail({ tenant, settings }: any) {
           {service.tagline && <p className="mt-4 text-[17px] leading-[1.7]" style={{ color: BODY }}>{service.tagline}</p>}
         </div>
       </section>
-      {service.description && (
+      {service.content && (
         <section className="py-[64px]" style={{ background: "#fff" }}>
-          <div className="mx-auto max-w-[760px] px-5 sm:px-8 text-[16px] leading-[1.8]" style={{ color: TEXT }}>
-            {service.description}
+          <div className="mx-auto max-w-[760px] px-5 sm:px-8 text-[16.5px] leading-[1.85] whitespace-pre-line" style={{ color: TEXT }}>
+            {String(service.content).split("\n\n").map((para: string, i: number) =>
+              para.startsWith("## ")
+                ? <h2 key={i} className="font-bold mt-10 mb-3 first:mt-0" style={{ color: TEXT, fontSize: "clamp(21px,2.4vw,27px)", letterSpacing: "-0.03em" }}>{para.slice(3)}</h2>
+                : <p key={i} className="mb-5">{para}</p>,
+            )}
           </div>
         </section>
       )}
+
+      <BenefitsList items={service.benefits} heading={`What's included with ${service.name.toLowerCase()}`}/>
+      <ProcessSteps steps={service.processSteps}/>
       <EmergencyPanel settings={settings}/>
       <ClosingCta settings={settings}/>
     </>

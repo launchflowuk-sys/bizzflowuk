@@ -26,6 +26,8 @@ const REVEAL_SELECTOR = [
   ".area-links a",
   ".quote-cta .wrap",
   ".bps-rad",
+  ".tick-list",
+  ".step-card",
 ].join(",");
 
 const REVEAL_THRESHOLD = 0.08;
@@ -57,6 +59,7 @@ export function usePlumbingMotion(contentKey: number | string = 0): void {
 
       observer = new IntersectionObserver(
         (entries) => {
+          sawCallback = true;
           for (const entry of entries) {
             if (!entry.isIntersecting) continue;
             const el = entry.target as HTMLElement;
@@ -94,6 +97,24 @@ export function usePlumbingMotion(contentKey: number | string = 0): void {
       revealEverything();
     }
 
+    /**
+     * Safety net. IntersectionObserver exists in every browser we support, but
+     * it does not always deliver — some embedded webviews and preview panes
+     * never fire the callback, and an element left marked pending is invisible,
+     * not merely un-animated. So if nothing has been revealed shortly after
+     * setup, drop the animation and show everything.
+     *
+     * Content must never depend on an API firing.
+     */
+    let sawCallback = false;
+    const failsafe = window.setTimeout(() => {
+      if (!sawCallback) {
+        observer?.disconnect();
+        observer = null;
+        revealEverything();
+      }
+    }, 1200);
+
     /** If the preference flips mid-visit, honour it immediately. */
     function onPreferenceChange(): void {
       if (motionQuery.matches) stop();
@@ -103,6 +124,7 @@ export function usePlumbingMotion(contentKey: number | string = 0): void {
     motionQuery.addEventListener("change", onPreferenceChange);
 
     return () => {
+      window.clearTimeout(failsafe);
       motionQuery.removeEventListener("change", onPreferenceChange);
       observer?.disconnect();
       observer = null;
