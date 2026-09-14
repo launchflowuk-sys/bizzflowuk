@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { sweepRenewals } from "../lib/certificates/renewals";
+import { runAutomationsForAllTenants } from "./automations";
 
 const router = Router();
 
@@ -33,6 +34,23 @@ router.post("/internal/jobs/certificate-renewals", async (req: any, res) => {
   try {
     const windowDays = Number(req.query.windowDays) || undefined;
     const result = await sweepRenewals({ windowDays });
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+/**
+ * The daily sweep for every tenant's enabled automations.
+ *
+ * Supersedes the standalone certificate-renewal endpoint, which stays in place so
+ * an existing Coolify schedule does not silently stop working.
+ */
+router.post("/internal/jobs/automations-daily", async (req: any, res) => {
+  if (!secretOk(req.get("x-jobs-secret"))) { res.status(404).json({ error: "Not found" }); return; }
+  try {
+    const result = await runAutomationsForAllTenants();
     res.json({ ok: true, ...result });
   } catch (err) {
     req.log.error(err);

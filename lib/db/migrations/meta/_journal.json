@@ -232,6 +232,13 @@
       "when": 1787400000000,
       "tag": "0032_tenant_tax_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1787500000000,
+      "tag": "0033_automations",
+      "breakpoints": true
     }
   ]
 }
