@@ -360,3 +360,94 @@
 /* The brand-coloured primary buttons already read var(--brand); this just puts
    them on the design's corner. */
 .ws .rounded-lg { border-radius: 8px; }
+
+/* -----------------------------------------------------------------------------
+ * The rail's named, collapsible groups.
+ *
+ * Thirty-two destinations in one flat list ran past the bottom of a laptop and
+ * well past the bottom of a phone, so daily work sat below the fold beside
+ * things touched twice a year. The old unlabelled dividers implied groups
+ * without naming them, which told a reader nothing they could not already see.
+ *
+ * The heading is deliberately quiet — small, uppercase, tracked, muted. It is
+ * a signpost, not a destination, and a heading that competes with the links
+ * under it makes the rail harder to scan rather than easier. The one place
+ * brand colour appears is the group holding the page you are on.
+ * -------------------------------------------------------------------------- */
+.ws-nav-group {
+  margin-top: 10px;
+}
+
+.ws-nav-grouphead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 7px 12px;
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--ws-muted);
+  border-radius: 8px;
+  transition: color 160ms ease-out, background 160ms ease-out;
+}
+
+.ws-nav-grouphead:hover {
+  color: var(--ws-text, inherit);
+  background: var(--ws-hover);
+}
+
+/*
+ * The group containing the current page. This is the only brand colour in the
+ * rail's headings, so it reads as "you are here" rather than decoration — and
+ * it still says so while the group is collapsed, which is what stops a page
+ * feeling lost behind a closed heading.
+ */
+.ws-nav-grouphead[data-current="true"] {
+  color: var(--brand);
+}
+
+.ws-nav-chevron {
+  width: 13px;
+  height: 13px;
+  flex-shrink: 0;
+  opacity: 0.55;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease-out;
+}
+
+.ws-nav-group[data-open="true"] .ws-nav-chevron {
+  transform: rotate(180deg);
+  opacity: 0.9;
+}
+
+/*
+ * 0fr -> 1fr animates to the content's own height with no JavaScript
+ * measurement and no magic max-height that clips a nine-item group.
+ * `min-height: 0` on the inner track is what lets it collapse to nothing.
+ */
+.ws-nav-sublist {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ws-nav-sublist > div {
+  overflow: hidden;
+  min-height: 0;
+}
+
+.ws-nav-group[data-open="true"] .ws-nav-sublist {
+  grid-template-rows: 1fr;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ws-nav-sublist,
+  .ws-nav-chevron {
+    transition: none !important;
+  }
+}
