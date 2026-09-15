@@ -1,0 +1,40 @@
+/* =============================================================================
+ * BizzFlowUK — deliberate deviations from the reference.
+ *
+ * Everything in bizzflow.css is a faithful reproduction and is regenerated from
+ * the handoff package. This file is the opposite: the short, argued list of
+ * places where the reference is reproduced and then corrected. Keeping them
+ * apart means the reproduction can be regenerated without losing these, and
+ * these can be read and challenged without hunting through 34KB of ported CSS.
+ *
+ * Every entry states what the reference does, why that is wrong here, and what
+ * changed.
+ * ========================================================================== */
+
+/* -----------------------------------------------------------------------------
+ * 1. The hero halo made the whole page scroll sideways.
+ *
+ * `.product-orbit` is the soft radial glow behind the hero dashboard. It is
+ * absolutely positioned and wider than the space it sits in, so it pushes past
+ * the right edge of the viewport and the document gains a horizontal scrollbar.
+ *
+ * This is not something introduced in the port. The untouched reference was
+ * served alongside and measured at the same moment: it is the only overflowing
+ * element there too (scrollWidth 1059 against a 1009px viewport, the identical
+ * element). The port reproduces the reference exactly, including this.
+ *
+ * It is still wrong. A marketing page that drifts left-to-right under a thumb
+ * feels broken, and the handoff's own responsive specification requires that no
+ * screen scrolls sideways. The element is decorative and `aria-hidden`, so
+ * clipping it removes the scrollbar and changes nothing anyone can see.
+ *
+ * `clip` rather than `hidden` on purpose: `overflow-x: hidden` would turn the
+ * wrapper into a scroll container, which breaks `position: sticky` inside it
+ * and hijacks scroll anchoring. `clip` just clips, and is the one value allowed
+ * to differ per axis while the other stays visible — so the floating
+ * notification cards, which deliberately overhang the dashboard vertically,
+ * still do.
+ * -------------------------------------------------------------------------- */
+.bf {
+  overflow-x: clip;
+}

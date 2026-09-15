@@ -154,6 +154,8 @@ const DashboardApp = lazy(() => import("@/zones/dashboard/DashboardApp"));
 const PortalApp = lazy(() => import("@/zones/portal/PortalApp"));
 const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
 const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
+const BizzFlowHome = lazy(() => import("@/zones/public/bizzflow/BizzFlowHome"));
+const BizzFlowDemo = lazy(() => import("@/zones/public/bizzflow/BizzFlowDemo"));
 
 /**
  * Which tenant's branding the loader may show, resolved before any tenant data has
@@ -296,32 +298,20 @@ function DomainRouteGuard({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 // Landing page
 // ---------------------------------------------------------------------------
+/**
+ * The platform's public homepage.
+ *
+ * A signed-in visitor still goes straight to their own workspace — that
+ * redirect predates this page and is the reason anyone with an account never
+ * sees marketing copy on the way in. Everyone else gets the BizzFlowUK site.
+ *
+ * The placeholder that used to live here (a dark slab with a headline and a
+ * sign-in button) is gone.
+ */
 function LandingPage() {
   const { isSignedIn } = useAuthCtx();
   if (isSignedIn) return <RoleRouter />;
-  return (
-    <div className="min-h-screen bg-slate-950 text-white">
-      <nav className="border-b border-slate-800 px-6 py-4 flex items-center justify-between max-w-7xl mx-auto">
-        <div className="font-bold text-xl tracking-tight">BizzFlow</div>
-        <a href={`${basePath}/sign-in`} className="text-sm text-slate-400 hover:text-white transition-colors">Sign in</a>
-      </nav>
-      <div className="max-w-7xl mx-auto px-6 py-24 text-center space-y-8">
-        <div className="inline-flex items-center rounded-full border border-brand-500/30 bg-brand-500/10 px-3 py-1 text-xs text-brand-400 font-medium">
-          Built for home improvement professionals
-        </div>
-        <h1 className="text-5xl sm:text-7xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-b from-white to-slate-400">
-          The operating system<br />for home improvement<br />businesses
-        </h1>
-        <p className="text-xl text-slate-400 max-w-2xl mx-auto">
-          Websites, CRM, quotes, projects, customer portal — everything a modern trades business needs.
-        </p>
-        <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
-          <a href={`${basePath}/sign-in`} className="inline-flex h-12 items-center justify-center rounded-md bg-brand-500 px-8 text-sm font-semibold text-white shadow-lg hover:bg-brand-400 transition-colors">Sign in</a>
-          <a href={`${basePath}/site/amo-rendering`} className="inline-flex h-12 items-center justify-center rounded-md border border-slate-700 bg-transparent px-8 text-sm font-medium text-slate-300 hover:bg-slate-800 transition-colors">View demo site</a>
-        </div>
-      </div>
-    </div>
-  );
+  return <BizzFlowHome />;
 }
 
 // ---------------------------------------------------------------------------
@@ -335,6 +325,14 @@ function AppRoutes() {
         <Switch>
           <Route path="/" component={LandingPage} />
           {/* Public: the invite token is the credential, so this must sit outside the signed-in gate. */}
+          <Route path="/demo" component={BizzFlowDemo} />
+          {/* The reference published the demo at /demo.html and links to it may
+              already be out there. An alias, not a second implementation — the
+              view query string is carried across so a shared deep link lands on
+              the right screen. */}
+          <Route path="/demo.html">
+            {() => <Redirect to={`/demo${window.location.search}`} replace />}
+          </Route>
           <Route path="/accept-invite" component={AcceptInvitePage} />
           <Route path="/sign-in">{() => isSignedIn ? <RoleRouter /> : <LoginForm />}</Route>
           <Route path="/dashboard/*?" component={DashboardApp} />
