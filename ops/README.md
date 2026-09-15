@@ -38,15 +38,22 @@ Check what it has been doing: `tail /var/log/disk-guard.log`
 
 ## Platform email (PLATFORM_SMTP_*)
 
+**Plain SMTP through nodemailer — the same transport every tenant already
+uses.** No third-party email API, no SDK, no account with anybody. `sendEmail()`
+in `lib/email.ts` is the only sender in this codebase and the platform mailbox
+goes through it exactly like a tenant's does; the only difference is where the
+credentials come from (env, not a settings row, so no tenant admin can read or
+change the address the platform speaks from).
+
 Set on the **api-server** service in Coolify, then redeploy — env changes do not
 take effect until the container restarts.
 
 | Variable | Example | Notes |
 |---|---|---|
-| `PLATFORM_SMTP_HOST` | `smtp.postmarkapp.com` | |
+| `PLATFORM_SMTP_HOST` | your own mail server | the in-house box, same as the tenants |
 | `PLATFORM_SMTP_PORT` | `587` | 465 switches to implicit TLS automatically |
-| `PLATFORM_SMTP_USER` | *(token / mailbox)* | |
-| `PLATFORM_SMTP_PASS` | *(token / password)* | **Coolify only. Never in chat or git.** |
+| `PLATFORM_SMTP_USER` | `hello@bizzflowuk.com` | the mailbox itself |
+| `PLATFORM_SMTP_PASS` | *(mailbox password)* | **Coolify only. Never in chat or git.** |
 | `PLATFORM_SMTP_FROM` | `BizzFlowUK <hello@bizzflowuk.com>` | Must be a verified sender on the domain |
 | `PLATFORM_ALERT_EMAIL` | `shujaat@launchflow.co.uk` | Where signup and subscription alerts land |
 
@@ -60,8 +67,9 @@ Without these the platform still runs — every send logs
 shipped in, which is why a signup was invisible.
 
 **Deliverability.** The sending domain needs SPF, DKIM and DMARC records or the
-welcome email lands in spam, which is worse than not sending it. Whichever
-provider you use gives you the exact DNS records to add at the registrar.
+welcome email lands in spam, which is worse than not sending it. Same records
+the tenant mailboxes already have — add them for `bizzflowuk.com` at the
+registrar.
 
 ### What sends
 | Event | To | Purpose |
