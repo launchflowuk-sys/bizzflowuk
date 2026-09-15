@@ -365,6 +365,13 @@
       "when": 1789300000000,
       "tag": "0051_certificates_no_expiry",
       "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1789400000000,
+      "tag": "0052_accounting_connections",
+      "breakpoints": true
     }
   ]
 }

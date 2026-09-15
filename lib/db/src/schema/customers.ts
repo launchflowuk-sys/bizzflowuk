@@ -20,6 +20,13 @@ export const customersTable = pgTable("customers", {
    * Sample data for a walkthrough, removable exactly (migration 0049).
    * Only the demo seeder ever sets this; every real row is false.
    */
+  /**
+   * This customer's id in the accounting package (migration 0052). Created
+   * once and reused, or every invoice makes a duplicate contact in their
+   * accounts.
+   */
+  accountingExternalId: text("accounting_external_id"),
+
   isDemo: boolean("is_demo").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),

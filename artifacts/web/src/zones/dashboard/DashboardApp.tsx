@@ -43,6 +43,7 @@ import NewJobForm from "./NewJobForm";
 import JobShareCard from "./JobShareCard";
 import TeamChat from "./TeamChat";
 import CustomerHistory from "./CustomerHistory";
+import AccountingPanel from "./AccountingPanel";
 import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
 import BillingPage from "./BillingPage";
@@ -4801,6 +4802,8 @@ function SettingsPage() {
           {field("serviceBase", "Based In", "text", "The town you work out of, e.g. Grays, Thurrock")}
           {field("serviceArea", "Areas You Cover", "text", "The region you sell into, e.g. Essex & London")}
         </div>
+        <AccountingPanel />
+
         {/*
           Tax and bank details.
 

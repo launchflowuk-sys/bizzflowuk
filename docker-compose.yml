@@ -21,6 +21,14 @@ services:
       # Public origin, used to build customer-facing links (payment pages, the
       # private calendar feed URL). Falls back to bizzflowuk.com if unset.
       PUBLIC_BASE_URL: ${PUBLIC_BASE_URL:-https://bizzflowuk.com}
+      # Accounting app registrations. Unset is fine: the provider then shows
+      # as "not available yet" rather than offering a Connect button that
+      # cannot work. See .env.example for where to register them.
+      XERO_CLIENT_ID: ${XERO_CLIENT_ID:-}
+      XERO_CLIENT_SECRET: ${XERO_CLIENT_SECRET:-}
+      FREEAGENT_CLIENT_ID: ${FREEAGENT_CLIENT_ID:-}
+      FREEAGENT_CLIENT_SECRET: ${FREEAGENT_CLIENT_SECRET:-}
+      FREEAGENT_SANDBOX: ${FREEAGENT_SANDBOX:-}
       # Shared secret for the scheduled job endpoints under /internal/jobs/*.
       # Optional on purpose: while it is unset those endpoints return 404, so a
       # deploy without it is safe — the automations simply never sweep. Set it in

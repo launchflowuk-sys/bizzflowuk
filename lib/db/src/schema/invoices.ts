@@ -81,6 +81,22 @@ export const invoicesTable = pgTable("invoices", {
   pdfPath: text("pdf_path"),
 
   /**
+   * Whether this invoice has reached the tenant's accounting package
+   * (migration 0052).
+   *
+   * The external id is the idempotency latch: it lives on the invoice rather
+   * than in a log table because the question asked before every push is "has
+   * THIS one already gone", and that should be answerable from the row in
+   * hand. `accountingError` is kept so a failed push says so on the invoice,
+   * instead of the trade finding out at the year end that eleven never
+   * arrived.
+   */
+  accountingProvider: text("accounting_provider"),
+  accountingExternalId: text("accounting_external_id"),
+  accountingSyncedAt: timestamp("accounting_synced_at", { withTimezone: true }),
+  accountingError: text("accounting_error"),
+
+  /**
    * Sample data for a walkthrough, removable exactly (migration 0049).
    * Only the demo seeder ever sets this; every real row is false.
    */

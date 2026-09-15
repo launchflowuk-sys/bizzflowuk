@@ -720,6 +720,22 @@ router.post("/invoices/:id/send", requireTenantAccess, async (req: any, res) => 
     const { sendInvoiceEmail } = await import("../lib/invoices/deliver");
     sendInvoiceEmail(id, tenantId).catch(e => req.log.error({ err: e }, "Invoice email failed"));
 
+    /**
+     * And into their accounting package, if they have linked one.
+     *
+     * Sending is the right moment: a draft has nothing to post, and waiting
+     * for payment would leave the accounts missing everything outstanding —
+     * which is exactly the figure an accountant asks for.
+     *
+     * Best effort and never awaited. The invoice reaching the customer is the
+     * job; the copy reaching Xero is bookkeeping, and a slow accounting API
+     * must not hold up the send. A failure is written onto the invoice itself
+     * by syncInvoice, so it shows up rather than going quiet.
+     */
+    import("../lib/accounting")
+      .then(({ syncInvoice }) => syncInvoice(id, tenantId))
+      .catch(e => req.log.error({ err: e }, "Accounting push failed"));
+
     res.json({ ...updated, items });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
