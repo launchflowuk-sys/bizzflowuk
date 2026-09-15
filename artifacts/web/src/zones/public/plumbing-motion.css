@@ -463,6 +463,22 @@
 .bps-burger.is-open span:nth-child(2){ opacity:0; transform:scaleX(.3) }
 .bps-burger.is-open span:nth-child(3){ width:19px; margin-left:0; transform:translateY(-7px) rotate(-45deg) }
 
+/* -----------------------------------------------------------------------------
+ * Lifting the header is what actually raises the drawer.
+ *
+ * `.bps-header` is `sticky` with `z-50`, and sticky plus a z-index makes it a
+ * STACKING CONTEXT. The drawer lives inside it, so the drawer's z-90 only ever
+ * ranked against its siblings within the header; against the page the whole
+ * header ranked 50 -- below the cookie banner (60) and the WhatsApp button
+ * (70), both of which painted straight over an open full-screen menu.
+ *
+ * Raising the header while the drawer is open lifts the context and everything
+ * in it. Two classes deep so it outranks Tailwind's single-class `.z-50`
+ * whatever order the stylesheets land in; 95 clears both floats and still sits
+ * under toasts at 100, which should be able to speak over anything.
+ * -------------------------------------------------------------------------- */
+.bps-header.is-menu-open{ z-index:95 }
+
 .bps-drawer-root{ position:fixed; inset:0; z-index:90 }
 
 .bps-drawer-scrim{
@@ -507,6 +523,42 @@
   width:44px; height:44px; border-radius:13px; cursor:pointer;
   background:rgba(255,255,255,.1); border:1px solid rgba(255,255,255,.14);
   display:inline-flex; align-items:center; justify-content:center;
+}
+
+
+/* -----------------------------------------------------------------------------
+ * On a phone the drawer IS the screen.
+ *
+ * `min(88vw, 400px)` leaves a 45px sliver of blurred page down one side, which
+ * reads as a panel borrowed from a desktop app rather than a menu belonging to
+ * this site. There is nothing behind it worth looking at on a 375px screen,
+ * and the width it buys back is what lets every row sit in view at once
+ * instead of the list scrolling under the fold.
+ *
+ * The side panel is kept from 640px up, where there IS page either side of it
+ * and a full-screen takeover would be the wrong gesture.
+ * -------------------------------------------------------------------------- */
+@media (max-width: 639px){
+  .bps-drawer{
+    width:100%;
+    border-left:0;
+    box-shadow:none;
+    padding:18px 24px calc(22px + env(safe-area-inset-bottom));
+  }
+  .bps-drawer-head{ padding-bottom:16px }
+  /* The extra width goes into presence, not slack. */
+  .bps-drawer-link{ font-size:22px; min-height:56px }
+  .bps-drawer-sub{ font-size:17.5px; min-height:50px }
+  .bps-drawer-foot{ padding-top:18px }
+}
+
+/* Very short phones (SE and similar): give back enough height that the call
+   button and the quote button are still reachable without scrolling. */
+@media (max-width: 639px) and (max-height: 700px){
+  .bps-drawer-link{ min-height:50px; font-size:20px }
+  .bps-drawer-sub{ min-height:44px; font-size:16.5px }
+  .bps-drawer-head{ padding-bottom:12px }
+  .bps-drawer-foot{ padding-top:14px }
 }
 
 .bps-drawer-links{ display:flex; flex-direction:column; padding-top:8px }

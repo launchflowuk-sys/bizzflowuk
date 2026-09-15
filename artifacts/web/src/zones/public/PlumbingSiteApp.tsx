@@ -143,7 +143,7 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
   }, [open]);
 
   return (
-    <header className="bps-header sticky top-0 z-50 relative">
+    <header className={`bps-header sticky top-0 z-50 relative${open ? " is-menu-open" : ""}`}>
       <div className="mx-auto max-w-[1400px] px-5 sm:px-8 h-[86px] lg:h-[96px] flex items-center justify-between gap-6">
         <Link href="/" className="flex items-center gap-3 shrink-0">
           {settings?.logoUrl
