@@ -36,6 +36,7 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/StatusBadge";
+import "./workspace-theme.css";
 import { StatCard, type StatCardProps } from "@/components/StatCard";
 import { Users, Wallet, Calculator, HardHat } from "lucide-react";
 
@@ -205,7 +206,7 @@ function Badge({ status }: { status: string }) {
 function SignOutButton() {
   const { signOut } = useAuthCtx();
   return (
-    <button onClick={signOut} className="w-full text-left px-3 py-2 rounded-md text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors">
+    <button onClick={signOut} className="ws-nav-item w-full text-[13px]" style={{ padding: "9px 12px" }}>
       Sign out
     </button>
   );
@@ -232,6 +233,8 @@ const NAV_ITEMS = [
   { path: "/dashboard/case-studies", label: "Case Studies", icon: "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" },
   { path: "/dashboard/services", label: "Services", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15 12a3 3 0 11-6 0 3 3 0 016 0z" },
   { path: "/dashboard/pricing", label: "Pricing", icon: "M9 8h6m-5 0a3 3 0 110 6H9l3 3m-3-9l3-3M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" },
+  null,
+  { path: "/dashboard/website", label: "Your website", icon: "M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" },
   { path: "/dashboard/areas", label: "Areas", icon: "M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" },
   { path: "/dashboard/faqs", label: "FAQs", icon: "M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" },
   { path: "/dashboard/blog", label: "Blog", icon: "M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" },
@@ -259,13 +262,43 @@ function mixHex(rgb: [number, number, number], target: [number, number, number],
  *  this is the one place the platform colour is repeated as a hex. */
 const BRAND_FALLBACK = "#F97316";
 
+/**
+ * The whole workspace palette, derived from the one colour a tenant chose.
+ *
+ * The BizzFlowUK design this implements is built on teal, and its neutrals are
+ * quietly tinted to match: the page ground, the hairlines and the active-nav
+ * chip are all green-leaning rather than grey. Lifting those literals would
+ * look right for exactly one tenant and wrong for the rest — BPS is blue, AMO
+ * is lime — so every neutral is mixed from the tenant's own colour instead.
+ * Each business gets the same design wearing its own skin.
+ *
+ * The mixes are heavy on white on purpose. At 97% the ground reads as off-white
+ * rather than as a colour, which is what keeps a dashboard calm; the tint is
+ * there to stop it looking like a different product from the public site.
+ */
 function brandVars(color?: string | null): React.CSSProperties {
   const brand = color || BRAND_FALLBACK;
   const rgb = hexToRgb(brand);
   const lum = (0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]) / 255;
-  const ink = mixHex(rgb, [0, 0, 0], lum > 0.5 ? 0.48 : 0.28);   // darken more for light brands (e.g. green) → readable on white
+  // Darken more for light brands (e.g. lime) so the result stays readable on white.
+  const ink = mixHex(rgb, [0, 0, 0], lum > 0.5 ? 0.48 : 0.28);
   const tint = mixHex(rgb, [255, 255, 255], 0.9);
-  return { ["--brand" as any]: brand, ["--brand-ink" as any]: ink, ["--brand-tint" as any]: tint };
+  return {
+    ["--brand" as any]: brand,
+    ["--brand-ink" as any]: ink,
+    ["--brand-tint" as any]: tint,
+    // The workspace surfaces, matching the reference design's roles:
+    ["--ws-bg" as any]: mixHex(rgb, [255, 255, 255], 0.965),      // page ground  (#f5f7f4 at teal)
+    ["--ws-line" as any]: mixHex(rgb, [255, 255, 255], 0.895),    // hairlines    (#e2e9df)
+    ["--ws-chip" as any]: mixHex(rgb, [255, 255, 255], 0.925),    // chips, tiles (#e7efe4)
+    ["--ws-active" as any]: mixHex(rgb, [255, 255, 255], 0.9),    // active nav   (#e7f2e9)
+    ["--ws-hover" as any]: mixHex(rgb, [255, 255, 255], 0.955),   // nav hover    (#f2f6f0)
+    ["--ws-field" as any]: mixHex(rgb, [255, 255, 255], 0.978),   // input ground (#f8faf7)
+    // Muted body text: the brand hue pulled most of the way to a neutral slate,
+    // so supporting copy relates to the brand without competing with it. The
+    // target is already dark enough to clear AA on white, so one mix does it.
+    ["--ws-muted" as any]: mixHex(rgb, [104, 112, 108], 0.84),
+  };
 }
 function useActiveBrand() {
   const { data: me } = useGetMe();
@@ -361,16 +394,22 @@ function TopBar({ location, onMenu, activeName }: { location: string; onMenu: ()
   };
 
   return (
-    <header className="sticky top-0 z-30 flex items-center justify-between gap-3 bg-white/90 backdrop-blur border-b border-slate-200 px-4 sm:px-6 h-16 flex-shrink-0">
+    // The design's thin top strip: the business on the left, a quiet chip on the
+    // right. It keeps the page title out of the chrome so the big heading below
+    // can carry it, which is what makes the workspace read as a document rather
+    // than an app frame.
+    <header className="ws-top sticky top-0 z-30 flex items-center justify-between gap-3 px-5 sm:px-10 flex-shrink-0"
+      style={{ background: "var(--ws-bg)", paddingTop: 0, paddingBottom: 0, height: "62px" }}>
       <div className="flex items-center gap-3 min-w-0">
-        <button onClick={onMenu} aria-label="Open menu" className="md:hidden inline-flex items-center justify-center min-w-11 min-h-11 p-2 -ml-2 rounded-lg text-slate-600 hover:bg-slate-100"><svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg></button>
-        <div className="min-w-0">
-          <h1 className="font-bold text-slate-900 text-base sm:text-lg leading-tight truncate">{title}</h1>
-          {activeName && <p className="text-[11px] font-medium leading-tight truncate" style={{ color: "var(--brand-ink)" }}>{activeName}</p>}
-        </div>
+        <button onClick={onMenu} aria-label="Open menu"
+          className="md:hidden inline-flex items-center justify-center min-w-11 min-h-11 p-2 -ml-2 rounded-lg"
+          style={{ color: "var(--ws-muted)" }}>
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <span className="truncate">{activeName ? `${activeName} — your business, in flow.` : "Your business, in flow."}</span>
       </div>
       <div className="relative">
-        <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 rounded-full hover:bg-slate-100 pl-1 pr-1.5 py-1 transition-colors">
+        <button onClick={() => setOpen(v => !v)} className="flex items-center gap-2 rounded-full pl-1 pr-1.5 py-1 transition-colors hover:brightness-95">
           <UserAvatar />
           <svg className="w-4 h-4 text-slate-400 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7"/></svg>
         </button>
@@ -438,12 +477,13 @@ function BusinessSwitcher() {
   };
 
   return (
-    <div className="px-3 pt-3 pb-1 border-b border-slate-800 flex-shrink-0">
-      <p className="text-[10px] uppercase tracking-wider text-slate-500 px-1 mb-1.5">Business</p>
+    <div className="px-4 pt-4 pb-1 flex-shrink-0">
+      <p className="ws-eyebrow px-1" style={{ marginBottom: "6px" }}>Business</p>
       <div className="space-y-1">
         {businesses.map(b => (
           <button key={b.tenantId} onClick={() => handleSwitch(b.tenantId)} disabled={switchMutation.isPending}
-            className={`w-full text-left px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center justify-between gap-2 disabled:opacity-60 ${b.tenantId === activeTenantId ? "bg-slate-800 text-white" : "text-slate-400 hover:bg-slate-800/60 hover:text-white"}`}>
+            className="ws-nav-item w-full justify-between disabled:opacity-60 text-[13px]"
+            data-active={b.tenantId === activeTenantId ? "true" : "false"}>
             <span className="truncate">{b.name}</span>
             {b.tenantId === activeTenantId && <span className="w-1.5 h-1.5 rounded-full bg-[var(--brand)] flex-shrink-0" />}
           </button>
@@ -464,41 +504,263 @@ function roleLabel(role?: string | null): string {
   }
 }
 
+/** Initials for the business chip: "AMO Services" -> "AS", "BPS" -> "BP". */
+function businessInitials(name?: string): string {
+  const words = (name ?? "").trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return "—";
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+/**
+ * The rail.
+ *
+ * White, per the design: the one saturated thing on screen should be the item
+ * you are standing on, and a tenant's own logo sits far better on white than on
+ * a navy slab that belongs to nobody. The active item takes a tint of the
+ * tenant's colour rather than a solid fill, so a full-height rail of dark blue
+ * does not fight the content beside it.
+ *
+ * Same nav, same routes, same order as before — only the clothes changed.
+ */
 function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNavClick?: () => void }) {
   const { data: me } = useGetMe();
+  const brand = useActiveBrand();
+  const user = me as any;
+  const fullName = [user?.firstName, user?.lastName].filter(Boolean).join(" ") || user?.email || "";
+
   return (
     <>
-      <div className="p-4 border-b border-slate-800 flex-shrink-0">
-        <div className="font-bold text-white text-sm">BizzFlow</div>
-        <div className="text-xs text-slate-400 mt-0.5 truncate">{(me as any)?.email}</div>
-        <div className="text-xs text-[var(--brand-ink)] font-medium mt-0.5">{roleLabel((me as any)?.role)}</div>
+      <div className="px-5 pt-7 pb-1 flex-shrink-0">
+        <div className="text-[22px] font-extrabold tracking-[-1.2px] leading-none">
+          bizzflow<span className="text-[11px] align-super ml-0.5" style={{ color: "var(--brand)" }}>UK</span>
+        </div>
       </div>
+
+      <div className="px-4 pt-5 flex-shrink-0">
+        <div className="ws-company">
+          <span className="ws-company-icon">{businessInitials(brand.name)}</span>
+          <div className="min-w-0">
+            <strong className="truncate">{brand.name || "Your business"}</strong>
+            <small className="truncate">{roleLabel(user?.role)}</small>
+          </div>
+        </div>
+      </div>
+
       <BusinessSwitcher />
-      <nav className="flex-1 p-3 overflow-y-auto">
+
+      <nav className="ws-rail-nav flex-1 px-4 py-5 overflow-y-auto">
         {NAV_ITEMS.map((item, i) =>
-          item === null ? <div key={i} className="my-2 border-t border-slate-800" /> : (
+          item === null ? (
+            <div key={i} className="my-1.5 border-t" style={{ borderColor: "var(--ws-line)" }} />
+          ) : (
             <Link
               key={item.path}
               href={item.path}
               onClick={onNavClick}
-              className={`flex items-center gap-2.5 px-3 py-2.5 rounded-md text-xs font-medium mb-0.5 transition-colors ${
+              className="ws-nav-item"
+              data-active={
                 currentPath === item.path || (currentPath.startsWith(item.path + "/") && item.path !== "/dashboard")
-                  ? "bg-[var(--brand)] text-white"
-                  : "text-slate-400 hover:bg-slate-800 hover:text-white"
-              }`}
+                  ? "true"
+                  : "false"
+              }
             >
-              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={item.icon} />
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d={item.icon} />
               </svg>
               {item.label}
             </Link>
           )
         )}
       </nav>
-      <div className="p-4 border-t border-slate-800 flex-shrink-0">
+
+      <div className="ws-rail-foot px-4 pb-5 pt-4 flex-shrink-0 border-t" style={{ borderColor: "var(--ws-line)" }}>
+        <div className="flex items-center gap-2.5 mb-3">
+          <UserAvatar size={32} />
+          <div className="min-w-0">
+            <strong className="truncate">{fullName}</strong>
+            <small className="truncate">{user?.email}</small>
+          </div>
+        </div>
         <SignOutButton />
       </div>
     </>
+  );
+}
+
+/**
+ * A headline figure, in the platform design.
+ *
+ * `accent` paints it in the tenant's colour; the rest stay white. The figure
+ * steps down by length so a long money value cannot overflow the card — at
+ * two-up on a 375px phone a card gives about 133px of usable width, and a
+ * nine-character figure at 34px needs far more than that. Silently clipping
+ * "£1,544.40" to "£1,544.4" is not a cosmetic bug.
+ */
+function WorkspaceKpi({ label, value, hint, href, accent }: {
+  label: string; value: string; hint?: string; href: string; accent?: boolean;
+}) {
+  const len = value.length;
+  const size = len <= 7 ? "text-[26px] sm:text-[34px]"
+    : len <= 9 ? "text-[22px] sm:text-[30px]"
+    : len <= 12 ? "text-[19px] sm:text-[25px]"
+    : "text-[17px] sm:text-[21px]";
+
+  return (
+    <Link
+      href={href}
+      className="block rounded-[10px] border p-4 sm:p-[23px] min-w-0 transition-transform hover:-translate-y-px"
+      style={accent
+        ? { background: "var(--brand)", borderColor: "var(--brand)", color: "#fff" }
+        : { background: "#fff", borderColor: "var(--ws-line)" }}
+    >
+      <span className="block text-[12px] sm:text-[13px] font-medium" style={accent ? undefined : { color: "var(--ws-muted)" }}>
+        {label}
+      </span>
+      <strong className={`block font-semibold tracking-[-1.5px] my-1.5 sm:my-[9px] tabular-nums ${size}`}>
+        {value}
+      </strong>
+      {hint && <small className="block text-[10.5px] sm:text-[11px] opacity-75">{hint}</small>}
+    </Link>
+  );
+}
+
+/**
+ * Your website — the live front end, inside the workspace.
+ *
+ * A real iframe of the tenant's own public site, not a screenshot: it is always
+ * current, so a change to services or a new gallery photo shows here the moment
+ * it is saved. That is the point — the owner can see what a customer sees
+ * without leaving the tool, and the site stops feeling like a separate thing
+ * somebody else looks after.
+ *
+ * Scaled down rather than shrunk: the frame renders at a real desktop width and
+ * is transformed to fit, so the layout inside is the desktop layout. Rendering
+ * it at panel width would show the mobile breakpoint and misrepresent the site.
+ *
+ * `pointer-events: none` on the frame — clicking the preview should open the
+ * real site in a new tab, not navigate inside a 40%-scale window.
+ */
+/** The site renders at a real desktop width, then gets scaled to fit the panel. */
+const SITE_PREVIEW_WIDTH = 1440;
+
+function WebsitePage() {
+  const brand = useActiveBrand();
+  const frameBox = useRef<HTMLDivElement | null>(null);
+  const { data: settings } = useGetSettings();
+  const slug = (brand.me?.businesses || []).find((b: any) => b.tenantId === brand.me?.tenantId)?.slug
+    ?? (brand.me?.businesses || [])[0]?.slug;
+  const customDomain = (settings as any)?.customDomain as string | undefined;
+
+  // The customer-facing address if they have one, else the platform path.
+  const liveUrl = customDomain ? `https://${customDomain}` : slug ? `/site/${slug}` : null;
+  // The preview always uses the in-app path: a custom domain may not have DNS
+  // pointed yet, and an iframe to a dead hostname shows a browser error page
+  // rather than their site.
+  const previewUrl = slug ? `/site/${slug}` : null;
+
+  const [reloadKey, setReloadKey] = useState(0);
+
+  /**
+   * Keep the scale matched to the panel's width.
+   *
+   * A ResizeObserver rather than a window resize listener: the panel also
+   * changes width when the rail opens or closes on a tablet, which no window
+   * event reports. Disconnected on unmount — an observer left watching a
+   * detached node is a leak that survives every navigation.
+   */
+  useEffect(() => {
+    const box = frameBox.current;
+    if (!box) return;
+    const fit = () => box.style.setProperty("--site-scale", String(box.clientWidth / SITE_PREVIEW_WIDTH));
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(box);
+    return () => observer.disconnect();
+  }, [slug]);
+
+  if (!slug) {
+    return (
+      <div className="px-5 sm:px-10 pb-16 max-w-[1320px]">
+        <div className="ws-heading" style={{ display: "block" }}>
+          <p className="ws-eyebrow">{brand.name || "Your business"} / Workspace</p>
+          <h1>Your website</h1>
+        </div>
+        <div className="ws-panel">
+          <p style={{ color: "var(--ws-muted)" }}>
+            Your website is still being set up. It will appear here once it is live.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="px-5 sm:px-10 pb-16 max-w-[1320px]">
+      <div className="ws-heading">
+        <div>
+          <p className="ws-eyebrow">{brand.name || "Your business"} / Workspace</p>
+          <h1>Your best first impression.</h1>
+          <p className="ws-sub">This is the front door to your business, exactly as a customer sees it.</p>
+        </div>
+        <a className="ws-btn" href={liveUrl!} target="_blank" rel="noopener noreferrer">
+          Open your website <span aria-hidden="true">↗</span>
+        </a>
+      </div>
+
+      <section className="ws-panel">
+        <div className="ws-panel-top">
+          <h2>{brand.name || "Your site"}</h2>
+          <div className="flex items-center gap-3">
+            <span className="ws-chip">{customDomain ? customDomain : "Live preview"}</span>
+            <button type="button" onClick={() => setReloadKey(k => k + 1)}>Refresh ↻</button>
+          </div>
+        </div>
+
+        <div
+          ref={frameBox}
+          className="relative overflow-hidden rounded-[10px] border"
+          style={{ borderColor: "var(--ws-line)", height: "clamp(420px, 62vh, 760px)" }}
+        >
+          <iframe
+            key={reloadKey}
+            src={previewUrl!}
+            title={`${brand.name || "Your"} website preview`}
+            loading="lazy"
+            // The frame is our own origin, so this is a same-origin embed. It is
+            // sandboxed anyway: the preview never needs to navigate the parent,
+            // open a window or run a form submission.
+            sandbox="allow-scripts allow-same-origin"
+            style={{
+              width: `${SITE_PREVIEW_WIDTH}px`,
+              height: "2000px",
+              border: 0,
+              transformOrigin: "top left",
+              // A full desktop width of site, scaled into whatever width the
+              // panel has. Set by the effect below.
+              transform: "scale(var(--site-scale, 0.62))",
+              pointerEvents: "none",
+            }}
+          />
+          {/* Covers the frame so a click opens the real site rather than
+              navigating inside a scaled-down window. */}
+          <a
+            href={liveUrl!}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Open your website in a new tab"
+            className="absolute inset-0"
+          />
+        </div>
+
+        <p className="mt-4 text-[13.5px]" style={{ color: "var(--ws-muted)" }}>
+          Edit what appears here from Services, Gallery, Reviews and Case Studies.
+          {customDomain
+            ? ` Your customers reach it at ${customDomain}.`
+            : " Add your own domain in Settings to put it on your own address."}
+        </p>
+      </section>
+    </div>
   );
 }
 
@@ -569,7 +831,8 @@ function DashboardHome() {
   const maxCount = p ? Math.max(...p.map((x: any) => Number(x.count)), 1) : 1;
   const { data: leadsData } = useListLeads();
   const { data: quotesData } = useListQuotes();
-  const { name: bizName } = useActiveBrand();
+  const { name: bizName, me: brandMe } = useActiveBrand();
+  const firstName = (brandMe as any)?.firstName as string | undefined;
   const leadArr = (leadsData as any[]) || [];
   const quoteArr = (quotesData as any[]) || [];
   const pipelineValue = quoteArr.filter(q => ["Draft", "Sent"].includes(q.status)).reduce((sum, q) => sum + (parseFloat(q.total || "0") || 0), 0);
@@ -629,35 +892,36 @@ function DashboardHome() {
   }
 
   /**
-   * Four figures, four grounds.
+   * Four figures, in the platform's design.
    *
-   * These were white cards on a white page: nothing on the screen said where to
-   * look first. A dark saturated panel reads as the important thing precisely
-   * because everything under it is white — which is also why the panels below
-   * stay white, and darkening them to match would undo the whole effect.
+   * One card carries the tenant's colour and the other three stay white. That
+   * is the reference design's own arrangement and it is better than the four
+   * dark panels that were here before: a single accent gives the row a focal
+   * point, where four competing ones give it none.
    */
-  const kpis: StatCardProps[] = [
-    { label: "New leads", value: s?.newLeads ?? "—", hint: "awaiting action", href: "/dashboard/leads", category: "work", icon: Users },
-    { label: "Pipeline value", value: money(pipelineValue), hint: "in open quotes", href: "/dashboard/quotes", category: "money", icon: Wallet },
-    { label: "Estimates", value: calcCount, hint: "from your calculator", href: "/dashboard/leads", category: "automation", icon: Calculator },
-    { label: "Active projects", value: s?.activeProjects ?? "—", hint: "in progress", href: "/dashboard/projects", category: "overview", icon: HardHat },
+  const kpis = [
+    { label: "New leads", value: String(s?.newLeads ?? "—"), hint: "awaiting action", href: "/dashboard/leads" },
+    { label: "Pipeline value", value: money(pipelineValue), hint: "in open quotes", href: "/dashboard/quotes" },
+    { label: "Estimates", value: String(calcCount), hint: "from your calculator", href: "/dashboard/leads" },
+    { label: "Active projects", value: String(s?.activeProjects ?? "—"), hint: "in progress", href: "/dashboard/projects" },
   ];
 
   return (
-    <div className="p-4 sm:p-6 space-y-6 max-w-6xl">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{greeting()}</h1>
-        {bizName && <p className="text-sm text-slate-500 mt-0.5">{bizName}</p>}
+    <div className="px-5 sm:px-10 pb-16 max-w-[1320px] space-y-6">
+      {/* The design's page heading: a small eyebrow, then the greeting at full
+          size. The old version put the title in the top bar at 18px, which made
+          every screen open on chrome rather than on the work. */}
+      <div className="ws-heading" style={{ display: "block" }}>
+        <p className="ws-eyebrow">{(bizName || "Your business")} / Workspace</p>
+        <h1>{greeting()}{firstName ? `, ${firstName}.` : "."}</h1>
       </div>
 
       <TodoPanel todos={todos} />
 
-      {/* Two-up on a phone, not one. Every figure has to be in view without
-          scrolling — a strip you scroll is just a list, and glanceability is the
-          whole job. The card shrinks to fit rather than the row getting longer;
-          see figureSize. */}
-      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
-        {kpis.map(k => <StatCard key={k.label} {...k} />)}
+      {/* Two-up on a phone, not one: every figure has to be in view without
+          scrolling, because a strip you scroll is just a list. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-[17px] xl:grid-cols-4">
+        {kpis.map((k, i) => <WorkspaceKpi key={k.label} {...k} accent={i === 0} />)}
       </div>
       {upcomingSurveys.length > 0 && (
         <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
@@ -4441,18 +4705,18 @@ export default function DashboardApp() {
 
   return (
     <ToastCtx.Provider value={showToast}>
-      <div className="flex min-h-screen bg-slate-50 text-slate-800" style={brandVars(activeBrand.color)}>
-        <aside className="hidden md:flex w-56 flex-shrink-0 bg-slate-900 min-h-screen flex-col">
+      <div className="ws flex min-h-screen" style={brandVars(activeBrand.color)}>
+        <aside className="ws-rail hidden md:flex w-[225px] flex-shrink-0 min-h-screen flex-col">
           <SidebarContent currentPath={location} />
         </aside>
 
         {sidebarOpen && (
           <div className="fixed inset-0 z-40 md:hidden">
-            <div className="absolute inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
-            <aside className="absolute left-0 top-0 bottom-0 w-64 bg-slate-900 flex flex-col shadow-2xl">
-              <div className="flex items-center justify-between px-4 pt-4 pb-0 border-b border-slate-800">
-                <span className="text-white font-bold text-sm">Menu</span>
-                <button onClick={() => setSidebarOpen(false)} className="text-slate-400 hover:text-white p-2 -mr-2">
+            <div className="absolute inset-0 bg-black/40" onClick={() => setSidebarOpen(false)} />
+            <aside className="ws-rail absolute left-0 top-0 bottom-0 w-[265px] flex flex-col shadow-2xl">
+              <div className="flex items-center justify-end px-4 pt-4">
+                <button onClick={() => setSidebarOpen(false)} aria-label="Close menu"
+                  className="p-2 -mr-2 rounded-lg" style={{ color: "var(--ws-muted)" }}>
                   <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
                 </button>
               </div>
@@ -4490,6 +4754,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/certificates" component={CertificatesPage} />
               <Route path="/dashboard/automations" component={AutomationsPage} />
               <Route path="/dashboard/customers" component={CustomersPage} />
+              <Route path="/dashboard/website" component={WebsitePage} />
               <Route path="/dashboard/help" component={HelpPage} />
               <Route path="/dashboard/customers/:id">{(p: any) => <CustomerDetailPage id={Number(p.id)} />}</Route>
               <Route path="/dashboard/gallery" component={GalleryPage} />
