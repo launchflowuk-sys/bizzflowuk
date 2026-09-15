@@ -403,6 +403,8 @@ function TenantDetailPage({ id }: { id: number }) {
   const [reviewSummary, setReviewSummary] = useState<{ rating: string | null; count: number | null; syncedAt: string | null } | null>(null);
   const [accessBusy, setAccessBusy] = useState(false);
   const [accessResult, setAccessResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [sampleBusy, setSampleBusy] = useState(false);
+  const [sampleResult, setSampleResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   // These live on tenant_settings, which GET /tenants/:id does not return.
   useEffect(() => {
@@ -535,6 +537,32 @@ function TenantDetailPage({ id }: { id: number }) {
     }
   };
 
+  /**
+   * Sample data for a walkthrough, and taking it out again.
+   *
+   * Safe on a live tenant: every seeded row is flagged, so removal targets
+   * exactly those rows and cannot reach a real customer or invoice.
+   */
+  const handleSampleData = async (action: "add" | "remove") => {
+    if (action === "remove" && !confirm("Remove all the sample data from this business? Their real customers, jobs and invoices are not touched.")) return;
+    setSampleBusy(true);
+    setSampleResult(null);
+    try {
+      if (action === "add") {
+        const r = await adminRequest<{ message: string; counts: Record<string, number> }>(
+          "POST", `/tenants/${id}/sample-data`);
+        setSampleResult({ ok: true, text: r.message });
+      } else {
+        const r = await adminRequest<{ removed: number }>("DELETE", `/tenants/${id}/sample-data`);
+        setSampleResult({ ok: true, text: `${r.removed} sample records removed.` });
+      }
+    } catch (err: any) {
+      setSampleResult({ ok: false, text: err?.message || "That did not work." });
+    } finally {
+      setSampleBusy(false);
+    }
+  };
+
   const handleSaveBilling = async () => {
     setSavingBilling(true);
     try {
@@ -607,6 +635,32 @@ function TenantDetailPage({ id }: { id: number }) {
         </button>
         {accessResult && !accessResult.ok && (
           <p className="text-xs text-red-600">{accessResult.text}</p>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+        <h2 className="font-semibold text-slate-900">Sample Data</h2>
+        <p className="text-xs text-slate-500">
+          Fills this business with believable made-up customers, jobs, invoices and enquiries so
+          every screen has something on it for a walkthrough. Work appears in this week&rsquo;s diary,
+          invoices in every state including one overdue, and money in and out.
+        </p>
+        <p className="text-xs text-slate-500">
+          Every sample record is flagged, so removing it takes out exactly those and leaves their
+          real customers, jobs and invoices alone.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" onClick={() => handleSampleData("add")} disabled={sampleBusy}
+            className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+            {sampleBusy ? "Working…" : "Add sample data"}
+          </button>
+          <button type="button" onClick={() => handleSampleData("remove")} disabled={sampleBusy}
+            className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50">
+            Remove it
+          </button>
+        </div>
+        {sampleResult && (
+          <p className={`text-xs ${sampleResult.ok ? "text-green-700" : "text-red-600"}`}>{sampleResult.text}</p>
         )}
       </div>
 

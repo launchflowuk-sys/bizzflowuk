@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, index, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -14,6 +14,11 @@ export const contactMessagesTable = pgTable("contact_messages", {
   subject: text("subject"),
   message: text("message").notNull(),
   source: text("source").default("contact_form"),
+  /**
+   * Sample data for a walkthrough, removable exactly (migration 0049).
+   * Only the demo seeder ever sets this; every real row is false.
+   */
+  isDemo: boolean("is_demo").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (table) => [
   index("contact_messages_tenant_id_idx").on(table.tenantId),

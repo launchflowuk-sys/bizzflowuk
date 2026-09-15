@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, integer, pgEnum, numeric, index } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, pgEnum, numeric, index, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { tenantsTable } from "./tenants";
@@ -22,6 +22,11 @@ export const quotesTable = pgTable("quotes", {
   validUntil: timestamp("valid_until", { withTimezone: true }),
   sentAt: timestamp("sent_at", { withTimezone: true }),
   acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+  /**
+   * Sample data for a walkthrough, removable exactly (migration 0049).
+   * Only the demo seeder ever sets this; every real row is false.
+   */
+  isDemo: boolean("is_demo").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

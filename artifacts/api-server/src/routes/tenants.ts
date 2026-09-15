@@ -209,6 +209,43 @@ router.post("/tenants/:id/reviews/import", requireSuperAdmin, async (req, res) =
   }
 });
 
+// ── Sample data for a walkthrough ────────────────────────────────────────────
+
+/**
+ * Fill a tenant with believable sample data, and empty it again.
+ *
+ * An empty dashboard sells nothing: every list says "nothing yet", every total
+ * is zero, and the person being shown it has to imagine the product rather
+ * than see it working.
+ *
+ * Safe on a LIVE tenant, which BPS is. Every seeded row carries `is_demo`
+ * (migration 0049), so removal is `where tenant_id = X and is_demo` and cannot
+ * touch a real customer, job or invoice even if something here is wrong.
+ */
+router.post("/tenants/:id/sample-data", requireSuperAdmin, async (req: any, res) => {
+  try {
+    const tenantId = Number(req.params.id);
+    if (!Number.isInteger(tenantId)) { res.status(400).json({ error: "Bad tenant id" }); return; }
+    const { seedTenantSampleData } = await import("../lib/demo/tenantSampleData");
+    const result = await seedTenantSampleData(tenantId);
+    req.log.warn({ tenantId, by: req.authUser?.email, ...result }, "Sample data added to a tenant");
+    res.json(result.seeded
+      ? { ...result, message: "Sample data added. Remove it from here when the walkthrough is done." }
+      : { ...result, message: "This tenant already has sample data in it." });
+  } catch (err: any) { req.log.error(err); res.status(500).json({ error: err?.message || "Could not add the sample data" }); }
+});
+
+router.delete("/tenants/:id/sample-data", requireSuperAdmin, async (req: any, res) => {
+  try {
+    const tenantId = Number(req.params.id);
+    if (!Number.isInteger(tenantId)) { res.status(400).json({ error: "Bad tenant id" }); return; }
+    const { removeTenantSampleData } = await import("../lib/demo/tenantSampleData");
+    const result = await removeTenantSampleData(tenantId);
+    req.log.warn({ tenantId, by: req.authUser?.email, ...result }, "Sample data removed from a tenant");
+    res.json(result);
+  } catch (err: any) { req.log.error(err); res.status(500).json({ error: err?.message || "Could not remove the sample data" }); }
+});
+
 // ── Support: working inside a tenant's own dashboard ─────────────────────────
 
 /**

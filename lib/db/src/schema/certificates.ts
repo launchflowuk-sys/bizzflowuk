@@ -74,6 +74,11 @@ export const certificatesTable = pgTable("certificates", {
   /** Idempotency latch for the renewal sweep. */
   renewalNotifiedAt: timestamp("renewal_notified_at", { withTimezone: true }),
 
+  /**
+   * Sample data for a walkthrough, removable exactly (migration 0049).
+   * Only the demo seeder ever sets this; every real row is false.
+   */
+  isDemo: boolean("is_demo").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

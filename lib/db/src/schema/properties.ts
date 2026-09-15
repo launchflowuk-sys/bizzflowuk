@@ -33,6 +33,11 @@ export const propertiesTable = pgTable("properties", {
   tenantName: text("tenant_name"),
   tenantPhone: text("tenant_phone"),
   archived: boolean("archived").notNull().default(false),
+  /**
+   * Sample data for a walkthrough, removable exactly (migration 0049).
+   * Only the demo seeder ever sets this; every real row is false.
+   */
+  isDemo: boolean("is_demo").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [
