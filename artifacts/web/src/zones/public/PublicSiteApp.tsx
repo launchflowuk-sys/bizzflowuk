@@ -2467,6 +2467,10 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
   const [quoteStatus, setQuoteStatus] = useState<string | null>(null);
   const [termsAgreed, setTermsAgreed] = useState(false);
   const cardRef = useRef<any>(null);
+  // Stripe's Elements instance and the intent it is collecting for.
+  const stripeRef = useRef<any>(null);
+  const elementsRef = useRef<any>(null);
+  const intentIdRef = useRef<string | null>(null);
 
   const d = (pageData as any) || {};
   const paySettings = d.settings || {};
@@ -2476,15 +2480,78 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
   // paymentsReady is the server's word that the FULL Square config (incl. the secret access token)
   // exists — app id + location id alone render a form whose every charge would 400. Fall back to the
   // old id-based check only if the API predates the flag.
-  const paymentsConfigured = (paySettings.paymentsReady ?? true) && !!(paySettings.squareApplicationId && paySettings.squareLocationId);
+  // Which till this business uses. The server decides — it is the only side
+  // that can see whether the secret half of either set of credentials exists.
+  const provider: "square" | "stripe" | null = paySettings.paymentProvider
+    ?? (paySettings.squareApplicationId ? "square" : null);
+  const paymentsConfigured = provider === "stripe"
+    ? !!(paySettings.paymentsReady && paySettings.stripePublishableKey)
+    : (paySettings.paymentsReady ?? true) && !!(paySettings.squareApplicationId && paySettings.squareLocationId);
   const remainingBalance = quote && Number(link.amount) < Number(quote.total) ? Number(quote.total) - Number(link.amount) : null;
 
   useEffect(() => {
     if (quote?.status) setQuoteStatus(quote.status);
   }, [quote?.status]);
 
+  /**
+   * Stripe: create the intent server-side, then mount Elements against it.
+   *
+   * Card details are entered inside Stripe's own iframe and confirmed by
+   * Stripe.js, so they never touch this page or our server — which is the
+   * entire reason for doing it this way round rather than posting a card
+   * number anywhere near us.
+   */
   useEffect(() => {
-    if (!paymentsConfigured || link.status !== "Pending") return;
+    if (provider !== "stripe" || !paymentsConfigured || link.status !== "Pending") return;
+
+    let cancelled = false;
+    const scriptId = "stripe-js";
+
+    async function init() {
+      try {
+        const res = await fetch(`/api/public/pay/${token}/stripe-intent`, { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.clientSecret) throw new Error(data.error || "Could not start the payment");
+        if (cancelled) return;
+
+        // The intent id is the first half of the client secret, and it is what
+        // the charge call sends back for the server to verify against Stripe.
+        intentIdRef.current = String(data.clientSecret).split("_secret_")[0];
+
+        const stripe = (window as any).Stripe(data.publishableKey);
+        const elements = stripe.elements({
+          clientSecret: data.clientSecret,
+          appearance: { theme: "stripe", variables: { colorPrimary: paySettings.primaryColor || "#0f766e" } },
+        });
+        const payment = elements.create("payment", { layout: "tab" });
+        payment.mount("#stripe-card-container");
+        if (cancelled) return;
+        stripeRef.current = stripe;
+        elementsRef.current = elements;
+        setCardReady(true);
+      } catch (err: any) {
+        if (!cancelled) setCardError(err?.message || "Unable to load the payment form. Please try again shortly.");
+      }
+    }
+
+    const existing = document.getElementById(scriptId) as HTMLScriptElement | null;
+    if (existing) {
+      if ((window as any).Stripe) init();
+      else existing.addEventListener("load", init);
+    } else {
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = "https://js.stripe.com/v3/";
+      script.onload = init;
+      script.onerror = () => setCardError("Unable to load the payment form. Please try again shortly.");
+      document.body.appendChild(script);
+    }
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [provider, paymentsConfigured, link.status, token]);
+
+  useEffect(() => {
+    if (provider !== "square" || !paymentsConfigured || link.status !== "Pending") return;
 
     const scriptId = "square-web-payments-sdk";
     const src = paySettings.squareEnvironment === "production"
@@ -2520,9 +2587,42 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
     }
     return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [paymentsConfigured, paySettings.squareApplicationId, paySettings.squareLocationId, paySettings.squareEnvironment, link.status]);
+  }, [provider, paymentsConfigured, paySettings.squareApplicationId, paySettings.squareLocationId, paySettings.squareEnvironment, link.status]);
 
   const handlePay = async () => {
+    if (provider === "stripe") {
+      if (!stripeRef.current || !elementsRef.current) return;
+      setPaying(true);
+      setCardError(null);
+      try {
+        // Confirm in the browser. `redirect: "if_required"` keeps the common
+        // card case on this page and still supports the 3-D Secure redirect
+        // when the bank asks for it.
+        const result = await stripeRef.current.confirmPayment({
+          elements: elementsRef.current,
+          redirect: "if_required",
+        });
+        if (result.error) {
+          setCardError(result.error.message || "Card declined — please check the details and try again.");
+          setPaying(false);
+          return;
+        }
+        // The browser saying "it worked" is not evidence. The server fetches the
+        // intent back from Stripe and checks the amount before marking it paid.
+        const res = await chargeMutation.mutateAsync({
+          token,
+          data: { paymentIntentId: result.paymentIntent?.id ?? intentIdRef.current },
+        } as any) as any;
+        setChargeResult({ status: res.status, error: res.error });
+        if (res.quoteStatus) setQuoteStatus(res.quoteStatus);
+      } catch (err: any) {
+        setChargeResult({ status: "Failed", error: err?.message || "Payment failed — please try again or contact us." });
+      } finally {
+        setPaying(false);
+      }
+      return;
+    }
+
     if (!cardRef.current) return;
     setPaying(true);
     setCardError(null);
@@ -2660,7 +2760,9 @@ function PayQuotePage({ tenantSlug, token }: { tenantSlug: string; token: string
                   <p className="text-sm" style={{ color: MUTED }}>Online payment isn't set up yet for this business — please contact us to arrange payment.</p>
                 ) : (
                   <div className="space-y-3">
-                    <div id="square-card-container" className="min-h-[90px]" />
+                    {provider === "stripe"
+                      ? <div id="stripe-card-container" className="min-h-[90px]" />
+                      : <div id="square-card-container" className="min-h-[90px]" />}
                     {cardError && <p className="text-sm text-red-600">{cardError}</p>}
                     {chargeResult?.status === "Failed" && <p className="text-sm text-red-600">{chargeResult.error || "Payment failed — please try again."}</p>}
                     <button onClick={handlePay} disabled={!cardReady || paying || (!!quote && !termsAgreed)} title={quote && !termsAgreed ? "Please agree to the Terms & Conditions first" : undefined} className="w-full rounded-lg py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50" style={{ backgroundColor: BLUE }}>

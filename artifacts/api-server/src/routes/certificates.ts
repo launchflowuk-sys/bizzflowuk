@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import {
   certificatesTable, certificateAppliancesTable,
-  tenantsTable, tenantSettingsTable, customersTable,
+  tenantsTable, tenantSettingsTable, customersTable, propertiesTable,
 } from "@workspace/db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
@@ -176,6 +176,108 @@ router.post("/certificates", requireTenantAccess, async (req: any, res) => {
 });
 
 // ── Update draft ─────────────────────────────────────────────────────────────
+
+
+/**
+ * Bring in last year's certificates.
+ *
+ * Every plumber arriving on the platform already has a year of CP12s in a
+ * folder, an old system, or a filing cabinet. Without these the renewal engine
+ * is blind for twelve months: it only knows about certificates issued here, so
+ * the first year of reminders — the entire reason they signed up — never fires.
+ *
+ * Imported records are deliberately NOT issued by this engine. They are marked
+ * `imported`, they keep whatever reference the old system gave them, and they
+ * carry no generated PDF. What they do carry is an expiry date, which is all
+ * the renewal sweep needs. A record that says "we do not know what is on this
+ * document, but it runs out on 4 March" is worth far more than no record.
+ *
+ * Accepts a batch, reports per-row, and never fails the whole import because
+ * one line was wrong — somebody pasting thirty rows should not lose twenty-nine
+ * good ones to a typo in the tenth.
+ */
+router.post("/certificates/import", requireTenantAccess, async (req: any, res) => {
+  try {
+    const rows = Array.isArray(req.body?.rows) ? req.body.rows : null;
+    if (!rows?.length) { res.status(400).json({ error: "Nothing to import." }); return; }
+    if (rows.length > 500) { res.status(400).json({ error: "Import up to 500 at a time." }); return; }
+
+    const tenantId = tid(req);
+    const results: Array<{ row: number; ok: boolean; id?: number; reference?: string; error?: string }> = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const r = rows[i] ?? {};
+      try {
+        const type = getCertificateType(r.type || "gas_safety");
+        if (!type) throw new Error(`Unknown certificate type: ${r.type}`);
+
+        const address = String(r.propertyAddress ?? "").trim();
+        if (!address) throw new Error("Property address is required");
+
+        const expiresAt = r.expiresAt ? new Date(r.expiresAt) : null;
+        if (!expiresAt || Number.isNaN(expiresAt.getTime())) throw new Error("A valid expiry date is required");
+
+        const issuedAt = r.issuedAt ? new Date(r.issuedAt) : null;
+
+        /**
+         * When the inspection actually happened. Required by the schema, and
+         * genuinely important: it is the date on the paper document.
+         *
+         * If the import does not carry one, derive it from the expiry rather
+         * than refusing the row. A CP12 runs twelve months, so expiry minus a
+         * year is the check date to within a day or two — and a record with an
+         * approximately-right check date and an exactly-right expiry is far
+         * more useful than no record at all.
+         */
+        const checked = r.checkedAt ? new Date(r.checkedAt)
+          : issuedAt && !Number.isNaN(issuedAt.getTime()) ? issuedAt
+          : new Date(expiresAt.getTime() - 365 * 86_400_000);
+        if (Number.isNaN(checked.getTime())) throw new Error("Check date is not a valid date");
+
+        // A propertyId from the body must belong to this tenant — the column is
+        // a plain foreign key with no tenant constraint.
+        let propertyId: number | null = null;
+        if (r.propertyId != null) {
+          const [owned] = await db.select({ id: propertiesTable.id }).from(propertiesTable)
+            .where(and(eq(propertiesTable.id, Number(r.propertyId)), eq(propertiesTable.tenantId, tenantId))).limit(1);
+          if (!owned) throw new Error("That property does not belong to this business");
+          propertyId = owned.id;
+        }
+
+        const reference = String(r.reference ?? "").trim() || await nextReference(tenantId, type.referenceCode);
+
+        const [cert] = await db.insert(certificatesTable).values({
+          tenantId,
+          type: type.key,
+          reference,
+          // Issued, not draft: it is a real certificate that really exists, and
+          // only issued records are swept for renewal.
+          status: "issued",
+          propertyAddress: address,
+          propertyPostcode: r.propertyPostcode?.trim() || null,
+          landlordName: r.landlordName?.trim() || null,
+          propertyId,
+          checkedAt: checked.toISOString().slice(0, 10),
+          issuedAt: issuedAt && !Number.isNaN(issuedAt.getTime()) ? issuedAt : null,
+          // expires_at is a DATE column: it wants YYYY-MM-DD, not a Date, and
+          // passing the object silently fails the insert's type contract.
+          expiresAt: expiresAt.toISOString().slice(0, 10),
+          imported: true,
+          importedNote: r.note?.slice(0, 500) || "Imported from previous records",
+          data: {},
+        }).returning();
+
+        results.push({ row: i + 1, ok: true, id: cert.id, reference: cert.reference });
+      } catch (rowErr: any) {
+        results.push({ row: i + 1, ok: false, error: rowErr?.message || "Could not import this row" });
+      }
+    }
+
+    const imported = results.filter(r => r.ok).length;
+    req.log.info({ tenantId, imported, failed: results.length - imported }, "Certificate import");
+    res.status(201).json({ imported, failed: results.length - imported, results });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
 
 router.patch("/certificates/:id", requireTenantAccess, async (req: any, res) => {
   try {

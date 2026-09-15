@@ -24,3 +24,5 @@ export * from "./user_invites";
 export * from "./certificates";
 export * from "./invoices";
 export * from "./automations";
+export * from "./files";
+export * from "./properties";

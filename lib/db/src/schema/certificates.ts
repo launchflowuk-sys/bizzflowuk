@@ -37,6 +37,14 @@ export const certificatesTable = pgTable("certificates", {
 
   customerId: integer("customer_id").references(() => customersTable.id),
   projectId: integer("project_id").references(() => projectsTable.id),
+  /** The property this certificate is for, once one is known. Free-text
+   *  propertyAddress below stays authoritative for records that predate it. */
+  propertyId: integer("property_id"),
+  /** Brought in from a previous system or a paper file rather than issued here.
+   *  Its PDF is whatever was uploaded, and its contents were never validated by
+   *  this engine — renewals still work from the expiry date either way. */
+  imported: boolean("imported").notNull().default(false),
+  importedNote: text("imported_note"),
 
   propertyAddress: text("property_address").notNull(),
   propertyPostcode: text("property_postcode"),

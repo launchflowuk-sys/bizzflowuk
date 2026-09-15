@@ -4,6 +4,7 @@ import pinoHttp from "pino-http";
 import router from "./routes";
 import { logger } from "./lib/logger";
 import { startReviewRequestScheduler } from "./lib/reviewRequestScheduler";
+import { handleStripeWebhook } from "./routes/billing";
 
 const app: Express = express();
 
@@ -33,6 +34,17 @@ app.use(
   }),
 );
 app.use(cors());
+
+/**
+ * Stripe's webhook, mounted BEFORE express.json() and with a raw body parser.
+ *
+ * The signature is an HMAC over the exact bytes Stripe sent. Once express.json()
+ * has parsed and the handler re-stringifies, key order and whitespace can differ
+ * and the signature never verifies again — so this one route has to see the
+ * buffer, and it has to be registered before the JSON parser claims it.
+ */
+app.post("/api/billing/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

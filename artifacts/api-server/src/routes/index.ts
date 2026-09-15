@@ -29,6 +29,9 @@ import automationsRouter from "./automations";
 import scheduleRouter from "./schedule";
 import moneyRouter from "./money";
 import signupRouter from "./signup";
+import billingRouter from "./billing";
+import filesRouter from "./files";
+import propertiesRouter from "./properties";
 
 const router: IRouter = Router();
 
@@ -42,6 +45,9 @@ router.use(automationsRouter);
 router.use(scheduleRouter);
 router.use(moneyRouter);
 router.use(signupRouter);
+router.use(billingRouter);
+router.use(filesRouter);
+router.use(propertiesRouter);
 router.use(storageRouter);
 router.use("/auth", authRouter);
 router.use(tenantsRouter);

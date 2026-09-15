@@ -27,6 +27,19 @@ export const tenantsTable = pgTable("tenants", {
   showcaseOrder: integer("showcase_order"),
   /** The one line shown under their site in the showcase. */
   showcaseBlurb: text("showcase_blurb"),
+
+  /**
+   * BizzFlowUK's own subscription, on the PLATFORM Stripe account.
+   * Not the tenant's Stripe keys in tenant_settings, which point the other way:
+   * those take money from their customers, these take money from them.
+   */
+  billingCustomerId: text("billing_customer_id"),
+  billingSubscriptionId: text("billing_subscription_id"),
+  /** Mirrors Stripe: trialing | active | past_due | canceled | ... */
+  billingStatus: text("billing_status"),
+  trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  /** When their website actually went live, so the trial promise is auditable. */
+  websiteDeliveredAt: timestamp("website_delivered_at", { withTimezone: true }),
   /** Per-tenant module switches. New modules stay dark until enabled (migration 0032). */
   features: jsonb("features").$type<Record<string, boolean>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

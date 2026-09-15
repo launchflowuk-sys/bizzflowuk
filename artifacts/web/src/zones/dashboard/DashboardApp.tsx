@@ -36,6 +36,9 @@ import {
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { StatusBadge } from "@/components/StatusBadge";
+import FilesPage from "./FilesPage";
+import PropertiesPage from "./PropertiesPage";
+import BookingQrPage from "./BookingQrPage";
 import "./workspace-theme.css";
 import { StatCard, type StatCardProps } from "@/components/StatCard";
 import { Users, Wallet, Calculator, HardHat } from "lucide-react";
@@ -227,6 +230,9 @@ const NAV_ITEMS = [
   { path: "/dashboard/expenses", label: "Expenses", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
   { path: "/dashboard/certificates", label: "Certificates", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
   { path: "/dashboard/automations", label: "Automations", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+  { path: "/dashboard/booking-qr", label: "QR code", icon: "M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" },
+  { path: "/dashboard/properties", label: "Properties", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" },
+  { path: "/dashboard/files", label: "Files", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
   null,
   { path: "/dashboard/gallery", label: "Gallery", icon: "M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" },
   { path: "/dashboard/reviews", label: "Reviews", icon: "M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" },
@@ -4398,6 +4404,7 @@ function SettingsPage() {
   const [smtpPass, setSmtpPass] = useState("");
   const [twilioAuthToken, setTwilioAuthToken] = useState("");
   const [squareAccessToken, setSquareAccessToken] = useState("");
+  const [stripeSecretKey, setStripeSecretKey] = useState("");
   const [emailTestResult, setEmailTestResult] = useState<{ ok: boolean; error?: string | null } | null>(null);
   const [smsTestResult, setSmsTestResult] = useState<{ ok: boolean; error?: string | null } | null>(null);
 
@@ -4413,12 +4420,19 @@ function SettingsPage() {
     else delete payload.twilioAuthToken;
     if (squareAccessToken) payload.squareAccessToken = squareAccessToken;
     else delete payload.squareAccessToken;
+    // Same rule as every other secret: a blank box means "keep what is
+    // stored", never "wipe it". The API masks it back as "" on load, so
+    // without this, opening Settings and pressing Save would turn card
+    // payments off.
+    if (stripeSecretKey) payload.stripeSecretKey = stripeSecretKey;
+    else delete payload.stripeSecretKey;
     try {
       await updateMutation.mutateAsync({ data: payload } as any);
       showToast("Settings saved");
       setSmtpPass("");
       setTwilioAuthToken("");
       setSquareAccessToken("");
+      setStripeSecretKey("");
     } catch (err: any) {
       showToast(err?.message || "Save failed — please check your inputs and try again", "error");
     }
@@ -4558,8 +4572,49 @@ function SettingsPage() {
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <div>
-            <h2 className="font-semibold text-slate-900">Payments (Square)</h2>
-            <p className="text-xs text-slate-500 mt-1">Connect Square to let customers pay quotes online. Sandbox and production use different credentials — update all three fields when you switch.</p>
+            <h2 className="font-semibold text-slate-900">Card payments</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Take card payments on your quotes and invoices. Connect your own Square or Stripe account —
+              the money goes straight to you and BizzFlow never sits in the middle of it.
+            </p>
+          </div>
+          <div>
+            <label className={labelCls}>Which one do you use?</label>
+            <select className={inputCls} value={form.paymentProvider ?? ""} onChange={e => setForm({ ...form, paymentProvider: e.target.value || null })}>
+              {/* Blank is not "none" — it means work it out from whichever set of
+                  credentials is complete, which is how every tenant that existed
+                  before Stripe keeps working without touching this page. */}
+              <option value="">Work it out automatically</option>
+              <option value="square">Square</option>
+              <option value="stripe">Stripe</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Stripe</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              From your Stripe dashboard under Developers → API keys. Test keys (<code>pk_test</code> /
+              <code>sk_test</code>) take no real money; live keys do. Both halves must be from the same
+              set — a live publishable key with a test secret key is refused, because that combination
+              only fails at the till.
+            </p>
+          </div>
+          {field("stripePublishableKey", "Publishable key")}
+          <div>
+            <label className={labelCls}>Secret key<SecretBadge stored={s?.stripeSecretKey} /></label>
+            <input type="password" className={inputCls}
+              placeholder={s?.stripeSecretKey === "" ? "•••••••• saved — leave blank to keep" : "sk_live_… or sk_test_…"}
+              value={stripeSecretKey} onChange={e => setStripeSecretKey(e.target.value)} autoComplete="new-password" />
+            <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved key. It never leaves the server.</p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Square</h2>
+            <p className="text-xs text-slate-500 mt-1">Sandbox and production use different credentials — update all three fields when you switch.</p>
           </div>
           {form.squareEnvironment === "sandbox" && (
             <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 inline-block">Sandbox mode — no real charges will be made</p>
@@ -4754,6 +4809,9 @@ export default function DashboardApp() {
               <Route path="/dashboard/certificates" component={CertificatesPage} />
               <Route path="/dashboard/automations" component={AutomationsPage} />
               <Route path="/dashboard/customers" component={CustomersPage} />
+              <Route path="/dashboard/booking-qr" component={BookingQrPage} />
+              <Route path="/dashboard/properties" component={PropertiesPage} />
+              <Route path="/dashboard/files" component={FilesPage} />
               <Route path="/dashboard/website" component={WebsitePage} />
               <Route path="/dashboard/help" component={HelpPage} />
               <Route path="/dashboard/customers/:id">{(p: any) => <CustomerDetailPage id={Number(p.id)} />}</Route>
