@@ -32,6 +32,7 @@ import signupRouter from "./signup";
 import billingRouter from "./billing";
 import filesRouter from "./files";
 import propertiesRouter from "./properties";
+import assistantRouter from "./assistant";
 
 const router: IRouter = Router();
 
@@ -48,6 +49,7 @@ router.use(signupRouter);
 router.use(billingRouter);
 router.use(filesRouter);
 router.use(propertiesRouter);
+router.use(assistantRouter);
 router.use(storageRouter);
 router.use("/auth", authRouter);
 router.use(tenantsRouter);

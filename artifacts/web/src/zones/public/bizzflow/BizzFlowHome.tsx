@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
+import { useAuthCtx } from "@/lib/auth";
 import { BizzFlowSymbol, BizzFlowWordmark } from "./BizzFlowBrand";
 import { useDocumentMeta, useScrollMeter, useScrollReveals, useSmoothAnchors } from "./useBizzFlowChrome";
 import "./bizzflow.css";
@@ -348,6 +349,39 @@ function ClientShowcase() {
   );
 }
 
+/**
+ * "See the demo" now opens the REAL dashboard, signed in to a seeded demo
+ * business, rather than the mock-up that used to live at /demo.
+ *
+ * A mock shows a prospect a drawing of the product; this shows them the product.
+ * The mock route is kept for anyone holding an old link.
+ */
+function useDemoLogin() {
+  const { signIn } = useAuthCtx();
+  const [, setLocation] = useLocation();
+  const [busy, setBusy] = useState(false);
+
+  return {
+    busy,
+    open: async () => {
+      if (busy) return;
+      setBusy(true);
+      try {
+        const res = await fetch("/api/public/demo-login", { method: "POST" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || !data.token) throw new Error();
+        signIn(data.token);
+        setLocation("/dashboard");
+      } catch {
+        // If the demo workspace is down, the mock is still better than nothing.
+        setLocation("/demo");
+      } finally {
+        setBusy(false);
+      }
+    },
+  };
+}
+
 export default function BizzFlowHome() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const meterRef = useScrollMeter();
@@ -356,6 +390,7 @@ export default function BizzFlowHome() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [step, setStep] = useState(0);
   const [industry, setIndustry] = useState(0);
+  const demo = useDemoLogin();
 
   useSmoothAnchors();
   useDocumentMeta(
@@ -383,7 +418,9 @@ export default function BizzFlowHome() {
           <a href="#pricing" onClick={closeMenu}>Pricing</a>
         </nav>
         <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <Link href="/demo" className="text-link" style={{ whiteSpace: "nowrap" }}>See the demo</Link>
+          <button type="button" onClick={demo.open} className="text-link" style={{ whiteSpace: "nowrap", background: "none", border: 0, cursor: "pointer", font: "inherit", color: "inherit" }}>
+            {demo.busy ? "Opening…" : "See the demo"}
+          </button>
           <Link href="/signup" className="button small dark">
             Start free <span>↗</span>
           </Link>
@@ -419,9 +456,9 @@ export default function BizzFlowHome() {
               <Link href="/signup" className="button teal-bg">
                 Start free for 7 days <span>↗</span>
               </Link>
-              <Link href="/demo" className="text-link">
-                <span className="play">▶</span> See it in action
-              </Link>
+              <button type="button" onClick={demo.open} className="text-link" style={{ background: "none", border: 0, cursor: "pointer", font: "inherit", color: "inherit" }}>
+                <span className="play">▶</span> {demo.busy ? "Opening…" : "See it in action"}
+              </button>
             </div>
             <div className="hero-note">
               <span className="check">✓</span> Your website. Your business tools. One place.
@@ -780,9 +817,9 @@ export default function BizzFlowHome() {
             <Link href="/signup" className="button teal-bg">
               Start your 7 days free <span>↗</span>
             </Link>
-            <Link href="/demo" className="text-link">
-              <span className="play">▶</span> Look around first
-            </Link>
+            <button type="button" onClick={demo.open} className="text-link" style={{ background: "none", border: 0, cursor: "pointer", font: "inherit", color: "inherit" }}>
+              <span className="play">▶</span> {demo.busy ? "Opening…" : "Look around first"}
+            </button>
           </div>
           <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--muted)" }}>
             No card needed to start the trial.

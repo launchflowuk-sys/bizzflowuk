@@ -2,7 +2,7 @@ import { Router } from "express";
 import bcrypt from "bcryptjs";
 import { db } from "@workspace/db";
 import { tenantsTable, tenantSettingsTable, usersTable, userTenantsTable } from "@workspace/db";
-import { eq, sql } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import { signAuthToken } from "../middlewares/auth";
 import { publicFormRateLimiter } from "../middlewares/rateLimit";
@@ -157,6 +157,43 @@ router.post("/signup", publicFormRateLimiter, async (req: any, res) => {
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Something went wrong creating the account. Please try again." });
+  }
+});
+
+
+/**
+ * Sign in to the public demo workspace.
+ *
+ * Hands any visitor a session for ONE specific tenant: the one whose slug is
+ * `demo` and whose plan is `demo`. Both conditions are checked, so this can
+ * never become a way into a paying business even if a slug is reused by mistake.
+ *
+ * Handing out a login sounds alarming and is not, because the demo tenant is an
+ * ordinary tenant: every tenant filter in the codebase applies to it exactly as
+ * it does to BPS. A demo visitor sees Oak & Stone's fictional data for the same
+ * reason BPS cannot see AMO's. Everything inside it is invented, and
+ * `scripts/seed-demo-tenant.cjs` rebuilds it, so anything a visitor types is
+ * temporary.
+ *
+ * This is why the demo is the real dashboard rather than a mock-up: a prospect
+ * sees the product they will actually get.
+ */
+router.post("/public/demo-login", publicFormRateLimiter, async (req: any, res) => {
+  try {
+    const [tenant] = await db.select({ id: tenantsTable.id })
+      .from(tenantsTable)
+      .where(and(eq(tenantsTable.slug, "demo"), eq(tenantsTable.plan, "demo")))
+      .limit(1);
+    if (!tenant) { res.status(404).json({ error: "The demo is not available right now." }); return; }
+
+    const [user] = await db.select({ id: usersTable.id, email: usersTable.email, role: usersTable.role })
+      .from(usersTable).where(eq(usersTable.tenantId, tenant.id)).limit(1);
+    if (!user) { res.status(404).json({ error: "The demo is not available right now." }); return; }
+
+    res.json({ token: signAuthToken(user.id), demo: true });
+  } catch (err) {
+    req.log.error(err, "Demo login failed");
+    res.status(500).json({ error: "The demo is not available right now." });
   }
 });
 
