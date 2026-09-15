@@ -62,7 +62,12 @@ export const certificatesTable = pgTable("certificates", {
   engineerRegNo: text("engineer_reg_no"),
 
   checkedAt: date("checked_at").notNull(),
-  expiresAt: date("expires_at").notNull(),
+  /**
+   * Null for records that do not lapse (migration 0051) -- a warning notice, a
+   * commissioning record, a purge record. Those are statements about work on a
+   * date, not permissions that run out.
+   */
+  expiresAt: date("expires_at"),
 
   outcome: text("outcome"),
   data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),

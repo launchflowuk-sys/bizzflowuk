@@ -96,7 +96,9 @@ export function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
 
     const rx = left + colW + colGap;
     yR = field("Date of check", fmtDate(c.checkedAt), rx, yR, colW);
-    yR = field("Next check due", fmtDate(c.expiresAt), rx, yR, colW);
+    // Omitted entirely for a record that does not lapse. "Next check due --"
+    // on a warning notice invites the reader to think one is due.
+    if (c.expiresAt) yR = field("Next check due", fmtDate(c.expiresAt), rx, yR, colW);
     yR = field("Engineer", c.engineerName ?? "—", rx, yR, colW);
     if (c.engineerRegNo) yR = field("Registration number", c.engineerRegNo, rx, yR, colW);
 

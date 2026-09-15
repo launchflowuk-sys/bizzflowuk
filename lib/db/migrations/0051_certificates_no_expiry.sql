@@ -1,0 +1,24 @@
+-- Not every record expires.
+--
+-- `expires_at` has been NOT NULL since certificates were built, which was fine
+-- while there were two types and both lasted twelve months. Brandon's current
+-- app offers ten in the Plumbing & Gas category alone, and some of them are
+-- not time-limited documents at all:
+--
+--   A Gas Warning Notice records that an appliance was found unsafe on a
+--   given day. It does not lapse. It is answered by the appliance being made
+--   safe, not by a calendar.
+--
+--   An Installation/Commissioning record and a Gas Testing & Purging record
+--   are statements about work carried out on a date. There is nothing to renew.
+--
+-- Giving those a made-up expiry date would put a false claim on a legal
+-- document and drop them into the renewal sweep, which would then pester a
+-- customer to rebook something that was never due.
+--
+-- Nullable, and the renewal automation already skips a null expiry because it
+-- filters on a date comparison.
+--
+-- Keep this file ASCII.
+
+ALTER TABLE "certificates" ALTER COLUMN "expires_at" DROP NOT NULL;

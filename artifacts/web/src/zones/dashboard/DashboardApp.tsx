@@ -42,6 +42,7 @@ import BookingQrPage from "./BookingQrPage";
 import NewJobForm from "./NewJobForm";
 import JobShareCard from "./JobShareCard";
 import TeamChat from "./TeamChat";
+import CustomerHistory from "./CustomerHistory";
 import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
 import BillingPage from "./BillingPage";
@@ -3242,6 +3243,11 @@ function CustomerDetailPage({ id }: { id: number }) {
           {c.address && <div className="sm:col-span-2"><span className="text-slate-500">Address: </span><span className="text-slate-900">{c.address}</span></div>}
         </div>
       </div>
+
+      {/* Everything we have ever done for them. This page stopped at contact
+          details, so "when were we last out and what did we charge" meant
+          searching four other pages. */}
+      <CustomerHistory customerId={id} />
     </div>
   );
 }

@@ -52,11 +52,11 @@ function buildHtml(a: DeliverArgs, recipientRole: "landlord" | "occupier"): stri
     <tr><td style="padding:3px 18px 3px 0;color:#6B7280">Property</td><td style="padding:3px 0"><strong>${esc([c.propertyAddress, c.propertyPostcode].filter(Boolean).join(", "))}</strong></td></tr>
     <tr><td style="padding:3px 18px 3px 0;color:#6B7280">Reference</td><td style="padding:3px 0"><strong>${esc(c.reference)}</strong></td></tr>
     <tr><td style="padding:3px 18px 3px 0;color:#6B7280">Date of check</td><td style="padding:3px 0"><strong>${esc(fmtDate(c.checkedAt))}</strong></td></tr>
-    <tr><td style="padding:3px 18px 3px 0;color:#6B7280">Next check due</td><td style="padding:3px 0"><strong>${esc(fmtDate(c.expiresAt))}</strong></td></tr>
+    ${c.expiresAt ? `<tr><td style="padding:3px 18px 3px 0;color:#6B7280">Next check due</td><td style="padding:3px 0"><strong>${esc(fmtDate(c.expiresAt))}</strong></td></tr>` : ""}
     <tr><td style="padding:3px 18px 3px 0;color:#6B7280">Engineer</td><td style="padding:3px 0"><strong>${esc(c.engineerName)}${c.engineerRegNo ? `, reg ${esc(c.engineerRegNo)}` : ""}</strong></td></tr>
   </table>
   ${retention}
-  <p style="margin:0 0 14px;color:#4B5563">We will remind you before the next one is due.</p>
+  ${c.expiresAt ? `<p style="margin:0 0 14px;color:#4B5563">We will remind you before the next one is due.</p>` : ""}
   <p style="margin:0;color:#6B7280;font-size:13px">${esc(tenant?.name ?? "")}${settings?.phone ? ` · ${esc(settings.phone)}` : ""}${settings?.email ? ` · ${esc(settings.email)}` : ""}</p>
 </div>`;
 }

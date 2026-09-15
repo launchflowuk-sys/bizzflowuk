@@ -126,6 +126,27 @@ router.patch("/schedule/:projectId", requireTenantAccess, async (req: any, res) 
 
     const [updated] = await db.update(projectsTable).set(patch).where(eq(projectsTable.id, id)).returning();
     res.json(updated);
+
+    /**
+     * Tell the engineer, which is the whole point of assigning it.
+     *
+     * Fires when the PERSON changes, or when the date moves on a job that
+     * already has someone on it -- both are things the engineer needs to know
+     * and neither reaches them otherwise. Not fired for a colour change.
+     *
+     * After the response and never awaited: the assignment is saved either
+     * way, and a slow mail server must not make the dispatcher's screen hang.
+     */
+    const personChanged = input.assignedUserId !== undefined
+      && input.assignedUserId !== project.assignedUserId;
+    const dateMoved = updated.assignedUserId != null
+      && (input.scheduledStart !== undefined || input.scheduledEnd !== undefined)
+      && String(project.scheduledStart ?? "") !== String(updated.scheduledStart ?? "");
+
+    if (updated.assignedUserId && (personChanged || dateMoved)) {
+      const { notifyEngineerAssigned } = await import("../lib/jobs/notifyEngineer");
+      notifyEngineerAssigned(id, tenantId).catch(() => { /* logged inside */ });
+    }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

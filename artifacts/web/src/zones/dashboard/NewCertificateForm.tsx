@@ -21,7 +21,11 @@ export type CertificateType = {
   key: string;
   label: string;
   shortLabel?: string;
+  /** The group this sits under in the picker. */
+  category?: string;
   validMonths: number;
+  /** False for records that do not lapse — a warning notice, a purge record. */
+  expires?: boolean;
 };
 
 export default function NewCertificateForm({ types, onClose, onCreated }: {
@@ -120,10 +124,31 @@ export default function NewCertificateForm({ types, onClose, onCreated }: {
 
           <Row
             label="Type"
-            hint={chosen ? `Valid for ${chosen.validMonths} months. The expiry date and the reference are worked out for you.` : undefined}
+            hint={chosen
+              ? (chosen.expires === false
+                // A warning notice is a statement about a day, not a permission
+                // that runs out, and saying otherwise on the form that creates
+                // it would be the first place the wrong idea takes hold.
+                ? "This record does not expire. The reference is worked out for you."
+                : `Valid for ${chosen.validMonths} months. The expiry date and the reference are worked out for you.`)
+              : undefined}
           >
             <select value={form.type} onChange={e => set("type", e.target.value)} className={input} style={box}>
-              {types.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+              {/* Grouped, because a flat list of ten (and more to come as the
+                  other trades are added) is a scroll rather than a choice.
+                  This mirrors the category-then-form pick a gas engineer
+                  already knows from the app they are coming from. */}
+              {Object.entries(
+                types.reduce((acc: Record<string, CertificateType[]>, t) => {
+                  const g = t.category || "Other";
+                  (acc[g] ||= []).push(t);
+                  return acc;
+                }, {}),
+              ).map(([group, list]) => (
+                <optgroup key={group} label={group}>
+                  {list.map(t => <option key={t.key} value={t.key}>{t.label}</option>)}
+                </optgroup>
+              ))}
             </select>
           </Row>
 

@@ -79,6 +79,14 @@ router.post("/projects", requireTenantAccess, async (req, res) => {
       .values({ ...coerceTimestamps(req.body), tenantId })
       .returning();
     res.status(201).json(p[0]);
+
+    // A job created with an engineer already on it is an assignment too — the
+    // usual case when a phone call at seven in the morning goes straight into
+    // the diary with somebody's name against it.
+    if (p[0]?.assignedUserId) {
+      const { notifyEngineerAssigned } = await import("../lib/jobs/notifyEngineer");
+      notifyEngineerAssigned(p[0].id, tenantId).catch(() => { /* logged inside */ });
+    }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
