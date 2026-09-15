@@ -6,6 +6,7 @@ import {
 } from "./tradeApi";
 import NewCertificateForm from "./NewCertificateForm";
 import NewJobForm from "./NewJobForm";
+import DictatableTextarea from "./VoiceInput";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { StatCard } from "@/components/StatCard";
 import { FileText, AlarmClock, CheckCircle2 } from "lucide-react";
@@ -279,6 +280,7 @@ export function InvoiceDetailPage() {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
+  const [showDraft, setShowDraft] = useState(false);
 
   /**
    * The lines being edited, owned locally until Save.
@@ -381,14 +383,36 @@ export function InvoiceDetailPage() {
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-5">
           <Card className="p-5">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between gap-2 mb-4">
               <h2 className="text-[16px] font-bold text-slate-900">What the work was</h2>
               {!locked && (
-                <Btn tone="ghost" onClick={() => setLines([...draft, { description: "", quantity: "1", unitPrice: "0", vatRate: null }])}>
-                  Add a line
-                </Btn>
+                <div className="flex flex-wrap gap-2">
+                  <Btn tone="ghost" onClick={() => setShowDraft(v => !v)}>
+                    {showDraft ? "Close" : "Describe it"}
+                  </Btn>
+                  <Btn tone="ghost" onClick={() => setLines([...draft, { description: "", quantity: "1", unitPrice: "0", vatRate: null }])}>
+                    Add a line
+                  </Btn>
+                </div>
               )}
             </div>
+
+            {showDraft && !locked && (
+              <DraftFromNotes
+                onLines={got => {
+                  setLines([
+                    ...draft.filter(l => l.description.trim()),
+                    ...got.map(g => ({
+                      description: g.description,
+                      quantity: String(g.quantity),
+                      unitPrice: String(g.unitPrice),
+                      vatRate: null,
+                    })),
+                  ]);
+                  setShowDraft(false);
+                }}
+              />
+            )}
 
             {draft.length === 0 ? (
               <p className="text-[14.5px] text-slate-500 py-6 text-center">
@@ -551,6 +575,65 @@ export function InvoiceDetailPage() {
         </div>
       </div>
     </Page>  );
+}
+
+/**
+ * Say what you did; get lines you can correct.
+ *
+ * The thing that actually stops invoices being raised is not the arithmetic,
+ * it is the blank page at nine at night after a twelve-hour day. So the box
+ * takes the job the way a trade would say it out loud — and can be dictated
+ * rather than typed, because the person using this is often still in the van.
+ *
+ * The lines come back as a SUGGESTION and are dropped into the editor
+ * unsaved. Nothing reaches the invoice until a human has looked at the
+ * figures and pressed Save. Anything that writes straight onto a money
+ * document is one hallucinated zero away from a very bad morning.
+ */
+function DraftFromNotes({ onLines }: {
+  onLines: (lines: Array<{ description: string; quantity: number; unitPrice: number }>) => void;
+}) {
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
+
+  async function draft() {
+    if (text.trim().length < 3) { setErr("Say a bit more about the job first."); return; }
+    setBusy(true); setErr(null);
+    try {
+      const res = await api.post<{ lines: Array<{ description: string; quantity: number; unitPrice: number }> }>(
+        "/invoices/draft-lines", { notes: text.trim() },
+      );
+      onLines(res.lines ?? []);
+      setText("");
+    } catch (e: any) {
+      setErr(e?.message || "Could not draft the lines.");
+    } finally { setBusy(false); }
+  }
+
+  return (
+    <div className="mb-5 rounded-[16px] border border-slate-200 bg-slate-50 p-4">
+      <p className="text-[14.5px] font-semibold text-slate-900 mb-1">Describe the job</p>
+      <p className="text-[13px] text-slate-500 mb-3">
+        In your own words, the way you would tell someone. Your own price list is used where it
+        matches, and anything it cannot price is left at zero for you to fill in rather than guessed at.
+      </p>
+      <DictatableTextarea
+        value={text}
+        onChange={setText}
+        disabled={busy}
+        rows={3}
+        placeholder="Swapped the kitchen mixer tap, hour and a half on site, tap was eighty five quid. Also bled two rads upstairs."
+        className={`${inputCls} h-auto py-3`}
+      />
+      {err && <p className="mt-2 text-[13px] text-amber-700">{err}</p>}
+      <div className="mt-3">
+        <Btn onClick={draft} disabled={busy || !text.trim()}>
+          {busy ? "Working it out…" : "Draft the lines"}
+        </Btn>
+      </div>
+    </div>
+  );
 }
 
 /**

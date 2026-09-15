@@ -3,7 +3,7 @@ import { db } from "@workspace/db";
 import {
   invoicesTable, invoiceItemsTable, invoicePaymentsTable,
   quotesTable, quoteItemsTable, customersTable,
-  tenantsTable, tenantSettingsTable, INVOICE_RECURRENCES,
+  tenantsTable, tenantSettingsTable, priceItemsTable, INVOICE_RECURRENCES,
 } from "@workspace/db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
@@ -11,6 +11,7 @@ import { requireTenantAccess } from "../middlewares/auth";
 import { computeTotals, deriveStatus, outstanding } from "../lib/invoices/totals";
 import { nextInvoiceReference } from "../lib/invoices/reference";
 import { firstOccurrenceAfter } from "../lib/invoices/recurring";
+import { callClaude, claudeConfigured, parseJsonReply, ClaudeError } from "../lib/anthropic";
 
 const router = Router();
 
@@ -389,6 +390,128 @@ router.patch("/invoices/:id", requireTenantAccess, async (req: any, res) => {
     const items = (await loadItems([id])).get(id) ?? [];
     res.json({ ...updated, items, outstanding: outstanding(updated!.total, updated!.amountPaid) });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── Draft the lines from a description ───────────────────────────────────────
+
+const draftSchema = z.object({
+  notes: z.string().min(3).max(2000),
+});
+
+/**
+ * Turn "fitted a new mixer tap, hour and a half, tap was 85 quid" into invoice
+ * lines.
+ *
+ * The step that actually stops invoices getting raised is not the maths, it is
+ * the blank page at nine at night after a twelve-hour day. This takes the way a
+ * trade would describe the job out loud — which is also what the voice button
+ * puts in the box — and turns it into lines they can correct.
+ *
+ * Grounded in the tenant's OWN price list, so it reaches for their real rates
+ * rather than inventing plausible-looking ones. That is the difference between
+ * a useful draft and a party trick that quietly undercharges.
+ *
+ * Nothing is saved. The lines come back as a suggestion, the person edits them
+ * and presses Save. An AI that writes directly onto a money document is one
+ * hallucinated zero away from a very bad morning.
+ */
+router.post("/invoices/draft-lines", requireTenantAccess, async (req: any, res) => {
+  try {
+    if (!claudeConfigured()) {
+      res.status(503).json({ error: "Drafting is not switched on for your account yet." });
+      return;
+    }
+
+    const parsed = draftSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Describe the job in a sentence or two first." });
+      return;
+    }
+
+    const tenantId = tid(req);
+    const [tenant] = await db.select({ name: tenantsTable.name, industry: tenantsTable.industry })
+      .from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
+
+    const prices = await db.select({
+      name: priceItemsTable.name,
+      unit: priceItemsTable.unit,
+      unitPrice: priceItemsTable.unitPrice,
+      category: priceItemsTable.category,
+    }).from(priceItemsTable).where(eq(priceItemsTable.tenantId, tenantId)).limit(80);
+
+    const priceList = prices.length
+      ? prices.map(p => `- ${p.name}${p.category ? ` (${p.category})` : ""}: £${p.unitPrice} per ${p.unit}`).join("\n")
+      : "(they have not entered a price list)";
+
+    const result = await callClaude({
+      maxTokens: 900,
+      system: `You turn a tradesperson's description of a job into invoice lines for a UK trade business.
+
+Reply with ONLY a JSON array. Each element:
+{"description": string, "quantity": number, "unitPrice": number}
+
+Rules:
+- unitPrice is the price for ONE unit, in pounds, excluding VAT. Never include VAT — the system adds it.
+- Use the business's own price list where the work matches something on it. Match on meaning, not exact wording.
+- If a price is stated in the description, that price wins over the price list.
+- If a price is neither stated nor on the list, use 0 and make the description say what is missing, e.g. "Replacement thermostat - price to confirm". NEVER invent a figure. An invented figure is either money the trade loses or a customer they lose.
+- Separate labour from materials when the description does, because they are often rated differently for VAT and CIS.
+- Descriptions are what the CUSTOMER reads: plain, specific, no jargon, no filler. "Replaced kitchen mixer tap" not "Plumbing works as discussed".
+- 1 to 8 lines. Do not pad.`,
+      user: `Business: ${tenant?.name ?? "a trade business"} (${tenant?.industry ?? "trade"}).
+
+Their price list:
+${priceList}
+
+The job, in their words:
+${parsed.data.notes}`,
+      // Forces an array rather than a sentence of preamble.
+      prefill: "[",
+    });
+
+    const lines = parseJsonReply<Array<{ description?: unknown; quantity?: unknown; unitPrice?: unknown }>>(result.text);
+    if (!Array.isArray(lines) || lines.length === 0) {
+      res.status(502).json({ error: "Could not turn that into lines. Try describing the job a little more plainly." });
+      return;
+    }
+
+    // Everything crossing back is re-checked here. A model that returns a
+    // string where a number belongs, or forty lines, must not become forty
+    // rows on an invoice.
+    const clean = lines.slice(0, 12).flatMap(l => {
+      const description = String(l.description ?? "").trim().slice(0, 300);
+      if (!description) return [];
+      const quantity = Number(l.quantity);
+      const unitPrice = Number(l.unitPrice);
+      return [{
+        description,
+        quantity: Number.isFinite(quantity) && quantity > 0 ? Number(quantity.toFixed(2)) : 1,
+        unitPrice: Number.isFinite(unitPrice) && unitPrice >= 0 ? Number(unitPrice.toFixed(2)) : 0,
+      }];
+    });
+
+    if (!clean.length) {
+      res.status(502).json({ error: "Could not turn that into lines. Try describing the job a little more plainly." });
+      return;
+    }
+
+    req.log.info({
+      tenantId,
+      lines: clean.length,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
+    }, "Invoice lines drafted");
+
+    res.json({ lines: clean });
+  } catch (err: any) {
+    if (err instanceof ClaudeError) {
+      req.log.error({ status: err.status }, "Invoice drafting failed");
+      res.status(err.permanent ? 503 : 502).json({ error: err.message });
+      return;
+    }
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
 });
 
 // ── Repeating work ───────────────────────────────────────────────────────────

@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { api, useApi, money } from "./tradeApi";
+import DictatableTextarea from "./VoiceInput";
 
 /**
  * Putting a job in the diary without a website, a lead, or a quote.
@@ -335,7 +336,9 @@ export default function NewJobForm({ onClose, onCreated }: NewJobFormProps) {
           {/* ---- anything else ---- */}
           <section>
             <label className={label} htmlFor="job-notes">Notes</label>
-            <textarea id="job-notes" rows={3} value={form.description} onChange={e => set("description", e.target.value)}
+            {/* Dictatable: this is usually filled in on a phone, one-handed,
+                stood in someone's hallway. */}
+            <DictatableTextarea rows={3} value={form.description} onChange={v => set("description", v)}
               placeholder="Access, parts needed, anything worth knowing before you turn up." className={field} />
           </section>
 

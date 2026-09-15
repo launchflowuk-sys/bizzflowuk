@@ -4,6 +4,7 @@ import { tenantsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { buildSnapshot } from "../lib/assistant/snapshot";
+import { callClaude, claudeConfigured, ClaudeError } from "../lib/anthropic";
 
 /**
  * Flo — the assistant that knows this business and only this business.
@@ -27,7 +28,6 @@ import { buildSnapshot } from "../lib/assistant/snapshot";
 
 const router = Router();
 
-const MODEL = "claude-sonnet-5";
 const MAX_QUESTION = 500;
 
 /** Suggestions shown before anyone types anything. */
@@ -85,8 +85,7 @@ Reply with ONLY a JSON object, no markdown fence, in this shape:
 - Maximum 3 actions.`;
 
 router.post("/assistant/ask", requireTenantAccess, async (req: any, res) => {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
+  if (!claudeConfigured()) {
     res.status(503).json({ error: "Flo is not switched on yet. Please contact us." });
     return;
   }
@@ -105,79 +104,39 @@ router.post("/assistant/ask", requireTenantAccess, async (req: any, res) => {
 
     const snapshot = await buildSnapshot(tenantId);
 
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "x-api-key": apiKey,
-        "anthropic-version": "2023-06-01",
-        /**
-         * An organisation-level key is not tied to a workspace, and Anthropic
-         * rejects it with a 400 unless the workspace is named explicitly:
-         *
-         *   "This API key is not scoped to a workspace, so this request must
-         *    include the anthropic-workspace-id header"
-         *
-         * A key created inside a workspace needs none of this, which is the
-         * simpler setup. This header exists so an org-level key also works
-         * rather than Flo being dead until somebody reissues the key.
-         */
-        ...(process.env.ANTHROPIC_WORKSPACE_ID
-          ? { "anthropic-workspace-id": process.env.ANTHROPIC_WORKSPACE_ID }
-          : {}),
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1500,
-        system: SYSTEM_PROMPT,
-        messages: [{
-          role: "user",
-          content:
-            `Business: ${tenant?.name ?? "this business"} (${tenant?.industry ?? "trade"}).\n\n` +
-            `Snapshot of their data — this is the only information you have:\n` +
-            "<business_snapshot>\n" + JSON.stringify(snapshot, null, 1) + "\n</business_snapshot>\n\n" +
-            `Their question: ${question}`,
-        }],
-      }),
+    const result = await callClaude({
+      system: SYSTEM_PROMPT,
+      maxTokens: 1500,
+      user: [
+        `Business: ${tenant?.name ?? "this business"} (${tenant?.industry ?? "trade"}).`,
+        "",
+        "Snapshot of their data — this is the only information you have:",
+        "<business_snapshot>",
+        JSON.stringify(snapshot, null, 1),
+        "</business_snapshot>",
+        "",
+        `Their question: ${question}`,
+      ].join("\n"),
     });
-
-    if (!response.ok) {
-      const detail = await response.text().catch(() => "");
-      req.log.error({ status: response.status, detail: detail.slice(0, 500) }, "Anthropic request failed");
-      /**
-       * "Try again" is the wrong thing to say about a 4xx.
-       *
-       * A bad key, an unscoped key or a disabled model will fail identically
-       * on every retry, so telling the owner to try again sends them round a
-       * loop we know cannot end — and makes a configuration fault at our end
-       * look like a fault at theirs. 429 is the exception: rate limiting
-       * genuinely does clear on its own.
-       */
-      const willNeverSucceed = response.status >= 400 && response.status < 500 && response.status !== 429;
-      res.status(502).json({
-        error: willNeverSucceed
-          ? "Flo is not set up correctly on our side yet. Nothing is wrong with your account, and retrying will not help — we have been told about it."
-          : "Flo could not answer just now. Please try again.",
-      });
-      return;
-    }
-
-    const payload = await response.json() as any;
-    const text = (payload?.content ?? []).filter((c: any) => c.type === "text").map((c: any) => c.text).join("");
 
     // The model is asked for bare JSON, but a stray fence should degrade to a
     // readable answer rather than an error page.
-    const answer = parseAnswer(text);
+    const answer = parseAnswer(result.text);
 
     // Per-tenant metering, so heavy use is visible rather than a surprise on a bill.
     req.log.info({
       tenantId,
-      inputTokens: payload?.usage?.input_tokens,
-      outputTokens: payload?.usage?.output_tokens,
+      inputTokens: result.inputTokens,
+      outputTokens: result.outputTokens,
     }, "Flo answered");
 
     res.json(answer);
-  } catch (err) {
+  } catch (err: any) {
+    if (err instanceof ClaudeError) {
+      req.log.error({ status: err.status }, "Flo failed");
+      res.status(502).json({ error: err.message });
+      return;
+    }
     req.log.error(err, "Flo failed");
     res.status(500).json({ error: "Flo could not answer just now. Please try again." });
   }
