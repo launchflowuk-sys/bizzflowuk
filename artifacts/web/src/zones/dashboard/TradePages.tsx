@@ -483,14 +483,87 @@ export function ExpensesPage() {
 
 // ── Schedule ─────────────────────────────────────────────────────────────────
 
+/**
+ * The diary.
+ *
+ * It used to be one month grid and nothing else. A month is the wrong unit for
+ * most of the day: a trade sitting in a van at half seven wants to know what
+ * today looks like and where the next address is, not how the 26th is shaping
+ * up. So the same data now reads four ways, and the one you picked last is the
+ * one you get back.
+ *
+ *   Day     an hour rail with the jobs on it, which is the morning view
+ *   Week    seven columns, which is how work actually gets planned
+ *   Month   the wide view, for spotting the quiet fortnight
+ *   Route   the day by address, in order, with the driving handed to the phone
+ *
+ * Dates are keyed LOCALLY, never through toISOString(). A job at 00:30 on a
+ * British Summer Time morning is 23:30 the previous day in UTC, and keying it
+ * the old way filed it under yesterday — a whole job missing from today for
+ * half the year.
+ */
+
+type ScheduleView = "day" | "week" | "month" | "route";
+
+const VIEW_LABEL: Record<ScheduleView, string> = {
+  day: "Day", week: "Week", month: "Month", route: "Route",
+};
+
+/** Local YYYY-MM-DD. See the note above about why this is not toISOString(). */
+function dayKey(d: Date | string) {
+  const date = typeof d === "string" ? new Date(d) : d;
+  const m = `${date.getMonth() + 1}`.padStart(2, "0");
+  const day = `${date.getDate()}`.padStart(2, "0");
+  return `${date.getFullYear()}-${m}-${day}`;
+}
+
+function addDays(d: Date, n: number) {
+  const out = new Date(d);
+  out.setDate(out.getDate() + n);
+  return out;
+}
+
+/** Monday, because a UK working week starts on one. */
+function startOfWeek(d: Date) {
+  return addDays(d, -((d.getDay() + 6) % 7));
+}
+
 export function SchedulePage() {
-  const [month, setMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [view, setView] = useState<ScheduleView>(() => {
+    let saved: string | null = null;
+    try { saved = localStorage.getItem("bf.schedule.view"); } catch { /* private mode */ }
+    return saved === "day" || saved === "week" || saved === "month" || saved === "route" ? saved : "week";
+  });
+  // One anchor date drives every view, so switching between them keeps your
+  // place instead of throwing you back to today.
+  const [anchor, setAnchor] = useState(() => new Date());
 
-  const from = new Date(month.getFullYear(), month.getMonth(), 1).toISOString().slice(0, 10);
-  const to = new Date(month.getFullYear(), month.getMonth() + 1, 0).toISOString().slice(0, 10);
+  function pickView(v: ScheduleView) {
+    setView(v);
+    try { localStorage.setItem("bf.schedule.view", v); } catch { /* private mode */ }
+  }
 
-  const { data, loading, error } = useApi<any[]>(`/schedule?from=${from}&to=${to}`, [from, to]);
-  const { data: engineers } = useApi<any[]>("/schedule/engineers");
+  // The window of days this view needs. The API filters on scheduledStart, so
+  // `to` is the last day inclusive and gets a time put on it below.
+  const { from, to, days } = useMemo(() => {
+    if (view === "month") {
+      const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+      const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
+      return { from: dayKey(first), to: dayKey(last), days: [] as Date[] };
+    }
+    if (view === "week") {
+      const mon = startOfWeek(anchor);
+      const week = Array.from({ length: 7 }, (_, i) => addDays(mon, i));
+      return { from: dayKey(mon), to: dayKey(week[6]), days: week };
+    }
+    return { from: dayKey(anchor), to: dayKey(anchor), days: [anchor] };
+  }, [view, anchor]);
+
+  // `to` needs the end of that day, or anything booked after midday on the
+  // last day of the window falls outside it.
+  const { data, loading, error } = useApi<any[]>(
+    `/schedule?from=${from}&to=${to}T23:59:59`, [from, to],
+  );
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
   // Booking a slot IS creating a job, so this opens the same form rather than a
   // second, thinner one that would drift out of step with it.
@@ -499,26 +572,51 @@ export function SchedulePage() {
   const byDay = useMemo(() => {
     const m = new Map<string, any[]>();
     for (const job of data ?? []) {
-      const key = new Date(job.scheduledStart).toISOString().slice(0, 10);
+      const key = dayKey(job.scheduledStart);
       const list = m.get(key) ?? []; list.push(job); m.set(key, list);
+    }
+    for (const list of m.values()) {
+      list.sort((a, b) => +new Date(a.scheduledStart) - +new Date(b.scheduledStart));
     }
     return m;
   }, [data]);
 
   // Monday-first grid, which is how a UK working week reads.
   const cells = useMemo(() => {
-    const first = new Date(month.getFullYear(), month.getMonth(), 1);
+    const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
     const offset = (first.getDay() + 6) % 7;
     const out: Array<{ date: Date; inMonth: boolean }> = [];
     for (let i = 0; i < 42; i++) {
       const d = new Date(first);
       d.setDate(1 - offset + i);
-      out.push({ date: d, inMonth: d.getMonth() === month.getMonth() });
+      out.push({ date: d, inMonth: d.getMonth() === anchor.getMonth() });
     }
     return out;
-  }, [month]);
+  }, [anchor]);
 
-  const todayKey = new Date().toISOString().slice(0, 10);
+  const todayKey = dayKey(new Date());
+
+  function step(direction: -1 | 1) {
+    if (view === "month") setAnchor(new Date(anchor.getFullYear(), anchor.getMonth() + direction, 1));
+    else if (view === "week") setAnchor(addDays(anchor, 7 * direction));
+    else setAnchor(addDays(anchor, direction));
+  }
+
+  const heading = useMemo(() => {
+    if (view === "month") return anchor.toLocaleDateString("en-GB", { month: "long", year: "numeric" });
+    if (view === "week") {
+      const mon = startOfWeek(anchor), sun = addDays(mon, 6);
+      const sameMonth = mon.getMonth() === sun.getMonth();
+      const left = mon.toLocaleDateString("en-GB", sameMonth ? { day: "numeric" } : { day: "numeric", month: "short" });
+      return `${left} – ${sun.toLocaleDateString("en-GB", { day: "numeric", month: "long" })}`;
+    }
+    return anchor.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" });
+  }, [view, anchor]);
+
+  const openDay = (d: Date) => { setAnchor(d); pickView("day"); };
+
+  const all = data ?? [];
+  const anchorJobs = byDay.get(dayKey(anchor)) ?? [];
 
   return (
 <Page>
@@ -528,7 +626,7 @@ export function SchedulePage() {
         action={
           <div className="flex flex-wrap gap-2">
             <Btn onClick={() => setShowNewJob(true)}>+ New job</Btn>
-            <Btn tone="ghost" onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Today</Btn>
+            <Btn tone="ghost" onClick={() => setAnchor(new Date())}>Today</Btn>
             <Btn tone="ghost" onClick={async () => {
               try { const f = await api.post<any>("/schedule/feed"); setFeedUrl(f.url); }
               catch (e: any) { alert(e.message); }
@@ -553,42 +651,54 @@ export function SchedulePage() {
         </Card>
       )}
 
-      <Card className="p-5">
-        <div className="flex items-center justify-between mb-5">
-          <button className="h-10 w-10 rounded-[12px] border border-slate-200 hover:bg-slate-50" aria-label="Previous month"
-            onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1))}>‹</button>
-          <h2 className="text-[19px] font-bold text-slate-900">
-            {month.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
-          </h2>
-          <button className="h-10 w-10 rounded-[12px] border border-slate-200 hover:bg-slate-50" aria-label="Next month"
-            onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1))}>›</button>
+      <Card className="p-4 sm:p-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-4 sm:mb-5">
+          <div className="flex items-center gap-2 order-2 sm:order-1 w-full sm:w-auto">
+            <button className="h-10 w-10 shrink-0 rounded-[12px] border border-slate-200 hover:bg-slate-50" aria-label={`Previous ${VIEW_LABEL[view].toLowerCase()}`}
+              onClick={() => step(-1)}>‹</button>
+            <h2 className="flex-1 sm:flex-none text-center sm:text-left text-[16px] sm:text-[19px] font-bold text-slate-900">{heading}</h2>
+            <button className="h-10 w-10 shrink-0 rounded-[12px] border border-slate-200 hover:bg-slate-50" aria-label={`Next ${VIEW_LABEL[view].toLowerCase()}`}
+              onClick={() => step(1)}>›</button>
+          </div>
+
+          <div className="order-1 sm:order-2 w-full sm:w-auto grid grid-cols-4 sm:flex gap-1 p-1 rounded-[12px] bg-slate-100">
+            {(["day", "week", "month", "route"] as ScheduleView[]).map(v => (
+              <button key={v} type="button" onClick={() => pickView(v)}
+                aria-pressed={view === v}
+                className={`px-3 py-2 rounded-[9px] text-[13.5px] font-semibold transition ${
+                  view === v ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+                {VIEW_LABEL[v]}
+              </button>
+            ))}
+          </div>
         </div>
 
         {error && <ErrorNote message={error} />}
         {loading && <p className="text-center text-slate-400 py-8 text-[14.5px]">Loading…</p>}
 
-        {!loading && !error && (
+        {!loading && !error && view === "month" && (
           <>
             <div className="grid grid-cols-7 gap-px mb-px">
               {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map(d => (
-                <div key={d} className="text-[10px] sm:text-[11.5px] font-semibold uppercase tracking-[0.05em] text-slate-400 text-center py-1.5 sm:py-2">{d.slice(0, 3)}</div>
+                <div key={d} className="text-[10px] sm:text-[11.5px] font-semibold uppercase tracking-[0.05em] text-slate-400 text-center py-1.5 sm:py-2">{d}</div>
               ))}
             </div>
             <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-[14px] overflow-hidden">
               {cells.map(({ date, inMonth }, i) => {
-                const key = date.toISOString().slice(0, 10);
+                const key = dayKey(date);
                 const jobs = byDay.get(key) ?? [];
                 const isToday = key === todayKey;
                 return (
-                  <div key={i} className={`bg-white min-h-[64px] sm:min-h-[104px] p-1 sm:p-2 ${inMonth ? "" : "opacity-40"}`}>
+                  <button key={i} type="button" onClick={() => openDay(date)}
+                    aria-label={`${date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}, ${jobs.length} booked`}
+                    className={`text-left bg-white min-h-[64px] sm:min-h-[104px] p-1 sm:p-2 hover:bg-slate-50 transition ${inMonth ? "" : "opacity-40"}`}>
                     <div className={`text-[12px] sm:text-[13px] font-semibold mb-1 sm:mb-1.5 text-center sm:text-left ${isToday ? "inline-flex items-center justify-center w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-slate-900 text-white" : "text-slate-500"}`}>
                       {date.getDate()}
                     </div>
                     {/* Phones: dots, because a ~50px cell turns any label into an
-                        ellipsis. The agenda list underneath carries the detail. */}
+                        ellipsis. Tapping the day opens it in full. */}
                     {jobs.length > 0 && (
-                      <div className="flex sm:hidden flex-wrap gap-1 justify-center mt-1"
-                        title={jobs.map(j => `${timeOf(j.scheduledStart)} ${j.title}`).join(", ")}>
+                      <div className="flex sm:hidden flex-wrap gap-1 justify-center mt-1">
                         {jobs.slice(0, 4).map(j => <span key={j.id} className="w-1.5 h-1.5 rounded-full bg-sky-500 inline-block" />)}
                         {jobs.length > 4 && <span className="text-[10px] text-slate-400 leading-none">+{jobs.length - 4}</span>}
                       </div>
@@ -603,21 +713,37 @@ export function SchedulePage() {
                       ))}
                       {jobs.length > 3 && <div className="text-[11.5px] text-slate-400 px-1.5">+{jobs.length - 3} more</div>}
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>
           </>
         )}
+
+        {!loading && !error && view === "week" && (
+          <WeekView days={days} byDay={byDay} todayKey={todayKey} onOpenDay={openDay} />
+        )}
+
+        {!loading && !error && view === "day" && (
+          <DayView jobs={anchorJobs} isToday={dayKey(anchor) === todayKey} />
+        )}
+
+        {!loading && !error && view === "route" && (
+          <RouteView jobs={anchorJobs} date={anchor} />
+        )}
       </Card>
 
-      {(data ?? []).length > 0 && (
+      {/* The ordered list under the grid earns its place on the wide views,
+          where a cell only shows a truncated chip. Day and Route already ARE
+          ordered lists, so repeating one under them is just noise. */}
+      {(view === "month" || view === "week") && all.length > 0 && (
         <Card className="mt-5 overflow-hidden">
           <div className="px-5 py-3.5 border-b border-slate-200">
-            <h2 className="text-[16px] font-bold text-slate-900">This month, in order</h2>
+            <h2 className="text-[16px] font-bold text-slate-900">This {view}, in order</h2>
           </div>
-          {(data ?? []).map(j => (
-            <div key={j.id} className="px-5 py-3.5 border-b border-slate-100 last:border-0 flex flex-wrap items-center justify-between gap-3">
+          {all.map(j => (
+            <button key={j.id} type="button" onClick={() => openDay(new Date(j.scheduledStart))}
+              className="w-full text-left px-5 py-3.5 border-b border-slate-100 last:border-0 flex flex-wrap items-center justify-between gap-3 hover:bg-slate-50 transition">
               <div className="min-w-0">
                 <p className="font-semibold text-slate-900 truncate">{j.title}</p>
                 <p className="text-[13.5px] text-slate-500">
@@ -628,18 +754,243 @@ export function SchedulePage() {
               {j.assignedTo
                 ? <Pill tone="info">{j.assignedTo.name}</Pill>
                 : <Pill tone="warn">Unassigned</Pill>}
-            </div>
+            </button>
           ))}
         </Card>
       )}
 
-      {!loading && (data ?? []).length === 0 && (
+      {!loading && !error && all.length === 0 && view !== "day" && view !== "route" && (
         <div className="mt-5">
-          <Empty title="Nothing booked this month"
-            body="Give a project a start date on its own page and it appears here, with whoever it is assigned to." />
+          <Empty title={`Nothing booked this ${view}`}
+            body="Book a job from here, or give an existing one a start date on its own page and it appears with whoever it is assigned to."
+            action={<Btn onClick={() => setShowNewJob(true)}>+ New job</Btn>} />
         </div>
       )}
     </Page>  );
+}
+
+/**
+ * Seven columns on a desktop, seven stacked days on a phone. Not a
+ * time-proportional week grid: a trade's day is four jobs, not forty, and
+ * drawing them to scale spends the screen on empty afternoons.
+ */
+function WeekView({ days, byDay, todayKey, onOpenDay }: {
+  days: Date[];
+  byDay: Map<string, any[]>;
+  todayKey: string;
+  onOpenDay: (d: Date) => void;
+}) {
+  return (
+    <>
+      <div className="hidden md:grid grid-cols-7 gap-px bg-slate-200 rounded-[14px] overflow-hidden">
+        {days.map(d => {
+          const key = dayKey(d);
+          const jobs = byDay.get(key) ?? [];
+          const isToday = key === todayKey;
+          const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+          return (
+            <div key={key} className={`min-h-[220px] p-2 ${isWeekend ? "bg-slate-50" : "bg-white"}`}>
+              <button type="button" onClick={() => onOpenDay(d)}
+                className="w-full flex items-baseline justify-between gap-1 mb-2 px-1 py-1 rounded-[8px] hover:bg-slate-100 transition">
+                <span className="text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-400">
+                  {d.toLocaleDateString("en-GB", { weekday: "short" })}
+                </span>
+                <span className={`text-[13px] font-bold ${isToday ? "inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-900 text-white" : "text-slate-600"}`}>
+                  {d.getDate()}
+                </span>
+              </button>
+              <div className="space-y-1.5">
+                {jobs.map(j => (
+                  <div key={j.id} className="px-2 py-1.5 rounded-[10px] bg-sky-50 border border-sky-100"
+                    title={j.address || undefined}>
+                    <p className="text-[11.5px] font-bold text-sky-700 tabular-nums">{timeOf(j.scheduledStart)}</p>
+                    <p className="text-[12.5px] leading-snug text-slate-800">{j.title}</p>
+                    {j.assignedTo && <p className="text-[11px] text-slate-500 truncate mt-0.5">{j.assignedTo.name}</p>}
+                  </div>
+                ))}
+                {jobs.length === 0 && <p className="px-1 text-[12px] text-slate-300">—</p>}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="md:hidden divide-y divide-slate-100">
+        {days.map(d => {
+          const key = dayKey(d);
+          const jobs = byDay.get(key) ?? [];
+          const isToday = key === todayKey;
+          return (
+            <div key={key} className="py-3">
+              <button type="button" onClick={() => onOpenDay(d)} className="flex items-center gap-2 mb-2">
+                <span className={`inline-flex items-center justify-center w-7 h-7 rounded-full text-[13px] font-bold ${isToday ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600"}`}>
+                  {d.getDate()}
+                </span>
+                <span className="text-[14px] font-semibold text-slate-800">
+                  {d.toLocaleDateString("en-GB", { weekday: "long" })}
+                </span>
+                <span className="text-[12.5px] text-slate-400">
+                  {jobs.length === 0 ? "nothing booked" : `${jobs.length} job${jobs.length === 1 ? "" : "s"}`}
+                </span>
+              </button>
+              {jobs.map(j => (
+                <div key={j.id} className="ml-9 mb-1.5 px-3 py-2 rounded-[10px] bg-sky-50 border border-sky-100">
+                  <p className="text-[12px] font-bold text-sky-700 tabular-nums">{timeOf(j.scheduledStart)}</p>
+                  <p className="text-[14px] font-semibold text-slate-800 leading-snug">{j.title}</p>
+                  {j.address && <p className="text-[12.5px] text-slate-500 mt-0.5">{j.address}</p>}
+                </div>
+              ))}
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
+}
+
+/**
+ * One day, on a rail. Only the jobs are drawn, not an empty 06:00–20:00
+ * ladder: fourteen rows of nothing is a lot to scroll past on a phone to find
+ * the three that matter.
+ */
+function DayView({ jobs, isToday }: { jobs: any[]; isToday: boolean }) {
+  if (jobs.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-[15px] font-semibold text-slate-700">
+          {isToday ? "Nothing booked today." : "Nothing booked."}
+        </p>
+        <p className="text-[13.5px] text-slate-400 mt-1">A free day, or a day to go and find work.</p>
+      </div>
+    );
+  }
+  return (
+    <ol className="relative border-l-2 border-slate-100 ml-[52px] sm:ml-[62px] space-y-3">
+      {jobs.map(j => (
+        <li key={j.id} className="relative pl-4 sm:pl-5">
+          <span className="absolute -left-[57px] sm:-left-[67px] top-2.5 w-[46px] sm:w-[56px] text-right text-[12.5px] sm:text-[13px] font-bold tabular-nums text-slate-500">
+            {timeOf(j.scheduledStart)}
+          </span>
+          <span className="absolute -left-[7px] top-3 w-3 h-3 rounded-full bg-sky-500 ring-2 ring-white" />
+          <div className="rounded-[14px] border border-slate-200 bg-white p-3.5 sm:p-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="text-[15.5px] font-bold text-slate-900 leading-snug">{j.title}</p>
+              {j.assignedTo
+                ? <Pill tone="info">{j.assignedTo.name}</Pill>
+                : <Pill tone="warn">Unassigned</Pill>}
+            </div>
+            {j.scheduledEnd && (
+              <p className="text-[13px] text-slate-500 mt-1 tabular-nums">Until {timeOf(j.scheduledEnd)}</p>
+            )}
+            {fullAddress(j) && (
+              <a href={mapsSearchHref(j)} target="_blank" rel="noreferrer"
+                className="inline-block mt-2 text-[13.5px] font-semibold text-sky-700 hover:underline">
+                {fullAddress(j)} ↗
+              </a>
+            )}
+            {j.customer && (
+              <p className="text-[13.5px] text-slate-500 mt-1">
+                {[j.customer.firstName, j.customer.lastName].filter(Boolean).join(" ")}
+                {j.customer.phone
+                  ? <> · <a className="font-semibold text-sky-700 hover:underline" href={`tel:${j.customer.phone}`}>{j.customer.phone}</a></>
+                  : null}
+              </p>
+            )}
+          </div>
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+/** One stop's address, the way a person would write it on an envelope. */
+function fullAddress(j: any) {
+  return [j.address, j.city, j.postcode].filter(Boolean).join(", ");
+}
+
+function mapsSearchHref(j: any) {
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(fullAddress(j))}`;
+}
+
+/**
+ * The day by address, in the order it happens, with the driving handed to the
+ * phone.
+ *
+ * Deliberately NOT an embedded map. An embed needs a paid key, a tile budget
+ * and a pin-drawing pass that is stale the moment a job moves — and it would
+ * still end with the driver pressing "open in Maps", because that is where
+ * their traffic, their voice and their car screen live. So we build the
+ * multi-stop route and hand it over: one tap, the whole day, in order.
+ */
+function RouteView({ jobs, date }: { jobs: any[]; date: Date }) {
+  // Google's directions URL takes a destination plus the rest as waypoints
+  // joined by a pipe. Origin is left off on purpose so it starts where the van
+  // actually is, rather than where we guessed it would be.
+  const routeHref = useMemo(() => {
+    const points = jobs.map(fullAddress).filter(Boolean);
+    if (points.length === 0) return null;
+    const params = new URLSearchParams({
+      api: "1", destination: points[points.length - 1], travelmode: "driving",
+    });
+    const waypoints = points.slice(0, -1);
+    if (waypoints.length) params.set("waypoints", waypoints.join("|"));
+    return `https://www.google.com/maps/dir/?${params.toString()}`;
+  }, [jobs]);
+
+  if (jobs.length === 0) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-[15px] font-semibold text-slate-700">No stops on this day.</p>
+        <p className="text-[13.5px] text-slate-400 mt-1">Book something and the run appears here in order.</p>
+      </div>
+    );
+  }
+
+  const withAddress = jobs.filter(j => fullAddress(j)).length;
+  const missing = jobs.length - withAddress;
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+        <p className="text-[14px] text-slate-500">
+          {withAddress} stop{withAddress === 1 ? "" : "s"} on {date.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}
+          {missing > 0 && <span className="text-amber-700"> · {missing} without an address</span>}
+        </p>
+        {routeHref && (
+          <a href={routeHref} target="_blank" rel="noreferrer"
+            className="inline-flex items-center gap-2 rounded-[12px] bg-slate-900 px-4 py-2.5 text-[14px] font-semibold text-white hover:bg-slate-800 transition">
+            Drive the whole day ↗
+          </a>
+        )}
+      </div>
+
+      <ol className="space-y-2.5">
+        {jobs.map((j, i) => {
+          const addr = fullAddress(j);
+          return (
+            <li key={j.id} className="flex gap-3 rounded-[14px] border border-slate-200 p-3.5">
+              <span className="shrink-0 inline-flex items-center justify-center w-7 h-7 rounded-full bg-slate-900 text-[13px] font-bold tabular-nums text-white">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="text-[12.5px] font-bold tabular-nums text-sky-700">{timeOf(j.scheduledStart)}</p>
+                <p className="text-[15px] font-bold text-slate-900 leading-snug">{j.title}</p>
+                {addr
+                  ? <p className="text-[13.5px] text-slate-500 mt-0.5">{addr}</p>
+                  : <p className="text-[13.5px] text-amber-700 mt-0.5">No address on this job yet.</p>}
+              </div>
+              {addr && (
+                <a href={mapsSearchHref(j)} target="_blank" rel="noreferrer"
+                  className="self-center shrink-0 rounded-[11px] border border-slate-200 px-3 py-2 text-[13px] font-semibold text-slate-700 hover:bg-slate-50 transition">
+                  Navigate
+                </a>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </div>
+  );
 }
 
 // ── Certificates ─────────────────────────────────────────────────────────────
