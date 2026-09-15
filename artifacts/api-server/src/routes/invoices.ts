@@ -180,7 +180,32 @@ router.get("/invoices", requireTenantAccess, async (req: any, res) => {
       .orderBy(desc(invoicesTable.issuedOn), desc(invoicesTable.id))
       .limit(500);
 
-    res.json(rows.map(r => ({ ...r, outstanding: outstanding(r.total, r.amountPaid) })));
+    /**
+     * Derive the status for display rather than trusting the stored one.
+     *
+     * `deriveStatus` runs when an invoice is RECALCULATED — that is, when
+     * somebody edits it or a payment lands. Nothing recalculates an invoice
+     * merely because a day passed, so an invoice that quietly goes past its due
+     * date keeps `status: 'sent'` in the database, the list filters on
+     * `status === 'overdue'` and finds none, and the Overdue total reads £0.00
+     * while money is genuinely late. That is the one number on the screen a
+     * business cannot afford to be wrong.
+     *
+     * Derived on read, not written: a GET should not have side effects, and
+     * the stored value is corrected the next time the invoice is touched for a
+     * real reason.
+     */
+    res.json(rows.map(r => ({
+      ...r,
+      status: deriveStatus({
+        current: r.status,
+        total: r.total,
+        amountPaid: r.amountPaid,
+        dueOn: r.dueOn,
+      }),
+      storedStatus: r.status,
+      outstanding: outstanding(r.total, r.amountPaid),
+    })));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -195,7 +220,15 @@ router.get("/invoices/:id", requireTenantAccess, async (req: any, res) => {
 
     const items = (await loadItems([id])).get(id) ?? [];
     const payments = await loadPayments(id);
-    res.json({ ...inv, items, payments, outstanding: outstanding(inv.total, inv.amountPaid) });
+    res.json({
+      ...inv,
+      // Same derivation as the list, so a detail page never disagrees with the
+      // row that was clicked to reach it.
+      status: deriveStatus({ current: inv.status, total: inv.total, amountPaid: inv.amountPaid, dueOn: inv.dueOn }),
+      storedStatus: inv.status,
+      items, payments,
+      outstanding: outstanding(inv.total, inv.amountPaid),
+    });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
