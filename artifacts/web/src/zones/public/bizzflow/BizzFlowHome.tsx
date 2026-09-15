@@ -460,8 +460,21 @@ function ClientShowcase() {
       <div className="wrap">
         <div className="clients-head">
           <p className="eyebrow"><span className="mini-line" /> ALREADY RUNNING ON BIZZFLOWUK</p>
+          {/*
+            NO COUNT IN THE HEADING.
+
+            It used to open "Four real businesses." Naming the number tells a
+            visitor exactly how small the platform is today, and it dates the
+            page the moment a fifth one signs - somebody has to remember to
+            come back and edit a number in a heading.
+
+            Nothing replaces it. "And growing" was the obvious substitute and
+            it is worse: a business that is established does not announce that
+            it is growing, only a startup does. The proof is the sites
+            themselves, sitting underneath.
+          */}
           <h2>
-            Four real businesses.<br />
+            Real businesses.<br />
             <span className="muted-heading">These are their actual websites, live right now.</span>
           </h2>
           <p className="clients-intro">
