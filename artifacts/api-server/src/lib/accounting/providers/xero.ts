@@ -35,9 +35,15 @@ const API_BASE = "https://api.xero.com";
  * registered today, and asking for it returns `invalid_scope` no matter how
  * correctly it is spelled. It is now `accounting.invoices` and friends.
  *
- * If this ever fails with invalid_scope again, read the scope list on the app
- * in Xero's developer portal before touching anything here. That list is the
- * authority, and it is what finally showed the problem.
+ * HOW TO SETTLE A SCOPE PROBLEM WITHOUT GUESSING, because I guessed three
+ * times and was wrong three times. Xero's authorize endpoint answers before
+ * any login, so a plain curl bisects the set in seconds:
+ *
+ *   curl -sD - -o /dev/null "https://login.xero.com/identity/connect/authorize *     ?response_type=code&client_id=$ID&redirect_uri=$URI&scope=$ONE&state=p"  *     | grep -i ^location
+ *
+ * A Location pointing at /identity/user/login means that scope is FINE. A
+ * Location carrying error= means it is not. Test each scope alone, then in
+ * combination. Do that before editing this list.
  *
  * Why each of these:
  *
@@ -46,11 +52,14 @@ const API_BASE = "https://api.xero.com";
  *                         is asked to reconnect forever. Easy to miss and
  *                         impossible to work around later.
  *
- *   app.connections       Needed to call /connections, which is the only way
- *                         to learn which organisation a token belongs to --
- *                         and every Accounting API call needs that id in a
- *                         header. Under the old broad scopes this came for
- *                         free; now it is its own scope.
+ *   NOT app.connections   I added this reasoning that /connections must need
+ *                         its own scope now. It does not, and asking for it
+ *                         makes Xero reject the WHOLE request with
+ *                         access_denied "Requested wrong apps scopes". It is
+ *                         listed in the portal but is not grantable to this
+ *                         app. Proved by bisecting the scope set against the
+ *                         authorize endpoint: every other scope passes alone
+ *                         and in combination; this one fails both ways.
  *
  *   accounting.invoices   Creating the invoice. The narrowest scope that can.
  *
@@ -64,7 +73,6 @@ const API_BASE = "https://api.xero.com";
  */
 const SCOPES = [
   "offline_access",
-  "app.connections",
   "accounting.invoices",
   "accounting.contacts",
 ];
