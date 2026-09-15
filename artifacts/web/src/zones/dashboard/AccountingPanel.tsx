@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api, useApi, shortDate } from "./tradeApi";
+import Spinner from "./Spinner";
 
 /**
  * Linking the business to its accounting package.
@@ -41,7 +42,17 @@ export default function AccountingPanel() {
     reload();
   }, []);
 
-  if (loading) return <p className="text-sm text-slate-400">Loading…</p>;
+  /**
+   * Only blank the panel on the FIRST load.
+   *
+   * `useApi` sets loading on every refetch, so the old `if (loading)` tore the
+   * whole panel down each time an action finished — the button you had just
+   * pressed, mid-"Sending…", was replaced by the word "Loading…" and then
+   * redrawn. That read as a flicker and left you unsure the press had landed.
+   * With data in hand we keep the panel on screen and let the buttons show
+   * their own state.
+   */
+  if (loading && !data) return <p className="text-sm text-slate-400">Loading…</p>;
 
   const providers = data?.providers ?? [];
   const conn = data?.connection ?? null;
@@ -92,6 +103,13 @@ export default function AccountingPanel() {
         </p>
       </div>
 
+      {busy === "catch-up" && !note && (
+        <p className="flex items-center gap-2 text-xs text-slate-500">
+          <Spinner className="h-3.5 w-3.5" />
+          Sending your invoices to Xero. This can take a few seconds.
+        </p>
+      )}
+
       {note && <p className={`text-xs ${note.ok ? "text-green-700" : "text-red-600"}`}>{note.text}</p>}
 
       {live && conn && (
@@ -112,12 +130,14 @@ export default function AccountingPanel() {
             {conn.status === "needs_reauth" && (
               <button type="button" onClick={() => connect(conn.provider)} disabled={!!busy}
                 className="inline-flex h-9 items-center rounded-lg bg-[var(--brand)] px-3.5 text-xs font-semibold text-white disabled:opacity-50">
+                {busy && <Spinner className="mr-2" />}
                 Reconnect
               </button>
             )}
             <button type="button" onClick={catchUp} disabled={!!busy}
-              className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3.5 text-xs font-semibold text-slate-700 hover:bg-white disabled:opacity-50">
-              {busy === "catch-up" ? "Sending…" : "Send anything outstanding"}
+              className="inline-flex h-9 items-center rounded-lg border border-slate-300 px-3.5 text-xs font-semibold text-slate-700 hover:bg-white disabled:opacity-60">
+              {busy === "catch-up" && <Spinner className="mr-2" />}
+              {busy === "catch-up" ? "Sending to Xero…" : "Send anything outstanding"}
             </button>
             <button type="button" onClick={() => disconnect(conn.provider)} disabled={!!busy}
               className="inline-flex h-9 items-center rounded-lg px-3.5 text-xs font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50">
@@ -144,9 +164,10 @@ export default function AccountingPanel() {
                 type="button"
                 onClick={() => connect(p.key)}
                 disabled={!p.configured || !!busy}
-                className="inline-flex h-9 shrink-0 items-center rounded-lg bg-[var(--brand)] px-4 text-xs font-semibold text-white hover:brightness-110 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="inline-flex h-9 shrink-0 items-center rounded-lg bg-[var(--brand)] px-4 text-xs font-semibold text-white hover:brightness-110 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {busy === p.key ? "Opening…" : "Connect"}
+                {busy === p.key && <Spinner className="mr-2" />}
+                {busy === p.key ? "Opening Xero…" : "Connect"}
               </button>
             </div>
           ))}

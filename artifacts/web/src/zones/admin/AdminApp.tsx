@@ -1,4 +1,5 @@
 import { useAuthCtx, getStoredToken, beginSupportSession } from "@/lib/auth";
+import Spinner from "@/zones/dashboard/Spinner";
 import { InviteUserPanel } from "./InviteUserPanel";
 import { useGetMe, useGetPlatformStats, useListTenants, useCreateTenant, useGetTenant, useUpdateTenant, useDeleteTenant, useSuspendTenant, useGetTenantStats, useListUsers, useUpdateUser } from "@workspace/api-client-react";
 import { useEffect, useState } from "react";
@@ -631,7 +632,8 @@ function TenantDetailPage({ id }: { id: number }) {
           disabled={accessBusy}
           className="inline-flex h-10 items-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
         >
-          {accessBusy ? 'Opening…' : `Log in as ${t.name}`}
+          {accessBusy && <Spinner className="mr-2" />}
+            {accessBusy ? 'Opening their dashboard…' : `Log in as ${t.name}`}
         </button>
         {accessResult && !accessResult.ok && (
           <p className="text-xs text-red-600">{accessResult.text}</p>
@@ -652,7 +654,8 @@ function TenantDetailPage({ id }: { id: number }) {
         <div className="flex flex-wrap gap-2">
           <button type="button" onClick={() => handleSampleData("add")} disabled={sampleBusy}
             className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-            {sampleBusy ? "Working…" : "Add sample data"}
+            {sampleBusy && <Spinner className="mr-2" />}
+            {sampleBusy ? "Filling the dashboard…" : "Add sample data"}
           </button>
           <button type="button" onClick={() => handleSampleData("remove")} disabled={sampleBusy}
             className="inline-flex h-10 items-center rounded-lg px-4 text-sm font-semibold text-slate-500 hover:text-red-600 disabled:opacity-50">
