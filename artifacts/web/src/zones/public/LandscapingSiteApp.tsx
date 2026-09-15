@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, useSiteOrigin, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
 import { PriceCalculatorSection } from "./PriceCalculator";
+import { WhatsAppFloat, WhatsAppInline } from "./WhatsAppButton";
 import BeforeAfterGallery, { type BeforeAfterItem } from "./landing/BeforeAfterGallery";
 import { BlogIndexBody, BlogArticleBody } from "./blog/BlogSections";
 
@@ -1512,6 +1513,11 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                 Send photos with your enquiry and we can often quote without visiting.
               </p>
               <Btn href={`${siteBase}/quote`} className="mt-6 w-full">Get a free quote</Btn>
+              {/* The quicker way to ask, right where someone has just finished
+                  reading about this exact job. The message names it. */}
+              <div className="mt-3">
+                <WhatsAppInline settings={settings} tenant={tenant} block label="Ask on WhatsApp"/>
+              </div>
               {(settings?.phone || tenant?.phone) && (
                 <a href={`tel:${settings?.phone || tenant?.phone}`} className="mt-3 flex items-center justify-center gap-2 py-3 text-[14px] font-semibold rounded-full border w-full" style={{ borderColor: "rgba(255,255,255,0.3)", color: "#FFFFFF" }}>
                   <PhoneIcon color={GREEN}/>{settings?.phone || tenant?.phone}
@@ -2196,6 +2202,8 @@ export default function LandscapingSiteApp({ forcedSlug, forcedBase, forcedOrigi
         <Route>{() => <NotFoundPage tenantSlug={tenantSlug}/>}</Route>
       </Switch>
       <CookieBanner siteBase={siteBase}/>
+      {/* Sitewide, and it knows which page it was tapped from. */}
+      <WhatsAppFloat settings={rootSettings} tenant={rootTenant}/>
     </WouterRouter>
     </SiteBaseCtx.Provider>
     </SiteOriginCtx.Provider>

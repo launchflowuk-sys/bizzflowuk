@@ -8,6 +8,7 @@ import { AuthProvider, useAuthCtx, getStoredToken, clearStoredToken, getActiveTe
 
 import NotFound from "@/pages/not-found";
 import { BpsLoader } from "@/components/BpsLoader";
+import { BizzFlowLoader } from "@/components/BizzFlowLoader";
 import "@/zones/public/bizzflow/bizzflow.css";
 import "@/zones/public/bizzflow/bizzflow-overrides.css";
 
@@ -236,20 +237,11 @@ function ZoneLoader() {
     );
   }
 
-  // Unknown tenant, or a platform zone (dashboard, portal, admin) — unbranded.
-  return (
-    <div className="flex h-screen items-center justify-center bg-white">
-      <svg className="w-12 h-12" viewBox="0 0 48 48" fill="none" role="img" aria-label="Loading">
-        <circle cx="24" cy="24" r="20" stroke="#E5E7EB" strokeWidth="3"/>
-        <circle
-          cx="24" cy="24" r="20"
-          stroke="#9CA3AF" strokeWidth="3" strokeLinecap="round" strokeDasharray="34 92"
-          className="motion-safe:animate-spin"
-          style={{ transformOrigin: "center", animationDuration: "900ms" }}
-        />
-      </svg>
-    </div>
-  );
+  // A platform zone — dashboard, portal, admin — or a tenant we cannot
+  // identify. These used to get a grey generic spinner, which is the least
+  // excusable place for one: the person looking at it has just signed into
+  // BizzFlowUK and is waiting on BizzFlowUK.
+  return <BizzFlowLoader />;
 }
 
 // ---------------------------------------------------------------------------

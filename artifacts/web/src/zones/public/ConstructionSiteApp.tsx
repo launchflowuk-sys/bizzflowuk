@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
 import { PriceCalculatorSection } from "./PriceCalculator";
+import { WhatsAppFloat, WhatsAppInline } from "./WhatsAppButton";
 import { BlogIndexBody, BlogArticleBody } from "./blog/BlogSections";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -566,6 +567,11 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
               <h2 className="font-bold text-lg">Get A Free Quote</h2>
               <p className="mt-2 text-sm text-slate-400 leading-relaxed">Tell us about your {s.name.toLowerCase()} project and we'll come back with a clear, written quotation.</p>
               <a href={`${siteBase}/quote`} className="mt-5 inline-flex w-full items-center justify-center rounded-lg px-5 py-3 text-sm font-bold transition-opacity hover:opacity-90" style={{ backgroundColor: GREEN, color: INK }}>Request A Quote</a>
+              {/* The quicker way to ask, right where someone has just finished
+                  reading about this exact job. The message names it. */}
+              <div className="mt-3">
+                <WhatsAppInline settings={settings} tenant={tenant} block label={`Ask about ${s.name}`}/>
+              </div>
               {phone && <a href={`tel:${phone}`} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-white/20 px-5 py-3 text-sm font-bold text-white transition-colors hover:bg-white/10"><PhoneIcon color={GREEN}/>{phone}</a>}
             </div>
             {others.length > 0 && (
@@ -871,6 +877,8 @@ export default function ConstructionSiteApp({ forcedSlug, forcedBase, forcedOrig
         <Route>{() => <NotFoundPage tenantSlug={tenantSlug}/>}</Route>
       </Switch>
       <CookieBanner siteBase={siteBase}/>
+      {/* Sitewide, and it knows which page it was tapped from. */}
+      <WhatsAppFloat settings={rootSettings} tenant={rootTenant}/>
     </WouterRouter>
     </SiteBaseCtx.Provider>
     </SiteOriginCtx.Provider>

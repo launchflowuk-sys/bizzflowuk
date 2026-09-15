@@ -614,3 +614,77 @@
       drop-shadow(0 0 16px rgba(240, 136, 45, 0.55));
   }
 }
+
+/* ---------------------------------------------------------------------------
+ * The platform's own loading mark.
+ *
+ * The BPS loader's treatment, dialled well down. That one is a hot flame on
+ * navy and it should be — it says "gas engineer" in one frame. This screen is
+ * seen many times a day by someone trying to work, so the same idea at the
+ * same intensity would become an irritation by the third load. Slow, low
+ * contrast, brand teal rather than ember.
+ *
+ * The light lives on `.bf-loader-aura`, a separate element BEHIND the symbol.
+ * The brand pack forbids giving the symbol a glow, so there is deliberately no
+ * filter, drop-shadow or blend mode on the mark itself.
+ * ------------------------------------------------------------------------ */
+.bf-loader-screen {
+  background-color: #fff;
+  background-image:
+    radial-gradient(34rem 24rem at 50% 45%, rgba(0, 127, 114, 0.07), transparent 70%);
+}
+
+.bf-loader {
+  position: relative;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transition: opacity 260ms ease-out;
+}
+.bf-loader[data-shown="true"] { opacity: 1; }
+
+.bf-loader-mark {
+  position: relative;
+  z-index: 1;
+  width: 88px;
+  height: auto;
+  object-fit: contain;
+  /* Nothing else. No filter, no shadow — see the note above. */
+}
+
+.bf-loader-aura {
+  position: absolute;
+  /* Comfortably larger than the mark so the light reads as coming from behind
+     it rather than tracing its edge. */
+  width: 188px;
+  height: 188px;
+  border-radius: 50%;
+  background: radial-gradient(
+    circle,
+    rgba(0, 127, 114, 0.26) 0%,
+    rgba(0, 127, 114, 0.12) 38%,
+    rgba(0, 127, 114, 0) 68%
+  );
+  animation: bf-loader-breathe 3200ms ease-in-out infinite;
+  pointer-events: none;
+}
+
+/*
+ * A slow breath, not a pulse. The scale change is small enough that it reads
+ * as light shifting rather than an object growing.
+ */
+@keyframes bf-loader-breathe {
+  0%, 100% { transform: scale(0.94); opacity: 0.68; }
+  50%      { transform: scale(1.06); opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bf-loader,
+  .bf-loader-aura {
+    animation: none !important;
+    transition: none !important;
+    opacity: 1;
+  }
+  /* Settled at the midpoint, so the mark still sits in light. */
+  .bf-loader-aura { transform: scale(1); }
+}

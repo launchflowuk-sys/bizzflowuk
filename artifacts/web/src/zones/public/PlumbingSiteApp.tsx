@@ -6,6 +6,7 @@ import { SiteBaseCtx, SiteOriginCtx, useSiteBase, PageSEO, JsonLd, CookieBanner,
 import { BlogIndexBody, BlogArticleBody } from "./blog/BlogSections";
 import { usePlumbingMotion } from "./plumbingMotion";
 import "./plumbing-motion.css";
+import { WhatsAppFloat, WhatsAppInline } from "./WhatsAppButton";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // PLUMBING & HEATING SITE TEMPLATE (tenant.industry === 'plumbing')
@@ -916,102 +917,6 @@ function ClosingCta({ settings }: { settings: any }) {
   );
 }
 
-/**
- * A tenant's phone number in the international form WhatsApp requires, or null
- * when it cannot receive WhatsApp at all.
- *
- * A landline would open WhatsApp to a chat that does not exist, so the button
- * is not offered rather than offered and broken. UK mobiles are 447xxxxxxxxx.
- */
-export function whatsappNumber(settings: any): string | null {
-  const raw = settings?.whatsappNumber || settings?.phone;
-  if (!raw) return null;
-  const digits = String(raw).replace(/[^\d+]/g, "");
-  const intl = digits.startsWith("+") ? digits.slice(1)
-    : digits.startsWith("0") ? `44${digits.slice(1)}`
-    : digits;
-  return /^447\d{9}$/.test(intl) ? intl : null;
-}
-
-/**
- * What the visitor is actually looking at, in words.
- *
- * The message used to end "...wanted to ask about" with nothing after it,
- * because nothing ever told it the subject. The customer then has to type the
- * thing the page already knew, and the trade receives an enquiry that could be
- * about anything.
- *
- * Naming the page in plain words rather than pasting its URL is deliberate:
- * "Boiler Installation" is what the tradesperson needs to read at a glance on
- * a phone, and a pasted link reads like spam.
- */
-export type WhatsAppContext =
-  | { kind: "service"; name: string }
-  | { kind: "area"; name: string }
-  | { kind: "quote" }
-  | null;
-
-export function whatsappSubject(path: string, services?: any[], areas?: any[]): WhatsAppContext {
-  const after = (prefix: string) => path.startsWith(prefix) ? path.slice(prefix.length).split(/[?#]/)[0] : null;
-
-  const serviceSlug = after("/services/");
-  const service = serviceSlug ? (services || []).find((s: any) => s.slug === serviceSlug) : null;
-  if (service?.name) return { kind: "service", name: service.name };
-
-  const areaSlug = after("/areas/");
-  const area = areaSlug ? (areas || []).find((a: any) => a.slug === areaSlug) : null;
-  if (area?.name) return { kind: "area", name: area.name };
-
-  if (path.startsWith("/get-a-quote")) return { kind: "quote" };
-  return null;
-}
-
-/**
- * The full pre-filled message. Always a complete sentence, context or not.
- *
- * Each context gets its own sentence rather than one template with a slot,
- * because a slot produces things nobody would say: an area dropped into the
- * service sentence reads "I saw work in Romford on your website".
- */
-export function whatsappMessage(businessName: string | undefined, context: WhatsAppContext): string {
-  const who = businessName ? `Hi ${businessName}` : "Hello";
-  if (context?.kind === "service") return `${who}, I saw ${context.name} on your website and I'd like to ask about it.`;
-  if (context?.kind === "area") return `${who}, I'm in ${context.name} and I'd like to ask about some work.`;
-  if (context?.kind === "quote") return `${who}, I'd like to get a quote please.`;
-  return `${who}, I found you online and I'd like to ask about some work.`;
-}
-
-/** A wa.me link carrying the message, or null when WhatsApp is not available. */
-export function whatsappHref(settings: any, tenant: any, context: WhatsAppContext): string | null {
-  const intl = whatsappNumber(settings);
-  if (!intl) return null;
-  return `https://wa.me/${intl}?text=${encodeURIComponent(whatsappMessage(tenant?.name, context))}`;
-}
-
-/**
- * Floating WhatsApp button, which now knows which page it was tapped from.
- */
-function WhatsAppFloat({ settings, tenant, services, areas }: { settings: any; tenant: any; services?: any[]; areas?: any[] }) {
-  const [location] = useLocation();
-  const href = whatsappHref(settings, tenant, whatsappSubject(location, services, areas));
-  if (!href) return null;
-
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="bps-wa"
-      aria-label="Message us on WhatsApp"
-    >
-      <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" className="w-7 h-7">
-        <path d="M20.5 3.5A10 10 0 003.6 15.2L2.5 21.5l6.4-1.1A10 10 0 1020.5 3.5zM12 20a8 8 0 01-4-1.1l-.3-.2-3.1.5.6-3-.2-.3A8 8 0 1112 20zm4.4-5.6c-.2-.1-1.4-.7-1.6-.8s-.4-.1-.5.1-.6.8-.7.9-.3.2-.5 0a6.5 6.5 0 01-1.9-1.2 7.3 7.3 0 01-1.4-1.7c-.1-.3 0-.4.1-.5l.4-.5.2-.4v-.4l-.7-1.7c-.2-.4-.4-.4-.5-.4h-.5a1 1 0 00-.7.3A2.9 2.9 0 006 10a5 5 0 001.1 2.7 11.5 11.5 0 004.4 3.9 8.3 8.3 0 001.5.5 3.5 3.5 0 001.6.1 2.6 2.6 0 001.7-1.2 2.1 2.1 0 00.2-1.2c-.1-.1-.2-.2-.4-.3z"/>
-      </svg>
-      <span className="bps-wa-label">WhatsApp us</span>
-    </a>
-  );
-}
-
 // ── Footer ───────────────────────────────────────────────────────────────────
 
 function Footer({ tenant, settings, services }: { tenant: any; settings: any; services: any[] }) {
@@ -1200,6 +1105,12 @@ function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
                 Tell us what you need and we&rsquo;ll come back with a written price. No obligation.
               </p>
               <QuoteButton className="mt-5 w-full justify-center"/>
+              {/* The quicker way to ask, right where someone has just finished
+                  reading about this exact job. The message names it, so the
+                  enquiry arrives with its subject attached. */}
+              <div className="mt-3">
+                <WhatsAppInline settings={settings} tenant={tenant} services={services} areas={areas} block label={`Ask about ${service.name}`}/>
+              </div>
               {phone && (
                 <a href={telHref(phone)} className="bps-drop mt-3 flex items-center justify-center gap-2.5 h-12 rounded-[14px] border text-white font-semibold text-[15px]" style={{ borderColor: "rgba(255,255,255,.3)" }}>
                   <PhoneIcon color="#fff"/>{phone}

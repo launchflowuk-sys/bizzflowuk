@@ -1,0 +1,128 @@
+/* =============================================================================
+ * WhatsApp buttons, shared by every public template.
+ *
+ * Plain CSS rather than Tailwind utilities because these classes are used from
+ * four templates with different design systems, and a utility string repeated
+ * four times is four places to forget to change.
+ *
+ * The green is WhatsApp's own #25D366 everywhere. It is recognised before it is
+ * read, and tinting it to match each tenant's brand would trade that away for
+ * tidiness nobody asked for.
+ * ========================================================================== */
+
+.wa-glyph { width: 28px; height: 28px; flex-shrink: 0; }
+.wa-glyph-sm { width: 20px; height: 20px; flex-shrink: 0; }
+
+/* ---------- the floating bubble ---------- */
+
+.wa-float {
+  position: fixed;
+  right: 18px;
+  bottom: 18px;
+  /* Above page content and the cookie banner, below any toast: a toast has
+     something urgent to say and must be able to speak over this. */
+  z-index: 70;
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  height: 56px;
+  padding: 0 15px;
+  border-radius: 999px;
+  background: #25d366;
+  color: #fff;
+  text-decoration: none;
+  box-shadow: 0 12px 28px -10px rgba(37, 211, 102, 0.75);
+  transition:
+    transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 260ms ease-out,
+    padding-right 320ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * The label is collapsed rather than absent, so the bubble grows into it
+ * instead of the layout jumping when it appears.
+ */
+.wa-float-label {
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  max-width: 0;
+  opacity: 0;
+  font-weight: 700;
+  font-size: 15px;
+  transition:
+    max-width 340ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease-out,
+    margin 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/*
+ * Only where hovering is real. On a touch screen there is no hover state to
+ * leave, so the label would expand on tap and stay expanded over the page.
+ */
+@media (hover: hover) and (pointer: fine) {
+  .wa-float:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 34px -12px rgba(37, 211, 102, 0.85);
+  }
+  .wa-float:hover .wa-float-label {
+    max-width: 130px;
+    opacity: 1;
+    margin-left: 10px;
+  }
+}
+
+/* Clear of the cookie banner and the iPhone home indicator. */
+@media (max-width: 640px) {
+  .wa-float {
+    right: 14px;
+    bottom: calc(14px + env(safe-area-inset-bottom));
+    height: 52px;
+    padding: 0 13px;
+  }
+}
+
+/* ---------- the inline button ---------- */
+
+.wa-inline {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  /* 48px is a comfortable thumb target; anything smaller is a miss waiting to
+     happen on the page where someone has decided to make contact. */
+  min-height: 48px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  background: #25d366;
+  color: #fff;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.2;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+  transition: background 200ms ease-out, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.wa-inline:hover {
+  background: #1fb855;
+  transform: translateY(-2px);
+}
+
+.wa-inline-block {
+  display: flex;
+  width: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wa-float,
+  .wa-float-label,
+  .wa-inline {
+    transition: none !important;
+  }
+  .wa-float:hover,
+  .wa-inline:hover {
+    transform: none;
+  }
+}

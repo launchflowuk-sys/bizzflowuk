@@ -5,6 +5,7 @@ import { initGoogleTag, updateConsent, fireQuoteRequestConversion } from "./anal
 import { BlogIndexBody, BlogArticleBody } from "./blog/BlogSections";
 import { PriceCalculatorSection } from "./PriceCalculator";
 import LandingPage from "./LandingPage";
+import { WhatsAppFloat, WhatsAppInline } from "./WhatsAppButton";
 export const SiteBaseCtx = createContext('');
 export const useSiteBase = () => useContext(SiteBaseCtx);
 
@@ -1339,6 +1340,13 @@ function ServiceDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: str
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote for {name}</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell {brand.name} what exterior finish you want.</p>
                     <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
+                    {/*
+                      The quicker way to ask, at the moment someone has just
+                      finished reading about this exact job. The message names
+                      it, so the enquiry arrives with its subject attached
+                      rather than as an unexplained "hello".
+                    */}
+                    <WhatsAppInline settings={settings} tenant={tenant} block label={`Ask about ${name}`}/>
                     <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
@@ -1617,6 +1625,7 @@ function AreaDetailPage({ tenantSlug, slug }: { tenantSlug: string; slug: string
                     <h3 className="font-bold text-lg" style={{ color: TEXT }}>Get A Quote in {areaName}</h3>
                     <p className="text-sm" style={{ color: MUTED }}>Upload property photos and tell {brand.name} what exterior finish you want.</p>
                     <BlueBtn href={`${siteBase}/quote`} className="w-full">Request Quote</BlueBtn>
+                    <WhatsAppInline settings={settings} tenant={tenant} block label="Ask on WhatsApp"/>
                     <p className="text-xs text-center" style={{ color: MUTED }}>We usually respond within 24 hours.</p>
                   </div>
                   <div className="rounded-2xl border border-slate-200 p-6 space-y-3 bg-white">
@@ -3819,6 +3828,8 @@ export default function PublicSiteApp({ forcedSlug, forcedBase, forcedOrigin, ss
         <Route>{() => <TenantNotFoundPage tenantSlug={tenantSlug}/>}</Route>
       </Switch>
       <CookieBanner siteBase={siteBase}/>
+      {/* Sitewide, and it knows which page it was tapped from. */}
+      <WhatsAppFloat settings={rootSettings} tenant={rootTenant}/>
     </WouterRouter>
     </SiteBaseCtx.Provider>
     </SiteOriginCtx.Provider>

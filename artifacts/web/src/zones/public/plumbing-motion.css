@@ -1055,30 +1055,13 @@
   .bps-phone-pill{ padding-right:16px }
 }
 
-.bps-wa{
-  position:fixed; right:18px; bottom:18px; z-index:70;
-  display:inline-flex; align-items:center; gap:0;
-  height:56px; padding:0 15px; border-radius:999px;
-  background:#25D366; color:#fff; text-decoration:none;
-  box-shadow:0 12px 28px -10px rgba(37,211,102,.75);
-  transition:transform 260ms var(--bps-ease-settle), box-shadow 260ms ease-out, padding-right 320ms var(--bps-ease-settle);
-}
-.bps-wa-label{
-  display:inline-block; overflow:hidden; white-space:nowrap;
-  max-width:0; opacity:0; font-weight:700; font-size:15px;
-  transition:max-width 340ms var(--bps-ease-settle), opacity 220ms ease-out, margin 340ms var(--bps-ease-settle);
-}
-@media (hover:hover) and (pointer:fine){
-  .bps-wa:hover{ transform:translateY(-3px); box-shadow:0 18px 34px -12px rgba(37,211,102,.85) }
-  .bps-wa:hover .bps-wa-label{ max-width:130px; opacity:1; margin-left:10px }
-}
-/* Clear of the cookie banner and iPhone home indicator. */
-@media (max-width:640px){
-  .bps-wa{ right:14px; bottom:calc(14px + env(safe-area-inset-bottom)); height:52px; padding:0 13px }
-}
+/* The floating WhatsApp button moved to the shared `.wa-float` in
+   whatsapp.css, so all four templates get the same one instead of this being
+   the only template that had a WhatsApp button at all. Its z-index is still
+   70, which is what the header lift above is measured against. */
 
 @media (prefers-reduced-motion:reduce){
-  .bps-phone-pill, .bps-phone-num, .bps-wa, .bps-wa-label{ transition:none !important }
+  .bps-phone-pill, .bps-phone-num{ transition:none !important }
 }
 
 /* Share buttons on the guides. */
