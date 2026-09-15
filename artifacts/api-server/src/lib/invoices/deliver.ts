@@ -77,6 +77,44 @@ export async function sendInvoiceEmail(invoiceId: number, tenantId: number, kind
     ? `<p style="margin:0 0 14px">A quick reminder that invoice <strong>${esc(inv.reference)}</strong> was due on ${esc(fmtDate(inv.dueOn))} and is still showing as unpaid. If you have already paid it, please ignore this — and apologies for the nudge.</p>`
     : `<p style="margin:0 0 14px">Please find invoice <strong>${esc(inv.reference)}</strong> below${name ? `, ${esc(name)}` : ""}. Payment is due by ${esc(fmtDate(inv.dueOn))}.</p>`;
 
+  /**
+   * How to pay it.
+   *
+   * The email listed what was owed and gave the customer no way to pay it —
+   * they had to ring up and ask for a sort code, which is a day's delay on
+   * every invoice and, on a chase, faintly insulting. Rendered per invoice
+   * from the tenant's settings, so correcting a digit once corrects it
+   * everywhere.
+   *
+   * The invoice's own terms win over the tenant default when it has some.
+   */
+  const s = settings as any;
+  const bankRows = [
+    s?.bankAccountName ? ["Account name", s.bankAccountName] : null,
+    s?.bankName ? ["Bank", s.bankName] : null,
+    s?.bankSortCode ? ["Sort code", s.bankSortCode] : null,
+    s?.bankAccountNumber ? ["Account number", s.bankAccountNumber] : null,
+    ["Reference", inv.reference],
+  ].filter(Boolean) as Array<[string, string]>;
+
+  const canBankTransfer = Boolean(s?.bankSortCode || s?.bankAccountNumber);
+  const payBlock = canBankTransfer
+    ? `<div style="margin:0 0 18px;padding:14px 16px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:10px">
+    <p style="margin:0 0 8px;font-weight:bold">How to pay</p>
+    <table style="border-collapse:collapse;font-size:14px">
+      ${bankRows.map(([k, v]) => `<tr><td style="padding:2px 16px 2px 0;color:#6B7280">${esc(k)}</td><td style="padding:2px 0"><strong>${esc(v)}</strong></td></tr>`).join("")}
+    </table>
+    ${s?.paymentInstructions ? `<p style="margin:10px 0 0;font-size:13.5px;color:#374151">${esc(s.paymentInstructions)}</p>` : ""}
+  </div>`
+    : (s?.paymentInstructions
+      ? `<div style="margin:0 0 18px;padding:14px 16px;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:10px">
+    <p style="margin:0 0 6px;font-weight:bold">How to pay</p>
+    <p style="margin:0;font-size:13.5px;color:#374151">${esc(s.paymentInstructions)}</p>
+  </div>`
+      : "");
+
+  const termsText = inv.terms || s?.invoiceTerms || null;
+
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#111827;max-width:580px">
   ${intro}
   <table style="border-collapse:collapse;width:100%;margin:0 0 14px">${rows}</table>
@@ -88,7 +126,9 @@ export async function sendInvoiceEmail(invoiceId: number, tenantId: number, kind
     ${Number(inv.amountPaid) > 0 ? `<tr><td style="padding:3px 18px 3px 0;color:#6B7280">Paid so far</td><td style="padding:3px 0;text-align:right">${money(inv.amountPaid)}</td></tr>
     <tr><td style="padding:3px 18px 3px 0"><strong>Still to pay</strong></td><td style="padding:3px 0;text-align:right"><strong>${money(due)}</strong></td></tr>` : ""}
   </table>
-  ${settings?.invoiceTerms ? `<p style="margin:0 0 14px;color:#6B7280;font-size:13.5px">${esc((settings as any).invoiceTerms)}</p>` : ""}
+  ${payBlock}
+  ${inv.notes ? `<p style="margin:0 0 14px;font-size:14px">${esc(inv.notes)}</p>` : ""}
+  ${termsText ? `<p style="margin:0 0 14px;color:#6B7280;font-size:13.5px">${esc(termsText)}</p>` : ""}
   <p style="margin:0;color:#6B7280;font-size:13px">${esc(tenant?.name ?? "")}${settings?.phone ? ` · ${esc(settings.phone)}` : ""}${settings?.email ? ` · ${esc(settings.email)}` : ""}</p>
 </div>`;
 

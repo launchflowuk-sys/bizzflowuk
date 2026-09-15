@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useParams } from "wouter";
 import {
   api, useApi, money, shortDate, dayMonth, timeOf, daysUntil,
@@ -225,21 +225,105 @@ export function InvoicesPage() {
     </Page>  );
 }
 
+/**
+ * One invoice.
+ *
+ * The old version wrote to the server on every blur, rebuilding and re-sending
+ * the WHOLE items array each time. Typing a description and tabbing to the
+ * quantity fired two full saves, and two of them in flight at once raced: the
+ * slower reply overwrote the newer edit. It also meant an invoice could not be
+ * drafted on a phone with no signal, and a twelve-column grid put a description
+ * box five columns wide next to a delete cross one column wide, which on a
+ * phone is a row of slots too narrow to read.
+ *
+ * So the lines are edited locally and saved once, deliberately. The rest of the
+ * page is the stuff a real invoice needs and never had: how it repeats, what it
+ * says about VAT and CIS, and how the customer is actually supposed to pay it.
+ */
+
+const RECURRENCE_LABEL: Record<string, string> = {
+  weekly: "Every week",
+  fortnightly: "Every fortnight",
+  monthly: "Every month",
+  quarterly: "Every quarter",
+  six_monthly: "Every six months",
+  yearly: "Every year",
+};
+
+type DraftLine = { id?: number; description: string; quantity: string; unitPrice: string; vatRate: string | null };
+
+function toDraft(items: any[]): DraftLine[] {
+  return items.map(i => ({
+    id: i.id,
+    description: i.description ?? "",
+    quantity: String(i.quantity ?? "1"),
+    unitPrice: String(i.unitPrice ?? "0"),
+    vatRate: i.vatRate === null || i.vatRate === undefined ? null : String(i.vatRate),
+  }));
+}
+
+/** Pence, so the running total on screen matches the server to the penny. */
+function linePence(l: DraftLine): number {
+  const q = Number(l.quantity);
+  const u = Number(l.unitPrice);
+  if (!Number.isFinite(q) || !Number.isFinite(u)) return 0;
+  return Math.round(Math.round(u * 100) * q);
+}
+
 export function InvoiceDetailPage() {
   const params = useParams<{ id: string }>();
   const [, navigate] = useLocation();
   const { data, loading, error, reload } = useApi<any>(`/invoices/${params.id}`);
   const { data: customers } = useApi<any[]>("/customers");
+  const { data: settings } = useApi<any>("/settings");
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
   const [payAmount, setPayAmount] = useState("");
+
+  /**
+   * The lines being edited, owned locally until Save.
+   *
+   * Reseeding needs care. Changing the customer or recording a payment reloads
+   * the whole invoice, and naively re-copying the server's lines on every
+   * reload would throw away line edits the person had not saved yet — you
+   * would pick a customer from the dropdown and watch your typing vanish.
+   *
+   * So the server's version is adopted only when the local draft still matches
+   * what the server last said. The moment there are unsaved edits, the draft
+   * wins and the banner asks for a decision.
+   */
+  const [lines, setLines] = useState<DraftLine[] | null>(null);
+  const serverItems: any[] = data?.items ?? [];
+  const loadedId = useRef<number | null>(null);
+  const lastServer = useRef<string>("");
+  useEffect(() => {
+    if (!data) return;
+    const shape = (ls: DraftLine[]) => JSON.stringify(ls.map(({ id, ...l }) => l));
+    const snapshot = shape(toDraft(data.items ?? []));
+
+    if (lines === null || loadedId.current !== data.id) {
+      loadedId.current = data.id;
+      lastServer.current = snapshot;
+      setLines(toDraft(data.items ?? []));
+      return;
+    }
+    if (snapshot === lastServer.current) return;
+    if (shape(lines) === lastServer.current) setLines(toDraft(data.items ?? []));
+    lastServer.current = snapshot;
+  }, [data]);
 
   if (loading) return <Page><Loading /></Page>;
   if (error) return <Page><ErrorNote message={error} /></Page>;
   if (!data) return null;
 
   const locked = data.status === "void";
-  const items: any[] = data.items ?? [];
+  const draft = lines ?? toDraft(serverItems);
+  const isCopy = Boolean(data.recurrenceSourceId);
+
+  const dirty = JSON.stringify(draft.map(({ id, ...l }) => l))
+    !== JSON.stringify(toDraft(serverItems).map(({ id, ...l }) => l));
+
+  const subtotalPence = draft.reduce((s, l) => s + linePence(l), 0);
 
   async function run(fn: () => Promise<any>, ok: string) {
     setBusy(true); setNote(null);
@@ -248,23 +332,20 @@ export function InvoiceDetailPage() {
     finally { setBusy(false); }
   }
 
-  function addLine() {
-    const next = [...items.map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, vatRate: i.vatRate })),
-      { description: "New line", quantity: "1", unitPrice: "0" }];
-    run(() => api.patch(`/invoices/${data.id}`, { items: next }), "Line added");
+  function setLine(idx: number, patch: Partial<DraftLine>) {
+    setLines(draft.map((l, n) => n === idx ? { ...l, ...patch } : l));
   }
 
-  function updateLine(idx: number, patch: Record<string, unknown>) {
-    const next = items.map((i, n) => n === idx
-      ? { description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, vatRate: i.vatRate, ...patch }
-      : { description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, vatRate: i.vatRate });
-    run(() => api.patch(`/invoices/${data.id}`, { items: next }), "Saved");
-  }
-
-  function removeLine(idx: number) {
-    const next = items.filter((_, n) => n !== idx)
-      .map(i => ({ description: i.description, quantity: i.quantity, unitPrice: i.unitPrice, vatRate: i.vatRate }));
-    run(() => api.patch(`/invoices/${data.id}`, { items: next }), "Line removed");
+  function saveLines() {
+    const clean = draft
+      .filter(l => l.description.trim())
+      .map(l => ({
+        description: l.description.trim(),
+        quantity: l.quantity === "" ? "1" : l.quantity,
+        unitPrice: l.unitPrice === "" ? "0" : l.unitPrice,
+        vatRate: l.vatRate,
+      }));
+    run(() => api.patch(`/invoices/${data.id}`, { items: clean }), "Lines saved");
   }
 
   return (
@@ -276,7 +357,7 @@ export function InvoiceDetailPage() {
           <div className="flex flex-wrap gap-2">
             <Btn tone="ghost" onClick={() => navigate("/dashboard/invoices")}>Back</Btn>
             {data.status === "draft" && (
-              <Btn onClick={() => run(() => api.post(`/invoices/${data.id}/send`), "Invoice sent")} disabled={busy}>Send</Btn>
+              <Btn onClick={() => run(() => api.post(`/invoices/${data.id}/send`), "Invoice sent")} disabled={busy || dirty}>Send</Btn>
             )}
             {!locked && data.status !== "draft" && (
               <Btn tone="danger" onClick={() => run(() => api.post(`/invoices/${data.id}/void`, { reason: "Voided from the dashboard" }), "Invoice voided")} disabled={busy}>Void</Btn>
@@ -287,48 +368,130 @@ export function InvoiceDetailPage() {
 
       {note && <div className="mb-5"><Card className="p-4"><p className="text-[14.5px] text-slate-700">{note}</p></Card></div>}
 
+      {dirty && !locked && (
+        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-[16px] border border-amber-200 bg-amber-50 px-4 py-3">
+          <p className="text-[14.5px] font-semibold text-amber-900">Unsaved changes to the lines.</p>
+          <div className="flex gap-2">
+            <Btn onClick={saveLines} disabled={busy}>Save lines</Btn>
+            <Btn tone="ghost" onClick={() => setLines(toDraft(serverItems))} disabled={busy}>Discard</Btn>
+          </div>
+        </div>
+      )}
+
       <div className="grid lg:grid-cols-3 gap-5">
         <div className="lg:col-span-2 space-y-5">
           <Card className="p-5">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-[16px] font-bold text-slate-900">Lines</h2>
-              {!locked && <Btn tone="ghost" onClick={addLine} disabled={busy}>Add line</Btn>}
+              <h2 className="text-[16px] font-bold text-slate-900">What the work was</h2>
+              {!locked && (
+                <Btn tone="ghost" onClick={() => setLines([...draft, { description: "", quantity: "1", unitPrice: "0", vatRate: null }])}>
+                  Add a line
+                </Btn>
+              )}
             </div>
 
-            {items.length === 0 ? (
-              <p className="text-[14.5px] text-slate-500 py-6 text-center">No lines yet. An invoice needs at least one before it can be sent.</p>
+            {draft.length === 0 ? (
+              <p className="text-[14.5px] text-slate-500 py-6 text-center">
+                Nothing on it yet. An invoice needs at least one line before it can be sent.
+              </p>
             ) : (
-              <div className="space-y-2">
-                {items.map((i, idx) => (
-                  <div key={i.id ?? idx} className="grid grid-cols-12 gap-2 items-center">
-                    <input className={`${inputCls} col-span-5`} defaultValue={i.description}
-                      onBlur={e => e.target.value !== i.description && updateLine(idx, { description: e.target.value })} disabled={locked} />
-                    <input className={`${inputCls} col-span-2 text-right`} defaultValue={i.quantity} type="number" step="0.01"
-                      onBlur={e => e.target.value !== String(i.quantity) && updateLine(idx, { quantity: e.target.value })} disabled={locked} />
-                    <input className={`${inputCls} col-span-2 text-right`} defaultValue={i.unitPrice} type="number" step="0.01"
-                      onBlur={e => e.target.value !== String(i.unitPrice) && updateLine(idx, { unitPrice: e.target.value })} disabled={locked} />
-                    <div className="col-span-2 text-right tabular-nums font-semibold text-slate-900">{money(i.total)}</div>
-                    {!locked && (
-                      <button onClick={() => removeLine(idx)} className="col-span-1 text-slate-400 hover:text-red-600 text-[18px]" aria-label="Remove line">×</button>
-                    )}
-                  </div>
-                ))}
-              </div>
+              <>
+                {/* Column headings only from sm up — on a phone each line is its
+                    own block with its own labels, so a header row would be
+                    pointing at nothing. */}
+                <div className="hidden sm:grid grid-cols-12 gap-2 px-1 pb-1.5 text-[11px] font-semibold uppercase tracking-[0.05em] text-slate-400">
+                  <div className="col-span-6">Description</div>
+                  <div className="col-span-2 text-right">Qty</div>
+                  <div className="col-span-2 text-right">Unit price</div>
+                  <div className="col-span-2 text-right">Total</div>
+                </div>
+
+                <div className="space-y-3 sm:space-y-2">
+                  {draft.map((l, idx) => (
+                    <div key={l.id ?? `new-${idx}`}
+                      className="rounded-[14px] border border-slate-200 p-3 sm:border-0 sm:p-0 sm:grid sm:grid-cols-12 sm:gap-2 sm:items-center">
+                      <div className="sm:col-span-6">
+                        <span className="sm:hidden block text-[12px] font-semibold text-slate-500 mb-1">Description</span>
+                        <input className={inputCls} value={l.description} disabled={locked}
+                          placeholder="Replaced kitchen mixer tap"
+                          onChange={e => setLine(idx, { description: e.target.value })} />
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 mt-2 sm:mt-0 sm:contents">
+                        <div className="sm:col-span-2">
+                          <span className="sm:hidden block text-[12px] font-semibold text-slate-500 mb-1">Qty</span>
+                          <input className={`${inputCls} text-right`} value={l.quantity} type="number" step="0.01" inputMode="decimal" disabled={locked}
+                            onChange={e => setLine(idx, { quantity: e.target.value })} />
+                        </div>
+                        <div className="sm:col-span-2">
+                          <span className="sm:hidden block text-[12px] font-semibold text-slate-500 mb-1">Unit price</span>
+                          <input className={`${inputCls} text-right`} value={l.unitPrice} type="number" step="0.01" inputMode="decimal" disabled={locked}
+                            onChange={e => setLine(idx, { unitPrice: e.target.value })} />
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between gap-2 mt-2 sm:mt-0 sm:col-span-2 sm:justify-end">
+                        <span className="sm:hidden text-[12px] font-semibold text-slate-500">Line total</span>
+                        <span className="tabular-nums font-semibold text-slate-900">{money((linePence(l) / 100).toFixed(2))}</span>
+                        {!locked && (
+                          <button onClick={() => setLines(draft.filter((_, n) => n !== idx))}
+                            className="text-slate-400 hover:text-red-600 text-[18px] leading-none px-1 sm:ml-1"
+                            aria-label={`Remove ${l.description || "this line"}`}>×</button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </>
             )}
 
             <div className="mt-5 pt-4 border-t border-slate-200 space-y-1.5 text-[14.5px]">
-              <div className="flex justify-between"><span className="text-slate-500">Subtotal</span><span className="tabular-nums">{money(data.subtotal)}</span></div>
-              {Number(data.vatAmount) > 0 && <div className="flex justify-between"><span className="text-slate-500">VAT</span><span className="tabular-nums">{money(data.vatAmount)}</span></div>}
-              {Number(data.cisDeduction) > 0 && <div className="flex justify-between"><span className="text-slate-500">CIS deduction</span><span className="tabular-nums">−{money(data.cisDeduction)}</span></div>}
-              <div className="flex justify-between pt-1.5 font-bold text-slate-900"><span>Total</span><span className="tabular-nums">{money(data.total)}</span></div>
-              {Number(data.amountPaid) > 0 && (
+              <div className="flex justify-between">
+                <span className="text-slate-500">Subtotal</span>
+                <span className="tabular-nums">{money((subtotalPence / 100).toFixed(2))}</span>
+              </div>
+              {dirty ? (
+                <p className="text-[13px] text-amber-700 pt-1">
+                  VAT, CIS and the total are worked out by the server. Save the lines to see them.
+                </p>
+              ) : (
                 <>
-                  <div className="flex justify-between"><span className="text-slate-500">Paid</span><span className="tabular-nums">{money(data.amountPaid)}</span></div>
-                  <div className="flex justify-between font-bold text-slate-900"><span>Still to pay</span><span className="tabular-nums">{money(data.outstanding)}</span></div>
+                  {Number(data.vatAmount) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">VAT{data.vatRate ? ` at ${Number(data.vatRate)}%` : ""}</span>
+                      <span className="tabular-nums">{money(data.vatAmount)}</span>
+                    </div>
+                  )}
+                  {Number(data.cisDeduction) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">CIS deducted{settings?.cisRate ? ` at ${Number(settings.cisRate)}%` : ""}</span>
+                      <span className="tabular-nums text-amber-700">−{money(data.cisDeduction)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-1.5 font-bold text-slate-900">
+                    <span>Total</span><span className="tabular-nums">{money(data.total)}</span>
+                  </div>
+                  {Number(data.amountPaid) > 0 && (
+                    <>
+                      <div className="flex justify-between"><span className="text-slate-500">Paid</span><span className="tabular-nums">{money(data.amountPaid)}</span></div>
+                      <div className="flex justify-between font-bold text-slate-900"><span>Still to pay</span><span className="tabular-nums">{money(data.outstanding)}</span></div>
+                    </>
+                  )}
                 </>
               )}
             </div>
+
+            {/* The two tax facts a trade is judged on, said out loud rather than
+                left for them to infer from a missing row. */}
+            {!dirty && settings && (
+              <div className="mt-4 pt-3 border-t border-slate-100 text-[13px] text-slate-500 space-y-1">
+                {!settings.vatRegistered && <p>No VAT on this invoice — you are not registered. Change that in Settings.</p>}
+                {settings.cisRegistered && Number(data.cisDeduction) === 0 && Number(data.subtotal) > 0 && (
+                  <p>No CIS shown. It is deducted at {Number(settings.cisRate ?? 20)}% on invoices to contractors.</p>
+                )}
+              </div>
+            )}
           </Card>
+
+          <RepeatCard invoice={data} busy={busy} run={run} isCopy={isCopy} />
 
           {data.status !== "draft" && !locked && (
             <Card className="p-5">
@@ -336,7 +499,7 @@ export function InvoiceDetailPage() {
               <div className="flex flex-wrap items-end gap-3">
                 <div className="flex-1 min-w-[160px]">
                   <Field label="Amount">
-                    <input className={inputCls} type="number" step="0.01" value={payAmount}
+                    <input className={inputCls} type="number" step="0.01" inputMode="decimal" value={payAmount}
                       placeholder={data.outstanding} onChange={e => setPayAmount(e.target.value)} />
                   </Field>
                 </div>
@@ -375,21 +538,193 @@ export function InvoiceDetailPage() {
               </Field>
               <Field label="Issued">
                 <input className={inputCls} type="date" defaultValue={data.issuedOn ?? ""} disabled={locked}
-                  onBlur={e => run(() => api.patch(`/invoices/${data.id}`, { issuedOn: e.target.value }), "Saved")} />
+                  onBlur={e => e.target.value !== data.issuedOn && run(() => api.patch(`/invoices/${data.id}`, { issuedOn: e.target.value }), "Saved")} />
               </Field>
-              <Field label="Due">
+              <Field label="Due" hint={data.dueOn && data.issuedOn ? `${Math.round((Date.parse(data.dueOn) - Date.parse(data.issuedOn)) / 86400000)} days to pay` : undefined}>
                 <input className={inputCls} type="date" defaultValue={data.dueOn ?? ""} disabled={locked}
-                  onBlur={e => run(() => api.patch(`/invoices/${data.id}`, { dueOn: e.target.value }), "Saved")} />
-              </Field>
-              <Field label="Notes">
-                <textarea className={`${inputCls} h-24 py-3`} defaultValue={data.notes ?? ""} disabled={locked}
-                  onBlur={e => run(() => api.patch(`/invoices/${data.id}`, { notes: e.target.value }), "Saved")} />
+                  onBlur={e => e.target.value !== data.dueOn && run(() => api.patch(`/invoices/${data.id}`, { dueOn: e.target.value }), "Saved")} />
               </Field>
             </div>
           </Card>
+
+          <PaymentDetailsCard invoice={data} settings={settings} locked={locked} busy={busy} run={run} />
         </div>
       </div>
     </Page>  );
+}
+
+/**
+ * How the customer pays, and anything they need to be told.
+ *
+ * The bank block is read from the tenant's settings rather than typed per
+ * invoice — it is the same on every one, and retyping a sort code is exactly
+ * how a digit gets transposed and a payment lands in a stranger's account. What
+ * IS per-invoice is the note and the terms, because those change with the job.
+ */
+function PaymentDetailsCard({ invoice, settings, locked, busy, run }: {
+  invoice: any; settings: any; locked: boolean; busy: boolean;
+  run: (fn: () => Promise<any>, ok: string) => void;
+}) {
+  const hasBank = Boolean(settings?.bankAccountNumber || settings?.bankSortCode);
+
+  return (
+    <Card className="p-5">
+      <h2 className="text-[16px] font-bold text-slate-900 mb-1">How to pay it</h2>
+      <p className="text-[13px] text-slate-500 mb-4">
+        Printed on the invoice the customer receives.
+      </p>
+
+      {hasBank ? (
+        <div className="rounded-[14px] bg-slate-50 border border-slate-200 p-3.5 text-[14px] space-y-1 mb-4">
+          {settings.bankAccountName && <p className="font-semibold text-slate-900">{settings.bankAccountName}</p>}
+          {settings.bankName && <p className="text-slate-600">{settings.bankName}</p>}
+          <p className="tabular-nums text-slate-700">
+            {settings.bankSortCode && <span>Sort code {settings.bankSortCode}</span>}
+            {settings.bankSortCode && settings.bankAccountNumber && <span> · </span>}
+            {settings.bankAccountNumber && <span>Account {settings.bankAccountNumber}</span>}
+          </p>
+          {settings.paymentInstructions && (
+            <p className="text-slate-600 pt-1">{settings.paymentInstructions}</p>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-[14px] border border-amber-200 bg-amber-50 p-3.5 mb-4">
+          <p className="text-[14px] font-semibold text-amber-900">No bank details set.</p>
+          <p className="text-[13px] text-amber-800 mt-1">
+            This invoice tells the customer what they owe and nothing about where to send it.
+            Add them once in Settings and every invoice carries them.
+          </p>
+        </div>
+      )}
+
+      <div className="space-y-4">
+        <Field label="Note to the customer" hint="Sits under the lines. Anything about this particular job.">
+          <textarea className={`${inputCls} h-24 py-3`} defaultValue={invoice.notes ?? ""} disabled={locked}
+            placeholder="Thanks for the tea. The stopcock under the sink is stiff — worth replacing next visit."
+            onBlur={e => e.target.value !== (invoice.notes ?? "") && run(() => api.patch(`/invoices/${invoice.id}`, { notes: e.target.value }), "Saved")} />
+        </Field>
+        <Field label="Terms" hint={settings?.invoiceTerms ? "Overrides your default terms for this one invoice." : "Your payment terms, in your words."}>
+          <textarea className={`${inputCls} h-20 py-3`} defaultValue={invoice.terms ?? settings?.invoiceTerms ?? ""} disabled={locked}
+            placeholder="Payment due within 14 days. Late payment may incur interest under the Late Payment of Commercial Debts Act."
+            onBlur={e => e.target.value !== (invoice.terms ?? "") && run(() => api.patch(`/invoices/${invoice.id}`, { terms: e.target.value }), "Saved")} />
+        </Field>
+      </div>
+    </Card>
+  );
+}
+
+/**
+ * Whether this invoice repeats.
+ *
+ * A one-off is the default and says nothing about itself. Turning on a cadence
+ * turns THIS invoice into the head of a series: the platform clones it on
+ * schedule rather than keeping a separate template, so what goes out next month
+ * is exactly what went out this month.
+ */
+function RepeatCard({ invoice, busy, run, isCopy }: {
+  invoice: any; busy: boolean; isCopy: boolean;
+  run: (fn: () => Promise<any>, ok: string) => void;
+}) {
+  const [cadence, setCadence] = useState<string>(invoice.recurrence ?? "");
+  const [until, setUntil] = useState<string>(invoice.recurrenceUntil ?? "");
+  const [autoSend, setAutoSend] = useState<boolean>(Boolean(invoice.recurrenceAutoSend));
+  const { data: series } = useApi<any[]>(
+    invoice.recurrence ? `/invoices/${invoice.id}/series` : null, [invoice.id, invoice.recurrence],
+  );
+
+  if (isCopy) {
+    return (
+      <Card className="p-5">
+        <h2 className="text-[16px] font-bold text-slate-900 mb-1">Part of a repeating series</h2>
+        <p className="text-[14px] text-slate-600">
+          This one was raised automatically. To change the schedule, open the first invoice in the
+          series — changing it here would fork it and the customer would start getting two of everything.
+        </p>
+      </Card>
+    );
+  }
+
+  const live = Boolean(invoice.recurrence);
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between gap-3 mb-1">
+        <h2 className="text-[16px] font-bold text-slate-900">Does this repeat?</h2>
+        {live && <Pill tone="info">{RECURRENCE_LABEL[invoice.recurrence] ?? invoice.recurrence}</Pill>}
+      </div>
+      <p className="text-[13px] text-slate-500 mb-4">
+        {live
+          ? `Next one is raised on ${shortDate(invoice.recurrenceNextOn)}${invoice.recurrenceCount > 0 ? ` · ${invoice.recurrenceCount} issued so far` : ""}.`
+          : "A maintenance contract, a landlord safety round, a quarterly service — set it once and it raises itself."}
+      </p>
+
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Field label="How often">
+          <select className={inputCls} value={cadence} onChange={e => setCadence(e.target.value)}>
+            <option value="">One-off — does not repeat</option>
+            {Object.entries(RECURRENCE_LABEL).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </Field>
+        {cadence && (
+          <Field label="Stop after" hint="Leave blank to run until you stop it.">
+            <input className={inputCls} type="date" value={until} onChange={e => setUntil(e.target.value)} />
+          </Field>
+        )}
+      </div>
+
+      {cadence && (
+        <label className="flex items-start gap-3 mt-4 cursor-pointer">
+          <input type="checkbox" className="mt-1 h-5 w-5 rounded border-slate-300 accent-sky-600"
+            checked={autoSend} onChange={e => setAutoSend(e.target.checked)} />
+          <span>
+            <span className="block text-[14.5px] font-semibold text-slate-900">Send each one automatically</span>
+            <span className="block text-[13px] text-slate-500">
+              Off, each copy waits as a draft for you to check and send. On, it goes straight to the
+              customer on the day — so make sure the figure above is one you are happy to repeat.
+            </span>
+          </span>
+        </label>
+      )}
+
+      <div className="flex flex-wrap gap-2 mt-4">
+        <Btn disabled={busy} onClick={() => run(
+          () => api.put(`/invoices/${invoice.id}/recurrence`, {
+            recurrence: cadence || null,
+            until: until || null,
+            autoSend,
+          }),
+          cadence ? "Schedule saved" : "This invoice no longer repeats",
+        )}>
+          {cadence ? (live ? "Update the schedule" : "Start repeating") : "Save"}
+        </Btn>
+        {live && (
+          <Btn tone="ghost" disabled={busy} onClick={() => {
+            setCadence(""); setUntil("");
+            run(() => api.put(`/invoices/${invoice.id}/recurrence`, { recurrence: null }), "Stopped repeating");
+          }}>Stop repeating</Btn>
+        )}
+      </div>
+
+      {(series ?? []).length > 0 && (
+        <div className="mt-5 pt-4 border-t border-slate-200">
+          <h3 className="text-[13px] font-semibold uppercase tracking-[0.05em] text-slate-400 mb-2">
+            Raised by this series
+          </h3>
+          <div className="space-y-1.5">
+            {(series ?? []).map(s => (
+              <a key={s.id} href={`/dashboard/invoices/${s.id}`}
+                className="flex items-center justify-between gap-3 text-[14px] py-1 hover:text-sky-700">
+                <span className="font-mono text-[13px]">{s.reference}</span>
+                <span className="text-slate-500">{shortDate(s.issuedOn)}</span>
+                <span className="tabular-nums font-semibold">{money(s.total)}</span>
+                <Pill tone={INVOICE_STATUS_TONE[s.status]}>{INVOICE_STATUS_LABEL[s.status] ?? s.status}</Pill>
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+    </Card>
+  );
 }
 
 // ── Expenses ─────────────────────────────────────────────────────────────────

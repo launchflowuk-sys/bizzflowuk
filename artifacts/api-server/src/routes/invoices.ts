@@ -219,10 +219,16 @@ router.post("/invoices", requireTenantAccess, async (req: any, res) => {
     const totals = computeTotals(input.items ?? [], effectiveVat, tax.cisRate);
 
     const issuedOn = input.issuedOn ?? new Date().toISOString().slice(0, 10);
-    // 14 days is the trade norm and it is only a default — editable before sending.
+    // The tenant's own payment terms, not a hardcoded 14. `paymentDays` has
+    // been in tenant_settings since 0032 and nothing read it, so a business
+    // that works on 30 days had every invoice dated 14 and every chase
+    // automation firing a fortnight early. Still only a default — editable
+    // before it is sent.
+    const [terms] = await db.select({ days: tenantSettingsTable.paymentDays })
+      .from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
     const dueOn = input.dueOn ?? (() => {
       const d = new Date(`${issuedOn}T00:00:00Z`);
-      d.setUTCDate(d.getUTCDate() + 14);
+      d.setUTCDate(d.getUTCDate() + (terms?.days ?? 14));
       return d.toISOString().slice(0, 10);
     })();
 

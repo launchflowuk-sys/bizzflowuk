@@ -4663,6 +4663,89 @@ function SettingsPage() {
           {field("serviceBase", "Based In", "text", "The town you work out of, e.g. Grays, Thurrock")}
           {field("serviceArea", "Areas You Cover", "text", "The region you sell into, e.g. Essex & London")}
         </div>
+        {/*
+          Tax and bank details.
+
+          vat_registered, cis_registered, invoice_terms and payment_days have
+          been in the database since migration 0032 with nowhere to type them.
+          The invoice engine has always read them — so a VAT-registered trade
+          had no way to say so, and every invoice the platform sent went out
+          with no VAT on it and no bank details to pay it into.
+        */}
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Tax</h2>
+            <p className="text-xs text-slate-500 mt-1">Drives what appears on every quote and invoice. Leave both off if neither applies to you.</p>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <input type="checkbox" id="vatRegistered" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]"
+              checked={!!form.vatRegistered} onChange={e => setForm({ ...form, vatRegistered: e.target.checked })} />
+            <label htmlFor="vatRegistered" className="text-sm font-medium text-slate-700">I am VAT registered</label>
+          </div>
+          {form.vatRegistered && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7">
+              {field("vatNumber", "VAT Number", "text", "Shown on the invoice, e.g. GB123456789")}
+              <div>
+                <label className={labelCls}>VAT Rate (%)</label>
+                <input type="number" step="0.01" className={inputCls} value={form.vatRate ?? "20"}
+                  onChange={e => setForm({ ...form, vatRate: e.target.value })} />
+                <p className="text-xs text-slate-400 mt-1">20% standard. A line can still be zero-rated on its own.</p>
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 pt-2">
+            <input type="checkbox" id="cisRegistered" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]"
+              checked={!!form.cisRegistered} onChange={e => setForm({ ...form, cisRegistered: e.target.checked })} />
+            <label htmlFor="cisRegistered" className="text-sm font-medium text-slate-700">I work under CIS (Construction Industry Scheme)</label>
+          </div>
+          {form.cisRegistered && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7">
+              {field("cisUtr", "UTR Number", "text", "Your Unique Taxpayer Reference")}
+              <div>
+                <label className={labelCls}>Deduction Rate (%)</label>
+                <input type="number" step="0.01" className={inputCls} value={form.cisRate ?? "20"}
+                  onChange={e => setForm({ ...form, cisRate: e.target.value })} />
+                <p className="text-xs text-slate-400 mt-1">20% if verified, 30% if not. Deducted from the invoice total.</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Getting Paid</h2>
+            <p className="text-xs text-slate-500 mt-1">Printed on every invoice. Without these, an invoice tells the customer what they owe and nothing about where to send it.</p>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="col-span-1 sm:col-span-2">{field("bankAccountName", "Account Name", "text", "The name on the account, as your bank has it")}</div>
+            <div className="col-span-1 sm:col-span-2">{field("bankName", "Bank", "text", "e.g. Barclays, Starling")}</div>
+            {field("bankSortCode", "Sort Code", "text", "e.g. 20-00-00")}
+            {field("bankAccountNumber", "Account Number", "text", "8 digits")}
+            <div>
+              <label className={labelCls}>Days To Pay</label>
+              <input type="number" className={inputCls} value={form.paymentDays ?? 14}
+                onChange={e => setForm({ ...form, paymentDays: Number(e.target.value) })} />
+              <p className="text-xs text-slate-400 mt-1">The due date a new invoice starts with. 14 is the trade norm.</p>
+            </div>
+          </div>
+          <div>
+            <label className={labelCls}>Payment Instructions</label>
+            <textarea rows={2} className={inputCls} value={form.paymentInstructions || ""}
+              placeholder="Please quote the invoice number as the reference. We also take card on the day."
+              onChange={e => setForm({ ...form, paymentInstructions: e.target.value })} />
+            <p className="text-xs text-slate-400 mt-1">Anything else the customer needs to know to pay you.</p>
+          </div>
+          <div>
+            <label className={labelCls}>Default Invoice Terms</label>
+            <textarea rows={2} className={inputCls} value={form.invoiceTerms || ""}
+              placeholder="Payment due within 14 days of the invoice date."
+              onChange={e => setForm({ ...form, invoiceTerms: e.target.value })} />
+            <p className="text-xs text-slate-400 mt-1">Used on every invoice unless you override it on that one.</p>
+          </div>
+        </div>
+
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <h2 className="font-semibold text-slate-900">Email Notifications</h2>
           {field("adminNotificationEmail", "Admin Notification Email", "email", "Receives emails when a lead/quote/contact form is submitted")}
