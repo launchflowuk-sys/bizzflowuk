@@ -1,7 +1,7 @@
-import { useAuthCtx } from "@/lib/auth";
+import { useAuthCtx, getStoredToken } from "@/lib/auth";
 import { InviteUserPanel } from "./InviteUserPanel";
 import { useGetMe, useGetPlatformStats, useListTenants, useCreateTenant, useGetTenant, useUpdateTenant, useDeleteTenant, useSuspendTenant, useGetTenantStats, useListUsers, useUpdateUser } from "@workspace/api-client-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Switch, Route, Link, useLocation, Redirect } from "wouter";
 
 import { useQueryClient } from "@tanstack/react-query";
@@ -28,6 +28,26 @@ import { getListTenantsQueryKey, getListUsersQueryKey } from "@workspace/api-cli
  */
 
 const ROLES = ["SUPER_ADMIN", "TENANT_ADMIN", "STAFF", "CUSTOMER"] as const;
+
+/**
+ * A two-line fetch for the handful of admin routes that post-date the
+ * generated API client.
+ *
+ * Deliberately local rather than importing the dashboard's `tradeApi`: that
+ * would pull the dashboard's chunk into the admin bundle for the sake of one
+ * function.
+ */
+async function adminRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+  const token = getStoredToken();
+  const res = await fetch(`/api${path}`, {
+    method,
+    headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  const payload = await res.json().catch(() => null);
+  if (!res.ok) throw new Error((payload as any)?.error || `Request failed (${res.status})`);
+  return payload as T;
+}
 
 const NAV = [
   { path: "/admin", label: "Overview", long: "Overview", icon: "M4 13h6V4H4v9Zm0 7h6v-5H4v5Zm10 0h6V11h-6v9Zm0-16v5h6V4h-6Z" },
@@ -367,6 +387,24 @@ function TenantDetailPage({ id }: { id: number }) {
   const [billing, setBilling] = useState<null | { mode: string; price: string; note: string }>(null);
   const [savingBilling, setSavingBilling] = useState(false);
   const [billingSaved, setBillingSaved] = useState(false);
+  const [placeId, setPlaceId] = useState<string | null>(null);
+  const [placeBusy, setPlaceBusy] = useState<null | "save" | "sync">(null);
+  const [placeResult, setPlaceResult] = useState<{ ok: boolean; text: string } | null>(null);
+  const [savedPlaceId, setSavedPlaceId] = useState<string | null>(null);
+  const [reviewSummary, setReviewSummary] = useState<{ rating: string | null; count: number | null; syncedAt: string | null } | null>(null);
+
+  // These live on tenant_settings, which GET /tenants/:id does not return.
+  useEffect(() => {
+    let cancelled = false;
+    adminRequest<any>("GET", `/tenants/${id}/settings`)
+      .then(r => {
+        if (cancelled) return;
+        setSavedPlaceId(r?.googlePlaceId ?? null);
+        setReviewSummary({ rating: r?.googleRating ?? null, count: r?.googleReviewCount ?? null, syncedAt: r?.googleReviewsSyncedAt ?? null });
+      })
+      .catch(() => { /* the panel still works; it just starts empty */ });
+    return () => { cancelled = true; };
+  }, [id]);
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"/></div>;
   if (!t) return <div className="p-8 text-center text-slate-500">Tenant not found</div>;
@@ -389,6 +427,49 @@ function TenantDetailPage({ id }: { id: number }) {
     mode: t.billingMode || 'self_serve',
     price: t.billingPriceGbp != null ? String(t.billingPriceGbp) : '',
     note: t.billingNote || '',
+  };
+
+  /**
+   * Google reviews for a tenant we cannot log in as.
+   *
+   * Saving the Place ID and pulling the reviews are one action from here: the
+   * only way to know a Place ID is the RIGHT one is to fetch with it, and
+   * waiting for the nightly sweep to find out it was wrong is how a business
+   * goes live with an empty reviews section.
+   */
+  const currentPlaceId = placeId ?? (savedPlaceId || '');
+
+  const handleSavePlaceId = async () => {
+    setPlaceBusy("save");
+    setPlaceResult(null);
+    try {
+      await adminRequest("PATCH", `/tenants/${id}/settings`, { googlePlaceId: currentPlaceId });
+      const sync = await adminRequest<{ ok: boolean; reason?: string; imported?: number; rating?: number; reviewCount?: number }>(
+        "POST", `/tenants/${id}/sync-google-reviews`);
+      setPlaceResult(sync.ok
+        ? { ok: true, text: `Pulled ${sync.imported ?? 0} review${sync.imported === 1 ? '' : 's'}. Google shows ${sync.rating ?? '?'} from ${sync.reviewCount ?? '?'} ratings.` }
+        : { ok: false, text: sync.reason || 'Google would not accept that Place ID.' });
+    } catch (err: any) {
+      setPlaceResult({ ok: false, text: err?.message || 'Could not save.' });
+    } finally {
+      setPlaceBusy(null);
+    }
+  };
+
+  const handleSyncReviews = async () => {
+    setPlaceBusy("sync");
+    setPlaceResult(null);
+    try {
+      const sync = await adminRequest<{ ok: boolean; reason?: string; imported?: number; rating?: number; reviewCount?: number }>(
+        "POST", `/tenants/${id}/sync-google-reviews`);
+      setPlaceResult(sync.ok
+        ? { ok: true, text: `Pulled ${sync.imported ?? 0} review${sync.imported === 1 ? '' : 's'}. Google shows ${sync.rating ?? '?'} from ${sync.reviewCount ?? '?'} ratings.` }
+        : { ok: false, text: sync.reason || 'Sync failed.' });
+    } catch (err: any) {
+      setPlaceResult({ ok: false, text: err?.message || 'Sync failed.' });
+    } finally {
+      setPlaceBusy(null);
+    }
   };
 
   const handleSaveBilling = async () => {
@@ -489,6 +570,67 @@ function TenantDetailPage({ id }: { id: number }) {
           </div>
         )}
       </div>
+
+      {/*
+        Google reviews.
+        ---------------
+        Their reviews live where their customers put them. This is here rather
+        than only in the tenant's own settings because onboarding happens before
+        they have ever logged in — and we do not have, and should not have,
+        their password.
+      */}
+      <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
+        <h2 className="font-semibold text-slate-900">Google reviews</h2>
+        <p className="text-xs text-slate-500">
+          Paste the Google Place ID from their Business Profile. Saving pulls their reviews
+          straight away so you can see it worked — Google returns the headline rating and
+          total, but only five individual reviews. That is their limit, not ours.
+        </p>
+
+        <input
+          type="text"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          placeholder="ChIJ…"
+          className={`${FIELD} font-mono`}
+          value={currentPlaceId}
+          onChange={e => setPlaceId(e.target.value)}
+        />
+
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            type="button"
+            onClick={handleSavePlaceId}
+            disabled={placeBusy !== null || !currentPlaceId.trim()}
+            className="inline-flex h-11 sm:h-9 items-center justify-center rounded-md bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50"
+          >
+            {placeBusy === "save" ? 'Saving and pulling…' : 'Save and pull reviews'}
+          </button>
+          <button
+            type="button"
+            onClick={handleSyncReviews}
+            disabled={placeBusy !== null || !savedPlaceId}
+            className="inline-flex h-11 sm:h-9 items-center justify-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {placeBusy === "sync" ? 'Pulling…' : 'Pull again'}
+          </button>
+        </div>
+
+        {placeResult && (
+          <p className={`text-sm ${placeResult.ok ? 'text-green-700' : 'text-red-600'}`}>
+            {placeResult.ok ? '✓ ' : ''}{placeResult.text}
+          </p>
+        )}
+
+        {/* What is already stored, so the panel says something before you touch it. */}
+        {!placeResult && reviewSummary?.syncedAt && (
+          <p className="text-xs text-slate-500">
+            Currently showing {reviewSummary.rating ?? '?'} from {reviewSummary.count ?? '?'} ratings,
+            last pulled {new Date(reviewSummary.syncedAt).toLocaleDateString('en-GB')}.
+          </p>
+        )}
+      </section>
 
       {/*
         Billing arrangement.

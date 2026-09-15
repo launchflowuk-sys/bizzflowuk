@@ -164,14 +164,26 @@ function loaderTenant(): "amo-services" | "amo-rendering" | "kd-essex" | "bps" |
   if (typeof window === "undefined") return null;
   const host = window.location.hostname;
   const path = window.location.pathname;
-  const match = (domain: string, slug: string) => host.includes(domain) || path.startsWith(`/site/${slug}`);
+  /**
+   * A tenant may be reached on more than one hostname, so this takes a list.
+   *
+   * BPS was matched on "bpsplumbingandheating" alone — a domain they do not
+   * use. The site is actually served from bps.launchflow.co.uk, so the match
+   * failed and every visitor got the grey generic spinner on the one site
+   * whose owner was about to show it to customers. The branded loader only
+   * ever appeared on /site/bps, which is the path nobody visits.
+   *
+   * Match on a distinctive substring, never a bare slug: "bps" alone would
+   * also match any future host containing those three letters, and showing one
+   * tenant's mark to another tenant's visitor is worse than showing none.
+   */
+  const match = (domains: string[], slug: string) =>
+    domains.some(d => host.includes(d)) || path.startsWith(`/site/${slug}`);
 
-  // BPS was missing entirely: tenant #4 has a logo and was still getting the
-  // grey generic spinner on the site its owner is about to show customers.
-  if (match("bpsplumbingandheating", "bps")) return "bps";
-  if (match("amoservices", "amo-services")) return "amo-services";
-  if (match("kdessexlandscapes", "kd-essex")) return "kd-essex";
-  if (match("amorendering", "amo-rendering")) return "amo-rendering";
+  if (match(["bps.launchflow", "bpsplumbingandheating"], "bps")) return "bps";
+  if (match(["amoservices"], "amo-services")) return "amo-services";
+  if (match(["kdessexlandscapes"], "kd-essex")) return "kd-essex";
+  if (match(["amorendering"], "amo-rendering")) return "amo-rendering";
   return null;
 }
 

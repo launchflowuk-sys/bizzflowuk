@@ -518,14 +518,64 @@
   opacity: 1;
 }
 
+/*
+ * The ground the mark sits on.
+ *
+ * #102333 is the site header's own navy, which is the surface this logo was
+ * drawn for — the B in the wordmark is white, so on a white screen the mark
+ * reads "PS". But flat navy is just a dark rectangle, and the one thing in
+ * this brand worth looking at is the flame. So the ground carries a warm ember
+ * bloom centred where the flame actually is, fading to the same navy at the
+ * edges. It is the screen reacting to the flame rather than a panel behind it.
+ */
+.bps-loader-screen {
+  background-color: #102333;
+  background-image:
+    radial-gradient(38rem 26rem at 50% 42%, rgba(240, 136, 45, 0.16), transparent 68%),
+    radial-gradient(16rem 14rem at 50% 38%, rgba(255, 168, 72, 0.14), transparent 70%);
+}
+
 .bps-loader-flame {
   transform-box: fill-box;
   transform-origin: 50% 100%;
-  animation: bps-flame 1500ms ease-in-out infinite;
-  /* A warm bloom that breathes with the flame rather than sitting behind it as
-     a static halo. */
-  filter: drop-shadow(0 0 6px rgba(240, 136, 45, 0.45));
-  will-change: transform, opacity;
+  /*
+   * Two animations on one element: the shape moves, and the light it throws
+   * changes with it. Separate timings on purpose — a glow locked exactly to
+   * the silhouette reads as a pulsing sticker, while a slightly longer,
+   * offset cycle reads as something burning.
+   */
+  animation:
+    bps-flame 1500ms ease-in-out infinite,
+    bps-flame-glow 1900ms ease-in-out infinite;
+  will-change: transform, opacity, filter;
+}
+
+/*
+ * Three stacked shadows, not one. A single soft shadow just blurs the edge;
+ * a tight hot core, a mid warm bloom and a wide ambient wash is what actually
+ * reads as fire — the same reason a real flame has a bright centre and a dim
+ * halo you can see on the wall.
+ */
+@keyframes bps-flame-glow {
+  0%,
+  100% {
+    filter:
+      drop-shadow(0 0 3px rgba(255, 196, 110, 0.75))
+      drop-shadow(0 0 12px rgba(240, 136, 45, 0.55))
+      drop-shadow(0 -2px 26px rgba(232, 106, 24, 0.34));
+  }
+  34% {
+    filter:
+      drop-shadow(0 0 5px rgba(255, 214, 150, 0.9))
+      drop-shadow(0 0 20px rgba(245, 150, 55, 0.68))
+      drop-shadow(0 -4px 38px rgba(232, 106, 24, 0.46));
+  }
+  68% {
+    filter:
+      drop-shadow(0 0 3px rgba(255, 190, 104, 0.7))
+      drop-shadow(0 0 14px rgba(240, 136, 45, 0.5))
+      drop-shadow(0 -2px 28px rgba(232, 106, 24, 0.3));
+  }
 }
 
 @keyframes bps-flame {
@@ -557,5 +607,10 @@
     animation: none !important;
     transition: none !important;
     opacity: 1;
+    /* The glow is not motion, so it stays — a flame with no light at all
+       reads as a logo that failed to load. */
+    filter:
+      drop-shadow(0 0 4px rgba(255, 196, 110, 0.8))
+      drop-shadow(0 0 16px rgba(240, 136, 45, 0.55));
   }
 }
