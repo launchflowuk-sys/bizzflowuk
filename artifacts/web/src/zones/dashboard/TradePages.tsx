@@ -174,7 +174,7 @@ export function InvoicesPage() {
           it takes the alarm ground and says so — and drops back to navy the
           moment it reaches zero, because a vivid 0 reads as data when it is
           really the absence of it. */}
-      <div className="grid gap-4 sm:grid-cols-3 mb-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 mb-6 [&>*:last-child]:col-span-2 sm:[&>*:last-child]:col-span-1">
         <StatCard label="Outstanding" value={money(totals.outstanding)} hint="raised and not yet paid" category="money" icon={FileText} />
         <StatCard label="Overdue" value={money(totals.overdue)} hint="past its due date" attention={totals.overdue > 0} icon={AlarmClock} />
         <StatCard label="Paid this month" value={money(totals.paidThisMonth)} hint="cleared funds" category="money" icon={CheckCircle2} />

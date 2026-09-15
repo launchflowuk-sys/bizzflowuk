@@ -652,7 +652,11 @@ function DashboardHome() {
 
       <TodoPanel todos={todos} />
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Two-up on a phone, not one. Every figure has to be in view without
+          scrolling — a strip you scroll is just a list, and glanceability is the
+          whole job. The card shrinks to fit rather than the row getting longer;
+          see figureSize. */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
         {kpis.map(k => <StatCard key={k.label} {...k} />)}
       </div>
       {upcomingSurveys.length > 0 && (

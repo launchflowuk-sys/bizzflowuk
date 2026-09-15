@@ -72,15 +72,29 @@ const ATTENTION_GROUND: Record<AttentionTone, string> = {
 };
 
 /**
- * The figure's size, chosen by how long the figure is.
+ * The figure's size, by how long the figure is AND how much room the viewport
+ * gives the card.
  *
- * A KPI card is about 176px of usable width at four-up on a 1280px screen, and
- * at 44px the digits run about 0.53em each — so anything past seven characters
- * runs off the card and is silently clipped by its own `overflow-hidden`.
- * "£1,544.40" wants 207px of a 176px box and loses its last digits, which on a
- * money figure is not a cosmetic bug: £1,544.40 reads as £1,544.4. On this
- * platform every second figure is money, so this matters more here than it did
- * where it was written.
+ * Two separate constraints, and getting one right at the cost of the other is
+ * how this went wrong the first time.
+ *
+ * **Desktop.** A card is about 176px of usable width at four-up on a 1280px
+ * screen, and at 44px the digits run about 0.53em each — so anything past seven
+ * characters runs off the card and is silently clipped by its own
+ * `overflow-hidden`. "£1,544.40" wants 207px of a 176px box and loses its last
+ * digits, which on a money figure is not cosmetic: £1,544.40 reads as £1,544.4.
+ *
+ * **Mobile.** At two-up on a 375px phone a card is 165.5px wide, 133.5px inside
+ * its padding. My first answer was to drop to one card per row so the figure
+ * could stay at 44px — which pushed a four-card strip to roughly 700px and made
+ * you scroll to see the fourth number. That is the wrong trade: a strip you
+ * have to scroll is just a list, and being readable at a glance is the entire
+ * job. The figure gets smaller instead; a KPI on a phone was never going to be
+ * 44px.
+ *
+ * Mobile sizes are the 133.5px budget divided by 0.53em per character, with
+ * margin: 7 chars fit 36px so they get 28, 9 chars fit 28px so they get 24,
+ * 12 chars fit 22.9px so they get 20.
  *
  * Arbitrary lengths rather than a named size token, and not by accident:
  * tailwind-merge cannot tell a custom font-size utility from a text colour, so
@@ -90,10 +104,10 @@ const ATTENTION_GROUND: Record<AttentionTone, string> = {
  */
 function figureSize(value: string | number): string {
   const length = String(value).length;
-  if (length <= 7) return "text-[2.75rem]";
-  if (length <= 9) return "text-[2.25rem]";
-  if (length <= 12) return "text-[1.75rem]";
-  return "text-[1.5rem]";
+  if (length <= 7) return "text-[1.75rem] sm:text-[2.75rem]";
+  if (length <= 9) return "text-[1.5rem] sm:text-[2.25rem]";
+  if (length <= 12) return "text-[1.25rem] sm:text-[1.75rem]";
+  return "text-[1.125rem] sm:text-[1.5rem]";
 }
 
 /**
@@ -177,18 +191,18 @@ export function StatCard({
 
   const body = (
     <>
-      <div className="flex min-w-0 items-center gap-2.5">
+      <div className="flex min-w-0 items-center gap-2 sm:gap-2.5">
         {Icon ? (
           // A tile of the panel's own white at low alpha, so the icon sits in
           // the surface rather than on a second colour fighting it.
-          <span aria-hidden className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-white/15">
-            <Icon className="size-4" strokeWidth={1.9} />
+          <span aria-hidden className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/15 sm:size-9 sm:rounded-xl">
+            <Icon className="size-3.5 sm:size-4" strokeWidth={1.9} />
           </span>
         ) : null}
-        <p className="text-[0.9375rem] leading-tight font-semibold text-white/85">{label}</p>
+        <p className="text-[0.8125rem] leading-tight font-semibold text-white/85 sm:text-[0.9375rem]">{label}</p>
       </div>
 
-      <div className="mt-4 min-w-0">
+      <div className="mt-2.5 min-w-0 sm:mt-4">
         <p className={cn(figureSize(value), "leading-none font-bold tracking-tight tabular-nums", isClear && "text-white/60")}>
           {value}
         </p>
@@ -219,19 +233,21 @@ export function StatCard({
           spark was fixed at 144px against a card whose inner width is ~228px at
           four-up, and the figure drew straight through it. */}
       {spark && spark.length >= 3 ? (
-        <div className="mt-4 min-w-0">
+        <div className="mt-2.5 min-w-0 sm:mt-4">
           <Spark points={spark} />
         </div>
       ) : null}
 
       {/* `mt-auto` pins the secondary fact to the bottom whether or not a card
           has a sparkline above it, so a row of them shares one baseline. */}
-      {caption ? <p className="mt-auto pt-4 text-[0.8125rem] leading-snug text-white/70">{caption}</p> : null}
+      {caption ? <p className="mt-auto pt-3 text-[0.75rem] leading-snug text-white/70 sm:pt-4 sm:text-[0.8125rem]">{caption}</p> : null}
     </>
   );
 
   const shell = cn(
-    "relative flex min-h-[156px] min-w-0 flex-col overflow-hidden rounded-[22px] p-6 text-white transition-[transform,box-shadow]",
+    // Shorter and tighter on a phone so a four-card strip fits the screen
+    // rather than running off the bottom of it.
+    "relative flex min-h-[112px] min-w-0 flex-col overflow-hidden rounded-[18px] p-4 text-white transition-[transform,box-shadow] sm:min-h-[156px] sm:rounded-[22px] sm:p-6",
     ground,
   );
 
