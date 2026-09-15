@@ -5053,9 +5053,16 @@ function SettingsPage() {
  * deliberately identical to theirs, so the only thing standing between a
  * support session and a very awkward phone call is this bar.
  *
- * Which is why it is loud, fixed to the top of every screen, unclosable, and
- * says the business by name. An unobtrusive version of this would be worse
- * than none, because it would look like it was doing a job it was not.
+ * Which is why it is loud, unclosable, and says the business by name. An
+ * unobtrusive version of this would be worse than none, because it would look
+ * like it was doing a job it was not.
+ *
+ * It sits INSIDE the content column, above the toolbar and outside `main` —
+ * `main` is the element that scrolls, so the banner physically cannot scroll
+ * out of view. Placing it above the whole shell and making it sticky would
+ * have left it depending on how the page body happened to overflow, which is
+ * not a thing to bet on when the cost of it being wrong is editing a client's
+ * data believing it is your own.
  */
 function SupportSessionBanner() {
   const { data: me } = useGetMe();
@@ -5063,7 +5070,7 @@ function SupportSessionBanner() {
   if (!imp) return null;
 
   return (
-    <div className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-2 bg-amber-400 px-4 py-2.5 text-slate-900">
+    <div className="flex flex-wrap items-center justify-between gap-2 bg-amber-400 px-4 py-2.5 text-slate-900">
       <p className="text-[13.5px] font-semibold">
         Support session &mdash; you are inside <strong>{imp.name}</strong>. Anything you do here is theirs.
       </p>
@@ -5103,7 +5110,6 @@ export default function DashboardApp() {
 
   return (
     <ToastCtx.Provider value={showToast}>
-      <SupportSessionBanner />
       <div className="ws flex min-h-screen" style={brandVars(activeBrand.color)}>
         <aside className="ws-rail hidden md:flex w-[225px] flex-shrink-0 min-h-screen flex-col">
           <SidebarContent currentPath={location} />
@@ -5125,6 +5131,7 @@ export default function DashboardApp() {
         )}
 
         <div className="flex-1 min-w-0 flex flex-col">
+          <SupportSessionBanner />
           <TopBar location={location} onMenu={() => setSidebarOpen(true)} activeName={activeBrand.name} />
 
           <main className="flex-1 overflow-auto">

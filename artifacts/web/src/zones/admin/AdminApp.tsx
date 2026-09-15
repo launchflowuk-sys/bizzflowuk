@@ -535,32 +535,6 @@ function TenantDetailPage({ id }: { id: number }) {
     }
   };
 
-  /**
-   * Put this business on my own account, so it appears in the dashboard's
-   * business switcher.
-   *
-   * The alternative was asking a paying client for their password to look at
-   * their own screen, which is not a support process.
-   */
-  const handleGrantAccess = async () => {
-    setAccessBusy(true);
-    setAccessResult(null);
-    try {
-      const r = await adminRequest<{ already: boolean; tenant: string; next: string }>(
-        'POST', `/tenants/${id}/members`);
-      setAccessResult({
-        ok: true,
-        text: r.already
-          ? `You already have access to ${r.tenant}. ${r.next}`
-          : `Done. ${r.next}`,
-      });
-    } catch (err: any) {
-      setAccessResult({ ok: false, text: err?.message || 'Could not grant access.' });
-    } finally {
-      setAccessBusy(false);
-    }
-  };
-
   const handleSaveBilling = async () => {
     setSavingBilling(true);
     try {
@@ -633,49 +607,6 @@ function TenantDetailPage({ id }: { id: number }) {
         </button>
         {accessResult && !accessResult.ok && (
           <p className="text-xs text-red-600">{accessResult.text}</p>
-        )}
-      </div>
-
-      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
-        <h2 className="font-semibold text-slate-900">Keep This Business On My Account</h2>
-        <p className="text-xs text-slate-500">
-          Different from Support above: this is <strong>permanent</strong>. It adds the business to
-          your switcher for good and shows in their team list like any other member. For a
-          ten-minute fix use Support &mdash; it leaves no trace. Use this only when you actually run
-          this business day to day.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            onClick={handleGrantAccess}
-            disabled={accessBusy}
-            className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
-          >
-            {accessBusy ? 'Working…' : 'Give me dashboard access'}
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              if (!confirm('Remove your access to this business?')) return;
-              setAccessBusy(true);
-              setAccessResult(null);
-              try {
-                await adminRequest('DELETE', `/tenants/${id}/members`);
-                setAccessResult({ ok: true, text: 'Access handed back.' });
-              } catch (err: any) {
-                setAccessResult({ ok: false, text: err?.message || 'Could not remove access.' });
-              } finally {
-                setAccessBusy(false);
-              }
-            }}
-            disabled={accessBusy}
-            className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
-          >
-            Hand it back
-          </button>
-        </div>
-        {accessResult && (
-          <p className={`text-xs ${accessResult.ok ? 'text-green-700' : 'text-red-600'}`}>{accessResult.text}</p>
         )}
       </div>
 
