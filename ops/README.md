@@ -33,3 +33,42 @@ Deploying this file does not install it. To update the server:
     ssh -i ~/.ssh/lima_hetzner root@167.233.218.87 "chmod +x /usr/local/bin/disk-guard.sh"
 
 Check what it has been doing: `tail /var/log/disk-guard.log`
+
+---
+
+## Platform email (PLATFORM_SMTP_*)
+
+Set on the **api-server** service in Coolify, then redeploy — env changes do not
+take effect until the container restarts.
+
+| Variable | Example | Notes |
+|---|---|---|
+| `PLATFORM_SMTP_HOST` | `smtp.postmarkapp.com` | |
+| `PLATFORM_SMTP_PORT` | `587` | 465 switches to implicit TLS automatically |
+| `PLATFORM_SMTP_USER` | *(token / mailbox)* | |
+| `PLATFORM_SMTP_PASS` | *(token / password)* | **Coolify only. Never in chat or git.** |
+| `PLATFORM_SMTP_FROM` | `BizzFlowUK <hello@bizzflowuk.com>` | Must be a verified sender on the domain |
+| `PLATFORM_ALERT_EMAIL` | `shujaat@launchflow.co.uk` | Where signup and subscription alerts land |
+
+Two different addresses on purpose: mail **from** a BizzFlowUK address, because a
+trade who signed up to BizzFlowUK and receives mail from an unfamiliar domain
+reads it as phishing and so do spam filters; alerts **to** one LaunchFlow inbox
+so every product reports to the same place.
+
+Without these the platform still runs — every send logs
+`[platform-mail] NOT SENT` and nothing breaks. That is the state the platform
+shipped in, which is why a signup was invisible.
+
+**Deliverability.** The sending domain needs SPF, DKIM and DMARC records or the
+welcome email lands in spam, which is worse than not sending it. Whichever
+provider you use gives you the exact DNS records to add at the registrar.
+
+### What sends
+| Event | To | Purpose |
+|---|---|---|
+| Signup | `PLATFORM_ALERT_EMAIL` | A business joined. Reply-To is the owner. |
+| Signup | the new owner | Welcome, first three steps, link to their site |
+| Subscription active | `PLATFORM_ALERT_EMAIL` | Somebody started paying |
+| Trial started via Stripe | `PLATFORM_ALERT_EMAIL` | |
+| Cancelled / past due / unpaid | `PLATFORM_ALERT_EMAIL` | Money stopped |
+| Help Centre request | `support@launchflow.co.uk` | Falls back to platform SMTP when the tenant has none |

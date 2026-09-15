@@ -5,6 +5,7 @@ import { eq } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { sendEmail } from "../lib/email";
 import { buildSmtpConfig } from "../lib/settingsHelpers";
+import { platformSmtp } from "../lib/platformMail";
 
 /** All Help Centre support requests land here, tagged with tenant + user + urgency. */
 const SUPPORT_EMAIL = "support@launchflow.co.uk";
@@ -14,8 +15,13 @@ const router = Router();
 
 /**
  * POST /support-request — sends a support request from the dashboard Help Centre to LaunchFlow.
- * Uses the tenant's own SMTP (the same config all their notifications use); if that isn't set up
- * yet, fails with a clear message telling them to email support directly instead of a silent drop.
+ * Prefers the tenant's own SMTP, and falls back to the platform mailbox.
+ *
+ * The fallback is the important half. This used to REFUSE to send when the
+ * tenant had no SMTP details - which is every business in its first week,
+ * precisely the people most likely to need help. Asking someone on day one to
+ * go and configure an SMTP server before they are allowed to ask a question is
+ * the opposite of support.
  */
 router.post("/support-request", requireTenantAccess, async (req, res) => {
   try {
@@ -28,9 +34,9 @@ router.post("/support-request", requireTenantAccess, async (req, res) => {
     const tenantId = req.authUser?.tenantId ?? -1;
     const tenantRows = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
     const settingsRows = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
-    const smtp = buildSmtpConfig(settingsRows[0] as any);
+    const smtp = buildSmtpConfig(settingsRows[0] as any) ?? platformSmtp();
     if (!smtp) {
-      res.status(400).json({ error: `Email isn't configured for your account yet — please email ${SUPPORT_EMAIL} directly.` });
+      res.status(400).json({ error: `We could not send that just now — please email ${SUPPORT_EMAIL} directly.` });
       return;
     }
 
@@ -51,6 +57,9 @@ router.post("/support-request", requireTenantAccess, async (req, res) => {
 
     await sendEmail({
       to: SUPPORT_EMAIL,
+      // Sent through the platform mailbox this is the only thing tying the
+      // message back to the person who wrote it.
+      replyTo: req.authUser?.email,
       subject: `[${urgency}] [${tenantName}] ${subject}`,
       html,
       text: `Support request from ${tenantName} (${fromUser})\nUrgency: ${urgency}${page ? `\nRelates to: ${page}` : ""}\n\n${message}`,

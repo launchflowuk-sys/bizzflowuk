@@ -7,6 +7,7 @@ import { z } from "zod/v4";
 import { signAuthToken } from "../middlewares/auth";
 import { publicFormRateLimiter } from "../middlewares/rateLimit";
 import { logger } from "../lib/logger";
+import { firePlatformEmail, appBaseUrl } from "../lib/platformMail";
 
 const router = Router();
 
@@ -145,6 +146,65 @@ router.post("/signup", publicFormRateLimiter, async (req: any, res) => {
     }).onConflictDoNothing();
 
     logger.info({ tenantId: tenant.id, slug }, "New tenant signed up");
+
+    /**
+     * Tell someone. Both directions.
+     *
+     * Until this existed a signup was invisible: a row appeared in the database
+     * and that was the whole event. Nobody was told a business had joined, and
+     * the business was told nothing either - no confirmation that the account
+     * they had just typed a password into was real.
+     *
+     * Fired, not awaited. A slow mail server must not hold up the response that
+     * carries their login token.
+     */
+    const fullName = [input.firstName, input.lastName].filter(Boolean).join(" ");
+    const industryLabel = INDUSTRIES.find(i => i.key === industry)?.label ?? industry;
+
+    firePlatformEmail({
+      subject: `New trial: ${input.businessName}`,
+      heading: "Somebody just signed up",
+      intro: `${fullName} created an account for ${input.businessName}.`,
+      preheader: `${input.businessName} - ${industryLabel}`,
+      // Reply goes to the person who signed up, not to our own mailbox.
+      replyTo: input.email,
+      rows: [
+        ["Business", input.businessName],
+        ["Trade", industryLabel],
+        ["Name", fullName],
+        ["Email", input.email],
+        ["Phone", input.phone || "not given"],
+        ["Their site", `${appBaseUrl()}/site/${slug}`],
+      ],
+      button: { label: "Open the admin console", url: `${appBaseUrl()}/admin` },
+    });
+
+    firePlatformEmail({
+      to: input.email,
+      subject: `${input.businessName} is set up on BizzFlowUK`,
+      heading: `Welcome, ${input.firstName}.`,
+      intro: `${input.businessName} is live. Your seven-day trial has started - there is nothing to pay and no card on file.`,
+      preheader: "Your account is ready. Here is where to start.",
+      bodyHtml: [
+        `<p style="margin:0 0 14px;font-family:Arial,sans-serif;font-size:15px;color:#334155">`,
+        `The quickest way to see what it does is to put one real job through it:`,
+        `</p>`,
+        `<ol style="margin:0 0 18px 18px;padding:0;font-family:Arial,sans-serif;font-size:15px;color:#334155;line-height:1.7">`,
+        `<li>Add a customer and raise a quote.</li>`,
+        `<li>Turn the accepted quote into a job in the diary.</li>`,
+        `<li>Invoice it when it is done.</li>`,
+        `</ol>`,
+        `<p style="margin:0 0 14px;font-family:Arial,sans-serif;font-size:15px;color:#334155">`,
+        `Your website is already built and online at `,
+        `<a href="${appBaseUrl()}/site/${slug}" style="color:#0E7C66">${appBaseUrl().replace(/^https?:\/\//, "")}/site/${slug}</a>.`,
+        ` Change the wording, prices and photos from Your website in the dashboard.`,
+        `</p>`,
+        `<p style="margin:0;font-family:Arial,sans-serif;font-size:15px;color:#334155">`,
+        `Reply to this email if you get stuck - it comes straight to us.`,
+        `</p>`,
+      ].join(""),
+      button: { label: "Open your dashboard", url: `${appBaseUrl()}/dashboard` },
+    });
 
     // Signed in immediately — making somebody sign in again right after creating
     // an account is a step that exists only for the developer's convenience.

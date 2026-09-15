@@ -4,6 +4,7 @@ import { tenantsTable, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { logger } from "../lib/logger";
+import { firePlatformEmail, appBaseUrl } from "../lib/platformMail";
 
 /**
  * BizzFlowUK's own subscription: £99/month with seven days free.
@@ -253,15 +254,27 @@ export async function handleStripeWebhook(req: any, res: any) {
         event.type === "customer.subscription.updated" ||
         event.type === "customer.subscription.deleted") {
       // Prefer the id we stored; fall back to the metadata Stripe carries.
+      const cols = {
+        id: tenantsTable.id,
+        name: tenantsTable.name,
+        email: tenantsTable.email,
+        // The status BEFORE this event, so an alert fires on a real change and
+        // not every time Stripe repeats itself.
+        was: tenantsTable.billingStatus,
+      };
       const [byId] = object.id
-        ? await db.select({ id: tenantsTable.id }).from(tenantsTable)
+        ? await db.select(cols).from(tenantsTable)
             .where(eq(tenantsTable.billingSubscriptionId, object.id)).limit(1)
         : [];
       const [byCustomer] = !byId && object.customer
-        ? await db.select({ id: tenantsTable.id }).from(tenantsTable)
+        ? await db.select(cols).from(tenantsTable)
             .where(eq(tenantsTable.billingCustomerId, object.customer)).limit(1)
         : [];
-      const target = byId?.id ?? byCustomer?.id ?? (Number.isFinite(tenantId) ? tenantId : null);
+      const [byMeta] = !byId && !byCustomer && Number.isFinite(tenantId)
+        ? await db.select(cols).from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1)
+        : [];
+      const tenantRow = byId ?? byCustomer ?? byMeta ?? null;
+      const target = tenantRow?.id ?? null;
 
       if (target) {
         const cancelled = event.type === "customer.subscription.deleted";
@@ -275,6 +288,54 @@ export async function handleStripeWebhook(req: any, res: any) {
           plan: cancelled ? "cancelled" : object.status === "trialing" ? "trial" : "standard",
         }).where(eq(tenantsTable.id, target));
         logger.info({ tenantId: target, status: object.status, type: event.type }, "Subscription updated");
+
+        /**
+         * Tell us when money starts or stops.
+         *
+         * Before this, the only record of somebody starting to pay was a row
+         * changing in the database. Three transitions are worth an email and
+         * the rest are noise - Stripe sends `updated` for things as small as a
+         * card being re-authorised, and an alert that fires constantly gets
+         * filtered into a folder nobody opens.
+         */
+        const was = tenantRow?.was ?? null;
+        const now = cancelled ? "canceled" : String(object.status || "");
+        const business = tenantRow?.name ?? `Tenant #${target}`;
+        const alert = (subject: string, heading: string, intro: string) => firePlatformEmail({
+          subject, heading, intro,
+          replyTo: tenantRow?.email || undefined,
+          rows: [
+            ["Business", business],
+            ["Status", now],
+            ["Was", was || "no subscription"],
+            ["Subscription", String(object.id || "-")],
+          ],
+          button: { label: "Open the admin console", url: `${appBaseUrl()}/admin` },
+        });
+
+        if (now !== was) {
+          if (now === "active") {
+            alert(
+              `Paid subscription: ${business}`,
+              "Somebody is paying you.",
+              `${business} is now on a paid subscription.`,
+            );
+          } else if (now === "trialing" && event.type === "customer.subscription.created") {
+            alert(
+              `Trial started: ${business}`,
+              "A trial just started",
+              `${business} started the free trial through Stripe.`,
+            );
+          } else if (cancelled || now === "past_due" || now === "unpaid") {
+            alert(
+              `Subscription ${cancelled ? "cancelled" : "payment problem"}: ${business}`,
+              cancelled ? "Somebody cancelled" : "A payment has failed",
+              cancelled
+                ? `${business} cancelled their subscription.`
+                : `${business} is ${now} - Stripe could not take the payment.`,
+            );
+          }
+        }
       } else {
         logger.warn({ type: event.type, subscription: object.id }, "Subscription event matched no tenant");
       }
