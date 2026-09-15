@@ -133,6 +133,24 @@ export const reviewWhenPaid: AutomationRule = {
       const to = await customerRecipient(inv.customerId);
       if (!to?.email && !to?.phone) continue;
 
+      /**
+       * Do not ask twice.
+       *
+       * There is a separate, older review request that fires when a JOB is
+       * marked complete, it is on by default in settings, and it stamps
+       * projects.reviewRequestSentAt. Without this check a customer whose job
+       * was completed and then paid would be asked for a review twice — which
+       * is spam, and from Google's point of view is a pattern worth noticing.
+       *
+       * The same column is stamped below when this rule asks, so the latch
+       * holds in both directions whichever one gets there first.
+       */
+      if (inv.projectId) {
+        const [job] = await db.select({ asked: projectsTable.reviewRequestSentAt })
+          .from(projectsTable).where(eq(projectsTable.id, inv.projectId)).limit(1);
+        if (job?.asked) continue;
+      }
+
       const ok = await ctx.act({
         subjectType: "invoice",
         subjectId: inv.id,
@@ -153,7 +171,15 @@ export const reviewWhenPaid: AutomationRule = {
         }),
         sms: `Hi ${to.firstName}, thanks again from ${voice.name}. If you have a minute, a quick review helps us a lot: ${reviewUrl}`,
       });
-      if (sent) done++;
+      if (sent) {
+        // Closes the latch against the job-completed scheduler. See above.
+        if (inv.projectId) {
+          await db.update(projectsTable)
+            .set({ reviewRequestSentAt: new Date() })
+            .where(eq(projectsTable.id, inv.projectId));
+        }
+        done++;
+      }
     }
     return done;
   },
