@@ -8,9 +8,9 @@ import { AccountingError, type AccountingProvider, type AccountingCredentials, t
  * real Xero account because we do not have an app registration yet. The shapes
  * below are the ones to check first, in this order:
  *
- *   1. DONE, 15 Sep 2026. The first attempt was rejected with
- *      `invalid_scope` because it asked for openid/profile/email, which this
- *      integration never reads. See the SCOPES note below.
+ *   1. DONE, 15 Sep 2026, after three failures. The real cause was Xero's
+ *      move to granular scopes for apps created after 2 March 2026 --
+ *      `accounting.transactions` does not exist for a new app. See SCOPES.
  *   2. `POST /api.xro/2.0/Invoices` accepting an array under "Invoices" and
  *      returning the created one under the same key.
  *   3. Whether the sales account code below suits the tenant's chart of
@@ -27,25 +27,45 @@ const API_BASE = "https://api.xero.com";
 /**
  * Least privilege, and no more.
  *
- * THE IDENTITY SCOPES ARE DELIBERATELY ABSENT. The first version asked for
- * `openid profile email` and Xero answered the authorise request with
- * `invalid_scope`. Adding them was my own inconsistency: the comment said
- * least privilege and the list then asked for the signed-in person's identity,
- * which this integration never reads. We push invoices and match contacts;
- * we do not care who is holding the browser.
+ * THESE ARE XERO'S NEW GRANULAR SCOPES, and that distinction cost three failed
+ * attempts. Xero split the old broad scopes up: any app created after 2 March
+ * 2026 gets ONLY the granular ones, while older apps keep the broad ones until
+ * September 2027. So `accounting.transactions` -- which every tutorial and
+ * every pre-2026 example still shows -- simply does not exist for an app
+ * registered today, and asking for it returns `invalid_scope` no matter how
+ * correctly it is spelled. It is now `accounting.invoices` and friends.
  *
- * Dropping them is the right call regardless of the error -- an app asking for
- * more than it uses is the thing that gets rejected at certification, and it
- * is also what a tenant sees listed on the consent screen before they decide
- * whether to trust us.
+ * If this ever fails with invalid_scope again, read the scope list on the app
+ * in Xero's developer portal before touching anything here. That list is the
+ * authority, and it is what finally showed the problem.
  *
- * `offline_access` is the one that is easy to miss and impossible to work
- * around later: without it Xero issues no refresh token, the connection dies
- * after thirty minutes, and the tenant is asked to reconnect forever.
+ * Why each of these:
+ *
+ *   offline_access        Without it Xero issues no refresh token, the
+ *                         connection dies after thirty minutes and the tenant
+ *                         is asked to reconnect forever. Easy to miss and
+ *                         impossible to work around later.
+ *
+ *   app.connections       Needed to call /connections, which is the only way
+ *                         to learn which organisation a token belongs to --
+ *                         and every Accounting API call needs that id in a
+ *                         header. Under the old broad scopes this came for
+ *                         free; now it is its own scope.
+ *
+ *   accounting.invoices   Creating the invoice. The narrowest scope that can.
+ *
+ *   accounting.contacts   Creating or matching the customer it is billed to.
+ *
+ * Deliberately NOT asked for: the identity scopes, which this integration
+ * never reads, and accounting.settings, which we would only need if we let a
+ * tenant pick their own sales account code. That is a real gap (see the
+ * account code note in pushInvoice) but it is not this scope's job to
+ * pre-empt.
  */
 const SCOPES = [
   "offline_access",
-  "accounting.transactions",
+  "app.connections",
+  "accounting.invoices",
   "accounting.contacts",
 ];
 
