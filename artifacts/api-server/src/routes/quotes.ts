@@ -48,20 +48,76 @@ export async function nextQuoteReference(tenantId: number): Promise<string> {
   return `${prefix}-${String(highest + 1).padStart(4, "0")}`;
 }
 
-/** Resolves the customer name/email/phone to notify for a quote, from its linked customer or lead. */
-export async function resolveQuoteRecipient(quote: { customerId: number | null; leadId: number | null }): Promise<{
+/**
+ * Resolves the customer name/email/phone to notify for a quote, from its linked
+ * customer or lead.
+ *
+ * **Both lookups are filtered by the quote's own tenant, and that is not
+ * optional.** They used to match on id alone. `quotes.customer_id` and
+ * `quotes.lead_id` are plain foreign keys with no tenant constraint, so a quote
+ * carrying another tenant's lead id resolved that tenant's customer — their
+ * name, their email address, their phone number — and this function feeds the
+ * quote email, the payment-link email and the **public, unauthenticated** pay
+ * page in publicPayments.ts. One tenant's customer details could be rendered to
+ * a stranger on another tenant's pay page.
+ *
+ * Found by an e2e run that accidentally authenticated as one tenant while
+ * posting an enquiry to another: it produced two live quotes in tenant 8
+ * pointing at leads owned by tenant 4.
+ *
+ * Filtering here closes the read. `assertOwnedRefs` below stops the bad link
+ * being created in the first place; this is the second line, and it is the one
+ * that protects the quotes already in the database.
+ */
+export async function resolveQuoteRecipient(quote: {
+  tenantId: number; customerId: number | null; leadId: number | null;
+}): Promise<{
   firstName?: string; lastName?: string; customerEmail?: string; customerPhone?: string;
 }> {
   if (quote.customerId) {
-    const rows = await db.select().from(customersTable).where(eq(customersTable.id, quote.customerId)).limit(1);
+    const rows = await db.select().from(customersTable)
+      .where(and(eq(customersTable.id, quote.customerId), eq(customersTable.tenantId, quote.tenantId)))
+      .limit(1);
     const c = rows[0];
     if (c) return { firstName: c.firstName, lastName: c.lastName, customerEmail: c.email ?? undefined, customerPhone: c.phone ?? undefined };
   } else if (quote.leadId) {
-    const rows = await db.select().from(leadsTable).where(eq(leadsTable.id, quote.leadId)).limit(1);
+    const rows = await db.select().from(leadsTable)
+      .where(and(eq(leadsTable.id, quote.leadId), eq(leadsTable.tenantId, quote.tenantId)))
+      .limit(1);
     const l = rows[0];
     if (l) return { firstName: l.firstName ?? undefined, lastName: l.lastName ?? undefined, customerEmail: l.email ?? undefined, customerPhone: l.phone ?? undefined };
   }
   return {};
+}
+
+/**
+ * Rejects a body that points at another tenant's customer or lead.
+ *
+ * `POST /quotes` spreads `req.body` into the insert. It forces `tenantId`, so a
+ * caller cannot plant a row in someone else's tenant — but `customerId` and
+ * `leadId` went through untouched, and neither column is tenant-constrained at
+ * the database level. That let a tenant attach its own quote to a stranger's
+ * lead, which is both a broken record and the input to the leak above.
+ *
+ * Returns an error message, or null when everything checks out.
+ */
+export async function assertOwnedRefs(
+  tenantId: number,
+  body: { customerId?: unknown; leadId?: unknown },
+): Promise<string | null> {
+  const customerId = Number(body.customerId);
+  if (body.customerId != null && Number.isFinite(customerId)) {
+    const [row] = await db.select({ id: customersTable.id }).from(customersTable)
+      .where(and(eq(customersTable.id, customerId), eq(customersTable.tenantId, tenantId))).limit(1);
+    if (!row) return "That customer does not belong to this business.";
+  }
+  const leadId = Number(body.leadId);
+  if (body.leadId != null && Number.isFinite(leadId)) {
+    const [row] = await db.select({ id: leadsTable.id }).from(leadsTable)
+      .where(and(eq(leadsTable.id, leadId), eq(leadsTable.tenantId, tenantId))).limit(1);
+    if (!row) return "That lead does not belong to this business.";
+  }
+  return null;
 }
 
 router.get("/quotes", requireTenantAccess, async (req, res) => {
@@ -75,6 +131,12 @@ router.get("/quotes", requireTenantAccess, async (req, res) => {
 
 router.post("/quotes", requireTenantAccess, async (req, res) => {
   try {
+    const tenantId = req.authUser?.tenantId ?? -1;
+    // customer_id and lead_id are plain foreign keys with no tenant constraint,
+    // so without this a caller can link their quote to a stranger's record.
+    const refError = await assertOwnedRefs(tenantId, req.body);
+    if (refError) { res.status(400).json({ error: refError }); return; }
+
     const ref = req.body.reference ?? await nextQuoteReference(req.authUser?.tenantId ?? -1);
     const q = await db.insert(quotesTable).values({ ...req.body, reference: ref, tenantId: req.authUser?.tenantId ?? -1 }).returning();
     res.status(201).json(q[0]);
@@ -93,6 +155,10 @@ router.get("/quotes/:id", requireTenantAccess, async (req, res) => {
 
 router.patch("/quotes/:id", requireTenantAccess, async (req, res) => {
   try {
+    // An update can re-point customer_id / lead_id just as an insert can.
+    const refError = await assertOwnedRefs(req.authUser?.tenantId ?? -1, req.body);
+    if (refError) { res.status(400).json({ error: refError }); return; }
+
     const before = await db.select().from(quotesTable)
       .where(and(eq(quotesTable.id, Number(req.params.id)), tenantFilter(req, quotesTable.tenantId)))
       .limit(1);

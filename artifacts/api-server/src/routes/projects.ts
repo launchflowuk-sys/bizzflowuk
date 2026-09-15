@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { projectsTable, projectUpdatesTable, customersTable } from "@workspace/db";
+import { projectsTable, projectUpdatesTable, customersTable, quotesTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess, tenantFilter } from "../middlewares/auth";
 import { fireNotification } from "../lib/notifications";
@@ -8,6 +8,38 @@ import { sanitizeUpdate, coerceTimestamps } from "../lib/sanitizeUpdate";
 import { deleteProjectsDeep } from "../lib/cascadeDelete";
 
 const router = Router();
+
+/**
+ * Rejects a body that points a project at another tenant's customer or quote.
+ *
+ * `projects.customer_id` and `projects.quote_id` are plain foreign keys with no
+ * tenant constraint, and the create handler spreads `req.body` straight into
+ * the insert. Forcing `tenantId` stops a row being planted in someone else's
+ * tenant, but it does nothing about the row this one *points at*.
+ *
+ * The matching hole in quotes was found in practice, not in theory: an e2e run
+ * that authenticated as one tenant while posting to another produced live
+ * quotes linked to a stranger's leads. Projects had the same shape, so it gets
+ * the same guard rather than waiting to be demonstrated too.
+ */
+async function assertOwnedProjectRefs(
+  tenantId: number,
+  body: { customerId?: unknown; quoteId?: unknown },
+): Promise<string | null> {
+  const customerId = Number(body.customerId);
+  if (body.customerId != null && Number.isFinite(customerId)) {
+    const [row] = await db.select({ id: customersTable.id }).from(customersTable)
+      .where(and(eq(customersTable.id, customerId), eq(customersTable.tenantId, tenantId))).limit(1);
+    if (!row) return "That customer does not belong to this business.";
+  }
+  const quoteId = Number(body.quoteId);
+  if (body.quoteId != null && Number.isFinite(quoteId)) {
+    const [row] = await db.select({ id: quotesTable.id }).from(quotesTable)
+      .where(and(eq(quotesTable.id, quoteId), eq(quotesTable.tenantId, tenantId))).limit(1);
+    if (!row) return "That quote does not belong to this business.";
+  }
+  return null;
+}
 
 router.get("/projects", requireTenantAccess, async (req, res) => {
   try {
@@ -20,7 +52,13 @@ router.get("/projects", requireTenantAccess, async (req, res) => {
 
 router.post("/projects", requireTenantAccess, async (req, res) => {
   try {
-    const p = await db.insert(projectsTable).values({ ...req.body, tenantId: req.authUser?.tenantId ?? -1 }).returning();
+    const tenantId = req.authUser?.tenantId ?? -1;
+    // Same exposure as quotes: customer_id and quote_id are unconstrained
+    // foreign keys, so a body can point a project at another tenant's records.
+    const refError = await assertOwnedProjectRefs(tenantId, req.body);
+    if (refError) { res.status(400).json({ error: refError }); return; }
+
+    const p = await db.insert(projectsTable).values({ ...req.body, tenantId }).returning();
     res.status(201).json(p[0]);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
