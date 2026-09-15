@@ -147,6 +147,92 @@ const FAQS = [
   },
 ] as const;
 
+/**
+ * Every capability, opened with the situation it exists for.
+ *
+ * "Properties - per-property history" makes nobody picture anything. "The
+ * letting agent rings asking what you did at number 12" makes them picture it
+ * exactly, and that is the difference between a feature list and a reason to
+ * buy.
+ *
+ * Each `when` is a real job a UK trade actually has, and each maps to a screen
+ * that exists in the dashboard today - nothing here is a promise.
+ */
+const CAPABILITIES = [
+  {
+    when: "It is 11pm and someone searches “boiler repair Grays”.",
+    title: "A website that answers the phone when you cannot",
+    body: "Built for your trade, your work and your area — not a template with your logo dropped in. When they fill the form it does not land in an inbox you will forget: the enquiry arrives in your pipeline with their details and the job they need, waiting for you at seven the next morning.",
+    tag: "Website · Services · Areas · FAQs · Blog · Gallery",
+  },
+  {
+    when: "You have measured up and they want a price tonight, not Sunday.",
+    title: "Quotes you can send from the van",
+    body: "Build it from the job you already logged, add your line items, send it. They open it on their phone and accept it there. The moment they do, the work has a place in your schedule and nobody retypes a thing.",
+    tag: "Quotes · Schedule · Projects",
+  },
+  {
+    when: "The job is finished and you are stood in their hallway.",
+    title: "Take the money before you leave",
+    body: "Send a payment link by text and they pay by card while you pack up. It goes through your own Stripe or Square, so the money lands in your account and we are never in the middle of it. No card machine, no waiting thirty days, no chasing.",
+    tag: "Payment links · Invoices",
+  },
+  {
+    when: "That quote you sent nine days ago. The one you meant to ring about.",
+    title: "The chasing happens whether you remember or not",
+    body: "Unpaid invoices get chased at three days, seven days and fourteen. Quotes nobody answered get a nudge rather than a shrug. It is the admin you would do if the day ever had room in it, done at the right moment every time.",
+    tag: "Automations · Emails",
+  },
+  {
+    when: "Forty-odd CP12s, every one expiring on a different day.",
+    title: "Certificates that renew themselves",
+    body: "Issue the certificate on site and it is stored against the property. Six weeks before it runs out, next year's job is already in your pipeline with the customer attached — so the renewal is booked before the landlord has thought to ask, and you are not the one who let it lapse.",
+    tag: "Certificates · Properties",
+  },
+  {
+    when: "The letting agent rings: “what did you actually do at number 12?”",
+    title: "Every address remembers its own history",
+    body: "Every visit, every certificate, every invoice and every photograph held against the property rather than scattered across jobs. You answer in seconds instead of scrolling back through a year of paperwork, and the agent stops asking twice.",
+    tag: "Properties · Files",
+  },
+  {
+    when: "Your van is parked outside the same house for six hours.",
+    title: "A QR code on the door that books work",
+    body: "Someone walking past scans it and the enquiry is in your pipeline before they have reached the end of the road. The same code goes on your leaflets, your invoices and your business cards, so the van that is already advertising you starts actually bringing work in.",
+    tag: "QR booking · Leads",
+  },
+  {
+    when: "The VAT bill is due and you are guessing at the number.",
+    title: "Know what is actually left",
+    body: "What came in, what went out, and what is genuinely yours this month. Materials, fuel and tools logged against the job that used them, so you can see which work made money and which quietly did not — before you price the next one the same way.",
+    tag: "Cash flow · Expenses · Invoices",
+  },
+  {
+    when: "“Have you sent the certificate?” “Where is my invoice?”",
+    title: "Customers who can look it up themselves",
+    body: "They log in and see their quote, their job, their invoice and their paperwork. Every one of those questions is a phone call you were going to take while under a floor, and now it is not.",
+    tag: "Customer portal",
+  },
+  {
+    when: "Forty-eight five-star reviews on Google. None of them on your website.",
+    title: "Your reputation, on your own site",
+    body: "Your Google reviews are pulled onto your website and refreshed every day, with the real rating and the real total. You never retype one, and you never have to ask us to update them — the ones your customers wrote are simply there.",
+    tag: "Reviews",
+  },
+  {
+    when: "Two jobs booked, one Michael, and a customer expecting someone at nine.",
+    title: "Who is where, and what is next",
+    body: "The week laid out with the team against it, on a phone that works in a van with one bar of signal. Assign the job, and whoever is doing it can see the address, the customer and what the work actually is without ringing you to ask.",
+    tag: "Schedule · Team · Projects",
+  },
+  {
+    when: "You are quoting a full render and they cannot picture the finish.",
+    title: "Show them before they commit",
+    body: "The visualiser turns a photograph of their property into a preview of the finished work, so the conversation stops being about imagination and starts being about which colour. People sign off faster on work they have already seen.",
+    tag: "Visualiser · Gallery · Case studies",
+  },
+] as const;
+
 /** Independent bar heights, as in the reference. Not an image. */
 const CHART_BARS = ["36%", "49%", "41%", "67%", "53%", "79%", "72%", "96%"] as const;
 
@@ -801,94 +887,52 @@ export default function BizzFlowHome() {
           </p>
         </section>
 
-        {/* ── Everything else ─────────────────────────────────────────────── */}
+        {/* ── Everything it does ─────────────────────────────── */}
         {/*
-          Eight things the platform does that the page never mentioned. Every
-          one is a screen that exists in the dashboard today; nothing here is
-          aspirational.
+          The page named four capabilities out of thirty-two, so it read as a
+          website with a quote button on it. This is the honest version: every
+          real capability, each opened with the situation it exists for.
+
+          A trade reading "Properties - per-property history" pictures nothing.
+          A trade reading "the letting agent rings asking what you did at
+          number 12" pictures it exactly. That is the difference between a
+          feature list and a reason to buy.
+
+          Every scenario is a job a UK trade actually has, and every capability
+          is a screen that exists in the dashboard today. Nothing aspirational.
         */}
-        <section className="platform wrap section" style={{ paddingTop: 0 }}>
-          <div className="section-head reveal">
-            <div>
-              <p className="eyebrow">04 / AND THE REST OF IT</p>
+        <section id="everything" className="platform wrap section" style={{ paddingTop: 0 }}>
+          <div className="bf-caps">
+            {/*
+              Sticky, so the promise stays on screen the whole way down. The
+              list is long on purpose - the length IS the argument - and a
+              heading that scrolls away leaves the reader with capability after
+              capability and no reminder of what they add up to.
+            */}
+            <aside className="bf-caps-aside">
+              <p className="eyebrow">04 / EVERYTHING IT DOES</p>
               <h2>
-                The parts you would otherwise<br />
-                <span className="muted-heading">pay four companies for.</span>
+                Not a jobs app<br />
+                <span className="muted-heading">with a website bolted on.</span>
               </h2>
-            </div>
-            <p>
-              All of it inside the £99.<br />
-              No add-ons, no per-user charge.
-            </p>
-          </div>
+              <p className="bf-caps-intro">
+                Every one of these is a screen in your workspace on day one. No add-ons,
+                no per-user charge, no upgrade tier. All of it is the &pound;99.
+              </p>
+              <Link href="/signup" className="button teal-bg bf-caps-cta">
+                Start free for 7 days <span aria-hidden="true">&#8599;</span>
+              </Link>
+            </aside>
 
-          <div className="tool-row reveal">
-            <div>
-              <span>▸</span>
-              <h3>Card payments</h3>
-              <p>
-                Send a payment link by text. The money<br />
-                lands in your own Stripe or Square.
-              </p>
-            </div>
-            <div>
-              <span>◫</span>
-              <h3>Cash flow</h3>
-              <p>
-                What came in, what went out,<br />
-                and what is actually left this month.
-              </p>
-            </div>
-            <div>
-              <span>▤</span>
-              <h3>Expenses</h3>
-              <p>
-                Materials, fuel and tools logged<br />
-                against the job that used them.
-              </p>
-            </div>
-            <div>
-              <span>▦</span>
-              <h3>Gas Safe certificates</h3>
-              <p>
-                Issued, stored, and next year&rsquo;s<br />
-                renewal raised before it expires.
-              </p>
-            </div>
-          </div>
-
-          <div className="tool-row reveal">
-            <div>
-              <span>▩</span>
-              <h3>A QR code for the van</h3>
-              <p>
-                Someone scans it on the side of your<br />
-                van and the enquiry is in your pipeline.
-              </p>
-            </div>
-            <div>
-              <span>⌂</span>
-              <h3>Properties</h3>
-              <p>
-                Every visit, certificate and invoice held<br />
-                against the address. Landlords stop asking twice.
-              </p>
-            </div>
-            <div>
-              <span>★</span>
-              <h3>Your Google reviews</h3>
-              <p>
-                Pulled onto your own site and refreshed<br />
-                daily. You never retype one.
-              </p>
-            </div>
-            <div>
-              <span>❏</span>
-              <h3>Photos and files</h3>
-              <p>
-                Job photographs and paperwork<br />
-                attached to the work they belong to.
-              </p>
+            <div className="bf-caps-list">
+              {CAPABILITIES.map(cap => (
+                <article key={cap.title} className="bf-cap">
+                  <p className="bf-cap-when">{cap.when}</p>
+                  <h3>{cap.title}</h3>
+                  <p className="bf-cap-body">{cap.body}</p>
+                  <p className="bf-cap-tag">{cap.tag}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>

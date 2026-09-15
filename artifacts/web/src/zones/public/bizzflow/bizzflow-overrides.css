@@ -433,3 +433,167 @@
 /* While the sheet is open the toggle underneath becomes the X. */
 .bf .menu-open .menu-bars i:first-child { transform: translateY(5px) rotate(45deg); }
 .bf .menu-open .menu-bars i:last-child { transform: translateY(-5px) rotate(-45deg); }
+
+/* -----------------------------------------------------------------------------
+ * 6. Everything it does — the capability list.
+ *
+ * The page named four capabilities out of thirty-two, which made a platform
+ * look like a website with a quote button on it. This section is long on
+ * purpose: the length IS the argument, and the sticky heading beside it is
+ * what stops the reader losing the thread halfway down.
+ *
+ * MOTION — scroll-driven, not observer-driven.
+ *
+ * The rest of this page uses an IntersectionObserver that adds a class once
+ * and never removes it: a card fades up the first time it appears and is
+ * finished forever. `animation-timeline: view()` ties the animation to the
+ * element's own position in the viewport instead, so it plays as the card
+ * enters and plays BACKWARDS as it leaves. Scrolling up feels like the same
+ * page rather than a series of spent animations, it runs on the compositor
+ * rather than in JavaScript, and there is no observer to set up.
+ *
+ * Progressive enhancement, deliberately at rest by default: every card is
+ * fully visible with its accent rail drawn before a single animation runs. A
+ * browser without scroll-driven timelines, or a reader who has asked for
+ * reduced motion, gets the finished state rather than a blank column waiting
+ * for something that will never fire.
+ * -------------------------------------------------------------------------- */
+.bf .bf-caps {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 44px;
+}
+
+@media (min-width: 1000px) {
+  .bf .bf-caps {
+    grid-template-columns: minmax(0, 0.82fr) minmax(0, 1.18fr);
+    gap: 72px;
+    align-items: start;
+  }
+  /* Sticky so the promise stays on screen the whole way down the list. */
+  .bf .bf-caps-aside {
+    position: sticky;
+    top: 112px;
+  }
+}
+
+.bf .bf-caps-intro {
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: #6c7b72;
+  margin-top: 22px;
+  max-width: 38ch;
+}
+
+.bf .bf-caps-cta {
+  margin-top: 26px;
+}
+
+/* ---------- a single capability ---------- */
+
+.bf .bf-cap {
+  position: relative;
+  padding: 28px 30px 26px 32px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  transition: transform 0.45s var(--ease), box-shadow 0.45s ease-out;
+}
+
+.bf .bf-cap + .bf-cap {
+  margin-top: 16px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bf .bf-cap:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 14px 32px -20px rgba(20, 60, 50, 0.45);
+  }
+}
+
+/*
+ * The accent rail. Drawn by default — only the scroll-driven block below takes
+ * it away and gives it back, so it is never missing when the animation cannot
+ * run.
+ */
+.bf .bf-cap::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 20px;
+  bottom: 20px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--teal), #7fd3bc);
+  transform-origin: top;
+}
+
+/* The situation, before the feature. This line does the selling. */
+.bf .bf-cap-when {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+  color: var(--teal);
+  margin-bottom: 10px;
+}
+
+.bf .bf-cap h3 {
+  font-family: 'Archivo Variable', 'DM Sans', Arial, sans-serif;
+  font-size: clamp(19px, 2vw, 23px);
+  font-weight: 650;
+  letter-spacing: -0.022em;
+  line-height: 1.25;
+  text-wrap: balance;
+}
+
+.bf .bf-cap-body {
+  font-size: 15px;
+  line-height: 1.78;
+  color: #647b6a;
+  margin-top: 11px;
+}
+
+/* Which screens this actually is, so nothing here reads as marketing air. */
+.bf .bf-cap-tag {
+  margin-top: 16px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #93a79b;
+}
+
+/* ---------- scroll-driven motion ---------- */
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .bf .bf-cap {
+      animation: bfCapIn linear both;
+      animation-timeline: view();
+      /* Finished well before the card reaches the middle of the screen —
+         nobody should be reading a paragraph that is still moving. */
+      animation-range: entry 6% cover 24%;
+    }
+
+    .bf .bf-cap::before {
+      animation: bfCapRail linear both;
+      animation-timeline: view();
+      animation-range: entry 12% cover 32%;
+    }
+  }
+}
+
+@keyframes bfCapIn {
+  from { opacity: 0; transform: translateY(28px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes bfCapRail {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+@media (max-width: 760px) {
+  .bf .bf-cap { padding: 24px 22px 22px 26px; }
+  .bf .bf-caps-aside h2 { font-size: clamp(27px, 7.6vw, 35px); }
+}
