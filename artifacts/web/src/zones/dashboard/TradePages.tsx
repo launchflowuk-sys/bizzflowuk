@@ -643,12 +643,7 @@ export function SchedulePage() {
       )}
 
       {feedUrl && (
-        <Card className="p-5 mb-5">
-          <p className="text-[14.5px] text-slate-700 mb-2">
-            Paste this into Google Calendar, Outlook or your phone. It stays up to date on its own, and you can revoke it any time.
-          </p>
-          <code className="block bg-slate-50 border border-slate-200 rounded-[12px] px-3.5 py-2.5 text-[13px] break-all">{feedUrl}</code>
-        </Card>
+        <CalendarFeedCard url={feedUrl} onRevoked={() => setFeedUrl(null)} />
       )}
 
       <Card className="p-4 sm:p-5">
@@ -767,6 +762,59 @@ export function SchedulePage() {
         </div>
       )}
     </Page>  );
+}
+
+/**
+ * The subscription link, once it exists.
+ *
+ * The old version printed the URL and said "you can revoke it any time",
+ * which was not true of anything on the screen — there was no revoke. The
+ * endpoint had been there the whole time with nothing calling it. A live link
+ * to your working diary that you cannot turn off is worse than no link.
+ *
+ * Copy is a button rather than a selection job because this URL is 80
+ * characters of hex and it is being read on a phone.
+ */
+function CalendarFeedCard({ url, onRevoked }: { url: string; onRevoked: () => void }) {
+  const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState(false);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Clipboard is blocked on insecure origins and in some in-app browsers.
+      // The URL is on screen either way, so say so rather than fail silently.
+      alert("Could not copy automatically — select the link and copy it by hand.");
+    }
+  }
+
+  async function revoke() {
+    if (!confirm("Turn this link off? Any calendar subscribed to it stops updating, and anyone holding the link loses access. You can make a new one whenever you like.")) return;
+    setRevoking(true);
+    try { await api.del("/schedule/feed"); onRevoked(); }
+    catch (e: any) { alert(e.message); setRevoking(false); }
+  }
+
+  return (
+    <Card className="p-5 mb-5">
+      <p className="text-[14.5px] text-slate-700 mb-1">
+        Paste this into Google Calendar, Outlook or your phone. It keeps itself up to date.
+      </p>
+      <p className="text-[13px] text-slate-500 mb-3">
+        Treat it like a password: anyone with the link can see what it shows, without logging in.
+      </p>
+      <code className="block bg-slate-50 border border-slate-200 rounded-[12px] px-3.5 py-2.5 text-[13px] break-all">{url}</code>
+      <div className="flex flex-wrap gap-2 mt-3">
+        <Btn onClick={copy}>{copied ? "Copied" : "Copy link"}</Btn>
+        <Btn tone="ghost" onClick={revoke} disabled={revoking}>
+          {revoking ? "Turning off…" : "Turn this link off"}
+        </Btn>
+      </div>
+    </Card>
+  );
 }
 
 /**

@@ -169,7 +169,8 @@ function icsDate(d: Date, allDay: boolean): string {
 /**
  * The read-only feed. Unauthenticated by design — the token is the credential,
  * which is how every calendar client expects a subscription URL to work. It is
- * revocable, scoped to one user, and exposes nothing but their own bookings.
+ * revocable, and exposes nothing beyond what that user can already see in the
+ * dashboard — their own bookings, or the tenant's diary if they own it.
  */
 router.get("/calendar/:token.ics", async (req: any, res) => {
   try {
@@ -180,9 +181,24 @@ router.get("/calendar/:token.ics", async (req: any, res) => {
 
     const [tenant] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, feed.tenantId)).limit(1);
 
+    /**
+     * What the feed carries depends on who owns it, and the role is read live
+     * rather than frozen onto the row so a promotion takes effect without
+     * re-issuing the link.
+     *
+     * The owner of the business gets the whole diary. An engineer gets their
+     * own jobs. This is not a nicety: filtering everyone to assignedUserId
+     * handed a sole trader an EMPTY calendar, because a one-man band books a
+     * job and never assigns it -- there is only one of him. He would have
+     * subscribed, seen nothing, and concluded the feature was broken. It was.
+     */
+    const [owner] = await db.select().from(usersTable)
+      .where(eq(usersTable.id, feed.userId)).limit(1);
+    const wholeDiary = owner?.role === "TENANT_ADMIN" || owner?.role === "SUPER_ADMIN";
+
     const rows = await db.select().from(projectsTable).where(and(
       eq(projectsTable.tenantId, feed.tenantId),
-      eq(projectsTable.assignedUserId, feed.userId),
+      ...(wholeDiary ? [] : [eq(projectsTable.assignedUserId, feed.userId)]),
       sql`${projectsTable.scheduledStart} IS NOT NULL`,
       sql`${projectsTable.scheduledStart} >= (now() - INTERVAL '90 days')`,
     )).orderBy(asc(projectsTable.scheduledStart)).limit(500);
@@ -191,7 +207,7 @@ router.get("/calendar/:token.ics", async (req: any, res) => {
       "BEGIN:VCALENDAR", "VERSION:2.0",
       `PRODID:-//BizzFlow//${icsEscape(tenant?.name ?? "Schedule")}//EN`,
       "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
-      `X-WR-CALNAME:${icsEscape(`${tenant?.name ?? "BizzFlow"} — my jobs`)}`,
+      `X-WR-CALNAME:${icsEscape(`${tenant?.name ?? "BizzFlow"} — ${wholeDiary ? "the diary" : "my jobs"}`)}`,
       // Clients re-poll on their own schedule; this is a hint, not a guarantee.
       "X-PUBLISHED-TTL:PT1H",
     ];
