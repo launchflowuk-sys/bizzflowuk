@@ -8,8 +8,9 @@ import { AccountingError, type AccountingProvider, type AccountingCredentials, t
  * real Xero account because we do not have an app registration yet. The shapes
  * below are the ones to check first, in this order:
  *
- *   1. The scope string. Too few and the push 403s; asking for more than you
- *      need gets an app rejected at certification.
+ *   1. DONE, 15 Sep 2026. The first attempt was rejected with
+ *      `invalid_scope` because it asked for openid/profile/email, which this
+ *      integration never reads. See the SCOPES note below.
  *   2. `POST /api.xro/2.0/Invoices` accepting an array under "Invoices" and
  *      returning the created one under the same key.
  *   3. Whether the sales account code below suits the tenant's chart of
@@ -26,16 +27,27 @@ const API_BASE = "https://api.xero.com";
 /**
  * Least privilege, and no more.
  *
+ * THE IDENTITY SCOPES ARE DELIBERATELY ABSENT. The first version asked for
+ * `openid profile email` and Xero answered the authorise request with
+ * `invalid_scope`. Adding them was my own inconsistency: the comment said
+ * least privilege and the list then asked for the signed-in person's identity,
+ * which this integration never reads. We push invoices and match contacts;
+ * we do not care who is holding the browser.
+ *
+ * Dropping them is the right call regardless of the error -- an app asking for
+ * more than it uses is the thing that gets rejected at certification, and it
+ * is also what a tenant sees listed on the consent screen before they decide
+ * whether to trust us.
+ *
  * `offline_access` is the one that is easy to miss and impossible to work
  * around later: without it Xero issues no refresh token, the connection dies
  * after thirty minutes, and the tenant is asked to reconnect forever.
  */
 const SCOPES = [
-  "openid", "profile", "email",
+  "offline_access",
   "accounting.transactions",
   "accounting.contacts",
-  "offline_access",
-].join(" ");
+];
 
 function basicAuth(): string {
   const id = process.env["XERO_CLIENT_ID"] ?? "";
@@ -110,14 +122,21 @@ export const xero: AccountingProvider = {
   requiredEnv: ["XERO_CLIENT_ID", "XERO_CLIENT_SECRET"],
 
   authorizeUrl({ state, redirectUri }) {
-    const params = new URLSearchParams({
-      response_type: "code",
-      client_id: process.env["XERO_CLIENT_ID"] ?? "",
-      redirect_uri: redirectUri,
-      scope: SCOPES,
-      state,
-    });
-    return `${AUTH_BASE}?${params.toString()}`;
+    /**
+     * Built by hand rather than with URLSearchParams, for one reason: it
+     * encodes a space as `+`, and the scope list is the one parameter where
+     * that is worth not gambling on. Xero's own documented examples use `%20`,
+     * which is what encodeURIComponent produces. Both are legal; only one is
+     * the one they show.
+     */
+    const query = [
+      "response_type=code",
+      `client_id=${encodeURIComponent(process.env["XERO_CLIENT_ID"] ?? "")}`,
+      `redirect_uri=${encodeURIComponent(redirectUri)}`,
+      `scope=${encodeURIComponent(SCOPES.join(" "))}`,
+      `state=${encodeURIComponent(state)}`,
+    ].join("&");
+    return `${AUTH_BASE}?${query}`;
   },
 
   async exchangeCode({ code, redirectUri }) {
