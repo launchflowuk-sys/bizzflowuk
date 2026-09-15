@@ -23,6 +23,10 @@ type BillingStatus = {
   subscribed: boolean;
   priceMonthlyGbp: number;
   configured: boolean;
+  /** 'managed' means we invoice them directly — there is no Checkout to open. */
+  billingMode?: "self_serve" | "managed";
+  /** What a negotiated arrangement covers, in plain words. */
+  billingNote?: string | null;
 };
 
 const INCLUDED = [
@@ -55,16 +59,21 @@ export default function BillingPage() {
     }
   }
 
-  const trialing = data?.status === "trialing" || (!data?.subscribed && data?.plan === "trial");
-  const active = data?.status === "active";
-  const pastDue = data?.status === "past_due" || data?.status === "unpaid";
+  const managed = data?.billingMode === "managed";
+  const trialing = !managed && (data?.status === "trialing" || (!data?.subscribed && data?.plan === "trial"));
+  const active = !managed && data?.status === "active";
+  const pastDue = !managed && (data?.status === "past_due" || data?.status === "unpaid");
 
   return (
     <div className="px-5 sm:px-10 pb-16 max-w-[900px]">
       <div className="ws-heading" style={{ display: "block" }}>
         <p className="ws-eyebrow">Your business / Workspace</p>
         <h1>Your subscription.</h1>
-        <p className="ws-sub">£{data?.priceMonthlyGbp ?? 99} a month, everything included. Cancel whenever you like.</p>
+        <p className="ws-sub">
+          {managed
+            ? `£${data?.priceMonthlyGbp} a month, billed directly by us.`
+            : `£${data?.priceMonthlyGbp ?? 99} a month, everything included. Cancel whenever you like.`}
+        </p>
       </div>
 
       {loading && <section className="ws-panel"><p style={{ color: "var(--ws-muted)" }}>Loading…</p></section>}
@@ -78,7 +87,12 @@ export default function BillingPage() {
         </div>
       )}
 
-      {data && !data.configured && (
+      {/*
+        A managed account reports `configured: false` because there is no
+        Checkout for it to open — that is the arrangement working, not a fault,
+        so the "not switched on yet" notice must not fire for them.
+      */}
+      {data && !data.configured && !managed && (
         <section className="ws-panel mb-4" style={{ borderColor: "#e5cf9b", background: "#faf0d8" }}>
           <p style={{ color: "#896723", fontWeight: 600 }}>Billing is not switched on yet.</p>
           <p style={{ color: "#896723", marginTop: "4px", fontSize: "14px" }}>
@@ -88,7 +102,47 @@ export default function BillingPage() {
         </section>
       )}
 
-      {data && (
+      {/*
+        Billed directly by us — a negotiated arrangement, not the shelf price.
+        This screen still has to tell them the truth: what they pay, what it
+        covers, and who to talk to. What it must NOT do is offer a subscribe
+        button, which would charge a second time somebody already paying.
+      */}
+      {data && managed && (
+        <section className="ws-panel">
+          <div className="ws-panel-top">
+            <h2>Your account is billed directly</h2>
+            <span className="ws-pill" data-tone="active">Managed</span>
+          </div>
+
+          <p style={{ fontSize: "15.5px", lineHeight: 1.7 }}>
+            You are on an agreed arrangement with us rather than the standard online plan,
+            so there is nothing to set up or pay for on this screen. We invoice you directly
+            for <strong>£{data.priceMonthlyGbp} a month</strong>.
+          </p>
+
+          {data.billingNote && (
+            <p style={{ fontSize: "15px", lineHeight: 1.7, marginTop: "14px", color: "var(--ws-muted)" }}>
+              {data.billingNote}
+            </p>
+          )}
+
+          <ul style={{ listStyle: "none", padding: 0, margin: "22px 0 0", display: "grid", gap: "10px" }}>
+            {INCLUDED.map(line => (
+              <li key={line} style={{ display: "flex", gap: "10px", alignItems: "flex-start", fontSize: "14.5px" }}>
+                <span aria-hidden="true" style={{ color: "var(--brand)", fontWeight: 700 }}>✓</span>
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+
+          <p style={{ marginTop: "22px", paddingTop: "22px", borderTop: "1px solid var(--ws-line)", fontSize: "13.5px", color: "var(--ws-muted)" }}>
+            Anything about your billing — a change, a question, an invoice you need — just ask us directly.
+          </p>
+        </section>
+      )}
+
+      {data && !managed && (
         <section className="ws-panel">
           <div className="ws-panel-top">
             <h2>

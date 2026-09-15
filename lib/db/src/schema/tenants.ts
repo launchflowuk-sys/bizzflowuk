@@ -38,6 +38,28 @@ export const tenantsTable = pgTable("tenants", {
   /** Mirrors Stripe: trialing | active | past_due | canceled | ... */
   billingStatus: text("billing_status"),
   trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
+  /**
+   * WHO collects the money (migration 0044).
+   *
+   * 'self_serve' is the default and the advertised product: Stripe Checkout at
+   * the standard price. 'managed' means we invoice them outside the platform,
+   * so the subscribe button must not appear and /billing/checkout refuses —
+   * otherwise a customer already paying us by invoice gets charged a second
+   * time by their own dashboard.
+   */
+  billingMode: text("billing_mode").notNull().default("self_serve"),
+  /**
+   * WHAT they pay, when it is not the standard price. Null means standard.
+   *
+   * Display only. It never drives a charge: the amount charged comes from the
+   * Stripe price id, which is the single source of truth for money. Keeping
+   * this advisory is deliberate — a number in our database that looked like it
+   * set the price would eventually disagree with Stripe, and Stripe would win
+   * silently.
+   */
+  billingPriceGbp: text("billing_price_gbp"),
+  /** What a negotiated arrangement covers, in the owner's words. */
+  billingNote: text("billing_note"),
   /** When their website actually went live, so the trial promise is auditable. */
   websiteDeliveredAt: timestamp("website_delivered_at", { withTimezone: true }),
   /** Per-tenant module switches. New modules stay dark until enabled (migration 0032). */

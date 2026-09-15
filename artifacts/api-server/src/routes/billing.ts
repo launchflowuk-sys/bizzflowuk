@@ -34,6 +34,15 @@ function platformStripe() {
 }
 
 const TRIAL_DAYS = 7;
+/**
+ * The advertised price, for DISPLAY only.
+ *
+ * What a self-serve tenant is actually charged comes from the Stripe price id
+ * in PLATFORM_STRIPE_PRICE_ID. This constant must never be used to compute a
+ * charge — if it drifted from the Stripe price, Stripe would win and the
+ * screen would quietly lie about what was taken.
+ */
+const STANDARD_PRICE_GBP = 99;
 const STRIPE_API = "https://api.stripe.com/v1";
 const STRIPE_VERSION = "2024-06-20";
 
@@ -71,6 +80,9 @@ router.get("/billing/status", requireTenantAccess, async (req: any, res) => {
       trialEndsAt: tenantsTable.trialEndsAt,
       websiteDeliveredAt: tenantsTable.websiteDeliveredAt,
       subscriptionId: tenantsTable.billingSubscriptionId,
+      mode: tenantsTable.billingMode,
+      priceOverride: tenantsTable.billingPriceGbp,
+      note: tenantsTable.billingNote,
     }).from(tenantsTable).where(eq(tenantsTable.id, req.authUser?.tenantId ?? -1)).limit(1);
 
     if (!tenant) { res.status(404).json({ error: "Not found" }); return; }
@@ -80,6 +92,9 @@ router.get("/billing/status", requireTenantAccess, async (req: any, res) => {
       ? Math.max(0, Math.ceil((trialEndsAt.getTime() - Date.now()) / 86_400_000))
       : null;
 
+    const managed = tenant.mode === "managed";
+    const override = Number(tenant.priceOverride);
+
     res.json({
       plan: tenant.plan,
       status: tenant.status,
@@ -87,8 +102,15 @@ router.get("/billing/status", requireTenantAccess, async (req: any, res) => {
       trialDaysLeft: daysLeft,
       websiteDeliveredAt: tenant.websiteDeliveredAt,
       subscribed: !!tenant.subscriptionId,
-      priceMonthlyGbp: 99,
-      configured: !!platformStripe(),
+      // A negotiated price where there is one, otherwise the standard price.
+      // `Number("")` is 0 and `Number(null)` is 0, so test for finite AND
+      // positive rather than truthiness of the column.
+      priceMonthlyGbp: Number.isFinite(override) && override > 0 ? override : STANDARD_PRICE_GBP,
+      billingMode: managed ? "managed" : "self_serve",
+      billingNote: tenant.note || null,
+      // A managed tenant has no Checkout to open, so the screen must not offer
+      // one however the platform's own Stripe keys are configured.
+      configured: managed ? false : !!platformStripe(),
     });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
@@ -114,6 +136,19 @@ router.post("/billing/checkout", requireTenantAccess, async (req: any, res) => {
 
     if (tenant.billingSubscriptionId) {
       res.status(409).json({ error: "This business already has a subscription." });
+      return;
+    }
+
+    /**
+     * A managed tenant is invoiced by us directly, so there is nothing here to
+     * check out. The billing screen already hides the button, but this is the
+     * check that matters: the UI is a courtesy and the endpoint is the rule.
+     * Getting this wrong takes a second payment from someone already paying.
+     */
+    if (tenant.billingMode === "managed") {
+      res.status(409).json({
+        error: "This account is billed directly by us, so there is nothing to set up here.",
+      });
       return;
     }
 

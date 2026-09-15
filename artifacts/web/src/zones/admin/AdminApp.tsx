@@ -364,6 +364,9 @@ function TenantDetailPage({ id }: { id: number }) {
   const [customDomain, setCustomDomain] = useState('');
   const [savingDomain, setSavingDomain] = useState(false);
   const [domainSaved, setDomainSaved] = useState(false);
+  const [billing, setBilling] = useState<null | { mode: string; price: string; note: string }>(null);
+  const [savingBilling, setSavingBilling] = useState(false);
+  const [billingSaved, setBillingSaved] = useState(false);
 
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-brand-500"/></div>;
   if (!t) return <div className="p-8 text-center text-slate-500">Tenant not found</div>;
@@ -378,6 +381,31 @@ function TenantDetailPage({ id }: { id: number }) {
       setTimeout(() => setDomainSaved(false), 2000);
     } finally {
       setSavingDomain(false);
+    }
+  };
+
+  // Local edits if there are any, otherwise whatever the tenant currently has.
+  const b = billing ?? {
+    mode: t.billingMode || 'self_serve',
+    price: t.billingPriceGbp != null ? String(t.billingPriceGbp) : '',
+    note: t.billingNote || '',
+  };
+
+  const handleSaveBilling = async () => {
+    setSavingBilling(true);
+    try {
+      const price = b.price.trim();
+      await updateMutation.mutateAsync({ id, data: {
+        billingMode: b.mode,
+        // Empty means "the standard price", which is null rather than 0 —
+        // a 0 here would render as "£0 a month" on their billing screen.
+        billingPriceGbp: price === '' ? null : price,
+        billingNote: b.note.trim() || null,
+      } } as any);
+      setBillingSaved(true);
+      setTimeout(() => setBillingSaved(false), 2000);
+    } finally {
+      setSavingBilling(false);
     }
   };
 
@@ -461,6 +489,69 @@ function TenantDetailPage({ id }: { id: number }) {
           </div>
         )}
       </div>
+
+      {/*
+        Billing arrangement.
+        ---------------------
+        The platform sells one plan at £99 through Stripe Checkout. Anyone on a
+        negotiated deal — a different price, or a bundle we invoice directly —
+        must NOT be shown that button, or their dashboard will happily take a
+        second payment from someone already paying us more.
+      */}
+      <section className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
+        <h2 className="font-semibold text-slate-900">Billing arrangement</h2>
+
+        <label className="block">
+          <span className="block text-sm font-medium text-slate-700 mb-1">How they pay</span>
+          <select
+            className={FIELD}
+            value={b.mode}
+            onChange={e => setBilling({ ...b, mode: e.target.value })}
+          >
+            <option value="self_serve">Standard — they subscribe themselves through Stripe</option>
+            <option value="managed">Managed — we invoice them directly, no button shown</option>
+          </select>
+        </label>
+
+        <label className="block">
+          <span className="block text-sm font-medium text-slate-700 mb-1">Monthly price (£)</span>
+          <input
+            type="text"
+            inputMode="decimal"
+            placeholder="99 — leave empty for the standard price"
+            className={FIELD}
+            value={b.price}
+            onChange={e => setBilling({ ...b, price: e.target.value })}
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            Shown on their billing screen. It never charges anything — what a standard
+            tenant is actually charged comes from the Stripe price.
+          </span>
+        </label>
+
+        <label className="block">
+          <span className="block text-sm font-medium text-slate-700 mb-1">What it covers</span>
+          <textarea
+            rows={3}
+            placeholder="e.g. £100 Google Ads management and £65 for BizzFlowUK and the website."
+            className={FIELD}
+            value={b.note}
+            onChange={e => setBilling({ ...b, note: e.target.value })}
+          />
+          <span className="block text-xs text-slate-500 mt-1">
+            They see this, so write it the way you would say it to them.
+          </span>
+        </label>
+
+        <button
+          type="button"
+          onClick={handleSaveBilling}
+          disabled={savingBilling}
+          className="inline-flex h-11 sm:h-9 items-center justify-center rounded-md bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50"
+        >
+          {savingBilling ? 'Saving…' : billingSaved ? '✓ Saved' : 'Save billing'}
+        </button>
+      </section>
 
       <div className="flex flex-col sm:flex-row gap-3">
         <a href={`/site/${t.slug}`} target="_blank" rel="noreferrer" className="inline-flex h-11 sm:h-9 items-center justify-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50">View Public Site</a>

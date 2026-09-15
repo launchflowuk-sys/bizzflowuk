@@ -123,6 +123,38 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
   const base = useSiteBase();
   const phone = settings?.phone;
 
+  /**
+   * The drawer's top level, in order.
+   *
+   * `/services` is both a real page and the parent of a list of child pages,
+   * so it appeared TWICE: once as a flat link from NAV_LINKS that only scrolls
+   * you to the page, and again as the expandable group appended underneath.
+   * The expandable one now takes its place — its "All services" row still
+   * reaches /services, so nothing is lost — and "Where we work" is injected
+   * straight after it, because areas have child pages but no NAV_LINKS entry
+   * of their own and were previously stranded at the bottom.
+   *
+   * A group with nothing in it is not rendered, and if a tenant has no
+   * services at all the plain link survives so the page stays reachable.
+   */
+  type DrawerRow =
+    | { kind: "link"; href: string; label: string }
+    | { kind: "group"; key: "services" | "areas"; label: string; href: string; allLabel: string; items: any[] };
+
+  const serviceGroup: DrawerRow | null = (services || []).length
+    ? { kind: "group", key: "services", label: "Services", href: "/services", allLabel: "All services", items: services! }
+    : null;
+  const areaGroup: DrawerRow | null = (areas || []).length
+    ? { kind: "group", key: "areas", label: "Where we work", href: "/areas", allLabel: "All areas", items: areas! }
+    : null;
+
+  const drawerRows: DrawerRow[] = NAV_LINKS.flatMap<DrawerRow>(l => {
+    if (l.href !== "/services") return [{ kind: "link", href: l.href, label: l.label }];
+    const rows: DrawerRow[] = [serviceGroup ?? { kind: "link", href: l.href, label: l.label }];
+    if (areaGroup) rows.push(areaGroup);
+    return rows;
+  });
+
   // Play the exit animation before unmounting, otherwise the drawer vanishes
   // instantly and all the care in the open animation is thrown away on close.
   function closeDrawer(then?: () => void) {
@@ -279,61 +311,56 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
             </div>
 
             <div className="bps-drawer-links">
-              {NAV_LINKS.map((l, i) => (
-                <button
-                  key={l.href}
-                  type="button"
-                  className="bps-drawer-link"
-                  style={{ ["--i" as any]: i }}
-                  onClick={() => closeDrawer(() => navigate(l.href))}
-                >
-                  <span>{l.label}</span>
-                  <ArrowUpRight className="w-4 h-4"/>
-                </button>
-              ))}
+              {drawerRows.map((row, i) => {
+                if (row.kind === "link") {
+                  return (
+                    <button
+                      key={row.href}
+                      type="button"
+                      className="bps-drawer-link"
+                      style={{ ["--i" as any]: i }}
+                      onClick={() => closeDrawer(() => navigate(row.href))}
+                    >
+                      <span>{row.label}</span>
+                      <ArrowUpRight className="w-4 h-4"/>
+                    </button>
+                  );
+                }
 
-              {/*
-                Services and areas are rendered as peers of the links above —
-                the same 58px row, the same hairline, the same stagger — that
-                expand in place rather than as a second kind of list dumped
-                underneath.
-              */}
-              {([
-                { key: "services" as const, label: "Our services", href: "/services", items: services || [] },
-                { key: "areas" as const, label: "Where we work", href: "/areas", items: areas || [] },
-              ]).filter(g => g.items.length > 0).map((g, gi) => {
-                const expanded = openGroup === g.key;
+                const expanded = openGroup === row.key;
                 return (
-                  <div className="bps-drawer-group" key={g.key}>
+                  <div className="bps-drawer-group" key={row.key}>
                     <button
                       type="button"
                       className={`bps-drawer-link bps-drawer-toggle${expanded ? " is-open" : ""}`}
-                      style={{ ["--i" as any]: NAV_LINKS.length + gi }}
+                      style={{ ["--i" as any]: i }}
                       aria-expanded={expanded}
-                      onClick={() => setOpenGroup(expanded ? null : g.key)}
+                      onClick={() => setOpenGroup(expanded ? null : row.key)}
                     >
-                      <span>{g.label}</span>
+                      <span>{row.label}</span>
                       <span className="bps-drawer-chevron" aria-hidden="true">
                         <Icon d="M6 9l6 6 6-6" className="w-4 h-4" color="currentColor" strokeWidth={2.2}/>
                       </span>
                     </button>
 
-                    {/* grid-template-rows 0fr→1fr animates to the content's own
+                    {/* grid-template-rows 0fr->1fr animates to the content's own
                         height without measuring it in JavaScript. */}
                     <div className="bps-drawer-sublist" data-open={expanded}>
                       <div>
-                        {g.items.map((it: any) => (
+                        {row.items.map((it: any) => (
                           <button key={it.slug} type="button" className="bps-drawer-sub"
                             tabIndex={expanded ? 0 : -1}
-                            onClick={() => closeDrawer(() => navigate(`${g.href}/${it.slug}`))}>
+                            onClick={() => closeDrawer(() => navigate(`${row.href}/${it.slug}`))}>
                             <span>{it.name}</span>
                             <ArrowUpRight className="w-4 h-4"/>
                           </button>
                         ))}
+                        {/* The way through to the parent page, so replacing the
+                            flat link with this group loses nothing. */}
                         <button type="button" className="bps-drawer-sub bps-drawer-suball"
                           tabIndex={expanded ? 0 : -1}
-                          onClick={() => closeDrawer(() => navigate(g.href))}>
-                          <span>{g.key === "services" ? "All services" : "All areas"}</span>
+                          onClick={() => closeDrawer(() => navigate(row.href))}>
+                          <span>{row.allLabel}</span>
                           <ArrowUpRight className="w-4 h-4"/>
                         </button>
                       </div>
@@ -343,7 +370,7 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
               })}
             </div>
 
-            <div className="bps-drawer-foot" style={{ ["--i" as any]: NAV_LINKS.length + 2 }}>
+            <div className="bps-drawer-foot" style={{ ["--i" as any]: drawerRows.length }}>
               {phone && (
                 <a href={telHref(phone)} className="bps-drawer-call">
                   <PhoneIcon color="#fff" className="w-5 h-5"/>
