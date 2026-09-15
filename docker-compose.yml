@@ -26,6 +26,37 @@ services:
       # deploy without it is safe — the automations simply never sweep. Set it in
       # Coolify and point a daily scheduled task at the automations job.
       JOBS_SECRET: ${JOBS_SECRET:-}
+
+      # Flo, the in-dashboard assistant. Optional: without it the endpoint
+      # returns a plain "not switched on yet" rather than failing oddly.
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+
+      # Google Business reviews pulled onto tenant sites. Needs Places API (New)
+      # enabled on the key. Unset, the sync stays idle and manually entered
+      # reviews still work.
+      GOOGLE_PLACES_API_KEY: ${GOOGLE_PLACES_API_KEY:-}
+
+      # BizzFlowUK's OWN subscription, on the platform Stripe account. Not to be
+      # confused with tenant_settings.stripe_* , which is each tenant's own
+      # account for taking money from THEIR customers. Two accounts, two
+      # directions of money; they must never be crossed.
+      # Without these, billing endpoints answer 503 and nothing else changes.
+      PLATFORM_STRIPE_SECRET_KEY: ${PLATFORM_STRIPE_SECRET_KEY:-}
+      PLATFORM_STRIPE_PRICE_ID: ${PLATFORM_STRIPE_PRICE_ID:-}
+      PLATFORM_STRIPE_WEBHOOK_SECRET: ${PLATFORM_STRIPE_WEBHOOK_SECRET:-}
+
+      # Operational escape hatches. All optional, all default to off, and all
+      # useless unless named here — Coolify only passes variables the compose
+      # file declares, so a value set in the UI and absent from this list simply
+      # never reaches the container.
+      # Set to "1" to stop the hourly automation sweep without a code change.
+      AUTOMATIONS_DISABLED: ${AUTOMATIONS_DISABLED:-}
+      LOG_LEVEL: ${LOG_LEVEL:-}
+      # One-time seeding passwords, same pattern as MARK_LOGIN_PASSWORD above:
+      # set, deploy, log in, then REMOVE.
+      AMO_ADMIN_PASSWORD: ${AMO_ADMIN_PASSWORD:-}
+      KD_ADMIN_PASSWORD: ${KD_ADMIN_PASSWORD:-}
+      RETIRE_LEGACY_AMO_LOGIN: ${RETIRE_LEGACY_AMO_LOGIN:-}
       # Only used for the one-time platform-admin bootstrap (see seedFix.ts) —
       # safe to remove from the environment after first successful deploy.
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-}
