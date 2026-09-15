@@ -39,6 +39,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import FilesPage from "./FilesPage";
 import PropertiesPage from "./PropertiesPage";
 import BookingQrPage from "./BookingQrPage";
+import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
 import BillingPage from "./BillingPage";
 import "./workspace-theme.css";
@@ -231,10 +232,10 @@ function SignOutButton() {
  * and a person's own choices are remembered, so the rail is as short as they
  * want it rather than as long as the feature list.
  */
-type NavItem = { path: string; label: string; icon: string };
+type NavItem = { path: string; label: string; icon: string; brandMark?: boolean };
 
 const NAV_PINNED: NavItem[] = [
-  { path: "/dashboard/flo", label: "Ask Flo", icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" },
+  { path: "/dashboard/flo", label: "Ask Flo", brandMark: true, icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.86 9.86 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" },
   { path: "/dashboard", label: "Dashboard", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" },
 ];
 
@@ -670,18 +671,31 @@ function SidebarContent({ currentPath, onNavClick }: { currentPath: string; onNa
           const isActive = (path: string) =>
             currentPath === path || (currentPath.startsWith(path + "/") && path !== "/dashboard");
 
-          const navLink = (item: { path: string; label: string; icon: string }) => (
+          const navLink = (item: NavItem) => (
             <Link
               key={item.path}
               href={item.path}
               onClick={onNavClick}
-              className="ws-nav-item"
+              className={`ws-nav-item${item.brandMark ? " ws-nav-flo" : ""}`}
               data-active={isActive(item.path) ? "true" : "false"}
             >
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d={item.icon} />
-              </svg>
+              {item.brandMark ? (
+                /*
+                  Flo wears the BizzFlowUK mark and BizzFlowUK teal, not the
+                  tenant's brand colour — deliberately. Every other thing in
+                  this rail belongs to the business whose workspace this is.
+                  The assistant does not: it is ours, it is the reason they are
+                  on this platform rather than another one, and it should say
+                  so every time they look at the sidebar.
+                */
+                <img src={BIZZFLOW_SYMBOL} alt="" className="ws-nav-flo-mark" />
+              ) : (
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.6} d={item.icon} />
+                </svg>
+              )}
               {item.label}
+              {item.brandMark && <span className="ws-nav-flo-tag">BizzFlow</span>}
             </Link>
           );
 

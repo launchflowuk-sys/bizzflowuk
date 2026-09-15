@@ -597,3 +597,153 @@
   .bf .bf-cap { padding: 24px 22px 22px 26px; }
   .bf .bf-caps-aside h2 { font-size: clamp(27px, 7.6vw, 35px); }
 }
+
+/* -----------------------------------------------------------------------------
+ * 7. The clients already running on the platform.
+ *
+ * This sits directly after the hero, before a single feature is described,
+ * because somebody landing on a platform they have never heard of is asking
+ * one question before any other: is anyone actually using this. Four live
+ * sites they can click into answers it in a way no amount of copy about quotes
+ * and invoices can.
+ *
+ * It previously rendered INVISIBLE. The section carried `.reveal`, whose
+ * observer is attached once on mount, but this list arrives from an API
+ * afterwards — so its elements were never observed and stayed at opacity 0
+ * permanently, leaving a full-height blank between the hero and the features.
+ * The most important proof on the page must not depend on an animation firing,
+ * so nothing here is hidden at rest.
+ * -------------------------------------------------------------------------- */
+.bf .clients-section {
+  padding-block: 84px;
+  background: linear-gradient(180deg, #f6f9f7 0%, #fff 100%);
+  border-block: 1px solid var(--line);
+}
+
+.bf .clients-head {
+  display: grid;
+  gap: 22px;
+  margin-bottom: 44px;
+}
+
+@media (min-width: 900px) {
+  .bf .clients-head {
+    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+    align-items: end;
+    gap: 50px;
+  }
+}
+
+.bf .clients-intro {
+  font-size: 15.5px;
+  line-height: 1.75;
+  color: #647b6a;
+  max-width: 42ch;
+}
+
+.bf .clients-grid {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 620px) { .bf .clients-grid { grid-template-columns: repeat(2, 1fr) } }
+@media (min-width: 1040px) { .bf .clients-grid { grid-template-columns: repeat(4, 1fr) } }
+
+.bf .client-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding: 26px 24px 22px;
+  border-radius: 16px;
+  background: #fff;
+  border: 1px solid var(--line);
+  overflow: hidden;
+  transition: transform 0.4s var(--ease), box-shadow 0.4s ease-out, border-color 0.3s;
+}
+
+/* The tenant's own colour, so the row reads as four different businesses
+   rather than four cards of ours. */
+.bf .client-bar {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 4px;
+  background: var(--client);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bf .client-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--client) 40%, var(--line));
+    box-shadow: 0 18px 38px -24px color-mix(in srgb, var(--client) 55%, transparent);
+  }
+  .bf .client-card:hover .client-visit { gap: 10px }
+}
+
+.bf .client-logo {
+  display: grid;
+  place-items: center;
+  width: 62px;
+  height: 62px;
+  margin-bottom: 18px;
+  border-radius: 13px;
+  background: #f4f7f4;
+  overflow: hidden;
+}
+
+/* `contain` not `cover`: these are client logos of wildly different shapes and
+   cropping somebody's brand mark to fill a square is not ours to do. */
+.bf .client-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 9px;
+}
+
+.bf .client-initial {
+  font-family: 'Archivo Variable', 'DM Sans', Arial, sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--client);
+}
+
+.bf .client-card h3 {
+  font-family: 'Archivo Variable', 'DM Sans', Arial, sans-serif;
+  font-size: 18.5px;
+  font-weight: 650;
+  letter-spacing: -0.022em;
+  line-height: 1.25;
+}
+
+.bf .client-trade {
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #93a79b;
+}
+
+.bf .client-blurb {
+  margin-top: 12px;
+  font-size: 14px;
+  line-height: 1.7;
+  color: #647b6a;
+}
+
+.bf .client-visit {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: auto;
+  padding-top: 20px;
+  font-size: 14px;
+  font-weight: 650;
+  color: var(--client);
+  transition: gap 0.3s var(--ease);
+}
+
+@media (max-width: 760px) {
+  .bf .clients-section { padding-block: 60px }
+  .bf .clients-head { margin-bottom: 30px }
+}

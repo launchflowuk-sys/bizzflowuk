@@ -388,17 +388,28 @@
   border: 0;
   background: none;
   cursor: pointer;
-  font-size: 10.5px;
+  /*
+   * Bumped from 10.5px. At that size, with 0.09em tracking on top, the
+   * headings were technically present and practically unreadable — you could
+   * see that something was written there without being able to read it, which
+   * is the worst of both: it costs space and gives nothing back.
+   *
+   * 12.5px with tighter tracking and full-strength ink. A signpost still reads
+   * as a signpost through weight and case; it does not need to be tiny to be
+   * secondary.
+   */
+  font-size: 12.5px;
   font-weight: 700;
-  letter-spacing: 0.09em;
+  letter-spacing: 0.055em;
   text-transform: uppercase;
-  color: var(--ws-muted);
+  color: var(--ws-text, #0f172a);
+  opacity: 0.62;
   border-radius: 8px;
   transition: color 160ms ease-out, background 160ms ease-out;
 }
 
 .ws-nav-grouphead:hover {
-  color: var(--ws-text, inherit);
+  opacity: 1;
   background: var(--ws-hover);
 }
 
@@ -410,11 +421,12 @@
  */
 .ws-nav-grouphead[data-current="true"] {
   color: var(--brand);
+  opacity: 1;
 }
 
 .ws-nav-chevron {
-  width: 13px;
-  height: 13px;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
   opacity: 0.55;
   transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), opacity 160ms ease-out;
@@ -450,4 +462,174 @@
   .ws-nav-chevron {
     transition: none !important;
   }
+}
+
+/* -----------------------------------------------------------------------------
+ * The booking QR page.
+ *
+ * It previously rendered a 1024px square that dominated the screen, because
+ * `QRCode.toCanvas` writes `style.width` onto the element itself and overwrote
+ * the cap React had set. The code is now an <img> at a fixed thumbnail size,
+ * and the page is laid out around what you can DO with it rather than around
+ * the square.
+ * -------------------------------------------------------------------------- */
+.qr-layout {
+  display: grid;
+  gap: 18px;
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+@media (min-width: 900px) {
+  /* The code column is deliberately the narrow one. */
+  .qr-layout { grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr) minmax(0, 1fr); }
+}
+
+.qr-code-panel { text-align: center; }
+
+.qr-thumb {
+  display: grid;
+  place-items: center;
+  padding: 14px;
+  border-radius: 14px;
+  background: #fff;
+  border: 1px solid var(--ws-line);
+}
+
+/* A thumbnail. The bitmap behind it stays at print resolution. */
+.qr-thumb img {
+  width: 172px;
+  height: 172px;
+  display: block;
+  image-rendering: pixelated; /* keeps the modules crisp when scaled down */
+}
+
+.qr-thumb-empty {
+  width: 172px;
+  height: 172px;
+  border-radius: 8px;
+  background: var(--ws-field);
+}
+
+.qr-url {
+  margin-top: 14px;
+  font-size: 12.5px;
+  color: var(--ws-muted);
+  /* A URL is one long unbroken token, so it must be allowed to break or it
+     pushes the whole panel wider than its column. */
+  overflow-wrap: anywhere;
+}
+
+.qr-actions {
+  margin-top: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+
+.qr-note {
+  margin-top: 14px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ws-muted);
+}
+
+.qr-places {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 15px;
+}
+
+.qr-places strong {
+  display: block;
+  font-size: 14.5px;
+  margin-bottom: 2px;
+}
+
+.qr-places span {
+  font-size: 13.5px;
+  line-height: 1.65;
+  color: var(--ws-muted);
+}
+
+.qr-body {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ws-muted);
+}
+
+.qr-body + .qr-body { margin-top: 10px; }
+
+.qr-tag {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 12.5px;
+  padding: 2px 6px;
+  border-radius: 5px;
+  background: var(--ws-chip);
+  color: var(--brand);
+}
+
+/* -----------------------------------------------------------------------------
+ * Ask Flo, wearing BizzFlowUK's branding rather than the tenant's.
+ *
+ * Every other thing in this rail belongs to the business whose workspace this
+ * is, and is tinted with their colour. The assistant does not. It is ours, it
+ * is the reason they are on this platform rather than another one, and the
+ * sidebar should say so every time they look at it — so this is the one item
+ * that keeps BizzFlowUK teal even inside a tenant's own brand.
+ * -------------------------------------------------------------------------- */
+.ws-nav-item.ws-nav-flo {
+  position: relative;
+  margin-bottom: 6px;
+  padding-right: 10px;
+  font-weight: 650;
+  color: #0b5f56;
+  background: linear-gradient(100deg, rgba(0, 127, 114, 0.12), rgba(0, 127, 114, 0.05));
+  border: 1px solid rgba(0, 127, 114, 0.22);
+}
+
+.ws-nav-item.ws-nav-flo:hover {
+  background: linear-gradient(100deg, rgba(0, 127, 114, 0.18), rgba(0, 127, 114, 0.08));
+  border-color: rgba(0, 127, 114, 0.34);
+}
+
+/* Active state stays BizzFlow teal, not the tenant's brand. */
+.ws-nav-item.ws-nav-flo[data-active="true"] {
+  background: #007f72;
+  border-color: #007f72;
+  color: #fff;
+}
+
+.ws-nav-flo-mark {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+/* White knockout of the mark when the row is filled with brand teal. */
+.ws-nav-item.ws-nav-flo[data-active="true"] .ws-nav-flo-mark {
+  filter: brightness(0) invert(1);
+}
+
+.ws-nav-flo-tag {
+  margin-left: auto;
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(0, 127, 114, 0.14);
+  color: #0b5f56;
+  white-space: nowrap;
+}
+
+.ws-nav-item.ws-nav-flo[data-active="true"] .ws-nav-flo-tag {
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
 }

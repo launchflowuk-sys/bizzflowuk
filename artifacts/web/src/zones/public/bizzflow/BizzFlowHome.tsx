@@ -391,45 +391,49 @@ function ClientShowcase() {
   if (!sites?.length) return null;
 
   return (
-    <section id="built-on-bizzflow" className="platform wrap section" style={{ paddingTop: 0 }}>
-      <div className="section-head reveal">
-        <div>
-          <p className="eyebrow">ALREADY BUILT ON BIZZFLOWUK</p>
-          <h2>
-            Real businesses.<br />
-            <span className="muted-heading">Real websites. Go and look.</span>
-          </h2>
+    <section id="built-on-bizzflow" className="clients-section">
+      <div className="wrap">
+        <div className="clients-head">
+          <div>
+            <p className="eyebrow"><span className="mini-line" /> ALREADY RUNNING ON BIZZFLOWUK</p>
+            <h2>
+              These are real businesses.<br />
+              <span className="muted-heading">Go and look at their websites.</span>
+            </h2>
+          </div>
+          <p className="clients-intro">
+            Not mock-ups and not case studies. Every one of these is a live site and a live
+            workspace, built on this platform, taking enquiries today.
+          </p>
         </div>
-        <p>
-          Every one of these is a live site<br />
-          running on the platform right now.
-        </p>
-      </div>
 
-      <div className="tool-row reveal" style={{ gridTemplateColumns: `repeat(${Math.min(sites.length, 4)}, 1fr)` }}>
-        {sites.map(site => (
-          <a
-            key={site.slug}
-            href={site.url}
-            {...(site.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
-            style={{ display: "block" }}
-          >
-            {/* The tenant's own colour, so the row reads as four different
-                businesses rather than four cards of ours. */}
-            <span
-              aria-hidden="true"
-              style={{
-                display: "block", width: "34px", height: "4px", borderRadius: "2px",
-                background: site.primaryColor || "var(--teal)", marginBottom: "18px",
-              }}
-            />
-            <h3>{site.name}</h3>
-            {site.blurb && <p>{site.blurb}</p>}
-            <p style={{ marginTop: "14px", fontWeight: 650, color: "var(--teal)" }}>
-              Visit the site ↗
-            </p>
-          </a>
-        ))}
+        <div className="clients-grid">
+          {sites.map(site => (
+            <a
+              key={site.slug}
+              className="client-card"
+              href={site.url}
+              {...(site.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+              style={{ ["--client" as any]: site.primaryColor || "var(--teal)" }}
+            >
+              <span className="client-bar" aria-hidden="true" />
+
+              <span className="client-logo">
+                {site.logoUrl
+                  ? <img src={site.logoUrl} alt="" loading="lazy" decoding="async" />
+                  : <span className="client-initial" aria-hidden="true">{site.name.charAt(0)}</span>}
+              </span>
+
+              <h3>{site.name}</h3>
+              {site.industry && <p className="client-trade">{site.industry}</p>}
+              {site.blurb && <p className="client-blurb">{site.blurb}</p>}
+
+              <span className="client-visit">
+                Visit the site <span aria-hidden="true">&#8599;</span>
+              </span>
+            </a>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -650,6 +654,25 @@ export default function BizzFlowHome() {
           </div>
         </section>
 
+        {/* ── Real client sites ───────────────────────────── */}
+        {/*
+          Straight after the hero, before a single feature is described.
+
+          Somebody landing on a platform they have never heard of is asking one
+          question before any other: is anyone actually using this. Four live
+          sites they can click into answers it in a way no amount of copy about
+          quotes and invoices can, and answering it first makes everything
+          below more believable.
+
+          Deliberately NOT wrapped in `.reveal`. The reveal observer is set up
+          once on mount, and this list arrives from an API afterwards, so its
+          elements were never observed and sat at opacity 0 permanently - a
+          full-height invisible section between the hero and the features. The
+          most important proof on the page cannot depend on an animation
+          firing.
+        */}
+        <ClientShowcase />
+
         {/* ── Connected platform ──────────────────────────────────────────── */}
         <section id="platform" className="platform wrap section">
           <div className="section-head reveal">
@@ -764,9 +787,6 @@ export default function BizzFlowHome() {
             </div>
           </div>
         </section>
-
-        {/* ── Real client sites ───────────────────────────────────────────── */}
-        <ClientShowcase />
 
         {/* ── What it does that nobody mentions ───────────────────────────── */}
         <section className="platform wrap section" style={{ paddingTop: 0 }}>
