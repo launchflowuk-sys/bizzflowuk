@@ -147,6 +147,17 @@ export const expensesTable = pgTable("expenses", {
   vatAmount: numeric("vat_amount", { precision: 10, scale: 2 }).notNull().default("0"),
   total: numeric("total", { precision: 10, scale: 2 }).notNull().default("0"),
 
+  /**
+   * Ordered goods that have not turned up (migration 0048).
+   *
+   * An expense is already the record of a purchase, so the two dates live here
+   * rather than in a parallel orders table a trade would have to keep up to
+   * date twice. Both nullable: most expenses are a receipt for something
+   * already in the van.
+   */
+  expectedOn: date("expected_on"),
+  receivedOn: date("received_on"),
+
   /** Rebillable to the customer on the job's invoice. */
   billable: boolean("billable").notNull().default(false),
   billedOnInvoiceId: integer("billed_on_invoice_id").references(() => invoicesTable.id),

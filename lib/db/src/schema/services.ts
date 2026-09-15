@@ -18,6 +18,14 @@ export const servicesTable = pgTable("services", {
   // Indicative ranges shown as "What it costs". Nullable on purpose — a tenant who
   // has not agreed their pricing publishes nothing rather than a guess.
   priceGuide: text("price_guide"),
+  /**
+   * How often this service comes round again, in months (migration 0048).
+   *
+   * NULL means it does not, which is the honest default: most work is one-off,
+   * and a default of twelve would have quietly signed every tenant up to
+   * pestering customers about a bathroom they finished last year.
+   */
+  recursEveryMonths: integer("recurs_every_months"),
   published: boolean("published").notNull().default(false),
   featured: boolean("featured").notNull().default(false),
   sortOrder: integer("sort_order").notNull().default(0),

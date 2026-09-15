@@ -816,7 +816,14 @@ const CATEGORIES = ["materials", "fuel", "tools", "subcontractor", "insurance", 
 
 export function ExpensesPage() {
   const { data, loading, error, reload } = useApi<any[]>("/expenses");
-  const [form, setForm] = useState({ supplier: "", category: "materials", spentOn: new Date().toISOString().slice(0, 10), net: "", vatAmount: "" });
+  const emptyExpense = {
+    supplier: "", category: "materials", spentOn: new Date().toISOString().slice(0, 10),
+    net: "", vatAmount: "", expectedOn: "",
+  };
+  const [form, setForm] = useState(emptyExpense);
+  // Whether this is a receipt for something already in the van, or an order
+  // that has yet to turn up. Only the second kind can be chased.
+  const [onOrder, setOnOrder] = useState(false);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<string | null>(null);
 
@@ -827,8 +834,16 @@ export function ExpensesPage() {
     if (!form.supplier) { setNote("A supplier is needed."); return; }
     setBusy(true); setNote(null);
     try {
-      await api.post("/expenses", { ...form, net: form.net || 0, vatAmount: form.vatAmount || 0 });
-      setForm({ supplier: "", category: "materials", spentOn: new Date().toISOString().slice(0, 10), net: "", vatAmount: "" });
+      await api.post("/expenses", {
+        ...form,
+        net: form.net || 0,
+        vatAmount: form.vatAmount || 0,
+        // Only an order carries an expected date. Sending one on a receipt
+        // would put a paid-for item straight onto the late-delivery list.
+        expectedOn: onOrder && form.expectedOn ? form.expectedOn : null,
+      });
+      setForm(emptyExpense);
+      setOnOrder(false);
       reload();
     } catch (err: any) { setNote(err.message); }
     finally { setBusy(false); }
@@ -864,6 +879,24 @@ export function ExpensesPage() {
               <input className={inputCls} type="number" step="0.01" value={form.vatAmount} onChange={e => setForm({ ...form, vatAmount: e.target.value })} placeholder="0.00" />
             </Field>
           </div>
+          {/* Ordered and not arrived yet. Without a promised date the
+              late-delivery automation has nothing to chase, which is exactly
+              the trap VAT and payment terms were in before this. */}
+          <div className="lg:col-span-6 flex flex-wrap items-center gap-4 pt-1">
+            <label className="flex items-center gap-2.5 cursor-pointer">
+              <input type="checkbox" className="h-5 w-5 rounded border-slate-300 accent-sky-600"
+                checked={onOrder} onChange={e => setOnOrder(e.target.checked)} />
+              <span className="text-[14.5px] text-slate-700">This is on order and has not arrived</span>
+            </label>
+            {onOrder && (
+              <div className="min-w-[200px]">
+                <Field label="Promised for" hint="Chased for you if it does not turn up.">
+                  <input className={inputCls} type="date" value={form.expectedOn}
+                    onChange={e => setForm({ ...form, expectedOn: e.target.value })} />
+                </Field>
+              </div>
+            )}
+          </div>
           <div className="lg:col-span-6">
             <Btn type="submit" disabled={busy}>Add expense</Btn>
             {note && <span className="ml-3 text-[14px] text-red-600">{note}</span>}
@@ -885,7 +918,14 @@ export function ExpensesPage() {
                 {(data ?? []).map(e => (
                   <tr key={e.id} className="border-b border-slate-100 last:border-0">
                     <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap">{shortDate(e.spentOn)}</td>
-                    <td className="px-5 py-3.5 font-semibold text-slate-900">{e.supplier}</td>
+                    <td className="px-5 py-3.5 font-semibold text-slate-900">
+                      {e.supplier}
+                      {e.expectedOn && !e.receivedOn && (
+                        <span className="ml-2 align-middle"><Pill tone={e.expectedOn < new Date().toISOString().slice(0, 10) ? "warn" : "info"}>
+                          {e.expectedOn < new Date().toISOString().slice(0, 10) ? "late" : `due ${shortDate(e.expectedOn)}`}
+                        </Pill></span>
+                      )}
+                    </td>
                     <td className="px-5 py-3.5"><Pill>{e.category}</Pill></td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-slate-600">{money(e.net)}</td>
                     <td className="px-5 py-3.5 text-right tabular-nums font-semibold text-slate-900">{money(e.total)}</td>
@@ -1553,33 +1593,57 @@ export function CertificatesPage() {
 
 // ── Automations ──────────────────────────────────────────────────────────────
 
+/**
+ * The automations page.
+ *
+ * It listed three rules and could edit exactly one kind of setting: a list of
+ * days. Everything else a rule might want to be told — what the message says,
+ * how many hours before, how many months quiet — had nowhere to be typed, so
+ * adding a rule with any other shape of setting meant the tenant was stuck
+ * with whatever the defaults happened to be.
+ *
+ * Now the `setup` list each rule declares is rendered generically. A rule
+ * describes its own questions; this page draws them. That is what makes adding
+ * an automation an entry in a file rather than a job of work here too.
+ */
 export function AutomationsPage() {
   const { data, loading, error, reload } = useApi<any>("/automations");
   const [busy, setBusy] = useState<string | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
 
   if (loading) return <Page><Loading /></Page>;
   if (error) return <Page><ErrorNote message={error} /></Page>;
 
   const rules: any[] = data?.rules ?? [];
-  const groups = [...new Set(rules.map(r => r.group))];
+
+  // Grouped in the order the server declares, which reads as a week — winning
+  // it, doing it, getting paid for it — rather than alphabetically.
+  const groups: string[] = [];
+  for (const r of [...rules].sort((a, b) => (a.groupOrder ?? 99) - (b.groupOrder ?? 99))) {
+    if (!groups.includes(r.group)) groups.push(r.group);
+  }
 
   async function toggle(rule: any, enabled: boolean) {
     setBusy(rule.key); setNote(null);
     try {
       await api.patch(`/automations/${rule.key}`, { enabled, config: rule.config });
       reload();
+      // Turning one on for the first time opens its settings, because the
+      // defaults are a starting point and the wording is the bit a trade
+      // actually wants to change before anything goes out in their name.
+      if (enabled && (rule.setup ?? []).length) setEditing(rule.key);
     } catch (e: any) { setNote(e.message); }
     finally { setBusy(null); }
   }
 
-  async function saveConfig(rule: any, raw: string) {
-    const days = raw.split(/[,\s]+/).map(Number).filter(n => Number.isFinite(n) && n > 0);
-    if (!days.length) { setNote("Give at least one number of days, e.g. 3, 7, 14"); return; }
+  async function saveConfig(rule: any, config: Record<string, unknown>) {
     setBusy(rule.key); setNote(null);
     try {
-      await api.patch(`/automations/${rule.key}`, { config: { ...rule.config, days } });
+      await api.patch(`/automations/${rule.key}`, { config });
+      setEditing(null);
       reload();
+      setNote(`${rule.label} — settings saved.`);
     } catch (e: any) { setNote(e.message); }
     finally { setBusy(null); }
   }
@@ -1617,70 +1681,156 @@ export function AutomationsPage() {
             <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2.5">{group}</h2>
             <Card className="overflow-hidden">
               {rules.filter(r => r.group === group).map((r, i, arr) => (
-                // A live automation is doing work while nobody is looking, so it
-                // should be obvious at a glance which ones are actually on. The
-                // whole row takes a wash of the tenant's own colour and a
-                // colour bar down its left edge — not just the little switch,
-                // which you have to hunt for across a list.
-                <div
+                <AutomationRow
                   key={r.key}
-                  className={`relative p-5 pl-6 transition-colors ${i < arr.length - 1 ? "border-b border-slate-100" : ""}`}
-                  style={r.enabled ? { background: "var(--ws-active)" } : undefined}
-                >
-                  {r.enabled && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-0 top-0 bottom-0 w-[3px]"
-                      style={{ background: "var(--brand)" }}
-                    />
-                  )}
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 flex-1">
-                      <h3 className="text-[16px] font-bold text-slate-900">{r.label}</h3>
-                      <div className="mt-1.5">
-                        {r.enabled
-                          ? <span className="ws-pill" data-tone="active">On</span>
-                          : <span className="ws-pill" data-tone="done">Not set up</span>}
-                      </div>
-                      <p className="mt-1.5 text-[14.5px] text-slate-600 max-w-[62ch] leading-relaxed">{r.description}</p>
-
-                      {r.enabled && Array.isArray(r.config?.days) && (
-                        <div className="mt-3 flex flex-wrap items-center gap-2">
-                          <span className="text-[13.5px] text-slate-500">{r.setup?.[0]?.label ?? "Days"}:</span>
-                          <input
-                            className="h-9 px-3 rounded-[10px] border border-slate-200 text-[14px] w-[150px] focus:outline-none focus:ring-2 focus:ring-sky-500/40"
-                            defaultValue={r.config.days.join(", ")}
-                            onBlur={e => e.target.value !== r.config.days.join(", ") && saveConfig(r, e.target.value)}
-                            disabled={busy === r.key}
-                          />
-                        </div>
-                      )}
-
-                      {r.enabled && r.actionsTaken > 0 && (
-                        <p className="mt-2.5 text-[13.5px] text-slate-500">
-                          {r.actionsTaken} {r.actionsTaken === 1 ? "action" : "actions"} so far
-                          {r.lastRunAt ? ` · last ran ${shortDate(r.lastRunAt)}` : ""}
-                        </p>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => toggle(r, !r.enabled)}
-                      disabled={busy === r.key}
-                      aria-label={r.enabled ? `Turn off ${r.label}` : `Turn on ${r.label}`}
-                      className="shrink-0 w-[52px] h-[30px] rounded-full transition-colors relative disabled:opacity-50"
-                      style={{ background: r.enabled ? "var(--brand)" : "#e2e8f0" }}
-                    >
-                      <span className={`absolute top-[3px] w-6 h-6 rounded-full bg-white shadow transition-all ${r.enabled ? "left-[25px]" : "left-[3px]"}`} />
-                    </button>
-                  </div>
-                </div>
+                  rule={r}
+                  last={i === arr.length - 1}
+                  busy={busy === r.key}
+                  editing={editing === r.key}
+                  onEdit={() => setEditing(editing === r.key ? null : r.key)}
+                  onToggle={enabled => toggle(r, enabled)}
+                  onSave={config => saveConfig(r, config)}
+                />
               ))}
             </Card>
           </div>
         ))}
       </div>
     </Page>  );
+}
+
+/**
+ * One automation.
+ *
+ * A live automation is doing work while nobody is looking, so it should be
+ * obvious at a glance which ones are on: the whole row takes a wash of the
+ * tenant's own colour and a bar down its left edge, rather than only the little
+ * switch, which you have to hunt for across a list.
+ */
+function AutomationRow({ rule, last, busy, editing, onEdit, onToggle, onSave }: {
+  rule: any;
+  last: boolean;
+  busy: boolean;
+  editing: boolean;
+  onEdit: () => void;
+  onToggle: (enabled: boolean) => void;
+  onSave: (config: Record<string, unknown>) => void;
+}) {
+  const [draft, setDraft] = useState<Record<string, any>>(() => ({ ...(rule.config ?? rule.defaults ?? {}) }));
+  const setup: any[] = rule.setup ?? [];
+  // A rule we cannot switch on gets no switch. A control that looks live and
+  // does nothing is how a trade loses a job believing the software has it.
+  const available = rule.available !== false;
+
+  return (
+    <div
+      className={`relative p-5 pl-6 transition-colors ${last ? "" : "border-b border-slate-100"}`}
+      style={rule.enabled ? { background: "var(--ws-active)" } : undefined}
+    >
+      {rule.enabled && (
+        <span aria-hidden="true" className="absolute left-0 top-0 bottom-0 w-[3px]" style={{ background: "var(--brand)" }} />
+      )}
+
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[16px] font-bold text-slate-900">{rule.label}</h3>
+          <div className="mt-1.5">
+            {!available
+              ? <span className="ws-pill" data-tone="done">Needs setting up with us</span>
+              : rule.enabled
+                ? <span className="ws-pill" data-tone="active">On</span>
+                : <span className="ws-pill" data-tone="done">Not set up</span>}
+          </div>
+          <p className="mt-1.5 text-[14.5px] text-slate-600 max-w-[62ch] leading-relaxed">{rule.description}</p>
+
+          {/* What this rule needs before it can do anything. Said on the card,
+              so a switch that would silently do nothing explains itself. */}
+          {rule.needs && (
+            <p className="mt-2 text-[13.5px] text-amber-800 max-w-[62ch] leading-relaxed">
+              <strong>Needs:</strong> {rule.needs}
+            </p>
+          )}
+
+          {rule.enabled && rule.actionsTaken > 0 && (
+            <p className="mt-2.5 text-[13.5px] text-slate-500">
+              {rule.actionsTaken} {rule.actionsTaken === 1 ? "action" : "actions"} so far
+              {rule.lastRunAt ? ` · last ran ${shortDate(rule.lastRunAt)}` : ""}
+            </p>
+          )}
+
+          {rule.enabled && setup.length > 0 && !editing && (
+            <button onClick={onEdit} className="mt-2.5 text-[13.5px] font-semibold text-sky-700 hover:underline">
+              Change what it says and when
+            </button>
+          )}
+        </div>
+
+        {available && (
+          <button
+            onClick={() => onToggle(!rule.enabled)}
+            disabled={busy}
+            aria-label={rule.enabled ? `Turn off ${rule.label}` : `Turn on ${rule.label}`}
+            className="shrink-0 w-[52px] h-[30px] rounded-full transition-colors relative disabled:opacity-50"
+            style={{ background: rule.enabled ? "var(--brand)" : "#e2e8f0" }}
+          >
+            <span className={`absolute top-[3px] w-6 h-6 rounded-full bg-white shadow transition-all ${rule.enabled ? "left-[25px]" : "left-[3px]"}`} />
+          </button>
+        )}
+      </div>
+
+      {/* The rule's own questions, rendered from what it declares about itself.
+          A textarea for wording, a number box for a delay, a text box for a
+          list of days — the rule decides, this just draws it. */}
+      {editing && setup.length > 0 && (
+        <div className="mt-4 rounded-[14px] border border-slate-200 bg-white p-4 space-y-4">
+          {setup.map(field => (
+            <label key={field.key} className="block">
+              <span className="block text-[13.5px] font-semibold text-slate-800 mb-1.5">{field.label}</span>
+              {field.type === "textarea" ? (
+                <textarea
+                  rows={3}
+                  className={`${inputCls} h-auto py-2.5`}
+                  value={String(draft[field.key] ?? "")}
+                  onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
+                />
+              ) : field.type === "boolean" ? (
+                <span className="flex items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    className="h-5 w-5 rounded border-slate-300 accent-sky-600"
+                    checked={draft[field.key] !== false}
+                    onChange={e => setDraft({ ...draft, [field.key]: e.target.checked })}
+                  />
+                  <span className="text-[14px] text-slate-600">{field.hint}</span>
+                </span>
+              ) : field.type === "number" ? (
+                <input
+                  type="number"
+                  className={`${inputCls} w-[140px]`}
+                  value={String(draft[field.key] ?? "")}
+                  onChange={e => setDraft({ ...draft, [field.key]: e.target.value === "" ? "" : Number(e.target.value) })}
+                />
+              ) : (
+                <input
+                  className={inputCls}
+                  value={Array.isArray(draft[field.key]) ? draft[field.key].join(", ") : String(draft[field.key] ?? "")}
+                  onChange={e => setDraft({ ...draft, [field.key]: e.target.value })}
+                />
+              )}
+              {field.hint && field.type !== "boolean" && (
+                <span className="mt-1 block text-[12.5px] text-slate-500">{field.hint}</span>
+              )}
+            </label>
+          ))}
+
+          <div className="flex flex-wrap gap-2 pt-1">
+            <Btn onClick={() => onSave(draft)} disabled={busy}>{busy ? "Saving…" : "Save"}</Btn>
+            <Btn tone="ghost" onClick={onEdit} disabled={busy}>Cancel</Btn>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 // ── Cash flow ────────────────────────────────────────────────────────────────

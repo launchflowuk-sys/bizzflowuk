@@ -337,6 +337,13 @@
       "when": 1788900000000,
       "tag": "0047_job_share_tokens",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1789000000000,
+      "tag": "0048_automation_data",
+      "breakpoints": true
     }
   ]
 }

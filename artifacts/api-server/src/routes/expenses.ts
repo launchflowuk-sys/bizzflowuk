@@ -20,6 +20,13 @@ const expenseSchema = z.object({
   billable: z.boolean().optional(),
   receiptPath: z.string().nullable().optional(),
   notes: z.string().nullable().optional(),
+  /**
+   * Ordered goods (migration 0048). `expectedOn` is what the merchant
+   * promised; `receivedOn` is when it actually turned up. An expense with the
+   * first and not the second is what the late-delivery automation chases.
+   */
+  expectedOn: z.string().nullable().optional(),
+  receivedOn: z.string().nullable().optional(),
 });
 
 /** Total is always derived, never taken from the client — the two must agree. */
@@ -64,6 +71,8 @@ router.post("/expenses", requireTenantAccess, async (req: any, res) => {
       billable: e.billable ?? false,
       receiptPath: e.receiptPath ?? null,
       notes: e.notes ?? null,
+      expectedOn: e.expectedOn || null,
+      receivedOn: e.receivedOn || null,
     }).returning();
 
     res.status(201).json(row);
@@ -82,7 +91,7 @@ router.patch("/expenses/:id", requireTenantAccess, async (req: any, res) => {
     const e = parsed.data;
 
     const patch: Record<string, unknown> = {};
-    for (const k of ["supplier", "description", "category", "spentOn", "projectId", "billable", "receiptPath", "notes"] as const) {
+    for (const k of ["supplier", "description", "category", "spentOn", "projectId", "billable", "receiptPath", "notes", "expectedOn", "receivedOn"] as const) {
       if (e[k] !== undefined) patch[k] = e[k];
     }
     if (e.net !== undefined) patch.net = String(e.net);

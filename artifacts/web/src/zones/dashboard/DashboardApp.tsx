@@ -3689,6 +3689,17 @@ function ServicesPage() {
               <FField label="Icon (emoji or icon name)" value={form.icon || ""} onChange={v => setForm({ ...form, icon: v })} />
               <FField label="Hero Image URL" value={form.heroImageUrl || ""} onChange={v => setForm({ ...form, heroImageUrl: v })} />
               <FField label="Sort Order" type="number" value={form.sortOrder ?? 0} onChange={v => setForm({ ...form, sortOrder: Number(v) })} />
+              {/* What makes the recurring-visit automation possible. Blank means
+                  this service does not come round again, which is the honest
+                  default — most work is one-off, and a default of 12 would sign
+                  the tenant up to pestering people about a finished bathroom. */}
+              <FField
+                label="Comes Round Again Every (months)"
+                type="number"
+                value={form.recursEveryMonths ?? ""}
+                onChange={v => setForm({ ...form, recursEveryMonths: v === "" ? null : Number(v) })}
+                hint="Leave blank for one-off work. 12 for an annual service, 3 for a quarterly visit — the automation uses this to remind the customer when it is due."
+              />
               <div className="flex gap-4">
                 <FCheck label="Featured" checked={!!form.featured} onChange={v => setForm({ ...form, featured: v })} />
                 <FCheck label="Published" checked={form.published !== false} onChange={v => setForm({ ...form, published: v })} />
