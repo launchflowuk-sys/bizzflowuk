@@ -38,3 +38,43 @@
 .bf {
   overflow-x: clip;
 }
+
+/* -----------------------------------------------------------------------------
+ * 2. Form fields.
+ *
+ * The reference site has no sign-in screen — it is a marketing page and a demo,
+ * and the demo's only inputs are inside the quote dialog. So there is no field
+ * style to port, and this is a genuine addition rather than a deviation.
+ *
+ * Built from the design's own vocabulary so it does not read as a different
+ * product: the demo's 7px corner and tinted ground, `--line` for the border,
+ * and the brand teal for focus. Transparent-with-a-border rather than a grey
+ * well, because the page is already white and the border is the point.
+ * -------------------------------------------------------------------------- */
+.bf .bf-input {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: #f8faf7;
+  padding: 14px 16px;
+  font-size: 15px;
+  font-family: inherit;
+  color: var(--ink);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.bf .bf-input::placeholder {
+  color: #9bafa4;
+}
+
+.bf .bf-input:focus {
+  outline: none;
+  border-color: var(--teal);
+  box-shadow: 0 0 0 3px rgba(0, 127, 114, 0.14);
+}
+
+/* The submit button is the page's one full-width control. */
+.bf .button.teal-bg:disabled {
+  opacity: 0.6;
+  transform: none;
+}

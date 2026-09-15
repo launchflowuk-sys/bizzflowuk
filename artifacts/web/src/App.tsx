@@ -8,6 +8,8 @@ import { AuthProvider, useAuthCtx, getStoredToken, clearStoredToken, getActiveTe
 
 import NotFound from "@/pages/not-found";
 import { BpsLoader } from "@/components/BpsLoader";
+import "@/zones/public/bizzflow/bizzflow.css";
+import "@/zones/public/bizzflow/bizzflow-overrides.css";
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 30_000, refetchOnWindowFocus: false } },
@@ -64,84 +66,74 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   }
 
   return (
-    <div className="min-h-[100dvh] flex bg-[#0A121C]">
-      <div className="hidden lg:flex lg:w-[52%] flex-col justify-between p-12 bg-gradient-to-br from-[#0A121C] via-[#0d1a2e] to-[#0A121C] border-r border-white/5 relative overflow-hidden">
-        <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-0 w-[600px] h-[600px] bg-auth-500/8 rounded-full blur-[120px] -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-auth-500/5 rounded-full blur-[100px] translate-x-1/4 translate-y-1/4" />
-        </div>
-        <div className="relative z-10">
-          <div className="flex items-center gap-3 mb-16">
-            <div className="w-9 h-9 rounded-lg bg-auth-500 flex items-center justify-center font-bold text-white text-sm">L</div>
-            <span className="text-white font-bold text-xl tracking-tight">BizzFlow</span>
-          </div>
-          <div className="space-y-6">
-            <div className="inline-flex items-center gap-2 bg-auth-500/10 border border-auth-500/20 rounded-full px-4 py-1.5">
-              <div className="w-1.5 h-1.5 rounded-full bg-auth-500" />
-              <span className="text-auth-500 text-xs font-semibold tracking-wider uppercase">Home Improvement Platform</span>
-            </div>
-            <h1 className="text-4xl xl:text-5xl font-bold text-white leading-tight">
-              The operating system for trades businesses
-            </h1>
-            <p className="text-slate-400 text-lg leading-relaxed max-w-md">
-              Websites, CRM, quoting, project management, and customer portals — everything under your brand.
-            </p>
-          </div>
-        </div>
-        <div className="relative z-10 space-y-4">
-          {[
-            { icon: "🌐", label: "Professional public website", desc: "Full marketing site with services, gallery & lead capture" },
-            { icon: "📋", label: "CRM & quote management", desc: "Convert leads to signed quotes in minutes" },
-            { icon: "👤", label: "Customer portal", desc: "Self-service portal for project tracking & communication" },
-          ].map((f) => (
-            <div key={f.label} className="flex items-start gap-4 p-4 rounded-xl bg-white/3 border border-white/5">
-              <span className="text-2xl mt-0.5">{f.icon}</span>
-              <div>
-                <div className="text-white font-semibold text-sm">{f.label}</div>
-                <div className="text-slate-500 text-xs mt-0.5">{f.desc}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center p-6 lg:p-12 bg-[#0A121C]">
-        <div className="flex items-center gap-2 mb-8 lg:hidden">
-          <div className="w-8 h-8 rounded-lg bg-auth-500 flex items-center justify-center font-bold text-white text-xs">L</div>
-          <span className="text-white font-bold text-lg tracking-tight">BizzFlow</span>
-        </div>
-        <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5">
-          <div className="text-center mb-8">
-            <h2 className="text-2xl font-bold text-white">Sign in</h2>
-            <p className="text-slate-400 text-sm mt-1">Enter your credentials to continue</p>
-          </div>
+    <div className="bf min-h-[100dvh] flex flex-col" style={{ background: "#fff" }}>
+      {/* The site's own header, so signing in feels like the same product
+          rather than a separate admin tool bolted on the side.
+
+          `width: 100%` is load-bearing. `.header` carries `margin: auto`, and an
+          auto inline margin on a flex item stops it stretching and shrinks it to
+          its content — so the brand and the button bunched up in the middle of
+          the page instead of sitting at opposite ends. Same trap as the hero. */}
+      <header className="header" style={{ width: "100%" }}>
+        <a className="brand" href={basePath || "/"} aria-label="BizzFlowUK home">
+          <img src="/bizzflow/brand/bizzflowuk-symbol-transparent.png" alt="" className="brand-icon" />
+          <span>bizzflow<span className="brand-uk">UK</span></span>
+        </a>
+        <a className="button small dark" href={basePath || "/"}>
+          Back to site <span>↗</span>
+        </a>
+      </header>
+
+      <main className="flex-1 flex items-start justify-center px-6 pt-[6vh] pb-20">
+        {/* No card and no shadow. The page is already white; a white box
+            floating on it would only be its own border, and the fields are the
+            only boxes the screen needs. */}
+        <form onSubmit={handleSubmit} className="w-full max-w-[420px]">
+          <p className="eyebrow"><span className="mini-line" /> WELCOME BACK</p>
+          <h1 style={{ fontSize: "clamp(34px,4.4vw,43px)", lineHeight: 1.1, letterSpacing: "-1.7px", fontWeight: 650, margin: "14px 0 0" }}>
+            Your business,<br /><span className="teal">right where you left it.</span>
+          </h1>
+          <p style={{ marginTop: "14px", color: "var(--muted)", fontSize: "16px", lineHeight: 1.6 }}>
+            Sign in to your workspace.
+          </p>
+
           {error && (
-            <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3 text-red-400 text-sm">{error}</div>
+            <div role="alert" style={{
+              marginTop: "26px", padding: "13px 16px", borderRadius: "8px",
+              background: "#fbe9e7", color: "#8c2f22", fontSize: "14px", fontWeight: 500,
+            }}>
+              {error}
+            </div>
           )}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-300">Email address</label>
-            <input
-              type="email" value={email} onChange={e => setEmail(e.target.value)}
-              required autoComplete="email" placeholder="you@example.com"
-              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-auth-500 focus:ring-1 focus:ring-auth-500 transition"
-            />
+
+          <div style={{ marginTop: "30px", display: "grid", gap: "18px" }}>
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>Email address</span>
+              <input
+                type="email" value={email} onChange={e => setEmail(e.target.value)}
+                required autoComplete="email" placeholder="you@yourbusiness.co.uk"
+                className="bf-input"
+              />
+            </label>
+            <label style={{ display: "block" }}>
+              <span style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>Password</span>
+              <input
+                type="password" value={password} onChange={e => setPassword(e.target.value)}
+                required autoComplete="current-password" placeholder="••••••••"
+                className="bf-input"
+              />
+            </label>
           </div>
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-slate-300">Password</label>
-            <input
-              type="password" value={password} onChange={e => setPassword(e.target.value)}
-              required autoComplete="current-password" placeholder="••••••••"
-              className="w-full rounded-xl bg-[#1A2535] border border-white/10 px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:border-auth-500 focus:ring-1 focus:ring-auth-500 transition"
-            />
-          </div>
-          <button
-            type="submit" disabled={loading}
-            className="w-full rounded-xl bg-auth-500 hover:bg-auth-600 disabled:opacity-60 px-4 py-3 text-white font-semibold text-sm transition"
-          >
-            {loading ? "Signing in…" : "Sign in"}
+
+          <button type="submit" disabled={loading} className="button teal-bg" style={{ marginTop: "26px", width: "100%", justifyContent: "center" }}>
+            {loading ? "Signing in…" : <>Sign in <span>↗</span></>}
           </button>
+
+          <p style={{ marginTop: "26px", fontSize: "14px", color: "var(--muted)" }}>
+            New here? <a href={`${basePath}/signup`} className="teal" style={{ fontWeight: 600 }}>Create your workspace</a>
+          </p>
         </form>
-        <p className="mt-8 text-center text-xs text-slate-600">© {new Date().getFullYear()} BizzFlow. All rights reserved.</p>
-      </div>
+      </main>
     </div>
   );
 }

@@ -23,14 +23,18 @@
    plumbing-motion.css and belongs to Brandon, not to us — leave it alone.
    -------------------------------------------------------------------------- */
 @theme {
-  --color-brand-50:  #FFF7ED;
-  --color-brand-100: #FFEDD5;
-  --color-brand-200: #FED7AA;
-  --color-brand-300: #FDBA74;
-  --color-brand-400: #FB923C;
-  --color-brand-500: #F97316;
-  --color-brand-600: #EA580C;
-  --color-brand-700: #C2410C;
+  /* BizzFlowUK teal. The brand colour of the design, `--teal: #007f72` in the
+     handoff, replacing the stock Tailwind orange the platform chrome inherited
+     by default. This block is the whole change — that was the point of routing
+     63 scattered literals through it. */
+  --color-brand-50:  #E8F3EF;
+  --color-brand-100: #C7E3DC;
+  --color-brand-200: #93CBBF;
+  --color-brand-300: #5AAE9F;
+  --color-brand-400: #2A9384;
+  --color-brand-500: #007F72;
+  --color-brand-600: #006B61;
+  --color-brand-700: #00544C;
 }
 
 /* ----------------------------------------------------------------------------
