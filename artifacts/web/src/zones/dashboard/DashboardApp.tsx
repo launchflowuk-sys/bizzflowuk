@@ -40,6 +40,7 @@ import FilesPage from "./FilesPage";
 import PropertiesPage from "./PropertiesPage";
 import BookingQrPage from "./BookingQrPage";
 import NewJobForm from "./NewJobForm";
+import JobShareCard from "./JobShareCard";
 import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
 import BillingPage from "./BillingPage";
@@ -3044,6 +3045,7 @@ function ProjectDetailPage({ id }: { id: number }) {
               <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${p.status === s ? "bg-[var(--brand)] text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
             ))}
           </div>
+          <JobShareCard projectId={id} job={p} />
         </div>
       </div>
     </div>

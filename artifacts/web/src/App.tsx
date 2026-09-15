@@ -150,6 +150,7 @@ const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
 const BizzFlowHome = lazy(() => import("@/zones/public/bizzflow/BizzFlowHome"));
 const BizzFlowDemo = lazy(() => import("@/zones/public/bizzflow/BizzFlowDemo"));
 const SignUpPage = lazy(() => import("@/zones/public/bizzflow/SignUpPage"));
+const JobSharePage = lazy(() => import("@/zones/public/JobSharePage"));
 
 /**
  * Which tenant's branding the loader may show, resolved before any tenant data has
@@ -280,9 +281,17 @@ function DomainRouteGuard({ children }: { children: React.ReactNode }) {
     { query: { enabled: !isKnownHost, retry: false, staleTime: Infinity, gcTime: Infinity } as any }
   );
 
+  /**
+   * The shared-job page is platform-wide, not part of anyone's marketing site.
+   * Without this, opening it on a tenant's custom domain would be swallowed by
+   * the tenant site and land on a 404 — and a customer who scanned a QR has no
+   * idea which domain they are supposed to be on.
+   */
+  const isPlatformPath = window.location.pathname.startsWith("/j/");
+
   if (!isKnownHost && isLoading) return <ZoneLoader />;
   const slug = (data as any)?.slug;
-  if (!isKnownHost && !isError && slug) {
+  if (!isKnownHost && !isError && slug && !isPlatformPath) {
     return (
       <Suspense fallback={<ZoneLoader />}>
         <PublicSiteApp forcedSlug={slug} forcedBase="" />
@@ -338,6 +347,10 @@ function AppRoutes() {
           <Route path="/dashboard/*?" component={DashboardApp} />
           <Route path="/portal/*?" component={PortalApp} />
           <Route path="/admin/*?" component={AdminApp} />
+          {/* The job a customer scans off their job sheet. Public: the token
+              IS the credential, the same way the payment link works. Short
+              path because it is printed as a QR and occasionally read aloud. */}
+          <Route path="/j/:token">{(p: any) => <JobSharePage token={p.token} />}</Route>
           <Route path="/site/:tenantSlug/*?">{() => <PublicSiteApp />}</Route>
           <Route component={NotFound} />
         </Switch>

@@ -38,6 +38,21 @@ export const projectsTable = pgTable("projects", {
   photoUrls: jsonb("photo_urls").$type<string[]>().default([]),
   warrantyInfo: text("warranty_info"),
   reviewRequestSentAt: timestamp("review_request_sent_at", { withTimezone: true }),
+
+  /**
+   * A link a customer can open without an account (migration 0047).
+   *
+   * The portal is behind a login, which is right for a customer who has an
+   * account and wrong for almost everybody else — the person who wants to know
+   * what time you are coming on Thursday will not make an account to find out.
+   * The token IS the credential, it reaches exactly one job, and revoking sets
+   * `shareRevokedAt` rather than clearing the token, so the same link is never
+   * issued twice and an old printed job sheet fails closed.
+   */
+  shareToken: text("share_token"),
+  shareCreatedAt: timestamp("share_created_at", { withTimezone: true }),
+  shareRevokedAt: timestamp("share_revoked_at", { withTimezone: true }),
+
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [

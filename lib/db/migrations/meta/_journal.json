@@ -330,6 +330,13 @@
       "when": 1788800000000,
       "tag": "0046_recurring_invoices_and_payment_details",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1788900000000,
+      "tag": "0047_job_share_tokens",
+      "breakpoints": true
     }
   ]
 }

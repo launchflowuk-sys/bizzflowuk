@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { randomBytes } from "node:crypto";
 import { db } from "@workspace/db";
 import { projectsTable, projectUpdatesTable, projectItemsTable, customersTable, quotesTable, servicesTable } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
@@ -255,6 +256,55 @@ router.delete("/projects/:id/items/:itemId", requireTenantAccess, async (req, re
     if (projectId === null) return;
     await db.delete(projectItemsTable)
       .where(and(eq(projectItemsTable.id, Number(req.params.itemId)), eq(projectItemsTable.projectId, projectId)));
+    res.status(204).send();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── Sharing a job with the customer ──────────────────────────────────────────
+
+/**
+ * Mint (or return) the link a customer can open without an account.
+ *
+ * Idempotent: asking twice gives the same link back rather than orphaning the
+ * one already printed on a job sheet or stuck to a boiler.
+ *
+ * 24 random bytes. The token IS the credential, so it has to be long enough
+ * that it cannot be walked — and unguessable matters more here than short,
+ * because nobody types this: they scan it or tap it.
+ */
+router.post("/projects/:id/share", requireTenantAccess, async (req: any, res) => {
+  try {
+    const projectId = await requireOwnedProject(req, res);
+    if (projectId === null) return;
+
+    const [job] = await db.select().from(projectsTable)
+      .where(eq(projectsTable.id, projectId)).limit(1);
+    if (!job) { res.status(404).json({ error: "Not found" }); return; }
+
+    let token = job.shareToken;
+    // A revoked share is deliberately NOT reused. The old link stays dead so a
+    // scan of an out-of-date printed sheet fails closed rather than quietly
+    // coming back to life.
+    if (!token || job.shareRevokedAt) {
+      token = randomBytes(24).toString("hex");
+      await db.update(projectsTable).set({
+        shareToken: token,
+        shareCreatedAt: new Date(),
+        shareRevokedAt: null,
+      }).where(eq(projectsTable.id, projectId));
+    }
+
+    const base = process.env["PUBLIC_BASE_URL"] || "https://bizzflowuk.com";
+    res.json({ token, url: `${base}/j/${token}` });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+router.delete("/projects/:id/share", requireTenantAccess, async (req: any, res) => {
+  try {
+    const projectId = await requireOwnedProject(req, res);
+    if (projectId === null) return;
+    await db.update(projectsTable).set({ shareRevokedAt: new Date() })
+      .where(eq(projectsTable.id, projectId));
     res.status(204).send();
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });

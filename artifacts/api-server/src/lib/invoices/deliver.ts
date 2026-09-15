@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { invoicesTable, invoiceItemsTable, customersTable, tenantsTable, tenantSettingsTable } from "@workspace/db";
+import { invoicesTable, invoiceItemsTable, customersTable, tenantsTable, tenantSettingsTable, projectsTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
 import { sendAndRecord } from "../emailLog";
 import { buildSmtpConfig } from "../settingsHelpers";
@@ -115,6 +115,26 @@ export async function sendInvoiceEmail(invoiceId: number, tenantId: number, kind
 
   const termsText = inv.terms || s?.invoiceTerms || null;
 
+  /**
+   * A link back to the job, when the job has one (migration 0047).
+   *
+   * The same page the QR on the job sheet opens, so a customer who has thrown
+   * the paper away still has it in their inbox. Only when a share link already
+   * exists and has not been revoked — minting one here would hand out a
+   * credential the business never asked to issue.
+   */
+  let jobLink: string | null = null;
+  if (inv.projectId) {
+    const [job] = await db.select({
+      token: projectsTable.shareToken,
+      revokedAt: projectsTable.shareRevokedAt,
+    }).from(projectsTable).where(eq(projectsTable.id, inv.projectId)).limit(1);
+    if (job?.token && !job.revokedAt) {
+      const base = process.env["PUBLIC_BASE_URL"] || "https://bizzflowuk.com";
+      jobLink = `${base}/j/${job.token}`;
+    }
+  }
+
   const html = `<div style="font-family:Arial,Helvetica,sans-serif;font-size:15px;line-height:1.65;color:#111827;max-width:580px">
   ${intro}
   <table style="border-collapse:collapse;width:100%;margin:0 0 14px">${rows}</table>
@@ -127,6 +147,7 @@ export async function sendInvoiceEmail(invoiceId: number, tenantId: number, kind
     <tr><td style="padding:3px 18px 3px 0"><strong>Still to pay</strong></td><td style="padding:3px 0;text-align:right"><strong>${money(due)}</strong></td></tr>` : ""}
   </table>
   ${payBlock}
+  ${jobLink ? `<p style="margin:0 0 14px;font-size:14px"><a href="${jobLink}" style="color:#0369A1">See the job this invoice is for</a></p>` : ""}
   ${inv.notes ? `<p style="margin:0 0 14px;font-size:14px">${esc(inv.notes)}</p>` : ""}
   ${termsText ? `<p style="margin:0 0 14px;color:#6B7280;font-size:13.5px">${esc(termsText)}</p>` : ""}
   <p style="margin:0;color:#6B7280;font-size:13px">${esc(tenant?.name ?? "")}${settings?.phone ? ` · ${esc(settings.phone)}` : ""}${settings?.email ? ` · ${esc(settings.email)}` : ""}</p>
