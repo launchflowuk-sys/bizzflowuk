@@ -397,6 +397,9 @@ function TenantDetailPage({ id }: { id: number }) {
   const [placeBusy, setPlaceBusy] = useState<null | "save" | "sync">(null);
   const [placeResult, setPlaceResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [savedPlaceId, setSavedPlaceId] = useState<string | null>(null);
+  const [importText, setImportText] = useState('');
+  const [importBusy, setImportBusy] = useState(false);
+  const [importResult, setImportResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [reviewSummary, setReviewSummary] = useState<{ rating: string | null; count: number | null; syncedAt: string | null } | null>(null);
 
   // These live on tenant_settings, which GET /tenants/:id does not return.
@@ -475,6 +478,34 @@ function TenantDetailPage({ id }: { id: number }) {
       setPlaceResult({ ok: false, text: err?.message || 'Sync failed.' });
     } finally {
       setPlaceBusy(null);
+    }
+  };
+
+  /**
+   * Reviews Google will not give us, and Facebook never will.
+   *
+   * The API caps at five, so a business with dozens shows five. The rest are
+   * transcribed and pasted here. Verbatim — a reworded review is not that
+   * person's review.
+   */
+  const handleImportReviews = async () => {
+    setImportBusy(true);
+    setImportResult(null);
+    try {
+      const parsed = JSON.parse(importText);
+      const reviews = Array.isArray(parsed) ? parsed : parsed?.reviews;
+      if (!Array.isArray(reviews)) throw new Error('Expected a JSON array of reviews.');
+      const r = await adminRequest<{ inserted: number; skipped: number; problems: string[] }>(
+        'POST', `/tenants/${id}/reviews/import`, { reviews });
+      const bits = [`Added ${r.inserted}`];
+      if (r.skipped) bits.push(`${r.skipped} already there`);
+      if (r.problems?.length) bits.push(`${r.problems.length} skipped: ${r.problems[0]}`);
+      setImportResult({ ok: true, text: bits.join(' · ') });
+      if (r.inserted) setImportText('');
+    } catch (err: any) {
+      setImportResult({ ok: false, text: err?.message || 'Could not import.' });
+    } finally {
+      setImportBusy(false);
     }
   };
 
@@ -636,6 +667,36 @@ function TenantDetailPage({ id }: { id: number }) {
             last pulled {new Date(reviewSummary.syncedAt).toLocaleDateString('en-GB')}.
           </p>
         )}
+
+        <div className="pt-4 border-t border-slate-200 space-y-3">
+          <h3 className="font-medium text-slate-900 text-sm">Import the rest by hand</h3>
+          <p className="text-xs text-slate-500">
+            Google only ever returns five. Paste the others here as JSON &mdash; an array of
+            <code className="mx-1 bg-slate-100 rounded px-1">{'{reviewerName, rating, content, platform, sourceCreatedAt}'}</code>
+            &mdash; transcribed word for word. Pasting the same list twice adds nothing.
+          </p>
+          <textarea
+            rows={5}
+            spellCheck={false}
+            placeholder='[{"reviewerName": "Jane Smith", "rating": 5, "content": "…", "platform": "Facebook", "sourceCreatedAt": "2020-03-09"}]'
+            className={`${FIELD} font-mono text-xs`}
+            value={importText}
+            onChange={e => setImportText(e.target.value)}
+          />
+          <button
+            type="button"
+            onClick={handleImportReviews}
+            disabled={importBusy || !importText.trim()}
+            className="inline-flex h-11 sm:h-9 items-center justify-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            {importBusy ? 'Importing…' : 'Import reviews'}
+          </button>
+          {importResult && (
+            <p className={`text-sm ${importResult.ok ? 'text-green-700' : 'text-red-600'}`}>
+              {importResult.ok ? '✓ ' : ''}{importResult.text}
+            </p>
+          )}
+        </div>
       </section>
 
       {/*

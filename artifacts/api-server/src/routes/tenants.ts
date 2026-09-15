@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { tenantsTable, tenantSettingsTable, leadsTable, projectsTable } from "@workspace/db";
+import { tenantsTable, tenantSettingsTable, leadsTable, projectsTable, reviewsTable } from "@workspace/db";
 import { eq, count, sql } from "drizzle-orm";
 import { requireAuth, requireSuperAdmin } from "../middlewares/auth";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
@@ -129,6 +129,83 @@ router.post("/tenants/:id/sync-google-reviews", requireSuperAdmin, async (req, r
   } catch (err: any) {
     req.log.error(err);
     res.status(500).json({ ok: false, reason: err?.message || "Sync failed" });
+  }
+});
+
+/**
+ * Import reviews a tenant already has elsewhere.
+ *
+ * Google's API returns five reviews and no more, so a business with forty-eight
+ * of them shows five. The rest exist, they are just not reachable through any
+ * API — and Facebook recommendations have no API worth the name at all. The
+ * only honest way to get them onto a tenant's own site is to transcribe them.
+ *
+ * These rows carry `external_id = NULL`, which matters twice over:
+ *   - the partial unique index only covers non-null external ids, so these
+ *     never collide with a synced review;
+ *   - the Google sync only ever touches rows it created, so an import is never
+ *     overwritten by the nightly sweep.
+ *
+ * Unlike a synced review, an imported one is a SNAPSHOT. If the customer later
+ * edits or deletes theirs, this copy does not change. That is a reason to show
+ * its original date, not to avoid importing it.
+ *
+ * Deduplicated on reviewer plus the opening of the text, so running the same
+ * paste twice adds nothing and a re-import after an edit is safe.
+ */
+router.post("/tenants/:id/reviews/import", requireSuperAdmin, async (req, res) => {
+  try {
+    const tenantId = Number(req.params.id);
+    if (!Number.isInteger(tenantId)) { res.status(400).json({ error: "Bad tenant id" }); return; }
+
+    const incoming = Array.isArray(req.body?.reviews) ? req.body.reviews : null;
+    if (!incoming) { res.status(400).json({ error: "Expected { reviews: [...] }" }); return; }
+    if (incoming.length > 200) { res.status(400).json({ error: "Too many at once — 200 maximum" }); return; }
+
+    const existing = await db.select({
+      name: reviewsTable.reviewerName,
+      content: reviewsTable.content,
+    }).from(reviewsTable).where(eq(reviewsTable.tenantId, tenantId));
+
+    const fingerprint = (name: string, content: string) =>
+      `${String(name).trim().toLowerCase()}|${String(content).trim().toLowerCase().slice(0, 60)}`;
+    const seen = new Set(existing.map(r => fingerprint(r.name ?? "", r.content ?? "")));
+
+    let inserted = 0, skipped = 0;
+    const problems: string[] = [];
+
+    for (const [i, r] of incoming.entries()) {
+      const name = typeof r?.reviewerName === "string" ? r.reviewerName.trim() : "";
+      const content = typeof r?.content === "string" ? r.content.trim() : "";
+      if (!name || !content) { problems.push(`#${i + 1}: needs a reviewerName and content`); continue; }
+
+      const key = fingerprint(name, content);
+      if (seen.has(key)) { skipped += 1; continue; }
+      seen.add(key);
+
+      const rating = Number(r?.rating);
+      const when = r?.sourceCreatedAt ? new Date(r.sourceCreatedAt) : null;
+
+      await db.insert(reviewsTable).values({
+        tenantId,
+        reviewerName: name,
+        content,
+        rating: Number.isFinite(rating) && rating >= 1 && rating <= 5 ? Math.round(rating) : 5,
+        platform: typeof r?.platform === "string" && r.platform.trim() ? r.platform.trim() : "Google",
+        sourceCreatedAt: when && !Number.isNaN(when.getTime()) ? when : null,
+        // Imported reviews are already public where they were written, so
+        // hiding them by default would only mean nobody notices the import
+        // worked. The owner can unpublish any of them.
+        published: true,
+      });
+      inserted += 1;
+    }
+
+    res.json({ inserted, skipped, problems });
+    if (inserted) invalidateTenantPageCache(tenantId).catch(() => {});
+  } catch (err: any) {
+    req.log.error(err);
+    res.status(500).json({ error: err?.message || "Import failed" });
   }
 });
 
