@@ -1293,6 +1293,163 @@ function ReviewsPage({ tenant, settings, reviews }: any) {
   );
 }
 
+/**
+ * The quote page.
+ *
+ * This route used to render the shared form and nothing else — no header, no
+ * hero, no reassurance, no way to reach anyone without going back. On the page
+ * where somebody has already decided to make contact, that is the worst place
+ * on the site to look like an unfinished paragraph.
+ *
+ * What a trade's customer is actually weighing up here is not features. It is:
+ * will this cost me to ask, how long until I hear back, are these people real,
+ * and can I just ring instead. So the page answers those four in order, and
+ * puts the phone and WhatsApp above the form rather than below it — plenty of
+ * people would rather talk, and making them scroll past a form to find a
+ * number loses the ones who would have rung.
+ *
+ * Every claim on it is the tenant's own: the rating and count come from their
+ * synced Google profile, the badges from their settings. Nothing is asserted
+ * on behalf of a business that has not told us it is true.
+ */
+function QuotePage({ tenantSlug, tenant, settings, reviews }: any) {
+  const phone = settings?.phone;
+  const hero = settings?.heroImageUrl;
+  const rating = settings?.googleRating ? Number(settings.googleRating) : null;
+  const total = settings?.googleReviewCount ? Number(settings.googleReviewCount) : null;
+  const area = settings?.serviceArea || settings?.serviceBase;
+
+  /**
+   * Reassurance, not process.
+   *
+   * The form's own panel already lists what happens after you press send, so
+   * repeating it here would be the same three sentences twice on one page.
+   * These answer the different question — the one that actually stops people
+   * filling a trade quote form, which is "what is this going to cost me just
+   * to ask, and am I going to get hounded".
+   */
+  const reassurance = [
+    {
+      icon: <TagIcon/>,
+      title: "It costs nothing to ask",
+      body: "No call-out charge for a quote. Most jobs can be priced from a description and a couple of photographs, without anyone coming out.",
+    },
+    {
+      icon: <BadgeIcon/>,
+      title: "A price in writing",
+      body: "With what is included spelled out, so you can hold it up against anyone else's and compare the same things.",
+    },
+    {
+      icon: <ShieldIcon/>,
+      title: "No obligation, no chasing",
+      body: "Take it away and think about it. If you want the work done we book a day that suits you, and if you do not, that is the end of it.",
+    },
+  ];
+
+  return (
+    <>
+      <PageSEO
+        title={`Get a free quote — ${tenant?.name}`}
+        description={`Tell ${tenant?.name} what you need and get a written, no-obligation price${area ? ` across ${area}` : ""}.`}
+      />
+
+      {/* Hero. The same treatment as a service page, because this page matters
+          more than any of them. */}
+      {/*
+        `isolate` and the navy background are both load-bearing, and leaving
+        them off is how this hero first rendered white text on a white page:
+        the photo and the shade sit at negative z-index, so without a stacking
+        context on the section they drop behind it entirely, and without a
+        background there is nothing left for white type to sit on. Same
+        structure as the service and area heroes, deliberately.
+      */}
+      <section className="bps-inner-hero relative isolate overflow-hidden" style={{ background: NAVY }} aria-labelledby="quote-heading">
+        {hero && (
+          <img
+            className="bps-hero-photo absolute inset-0 -z-20 h-full w-full object-cover"
+            src={hero}
+            alt=""
+            fetchPriority="high"
+            decoding="async"
+          />
+        )}
+        <div className="bps-hero-shade absolute inset-0 -z-10" aria-hidden="true"/>
+        <div className="mx-auto max-w-[1400px] px-5 sm:px-8 py-[64px] lg:py-[92px]">
+          <p className="text-[12px] font-bold tracking-[0.14em] mb-3" style={{ color: BLUE_BRIGHT }}>
+            GET A FREE QUOTE
+          </p>
+          <h1 id="quote-heading" className="font-bold text-white max-w-[820px]" style={{ fontSize: "clamp(32px,4.6vw,54px)", letterSpacing: "-0.04em", lineHeight: 1.08 }}>
+            Tell us what you need.<br />We&rsquo;ll come back with a price.
+          </h1>
+          <p className="mt-5 text-[17px] leading-[1.75] max-w-[620px] text-white/75">
+            No call-out charge to get a quote, and no obligation once you have it.
+            {area ? ` We cover ${area}.` : ""}
+          </p>
+
+          {/* The rating, from their real Google profile. */}
+          {rating !== null && (
+            <div className="mt-7 inline-flex items-center gap-3 rounded-[14px] px-4 py-3" style={{ background: "rgba(255,255,255,.1)", border: "1px solid rgba(255,255,255,.18)" }}>
+              <span className="flex gap-0.5" aria-hidden="true">
+                {Array.from({ length: 5 }).map((_, n) => <Star key={n}/>)}
+              </span>
+              <span className="text-[14.5px] font-semibold text-white">
+                {rating.toFixed(1)} on Google
+                {total ? <span className="font-medium text-white/65"> · {total} review{total === 1 ? "" : "s"}</span> : null}
+              </span>
+            </div>
+          )}
+
+          {/* Above the form on purpose: plenty of people would rather ring than
+              type, and burying the number under a form loses them. */}
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            {phone && (
+              <a href={telHref(phone)} className="bps-drop inline-flex items-center gap-3 h-[54px] px-5 rounded-[14px] font-semibold text-white" style={{ background: ORANGE }}>
+                <PhoneIcon color="#fff" className="w-5 h-5"/>
+                <span className="flex flex-col leading-tight text-left">
+                  <span className="text-[11.5px] font-normal text-white/75">Rather talk?</span>
+                  <span className="text-[17px] font-bold">{phone}</span>
+                </span>
+              </a>
+            )}
+            <WhatsAppInline settings={settings} tenant={tenant} label="Message on WhatsApp"/>
+          </div>
+        </div>
+      </section>
+
+      <TrustStrip settings={settings}/>
+
+      {/* The reason people do not fill in a trade quote form is rarely the
+          number of fields. It is not knowing whether asking will cost them
+          anything or start a fortnight of phone calls. */}
+      <section className="py-[62px]" style={{ background: "#fff" }}>
+        <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+          <h2 className="font-bold max-w-[620px]" style={{ color: TEXT, fontSize: "clamp(24px,2.8vw,32px)", letterSpacing: "-0.035em", lineHeight: 1.15 }}>
+            Asking costs you nothing.
+          </h2>
+          <div className="mt-8 grid sm:grid-cols-3 gap-5">
+            {reassurance.map(r => (
+              <div key={r.title} className="rounded-[18px] border p-6" style={{ borderColor: BORDER, background: PALE_2 }}>
+                <span className="inline-flex">{r.icon}</span>
+                <h3 className="mt-4 font-bold text-[18.5px]" style={{ color: TEXT, letterSpacing: "-0.02em" }}>{r.title}</h3>
+                <p className="mt-2.5 text-[14.5px] leading-[1.7]" style={{ color: BODY }}>{r.body}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <QuoteFormSection tenantSlug={tenantSlug} accent={BLUE_CTRL} panel={NAVY}/>
+
+      {/* Proof, immediately after the form rather than on a page nobody visits. */}
+      {reviews?.length > 0 && (
+        <Reviews reviews={reviews.slice(0, 3)} heading="People who have already had us out" settings={settings}/>
+      )}
+
+      <ClosingCta settings={settings}/>
+    </>
+  );
+}
+
 function ContactPage({ tenantSlug, tenant, settings }: any) {
   const phone = settings?.phone;
   // An email is long and a phone number is short, so they cannot share a type
@@ -1429,7 +1586,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
                 <Route path="/areas/:slug"><AreaDetail {...shared}/></Route>
                 <Route path="/privacy"><LegalPage tenant={tenant} title="Privacy Policy" body={settings?.privacyContent}/></Route>
                 <Route path="/terms"><LegalPage tenant={tenant} title="Terms & Conditions" body={settings?.termsContent}/></Route>
-                <Route path="/get-a-quote"><QuoteFormSection tenantSlug={tenantSlug} accent={BLUE_CTRL} panel={NAVY}/></Route>
+                <Route path="/get-a-quote"><QuotePage tenantSlug={tenantSlug} {...shared}/></Route>
                 <Route path="/contact"><ContactPage tenantSlug={tenantSlug} tenant={tenant} settings={settings}/></Route>
                 <Route path="/blog"><BlogIndexPage tenantSlug={tenantSlug} tenant={tenant} settings={settings}/></Route>
                 <Route path="/blog/:slug"><BlogArticlePage tenantSlug={tenantSlug} tenant={tenant} settings={settings} services={shared.services}/></Route>

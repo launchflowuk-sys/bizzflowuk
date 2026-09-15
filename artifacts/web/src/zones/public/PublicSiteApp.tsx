@@ -2910,9 +2910,9 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
     if (submitted) quoteSuccessRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [submitted]);
   const f = (field: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => setForm({ ...form, [field]: e.target.value });
-  const inputCls = "w-full rounded-lg border border-slate-200 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--qf-accent)] focus:border-[var(--qf-accent)] transition";
-  const labelCls = "block text-xs font-semibold uppercase tracking-wide mb-1";
-  const gridCls = "grid grid-cols-1 sm:grid-cols-2 gap-4";
+  const inputCls = "w-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 text-[16px] leading-tight placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[var(--qf-accent)] focus:border-[var(--qf-accent)] hover:border-slate-300 transition";
+  const labelCls = "block text-[13.5px] font-semibold text-slate-700 mb-2";
+  const gridCls = "grid grid-cols-1 sm:grid-cols-2 gap-5";
   // One branch per industry, and a GENERIC fallback for anything else.
   //
   // This used to be a two-way branch — construction, or "else". "Else" was AMO Rendering's
@@ -2988,12 +2988,12 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
 
   return (
       <section className="py-16 bg-white" style={{ ['--qf-accent' as any]: accent }}>
-        <div className="max-w-6xl mx-auto px-4 sm:px-6">
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 lg:gap-12">
 
             {/* Intro aside */}
             <aside className="lg:col-span-2 space-y-6">
-              <div className="rounded-2xl border border-slate-200 p-7 space-y-5 bg-white shadow-sm">
+              <div className="rounded-[20px] border border-slate-200 p-7 sm:p-8 space-y-5 bg-white shadow-sm">
                 <h2 className="text-xl font-bold" style={{ color: TEXT }}>Get A Clearer Starting Point</h2>
                 <p className="text-sm leading-relaxed" style={{ color: MUTED }}>{
                   isConstruction ? `The more detail you provide, the easier it is for ${businessName} to understand the scope of the works and give you an accurate price.`
@@ -3047,7 +3047,7 @@ export function QuoteFormSection({ tenantSlug, accent = BLUE, panel = NAVY }: { 
                   <a href={siteBase || '/'} style={{ backgroundColor: accent }} className="inline-flex items-center justify-center rounded-md px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition-opacity">Back to Home</a>
                 </div>
               ) : (
-                <form onSubmit={handleSubmit} className="space-y-5 bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+                <form onSubmit={handleSubmit} className="space-y-6 bg-white rounded-[20px] border border-slate-200 p-6 sm:p-9 shadow-sm">
 
                   {/* Quick Quote — every field required to submit, kept up front so the form
                       doesn't look longer than it has to be. Everything else (all optional) lives
