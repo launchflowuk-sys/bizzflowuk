@@ -733,12 +733,172 @@ export default function BizzFlowHome() {
           </div>
         </section>
 
+        {/* ── Flo ─────────────────────────────────────────────────────────── */}
+        {/*
+          The assistant was missing from this page entirely, which made the
+          product look like every other jobs app. It is the one thing here that
+          nobody else in this market has, so it gets its own section rather than
+          a bullet in a list.
+
+          The four headings are questions a real owner asks, not features. What
+          it can actually see — leads, quotes, invoices, projects, certificates,
+          properties, files — matches the snapshot the assistant is given, and
+          the note about never inventing a figure is a rule in its prompt, not
+          a claim invented for the page.
+        */}
+        <section id="flo" className="platform wrap section" style={{ paddingTop: 0 }}>
+          <div className="section-head reveal">
+            <div>
+              <p className="eyebrow">03 / ASK FLO</p>
+              <h2>
+                Ask your business a question.<br />
+                <span className="muted-heading">Get the real answer.</span>
+              </h2>
+            </div>
+            <p>
+              Flo can see your jobs, quotes, invoices<br />
+              and certificates. Only yours.
+            </p>
+          </div>
+          <div className="tool-row reveal">
+            <div>
+              <span>?</span>
+              <h3>&ldquo;Who owes me money?&rdquo;</h3>
+              <p>
+                The invoices actually overdue,<br />
+                with names and amounts.
+              </p>
+            </div>
+            <div>
+              <span>◷</span>
+              <h3>&ldquo;Which quotes went quiet?&rdquo;</h3>
+              <p>
+                The ones nobody answered, oldest<br />
+                first, while they are still worth chasing.
+              </p>
+            </div>
+            <div>
+              <span>▦</span>
+              <h3>&ldquo;Whose CP12 is due?&rdquo;</h3>
+              <p>
+                The certificates running out, before<br />
+                the customer rings to ask.
+              </p>
+            </div>
+            <div>
+              <span>£</span>
+              <h3>&ldquo;How did last month go?&rdquo;</h3>
+              <p>
+                What came in and what went out,<br />
+                off your own records.
+              </p>
+            </div>
+          </div>
+          <p className="reveal" style={{ marginTop: "30px", fontSize: "14px", lineHeight: 1.75, color: "var(--muted)", maxWidth: "58ch" }}>
+            It reads your business and changes nothing. It never invents a figure &mdash; if it
+            cannot see something it says so, which is worth a great deal more than a confident
+            wrong answer.
+          </p>
+        </section>
+
+        {/* ── Everything else ─────────────────────────────────────────────── */}
+        {/*
+          Eight things the platform does that the page never mentioned. Every
+          one is a screen that exists in the dashboard today; nothing here is
+          aspirational.
+        */}
+        <section className="platform wrap section" style={{ paddingTop: 0 }}>
+          <div className="section-head reveal">
+            <div>
+              <p className="eyebrow">04 / AND THE REST OF IT</p>
+              <h2>
+                The parts you would otherwise<br />
+                <span className="muted-heading">pay four companies for.</span>
+              </h2>
+            </div>
+            <p>
+              All of it inside the £99.<br />
+              No add-ons, no per-user charge.
+            </p>
+          </div>
+
+          <div className="tool-row reveal">
+            <div>
+              <span>▸</span>
+              <h3>Card payments</h3>
+              <p>
+                Send a payment link by text. The money<br />
+                lands in your own Stripe or Square.
+              </p>
+            </div>
+            <div>
+              <span>◫</span>
+              <h3>Cash flow</h3>
+              <p>
+                What came in, what went out,<br />
+                and what is actually left this month.
+              </p>
+            </div>
+            <div>
+              <span>▤</span>
+              <h3>Expenses</h3>
+              <p>
+                Materials, fuel and tools logged<br />
+                against the job that used them.
+              </p>
+            </div>
+            <div>
+              <span>▦</span>
+              <h3>Gas Safe certificates</h3>
+              <p>
+                Issued, stored, and next year&rsquo;s<br />
+                renewal raised before it expires.
+              </p>
+            </div>
+          </div>
+
+          <div className="tool-row reveal">
+            <div>
+              <span>▩</span>
+              <h3>A QR code for the van</h3>
+              <p>
+                Someone scans it on the side of your<br />
+                van and the enquiry is in your pipeline.
+              </p>
+            </div>
+            <div>
+              <span>⌂</span>
+              <h3>Properties</h3>
+              <p>
+                Every visit, certificate and invoice held<br />
+                against the address. Landlords stop asking twice.
+              </p>
+            </div>
+            <div>
+              <span>★</span>
+              <h3>Your Google reviews</h3>
+              <p>
+                Pulled onto your own site and refreshed<br />
+                daily. You never retype one.
+              </p>
+            </div>
+            <div>
+              <span>❏</span>
+              <h3>Photos and files</h3>
+              <p>
+                Job photographs and paperwork<br />
+                attached to the work they belong to.
+              </p>
+            </div>
+          </div>
+        </section>
+
         {/* ── Workflow ────────────────────────────────────────────────────── */}
         <section className="connection-section section" id="how-it-works">
           <div className="wrap">
             <div className="section-head reveal">
               <div>
-                <p className="eyebrow">02 / A BETTER WORKING DAY</p>
+                <p className="eyebrow">05 / A BETTER WORKING DAY</p>
                 <h2>
                   One job. One journey.<br />
                   <span>Nothing falls through the gaps.</span>
@@ -790,7 +950,7 @@ export default function BizzFlowHome() {
             </div>
           </div>
           <div className="industry-copy reveal">
-            <p className="eyebrow">03 / YOUR TRADE. YOUR PLATFORM.</p>
+            <p className="eyebrow">06 / YOUR TRADE. YOUR PLATFORM.</p>
             <h2>
               Real businesses.<br />
               Real graft.<br />
@@ -848,8 +1008,9 @@ export default function BizzFlowHome() {
           </h2>
           <p style={{ maxWidth: "62ch", margin: "18px auto 0" }}>
             Website, hosting, and the whole toolkit — customers, quotes, invoices, card payments, projects,
-            scheduling, cash flow, certificates and the customer portal. No setup fee. No per-user charge.
-            No separate bill for the site.
+            scheduling, cash flow, expenses, certificates, the customer portal and Flo, the assistant that
+            can answer questions about your own business. No setup fee. No per-user charge. No separate
+            bill for the site.
           </p>
 
           <div
