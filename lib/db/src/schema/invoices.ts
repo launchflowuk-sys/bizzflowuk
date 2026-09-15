@@ -51,6 +51,26 @@ export const invoicesTable = pgTable("invoices", {
   notes: text("notes"),
   terms: text("terms"),
 
+  /**
+   * Repeating work (migration 0046).
+   *
+   * Only the FIRST invoice in a series carries `recurrence` — it is a real
+   * invoice the customer really received, and it doubles as the template. Each
+   * cycle the sweep clones it and points the clone back here through
+   * `recurrenceSourceId`. The clone carries no recurrence of its own, or every
+   * copy would start a series and the tenant would wake up to a fork bomb made
+   * of invoices.
+   */
+  recurrence: text("recurrence"),
+  /** The date the next copy is due. Advanced by the sweep after each clone. */
+  recurrenceNextOn: date("recurrence_next_on"),
+  /** Null runs until someone stops it. */
+  recurrenceUntil: date("recurrence_until"),
+  /** Off by default: a wrong draft is recoverable, a wrong sent invoice is not. */
+  recurrenceAutoSend: boolean("recurrence_auto_send").notNull().default(false),
+  recurrenceCount: integer("recurrence_count").notNull().default(0),
+  recurrenceSourceId: integer("recurrence_source_id"),
+
   sentAt: timestamp("sent_at", { withTimezone: true }),
   paidAt: timestamp("paid_at", { withTimezone: true }),
   voidedAt: timestamp("voided_at", { withTimezone: true }),
@@ -159,6 +179,15 @@ export type Expense = typeof expensesTable.$inferSelect;
 
 export const INVOICE_STATUSES = ["draft", "sent", "part_paid", "paid", "overdue", "void"] as const;
 export type InvoiceStatus = (typeof INVOICE_STATUSES)[number];
+
+/**
+ * The cadences a trade actually bills on. Matched by a CHECK constraint in
+ * migration 0046, so adding one here means adding it there too.
+ */
+export const INVOICE_RECURRENCES = [
+  "weekly", "fortnightly", "monthly", "quarterly", "six_monthly", "yearly",
+] as const;
+export type InvoiceRecurrence = (typeof INVOICE_RECURRENCES)[number];
 
 export const EXPENSE_CATEGORIES = [
   "materials", "fuel", "tools", "subcontractor", "insurance", "vehicle", "other",

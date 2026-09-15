@@ -141,6 +141,37 @@ async function main() {
   const payVoid = await api("POST", `/invoices/${id}/payments`, { amount: 10 });
   check("a void invoice cannot take a payment", payVoid.status === 409, `status ${payVoid.status}`);
 
+  // ── 8b. Repeating invoices ────────────────────────────────────────────────
+  //
+  // The date arithmetic here is the part that costs real money if it drifts. A
+  // series anchored on the 31st must bill on the 28th in February and go BACK
+  // to the 31st in March — stepping a Date by a month from 31 January lands on
+  // 2 or 3 March, which would walk a "monthly" invoice into the middle of the
+  // month over a couple of years.
+  const rec = await api("POST", "/invoices", {
+    issuedOn: "2026-01-31",
+    items: [{ description: "Monthly maintenance", quantity: 1, unitPrice: 150 }],
+  });
+  check("invoice for the series created", rec.status === 201, `status ${rec.status}`);
+  const recId = rec.body?.id;
+
+  const monthly = await api("PUT", `/invoices/${recId}/recurrence`, { recurrence: "monthly" });
+  check("monthly schedule accepted", monthly.status === 200, `status ${monthly.status}`);
+  check("31 Jan + monthly clamps to 28 Feb",
+    monthly.body?.recurrenceNextOn === "2026-02-28", monthly.body?.recurrenceNextOn);
+
+  const bad = await api("PUT", `/invoices/${recId}/recurrence`, { recurrence: "daily" });
+  check("an unknown cadence is rejected", bad.status === 400, `status ${bad.status}`);
+
+  const early = await api("PUT", `/invoices/${recId}/recurrence`, {
+    recurrence: "monthly", until: "2026-01-01",
+  });
+  check("an end date before the next issue is rejected", early.status === 422, `status ${early.status}`);
+
+  const stopped = await api("PUT", `/invoices/${recId}/recurrence`, { recurrence: null });
+  check("a series can be stopped", stopped.body?.recurrence === null, String(stopped.body?.recurrence));
+  check("stopping clears the next date", stopped.body?.recurrenceNextOn === null, String(stopped.body?.recurrenceNextOn));
+
   // ── 9. Expenses ───────────────────────────────────────────────────────────
   const exp = await api("POST", "/expenses", {
     supplier: "Plumb Center", category: "materials", spentOn: today, net: 120, vatAmount: 24,

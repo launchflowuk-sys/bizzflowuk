@@ -3,12 +3,14 @@ import { db } from "@workspace/db";
 import {
   invoicesTable, invoiceItemsTable, invoicePaymentsTable,
   quotesTable, quoteItemsTable, customersTable,
-  tenantsTable, tenantSettingsTable,
+  tenantsTable, tenantSettingsTable, INVOICE_RECURRENCES,
 } from "@workspace/db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
 import { z } from "zod/v4";
 import { requireTenantAccess } from "../middlewares/auth";
 import { computeTotals, deriveStatus, outstanding } from "../lib/invoices/totals";
+import { nextInvoiceReference } from "../lib/invoices/reference";
+import { firstOccurrenceAfter } from "../lib/invoices/recurring";
 
 const router = Router();
 
@@ -42,35 +44,6 @@ const paymentSchema = z.object({
   reference: z.string().optional(),
   notes: z.string().optional(),
 });
-
-/**
- * Next invoice reference, e.g. "BPS-INV-0007".
- *
- * Shares the per-tenant prefix with quotes and certificates so a business's
- * paperwork reads as one set of documents. Counts only references already on this
- * exact prefix, so changing the prefix starts a fresh sequence.
- */
-async function nextReference(tenantId: number): Promise<string> {
-  const [settings] = await db.select({ prefix: tenantSettingsTable.quoteRefPrefix })
-    .from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
-  // A tenant with no prefix set gets a plain "INV-0001" rather than "INV-INV-0001".
-  const prefix = settings?.prefix ? settings.prefix.toUpperCase() : null;
-  const base = prefix ? `${prefix}-INV` : "INV";
-
-  const rows = await db.select({ reference: invoicesTable.reference })
-    .from(invoicesTable)
-    .where(and(
-      eq(invoicesTable.tenantId, tenantId),
-      sql`${invoicesTable.reference} ~ ${`^${base}-[0-9]{1,6}$`}`,
-    ));
-
-  let max = 0;
-  for (const r of rows) {
-    const n = Number(r.reference.slice(base.length + 1));
-    if (Number.isFinite(n) && n > max) max = n;
-  }
-  return `${base}-${String(max + 1).padStart(4, "0")}`;
-}
 
 /**
  * The tenant's registration is the authority on VAT — nothing else can override
@@ -258,7 +231,7 @@ router.post("/invoices", requireTenantAccess, async (req: any, res) => {
       customerId: input.customerId ?? null,
       quoteId: input.quoteId ?? null,
       projectId: input.projectId ?? null,
-      reference: await nextReference(tenantId),
+      reference: await nextInvoiceReference(tenantId),
       status: "draft",
       issuedOn,
       dueOn,
@@ -329,7 +302,7 @@ router.post("/quotes/:id/convert-invoice", requireTenantAccess, async (req: any,
       tenantId,
       customerId: quote.customerId,
       quoteId: quote.id,
-      reference: await nextReference(tenantId),
+      reference: await nextInvoiceReference(tenantId),
       status: "draft",
       issuedOn,
       dueOn: due.toISOString().slice(0, 10),
@@ -409,6 +382,90 @@ router.patch("/invoices/:id", requireTenantAccess, async (req: any, res) => {
     const updated = await recalc(id, tenantId);
     const items = (await loadItems([id])).get(id) ?? [];
     res.json({ ...updated, items, outstanding: outstanding(updated!.total, updated!.amountPaid) });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+// ── Repeating work ───────────────────────────────────────────────────────────
+
+const recurrenceSchema = z.object({
+  recurrence: z.enum(INVOICE_RECURRENCES).nullable(),
+  until: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable().optional(),
+  autoSend: z.boolean().optional(),
+});
+
+/**
+ * Turn this invoice into the head of a repeating series, change its cadence,
+ * or stop it.
+ *
+ * The invoice itself is the template — it is a real invoice the customer
+ * really received, and each cycle the sweep clones it. Passing
+ * `recurrence: null` stops the series; the copies already issued stay exactly
+ * where they are, because they are real invoices and some of them are paid.
+ */
+router.put("/invoices/:id/recurrence", requireTenantAccess, async (req: any, res) => {
+  try {
+    const id = Number(req.params.id);
+    const tenantId = tid(req);
+    const [inv] = await db.select().from(invoicesTable)
+      .where(and(eq(invoicesTable.id, id), eq(invoicesTable.tenantId, tenantId))).limit(1);
+    if (!inv) { res.status(404).json({ error: "Not found" }); return; }
+    if (inv.status === "void") { res.status(409).json({ error: "A void invoice cannot repeat." }); return; }
+
+    const parsed = recurrenceSchema.safeParse(req.body);
+    if (!parsed.success) { res.status(400).json({ error: "Invalid schedule", details: parsed.error.issues }); return; }
+    const { recurrence, until, autoSend } = parsed.data;
+
+    if (recurrence === null) {
+      await db.update(invoicesTable)
+        .set({ recurrence: null, recurrenceNextOn: null, recurrenceUntil: null })
+        .where(eq(invoicesTable.id, id));
+      const stopped = await recalc(id, tenantId);
+      res.json({ ...stopped, items: (await loadItems([id])).get(id) ?? [] });
+      return;
+    }
+
+    // A copy cannot become a head. Allowing it would fork the series, and the
+    // customer would start getting two of everything.
+    if (inv.recurrenceSourceId) {
+      res.status(409).json({
+        error: "This invoice was issued by a repeating series. Change the schedule on the first invoice in the series instead.",
+      });
+      return;
+    }
+
+    const issuedOn = inv.issuedOn ?? new Date().toISOString().slice(0, 10);
+    // Counted from the invoice that already exists, so the next copy is the
+    // NEXT one — setting a monthly schedule in March must not immediately
+    // reissue March.
+    const nextOn = firstOccurrenceAfter(issuedOn, recurrence);
+
+    if (until && until < nextOn) {
+      res.status(422).json({ error: "That end date is before the next invoice would be due." });
+      return;
+    }
+
+    await db.update(invoicesTable).set({
+      recurrence,
+      recurrenceNextOn: nextOn,
+      recurrenceUntil: until ?? null,
+      ...(autoSend === undefined ? {} : { recurrenceAutoSend: autoSend }),
+    }).where(eq(invoicesTable.id, id));
+
+    const updated = await recalc(id, tenantId);
+    res.json({ ...updated, items: (await loadItems([id])).get(id) ?? [] });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+/** Every invoice this series has produced, newest first. */
+router.get("/invoices/:id/series", requireTenantAccess, async (req: any, res) => {
+  try {
+    const id = Number(req.params.id);
+    const tenantId = tid(req);
+    const rows = await db.select().from(invoicesTable).where(and(
+      eq(invoicesTable.tenantId, tenantId),
+      eq(invoicesTable.recurrenceSourceId, id),
+    )).orderBy(desc(invoicesTable.issuedOn));
+    res.json(rows.map(r => ({ ...r, outstanding: outstanding(r.total, r.amountPaid) })));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -510,4 +567,4 @@ router.delete("/invoices/:id", requireTenantAccess, async (req: any, res) => {
 });
 
 export default router;
-export { nextReference, taxSettings, loadItems, recalc };
+export { taxSettings, loadItems, recalc };

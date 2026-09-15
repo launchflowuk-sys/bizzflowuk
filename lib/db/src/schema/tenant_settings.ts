@@ -96,6 +96,20 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   invoiceTerms: text("invoice_terms"),
   paymentDays: integer("payment_days").notNull().default(14),
 
+  /**
+   * How to actually pay the invoice (migration 0046).
+   *
+   * Every invoice this platform sent before now told the customer what they
+   * owed and nothing about where to send it. For a trade paid by bank transfer
+   * that is the most important block on the page.
+   */
+  bankAccountName: text("bank_account_name"),
+  bankName: text("bank_name"),
+  bankSortCode: text("bank_sort_code"),
+  bankAccountNumber: text("bank_account_number"),
+  /** Anything else: "reference the invoice number", "we take card on the day". */
+  paymentInstructions: text("payment_instructions"),
+
   /** Separate from `phone`, because a landline cannot receive WhatsApp (0037). */
   whatsappNumber: text("whatsapp_number"),
   // Per-event, per-channel notification toggles

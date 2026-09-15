@@ -3,6 +3,7 @@ import { timingSafeEqual } from "node:crypto";
 import { sweepRenewals } from "../lib/certificates/renewals";
 import { resetDemoWorkspace } from "../lib/demo/reset";
 import { runAutomationsForAllTenants } from "./automations";
+import { sweepRecurringInvoices } from "../lib/invoices/recurring";
 
 const router = Router();
 
@@ -59,6 +60,25 @@ router.post("/internal/jobs/automations-daily", async (req: any, res) => {
   }
 });
 
+
+/**
+ * Issue the invoices that fell due today on every repeating series.
+ *
+ * Separate from automations-daily on purpose: this creates money documents, so
+ * when something goes wrong it needs to be obvious which sweep did it and
+ * re-runnable on its own. Catching up is safe -- a copy already issued for a
+ * date has already advanced that series past it.
+ */
+router.post("/internal/jobs/recurring-invoices", async (req: any, res) => {
+  if (!secretOk(req.get("x-jobs-secret"))) { res.status(404).json({ error: "Not found" }); return; }
+  try {
+    const result = await sweepRecurringInvoices();
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
 
 /**
  * Put the public demo workspace back how it was, on demand.
