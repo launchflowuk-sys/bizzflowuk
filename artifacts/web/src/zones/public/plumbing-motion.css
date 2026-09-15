@@ -847,29 +847,80 @@
   .bps-mega-item:hover .bps-mega-icon{ transform:scale(1.08) rotate(-4deg) }
 }
 
-/* Drawer sub-lists, so a phone reaches every service and town too. */
-.bps-drawer-group{
-  animation:bpsDrawerItem 420ms var(--bps-ease-settle) both;
-  animation-delay:calc(140ms + var(--i) * 52ms);
-  padding-top:18px;
+/* Drawer sub-lists, so a phone reaches every service and town too.
+ *
+ * Two things were wrong. They were a different component from the links above
+ * -- `display:block` 17px rows with no arrow and no hairline rhythm, sitting
+ * under 58px flex rows that had both -- so the drawer looked like it stopped
+ * being designed halfway down. And every service and every town was printed
+ * out in full, which made the menu several screens deep: whatever you opened
+ * it for was below a list you had to scroll past first.
+ *
+ * Both are fixed by the same move. Each group is now a single row identical to
+ * the links above it, which expands in place. Closed, the drawer is just the
+ * top-level nav. Open, the children are plainly children -- indented behind a
+ * rail, a size down, a lighter weight -- rather than a second kind of list. */
+.bps-drawer-group{ display:flex; flex-direction:column }
+
+/* The row itself carries .bps-drawer-link, so it inherits that anatomy and
+   entrance stagger wholesale. Only the chevron is added. */
+.bps-drawer-chevron{
+  display:inline-flex; opacity:.4;
+  transition:transform 280ms var(--bps-ease-settle), opacity 200ms ease-out, color 200ms ease-out;
 }
-.bps-drawer-grouphead{
-  margin:0 0 6px;
-  font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;
-  color:var(--bps-blue-bright);
+.bps-drawer-toggle.is-open{ color:#fff }
+.bps-drawer-toggle.is-open .bps-drawer-chevron{
+  transform:rotate(180deg); opacity:1; color:var(--bps-blue-bright);
 }
+
+/*
+ * 0fr -> 1fr animates to the content's own height with no JavaScript
+ * measurement and no magic max-height that clips a long list. `min-height:0`
+ * on the inner track is what lets the row actually collapse to nothing.
+ */
+.bps-drawer-sublist{
+  display:grid; grid-template-rows:0fr;
+  transition:grid-template-rows 320ms var(--bps-ease-settle);
+}
+.bps-drawer-sublist > div{ overflow:hidden; min-height:0 }
+.bps-drawer-sublist[data-open="true"]{ grid-template-rows:1fr }
+
+/* The rail is what says "these belong to the row above". */
+.bps-drawer-sublist > div{
+  margin-left:3px; padding-left:15px;
+  border-left:2px solid rgba(255,255,255,.10);
+}
+
+/* Same flex row, arrow, hairline and press-slide as .bps-drawer-link, one
+   step quieter: 17px against 20px, medium against semibold, fainter arrow. */
 .bps-drawer-sub{
-  display:block; width:100%; text-align:left;
-  padding:11px 4px; border:0; background:none; cursor:pointer;
-  color:rgba(255,255,255,.76); font-size:15.5px;
-  border-bottom:1px solid rgba(255,255,255,.06);
-  transition:color 180ms ease-out, padding-left 220ms var(--bps-ease-settle);
+  display:flex; align-items:center; justify-content:space-between; gap:14px;
+  width:100%; min-height:48px; padding:6px 4px;
+  color:rgba(255,255,255,.78);
+  font-size:17px; font-weight:500; letter-spacing:-0.015em;
+  text-align:left; cursor:pointer;
+  border:0; background:none;
+  border-bottom:1px solid rgba(255,255,255,.07);
+  transition:color 200ms ease-out, padding-left 240ms var(--bps-ease-settle);
+}
+.bps-drawer-sub svg{
+  flex-shrink:0; opacity:.28;
+  transition:opacity 200ms ease-out, transform 240ms var(--bps-ease-settle);
 }
 .bps-drawer-sub:hover,
-.bps-drawer-sub:active{ color:#fff; padding-left:8px }
+.bps-drawer-sub:active{ color:#fff; padding-left:10px }
+.bps-drawer-sub:hover svg,
+.bps-drawer-sub:active svg{ opacity:1; transform:translate(2px,-2px); color:var(--bps-blue-bright) }
+
+/* The way out of the group to its own landing page. Last row, so no hairline. */
+.bps-drawer-suball{
+  color:var(--bps-blue-bright); font-weight:600; border-bottom:0;
+}
+.bps-drawer-suball svg{ opacity:.7 }
 
 @media (prefers-reduced-motion:reduce){
-  .bps-mega, .bps-drawer-group{ animation:none !important }
+  .bps-mega{ animation:none !important }
+  .bps-drawer-sublist, .bps-drawer-chevron{ transition:none !important }
   .bps-mega-item, .bps-mega-icon, .bps-drawer-sub{ transition:none !important }
 }
 

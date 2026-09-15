@@ -110,6 +110,15 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
   const [open, setOpen] = useState(false);
   const [mega, setMega] = useState<null | "services" | "areas">(null);
   const [closing, setClosing] = useState(false);
+  /**
+   * Which drawer section is expanded, or none.
+   *
+   * One at a time, and all closed to begin with. Every service and every town
+   * printed out in full made the drawer several screens deep, so the thing you
+   * opened the menu for was below the fold on a list you had to scroll past.
+   * Collapsed, the top level is short enough to read at a glance.
+   */
+  const [openGroup, setOpenGroup] = useState<null | "services" | "areas">(null);
   const [, navigate] = useLocation();
   const base = useSiteBase();
   const phone = settings?.phone;
@@ -282,27 +291,57 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
                   <ArrowUpRight className="w-4 h-4"/>
                 </button>
               ))}
+
+              {/*
+                Services and areas are rendered as peers of the links above —
+                the same 58px row, the same hairline, the same stagger — that
+                expand in place rather than as a second kind of list dumped
+                underneath.
+              */}
+              {([
+                { key: "services" as const, label: "Our services", href: "/services", items: services || [] },
+                { key: "areas" as const, label: "Where we work", href: "/areas", items: areas || [] },
+              ]).filter(g => g.items.length > 0).map((g, gi) => {
+                const expanded = openGroup === g.key;
+                return (
+                  <div className="bps-drawer-group" key={g.key}>
+                    <button
+                      type="button"
+                      className={`bps-drawer-link bps-drawer-toggle${expanded ? " is-open" : ""}`}
+                      style={{ ["--i" as any]: NAV_LINKS.length + gi }}
+                      aria-expanded={expanded}
+                      onClick={() => setOpenGroup(expanded ? null : g.key)}
+                    >
+                      <span>{g.label}</span>
+                      <span className="bps-drawer-chevron" aria-hidden="true">
+                        <Icon d="M6 9l6 6 6-6" className="w-4 h-4" color="currentColor" strokeWidth={2.2}/>
+                      </span>
+                    </button>
+
+                    {/* grid-template-rows 0fr→1fr animates to the content's own
+                        height without measuring it in JavaScript. */}
+                    <div className="bps-drawer-sublist" data-open={expanded}>
+                      <div>
+                        {g.items.map((it: any) => (
+                          <button key={it.slug} type="button" className="bps-drawer-sub"
+                            tabIndex={expanded ? 0 : -1}
+                            onClick={() => closeDrawer(() => navigate(`${g.href}/${it.slug}`))}>
+                            <span>{it.name}</span>
+                            <ArrowUpRight className="w-4 h-4"/>
+                          </button>
+                        ))}
+                        <button type="button" className="bps-drawer-sub bps-drawer-suball"
+                          tabIndex={expanded ? 0 : -1}
+                          onClick={() => closeDrawer(() => navigate(g.href))}>
+                          <span>{g.key === "services" ? "All services" : "All areas"}</span>
+                          <ArrowUpRight className="w-4 h-4"/>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-
-            {(services || []).length > 0 && (
-              <div className="bps-drawer-group" style={{ ["--i" as any]: NAV_LINKS.length }}>
-                <p className="bps-drawer-grouphead">Our services</p>
-                {(services || []).map((s: any) => (
-                  <button key={s.slug} type="button" className="bps-drawer-sub"
-                    onClick={() => closeDrawer(() => navigate(`/services/${s.slug}`))}>{s.name}</button>
-                ))}
-              </div>
-            )}
-
-            {(areas || []).length > 0 && (
-              <div className="bps-drawer-group" style={{ ["--i" as any]: NAV_LINKS.length + 1 }}>
-                <p className="bps-drawer-grouphead">Where we work</p>
-                {(areas || []).map((a: any) => (
-                  <button key={a.slug} type="button" className="bps-drawer-sub"
-                    onClick={() => closeDrawer(() => navigate(`/areas/${a.slug}`))}>{a.name}</button>
-                ))}
-              </div>
-            )}
 
             <div className="bps-drawer-foot" style={{ ["--i" as any]: NAV_LINKS.length + 2 }}>
               {phone && (

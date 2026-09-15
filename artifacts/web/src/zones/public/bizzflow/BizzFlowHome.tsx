@@ -402,6 +402,24 @@ export default function BizzFlowHome() {
   const trade = INDUSTRIES[industry];
   const closeMenu = () => setMenuOpen(false);
 
+  /**
+   * While the full-screen menu is open, the page behind it must not scroll —
+   * otherwise a swipe on the sheet drags the homepage underneath and the user
+   * closes the menu to find themselves somewhere else entirely. Escape closes
+   * it, because a full-screen overlay with no keyboard exit is a trap.
+   */
+  useEffect(() => {
+    if (!menuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setMenuOpen(false); };
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [menuOpen]);
+
   return (
     <div className={`bf ${revealClass}`.trim()} ref={rootRef}>
       <div className="scroll-meter" aria-hidden="true" ref={meterRef} />
@@ -411,14 +429,16 @@ export default function BizzFlowHome() {
           <BizzFlowSymbol />
           <BizzFlowWordmark />
         </Link>
-        <nav aria-label="Main navigation" className={menuOpen ? "open" : undefined}>
-          <a href="#platform" onClick={closeMenu}>The platform</a>
-          <a href="#industries" onClick={closeMenu}>Who it's for</a>
-          <a href="#how-it-works" onClick={closeMenu}>How it works</a>
-          <a href="#pricing" onClick={closeMenu}>Pricing</a>
+        <nav aria-label="Main navigation">
+          <a href="#platform">The platform</a>
+          <a href="#industries">Who it's for</a>
+          <a href="#how-it-works">How it works</a>
+          <a href="#pricing">Pricing</a>
         </nav>
-        <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <button type="button" onClick={demo.open} className="text-link" style={{ whiteSpace: "nowrap", background: "none", border: 0, cursor: "pointer", font: "inherit", color: "inherit" }}>
+        {/* No inline layout here: an inline style beats every media query, which
+            is precisely what stopped the phone rules from ever applying. */}
+        <div className="header-actions">
+          <button type="button" onClick={demo.open} className="text-link demo-link" style={{ whiteSpace: "nowrap", background: "none", border: 0, cursor: "pointer", font: "inherit", color: "inherit" }}>
             {demo.busy ? "Opening…" : "See the demo"}
           </button>
           <Link href="/signup" className="button small dark">
@@ -428,13 +448,52 @@ export default function BizzFlowHome() {
         <button
           type="button"
           className="menu-toggle"
-          aria-label={menuOpen ? "Close menu" : "Open menu"}
+          aria-label="Open menu"
           aria-expanded={menuOpen}
-          onClick={() => setMenuOpen(open => !open)}
+          aria-controls="bf-mobile-menu"
+          onClick={() => setMenuOpen(true)}
         >
-          ☰
+          <span className="menu-bars" aria-hidden="true"><i /><i /></span>
         </button>
       </header>
+
+      {/*
+        The full-screen menu. Always mounted so it can transition both ways;
+        `visibility: hidden` when closed keeps its links out of the tab order.
+      */}
+      <div id="bf-mobile-menu" className={`mobile-menu${menuOpen ? " open" : ""}`} aria-hidden={!menuOpen}>
+        <div className="mobile-menu-top stagger">
+          <Link href="/" className="brand" onClick={closeMenu} aria-label="BizzFlowUK home">
+            <BizzFlowSymbol />
+            <BizzFlowWordmark />
+          </Link>
+          <button type="button" className="menu-close" onClick={closeMenu} aria-label="Close menu">
+            <span aria-hidden="true">✕</span>
+          </button>
+        </div>
+
+        <nav className="stagger" aria-label="Mobile navigation">
+          <a href="#platform" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>The platform <i aria-hidden="true">↗</i></a>
+          <a href="#industries" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>Who it&rsquo;s for <i aria-hidden="true">↗</i></a>
+          <a href="#how-it-works" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>How it works <i aria-hidden="true">↗</i></a>
+          <a href="#pricing" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>Pricing <i aria-hidden="true">↗</i></a>
+        </nav>
+
+        <div className="mobile-menu-cta stagger">
+          <button
+            type="button"
+            className="button ghost"
+            tabIndex={menuOpen ? 0 : -1}
+            onClick={() => { closeMenu(); demo.open(); }}
+          >
+            {demo.busy ? "Opening…" : "See the demo"} <span aria-hidden="true">↗</span>
+          </button>
+          <Link href="/signup" className="button teal-bg" onClick={closeMenu} tabIndex={menuOpen ? 0 : -1}>
+            Start free for 7 days <span aria-hidden="true">↗</span>
+          </Link>
+          <p className="mobile-menu-note">No card needed. Your website built inside the trial.</p>
+        </div>
+      </div>
 
       <main>
         {/* ── Hero ────────────────────────────────────────────────────────── */}

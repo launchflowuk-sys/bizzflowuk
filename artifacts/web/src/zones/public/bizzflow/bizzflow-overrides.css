@@ -100,3 +100,336 @@
     align-items: start;
   }
 }
+
+/* -----------------------------------------------------------------------------
+ * 4. An industrial display face for the headlines.
+ *
+ * The reference sets every heading in DM Sans with fixed pixel tracking:
+ * `letter-spacing:-3.5px` on the h1, tightening to -2.8px under 760px. That is
+ * the readability problem. Tracking in px does not scale with the type, so at
+ * the mobile clamp floor of 47px it removes roughly 6% of every letter's
+ * advance and the words close up into a single mass — worst on the round
+ * shapes, which is why "Great at your trade." reads as a smear on a phone.
+ *
+ * Two changes, and the second matters more than the first:
+ *
+ *   a. Archivo replaces DM Sans for display sizes only. It is a grotesque cut
+ *      for high-impact headlines — squarer counters, flatter terminals, a much
+ *      sturdier bone structure than DM Sans's geometric humanism. It reads as
+ *      workwear rather than software, which is the register this audience
+ *      actually lives in, and it holds together at heavy weights where DM Sans
+ *      starts to blur.
+ *
+ *   b. All display tracking moves to `em`, so it scales WITH the type instead
+ *      of eating a fixed number of pixels out of small text. This alone fixes
+ *      the phone.
+ *
+ * Body copy stays DM Sans. The contrast between a sturdy display face and a
+ * softer text face is the point; setting everything in Archivo would read as
+ * shouting.
+ *
+ * No new font file: `@fontsource-variable/archivo` is already a dependency and
+ * already imported by src/index.css, so the family is loaded app-wide and the
+ * dashboard is set in it too. Reaching for the same face here makes the
+ * marketing page and the product look like one product.
+ * -------------------------------------------------------------------------- */
+.bf h1,
+.bf h2,
+.bf .feature-card h3,
+.bf .journey-step h3,
+.bf .photo-caption strong,
+.bf .brand,
+.bf-demo .view-heading h1,
+.bf-demo .workspace-kpis strong {
+  font-family: 'Archivo Variable', 'DM Sans', Arial, sans-serif;
+}
+
+/*
+ * Tracking in em, not px, at every size. These sit in the overrides file, which
+ * is imported after the port, so they also beat the port's own media queries —
+ * media queries add no specificity, so source order decides.
+ */
+.bf h1 {
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1.03;
+  /* A slightly lower floor than the port's 46px: Archivo has a taller x-height
+     and sets visually larger at the same nominal size. */
+  font-size: clamp(42px, 4.4vw, 64px);
+  text-wrap: balance;
+}
+
+.bf h2 {
+  font-weight: 650;
+  letter-spacing: -0.024em;
+}
+
+.bf .feature-card h3,
+.bf .journey-step h3 {
+  letter-spacing: -0.022em;
+}
+
+.bf .photo-caption strong {
+  letter-spacing: -0.02em;
+}
+
+/* The wordmark is set tighter than anything else on the page and is the one
+   place the old -1.7px was doing real work; keep the effect, in em. */
+.bf .brand {
+  letter-spacing: -0.055em;
+  font-weight: 800;
+}
+
+@media (max-width: 760px) {
+  .bf h1 {
+    /* 8.5vw at 390px is 33px, so the port's clamp always pinned to its 47px
+       floor and never actually scaled. This one does. */
+    font-size: clamp(36px, 10vw, 52px);
+    letter-spacing: -0.028em;
+    line-height: 1.06;
+  }
+  .bf h2,
+  .bf .section-head h2 {
+    font-size: clamp(27px, 7.6vw, 35px);
+    letter-spacing: -0.02em;
+  }
+  .bf .statement-section h2 {
+    font-size: clamp(25px, 7.2vw, 32px);
+  }
+}
+
+/* -----------------------------------------------------------------------------
+ * 5. The mobile header, and a real menu.
+ *
+ * What was wrong, in order of how badly it broke:
+ *
+ *   a. The port's phone rule styles `.bf .header>.button` — a DIRECT child of
+ *      the header. The markup wraps both calls to action in `.header-actions`,
+ *      so that rule matched nothing and the CTAs were never adapted at all.
+ *   b. `.header-actions` carried its layout as an INLINE style, and an inline
+ *      style beats every media query regardless of selector specificity. Even a
+ *      correct rule could not have hidden it. (Same trap as the signup grid.)
+ *   c. So on a phone the header held: wordmark, "See the demo", a full-size
+ *      "Start free" button and a hamburger, all competing for 390px. The
+ *      wordmark and the demo link overlapped and the button wrapped onto two
+ *      lines.
+ *
+ * The header is now one clean row at every width: wordmark left, a compact
+ * "Start free" and the menu button right. "See the demo" is not dropped, it
+ * moves into the menu where it gets a full-width target instead of 90px of
+ * colliding text.
+ *
+ * The menu itself is full-screen rather than the port's drop-down panel. This
+ * is a one-page site whose navigation is four anchors — a full-screen sheet
+ * gives each one a thumb-sized target and room for both calls to action, which
+ * a 24px-padded dropdown never had.
+ * -------------------------------------------------------------------------- */
+.bf .header-actions {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.bf .menu-toggle {
+  display: none;
+  background: none;
+  border: 0;
+  padding: 6px;
+  line-height: 0;
+}
+
+/* Two bars that cross into an X while the sheet opens. */
+.bf .menu-bars {
+  display: block;
+  width: 26px;
+  height: 14px;
+  position: relative;
+}
+
+.bf .menu-bars i {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--ink);
+  transition: transform 0.4s var(--ease), opacity 0.2s linear;
+}
+
+.bf .menu-bars i:first-child { top: 2px; }
+.bf .menu-bars i:last-child { bottom: 2px; }
+
+@media (max-width: 760px) {
+  .bf .header {
+    height: 76px;
+    padding-inline: 20px;
+    gap: 12px;
+  }
+
+  /* The desktop nav stays hidden on a phone; the sheet below replaces it.
+     The port's `nav.open` drop-down is no longer used. */
+  .bf .header nav { display: none; }
+
+  .bf .menu-toggle { display: block; }
+
+  .bf .header-actions {
+    margin-left: auto;
+    gap: 8px;
+  }
+
+  /* "See the demo" moves into the sheet rather than fighting the wordmark. */
+  .bf .header-actions .demo-link { display: none; }
+
+  .bf .header-actions .button {
+    padding: 10px 14px;
+    font-size: 13px;
+    gap: 8px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 380px) {
+  .bf .header { padding-inline: 16px; }
+  .bf .header-actions .button { padding: 9px 11px; font-size: 12px; }
+  .bf .header-actions .button span { display: none; }
+}
+
+/* ---------- the full-screen sheet ---------- */
+
+.bf .mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  background: var(--ink);
+  color: #fff;
+  padding: 22px 24px calc(28px + env(safe-area-inset-bottom));
+  /* dvh so the sheet is not cut off by the browser's own toolbars. */
+  height: 100vh;
+  height: 100dvh;
+  overflow-y: auto;
+  /* Hidden AND inert-by-visibility when closed, so the links are not
+     focusable behind the page. */
+  visibility: hidden;
+  opacity: 0;
+  transition: opacity 0.4s var(--ease), visibility 0s linear 0.4s;
+}
+
+.bf .mobile-menu.open {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 0.35s var(--ease), visibility 0s;
+}
+
+/* Never on a desktop, whatever state React left it in. */
+@media (min-width: 761px) {
+  .bf .mobile-menu { display: none; }
+}
+
+.bf .mobile-menu-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 54px;
+}
+
+.bf .mobile-menu .brand { color: #fff; }
+.bf .mobile-menu .brand-uk { color: #7fd3bc; }
+
+.bf .menu-close {
+  background: none;
+  border: 1px solid #ffffff2e;
+  color: #fff;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  font-size: 22px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.bf .mobile-menu nav {
+  display: flex;
+  flex-direction: column;
+  margin-top: 28px;
+}
+
+.bf .mobile-menu nav a {
+  font-family: 'Archivo Variable', 'DM Sans', Arial, sans-serif;
+  font-size: clamp(27px, 8.4vw, 38px);
+  font-weight: 650;
+  letter-spacing: -0.028em;
+  padding: 18px 0;
+  border-bottom: 1px solid #ffffff1f;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.bf .mobile-menu nav a i {
+  font-style: normal;
+  font-size: 15px;
+  color: #7fd3bc;
+  opacity: 0.75;
+}
+
+.bf .mobile-menu-cta {
+  margin-top: auto;
+  padding-top: 32px;
+  display: grid;
+  gap: 12px;
+}
+
+.bf .mobile-menu-cta .button {
+  width: 100%;
+  justify-content: space-between;
+  padding: 17px 20px;
+  font-size: 16px;
+}
+
+.bf .mobile-menu-cta .ghost {
+  background: none;
+  border: 1px solid #ffffff33;
+  color: #fff;
+}
+
+.bf .mobile-menu-note {
+  font-size: 12px;
+  color: #9db5aa;
+  margin-top: 16px;
+  text-align: center;
+}
+
+/*
+ * The staggered entrance. Each child starts low and faded and is released in
+ * turn once the sheet is open, so the menu assembles itself rather than
+ * appearing all at once.
+ *
+ * The delays hang off `.open`, so on close everything leaves together instead
+ * of unwinding in slow motion.
+ */
+.bf .mobile-menu .stagger {
+  opacity: 0;
+  translate: 0 18px;
+  transition: opacity 0.45s var(--ease), translate 0.45s var(--ease);
+}
+
+.bf .mobile-menu.open .stagger {
+  opacity: 1;
+  translate: 0 0;
+}
+
+.bf .mobile-menu.open .stagger:nth-child(1) { transition-delay: 0.06s; }
+.bf .mobile-menu.open .stagger:nth-child(2) { transition-delay: 0.12s; }
+.bf .mobile-menu.open .stagger:nth-child(3) { transition-delay: 0.18s; }
+.bf .mobile-menu.open .stagger:nth-child(4) { transition-delay: 0.24s; }
+.bf .mobile-menu.open .stagger:nth-child(5) { transition-delay: 0.30s; }
+
+/* While the sheet is open the toggle underneath becomes the X. */
+.bf .menu-open .menu-bars i:first-child { transform: translateY(5px) rotate(45deg); }
+.bf .menu-open .menu-bars i:last-child { transform: translateY(-5px) rotate(-45deg); }
