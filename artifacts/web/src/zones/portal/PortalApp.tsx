@@ -46,18 +46,18 @@ function PortalOverview() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-slate-900">Welcome back, {d.customer?.firstName}</h1>
-        <p className="text-slate-600 mt-1">Here's an overview of your project status.</p>
+        <p className="text-slate-600 mt-1">Here's an overview of your job status.</p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
-          <h2 className="font-semibold text-slate-900">Latest Project</h2>
+          <h2 className="font-semibold text-slate-900">Latest job</h2>
           {latestProject ? (
             <div className="space-y-2 text-sm">
               <p className="font-medium text-slate-900">{latestProject.title}</p>
               <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${latestProject.status === 'Completed' ? 'bg-green-100 text-green-700' : latestProject.status === 'In Progress' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}`}>{latestProject.status}</span>
               {latestProject.scheduledStart && <p className="text-slate-500">Start date: {new Date(latestProject.scheduledStart).toLocaleDateString('en-GB')}</p>}
             </div>
-          ) : <p className="text-sm text-slate-400">No projects yet</p>}
+          ) : <p className="text-sm text-slate-400">No jobs yet</p>}
         </div>
         <div className="rounded-xl border border-slate-200 bg-white p-5 space-y-3">
           <h2 className="font-semibold text-slate-900">Latest Quote</h2>
@@ -83,7 +83,7 @@ function PortalProject() {
   const currentIndex = project ? stages.indexOf(project.status) : -1;
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-slate-900">My Project</h1>
+      <h1 className="text-2xl font-bold text-slate-900">My job</h1>
       {project ? (
         <div className="rounded-xl border border-slate-200 bg-white p-6 space-y-6">
           <div>
@@ -91,7 +91,7 @@ function PortalProject() {
             {project.address && <p className="text-slate-500 text-sm mt-1">{project.address}, {project.city}</p>}
           </div>
           <div>
-            <h3 className="text-sm font-medium text-slate-700 mb-4">Project Progress</h3>
+            <h3 className="text-sm font-medium text-slate-700 mb-4">Job progress</h3>
             <div className="flex items-center gap-0 overflow-x-auto pb-2">
               {stages.map((stage, i) => (
                 <div key={stage} className="flex items-center flex-shrink-0">

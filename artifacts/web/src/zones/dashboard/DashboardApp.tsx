@@ -254,7 +254,7 @@ const NAV_GROUPS: { key: string; label: string; items: NavItem[] }[] = [
     key: "work",
     label: "Doing the work",
     items: [
-      { path: "/dashboard/projects", label: "Projects", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
+      { path: "/dashboard/projects", label: "Jobs", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" },
       { path: "/dashboard/schedule", label: "Schedule", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" },
       { path: "/dashboard/customers", label: "Customers", icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
       { path: "/dashboard/properties", label: "Properties", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" },
@@ -1064,7 +1064,7 @@ function DashboardHome() {
     { label: "New leads", value: String(s?.newLeads ?? "—"), hint: "awaiting action", href: "/dashboard/leads" },
     { label: "Pipeline value", value: money(pipelineValue), hint: "in open quotes", href: "/dashboard/quotes" },
     { label: "Estimates", value: String(calcCount), hint: "from your calculator", href: "/dashboard/leads" },
-    { label: "Active projects", value: String(s?.activeProjects ?? "—"), hint: "in progress", href: "/dashboard/projects" },
+    { label: "Active jobs", value: String(s?.activeProjects ?? "—"), hint: "in progress", href: "/dashboard/projects" },
   ];
 
   return (
@@ -1600,7 +1600,7 @@ function LeadDetailPage({ id }: { id: number }) {
     try {
       const result = await convertToProject.mutateAsync({ id } as any) as any;
       qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-      showToast("Lead converted to project");
+      showToast("Lead converted to job");
       navigate(`/dashboard/projects/${result.id}`);
     } catch (err: any) {
       showToast(err?.message || "Conversion failed", "error");
@@ -1664,7 +1664,7 @@ function LeadDetailPage({ id }: { id: number }) {
               {l.urgency && <div><span className="text-slate-500">Urgency: </span><span className="text-slate-900">{l.urgency}</span></div>}
               {l.planningStatus && <div><span className="text-slate-500">Planning / Building Regs: </span><span className="text-slate-900">{l.planningStatus}</span></div>}
               {l.hasDrawings && <div><span className="text-slate-500">Has Drawings / Plans: </span><span className="text-slate-900">{l.hasDrawings}</span></div>}
-              {l.projectDescription && <div className="sm:col-span-2"><span className="text-slate-500">Project Description: </span><span className="text-slate-900 whitespace-pre-wrap">{l.projectDescription}</span></div>}
+              {l.projectDescription && <div className="sm:col-span-2"><span className="text-slate-500">Job Description: </span><span className="text-slate-900 whitespace-pre-wrap">{l.projectDescription}</span></div>}
               {!isConstructionLead && (<>
               <div><span className="text-slate-500">Area to Be Rendered: </span><span className="text-slate-900">{l.areaToRender === "Other" && l.areaToRenderOther ? `Other — ${l.areaToRenderOther}` : (l.areaToRender || "-")}</span></div>
               <div><span className="text-slate-500">Number of Storeys: </span><span className="text-slate-900">{l.numberOfStoreys || "-"}</span></div>
@@ -2373,9 +2373,9 @@ const EMAIL_EVENT_LABELS: Record<string, string> = {
   quote_sent: "Quote sent",
   quote_accepted: "Quote accepted",
   payment_received: "Payment received",
-  lead_won: "Project confirmed",
+  lead_won: "Job confirmed",
   project_in_progress: "Work started",
-  project_completed: "Project complete",
+  project_completed: "Job complete",
 };
 
 function EmailKind({ event }: { event?: string | null }) {
@@ -2615,7 +2615,7 @@ function QuoteDetailPage({ id }: { id: number }) {
     try {
       const result = await convertToProject.mutateAsync({ id } as any) as any;
       qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-      showToast("Quote converted to project");
+      showToast("Quote converted to job");
       navigate(`/dashboard/projects/${result.id}`);
     } catch (err: any) {
       showToast(err?.message || "Conversion failed", "error");
@@ -2864,14 +2864,14 @@ function ProjectsPage() {
     (filtered ?? []).map((p: any) => p.id),
     (id) => deleteProject.mutateAsync({ id } as any),
     () => qc.invalidateQueries({ queryKey: getListProjectsQueryKey() }),
-    "project",
+    "job",
   );
 
   const handleDelete = async (id: number) => {
     try {
       await deleteProject.mutateAsync({ id } as any);
       qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-      showToast("Project deleted");
+      showToast("Job deleted");
       setDeleteId(null);
     } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
   };
@@ -2882,11 +2882,11 @@ function ProjectsPage() {
     try {
       const p = await createMutation.mutateAsync({ data: newProj } as any) as any;
       qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-      showToast("Project created");
+      showToast("Job created");
       setShowNew(false);
       setNewProj({ title: "", city: "", description: "" });
       navigate(`/dashboard/projects/${p.id}`);
-    } catch (err: any) { showToast(err?.message || "Failed to create project", "error"); }
+    } catch (err: any) { showToast(err?.message || "Failed to create job", "error"); }
   };
 
   return (
@@ -2913,7 +2913,7 @@ function ProjectsPage() {
                 <textarea rows={2} value={newProj.description} onChange={e => setNewProj(p => ({ ...p, description: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
               </div>
               <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Project"}</button>
+                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Job"}</button>
                 <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
               </div>
             </form>
@@ -2971,7 +2971,7 @@ function ProjectsPage() {
               </table>
             </div>
           </div>
-          <BulkBar bulk={bulk} noun="project" />
+          <BulkBar bulk={bulk} noun="job" />
         </>
       )}
     </div>
@@ -3015,7 +3015,7 @@ function ProjectDetailPage({ id }: { id: number }) {
     <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
       <div className="flex items-center gap-3 flex-wrap">
         <Link href="/dashboard/projects" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Projects</Link>
-        <DeleteEntityButton onDelete={() => deleteProject.mutateAsync({ id } as any)} label="project" redirect="/dashboard/projects" />
+        <DeleteEntityButton onDelete={() => deleteProject.mutateAsync({ id } as any)} label="job" redirect="/dashboard/projects" />
         <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{p.title}</h1>
         <Badge status={p.status} />
       </div>
@@ -3501,7 +3501,7 @@ function CaseStudiesPage() {
             <form onSubmit={handleSave} className="space-y-4">
               <FField label="Title *" value={form.title || ""} onChange={v => setForm({ ...form, title: v })} />
               <FField label="Slug" value={form.slug || ""} onChange={v => setForm({ ...form, slug: v })} hint="URL-friendly identifier (auto-generated if blank)" />
-              <FField label="Project Type" value={form.projectType || ""} onChange={v => setForm({ ...form, projectType: v })} />
+              <FField label="Job Type" value={form.projectType || ""} onChange={v => setForm({ ...form, projectType: v })} />
               <FField label="Location" value={form.location || ""} onChange={v => setForm({ ...form, location: v })} />
               <FField label="Completion Date" value={form.completionDate || ""} onChange={v => setForm({ ...form, completionDate: v })} />
               <FTextarea label="Description" value={form.description || ""} onChange={v => setForm({ ...form, description: v })} rows={4} />
@@ -3968,16 +3968,16 @@ const HELP_SECTIONS: HelpSection[] = [
     id: "getting-started", title: "Getting Started", icon: "M13 10V3L4 14h7v7l9-11h-9z",
     intro: "How your business flows through the system, end to end.",
     topics: [
-      { q: "What is this dashboard?", a: "It runs your whole business pipeline in one place: enquiries come in as Leads, you survey and quote them, take payment, deliver the work as a Project, and everything on your public website is managed from here too." },
-      { q: "What's the journey of a typical job?", a: "Lead comes in → you make contact → book a survey visit → send a Quote → the customer accepts and pays through a Payment Link → the job becomes a Project → when it's complete, ask for a Review. Each step updates automatically where it can." },
-      { q: "Will my customer get emails automatically?", a: "Yes — when you book a survey, send a quote, receive a payment, or start/complete a project, the customer gets a branded email (and text, if enabled). You control every one of these in Settings → Notifications." },
+      { q: "What is this dashboard?", a: "It runs your whole business pipeline in one place: enquiries come in as Leads, you survey and quote them, take payment, deliver the work as a Job, and everything on your public website is managed from here too." },
+      { q: "What's the journey of a typical job?", a: "Lead comes in → you make contact → book a survey visit → send a Quote → the customer accepts and pays through a Payment Link → the job becomes a Job → when it's complete, ask for a Review. Each step updates automatically where it can." },
+      { q: "Will my customer get emails automatically?", a: "Yes — when you book a survey, send a quote, receive a payment, or start/complete a job, the customer gets a branded email (and text, if enabled). You control every one of these in Settings → Notifications." },
     ],
   },
   {
     id: "dashboard", title: "Dashboard Home", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
     intro: "Your at-a-glance overview.",
     topics: [
-      { q: "What do the four cards mean?", a: "New Leads = enquiries still waiting for action. Pipeline Value = the total £ of all open quotes. Calculator Estimates = leads that came via your website's price calculator. Active Projects = jobs currently in progress. Click any card to jump to that page." },
+      { q: "What do the four cards mean?", a: "New Leads = enquiries still waiting for action. Pipeline Value = the total £ of all open quotes. Calculator Estimates = leads that came via your website's price calculator. Active Jobs = the work currently in progress. Click any card to jump to that page." },
       { q: "What is Recent Activity?", a: "A live feed of the latest things that happened — new leads, quotes sent, payments received — so you can catch up in seconds." },
     ],
   },
@@ -3999,7 +3999,7 @@ const HELP_SECTIONS: HelpSection[] = [
       { q: "How do I build a quote?", a: "Create it (reference is auto-generated if you leave it blank), then open it and add line items — description, quantity, unit price. Subtotal, VAT and total calculate themselves." },
       { q: "How does the customer accept and pay?", a: "From the quote, create and send a Payment Link. The customer gets a branded email with a secure page where they can accept the quote, pay by card, or decline — and you're notified either way." },
       { q: "Can they accept without paying online?", a: "Yes — the payment page has Accept / Decline buttons that work on their own, so customers who prefer bank transfer or cash can still confirm the job." },
-      { q: "What happens when it's accepted?", a: "The quote flips to Accepted, the person is added to Customers automatically, and you can convert the quote into a Project with one click." },
+      { q: "What happens when it's accepted?", a: "The quote flips to Accepted, the person is added to Customers automatically, and you can convert the quote into a Job with one click." },
     ],
   },
   {
@@ -4020,11 +4020,11 @@ const HELP_SECTIONS: HelpSection[] = [
     ],
   },
   {
-    id: "projects", title: "Projects", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
+    id: "projects", title: "Jobs", icon: "M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2",
     intro: "Delivering the job after the quote is won.",
     topics: [
-      { q: "How does a project start?", a: "Usually by converting an accepted quote (one click on the quote page), or create one manually. It carries the customer and value across." },
-      { q: "What are project updates?", a: "Progress posts with optional photos. Anything marked visible to customer appears in their portal — great for keeping clients happy without phone calls. Starting and completing a project can also email the customer automatically." },
+      { q: "How does a job start?", a: "Usually by converting an accepted quote (one click on the quote page), or create one manually. It carries the customer and value across." },
+      { q: "What are job updates?", a: "Progress posts with optional photos. Anything marked visible to customer appears in their portal — great for keeping clients happy without phone calls. Starting and completing a job can also email the customer automatically." },
     ],
   },
   {
@@ -4032,7 +4032,7 @@ const HELP_SECTIONS: HelpSection[] = [
     intro: "Everyone who has done business with you.",
     topics: [
       { q: "Where do customers come from?", a: "They're created automatically the moment a quote is accepted or a payment is made — you can also add or edit them by hand, including address and notes." },
-      { q: "What is the customer portal?", a: "A login where your customer can see their projects, progress updates and messages. Their portal messages arrive in your Messages page." },
+      { q: "What is the customer portal?", a: "A login where your customer can see their jobs, progress updates and messages. Their portal messages arrive in your Messages page." },
     ],
   },
   {
@@ -4040,8 +4040,8 @@ const HELP_SECTIONS: HelpSection[] = [
     intro: "Gallery, Reviews, Case Studies, Services, Pricing, Areas, FAQs and Blog — these pages ARE your public website.",
     topics: [
       { q: "How do edits go live?", a: "Instantly. Add a gallery photo, publish a blog post or edit a service here and it appears on your website straight away — no web developer needed." },
-      { q: "What are Case Studies vs Gallery?", a: "Gallery is quick before/after photos. Case Studies are full project write-ups with multiple photos and a story — the strongest sales tool you have, so add one for every impressive job." },
-      { q: "How do Reviews work?", a: "Add reviews you've received, and completed projects can trigger an automatic review request email to the customer. Only reviews you approve are shown publicly." },
+      { q: "What are Case Studies vs Gallery?", a: "Gallery is quick before/after photos. Case Studies are full job write-ups with multiple photos and a story — the strongest sales tool you have, so add one for every impressive job." },
+      { q: "How do Reviews work?", a: "Add reviews you've received, and completed jobs can trigger an automatic review request email to the customer. Only reviews you approve are shown publicly." },
     ],
   },
   {
@@ -4863,9 +4863,9 @@ function SettingsPage() {
                   { emailKey: "notifyQuoteSentEmail", smsKey: "notifyQuoteSentSms", label: "Quote sent", recipient: "Customer" },
                   { emailKey: "notifyQuoteAcceptedEmail", smsKey: "notifyQuoteAcceptedSms", label: "Quote accepted", recipient: "Admin alert" },
                   { emailKey: "notifyPaymentReceivedEmail", smsKey: "notifyPaymentReceivedSms", label: "Payment received", recipient: "Admin alert + customer receipt" },
-                  { emailKey: "notifyLeadWonEmail", smsKey: "notifyLeadWonSms", label: "Lead won / project confirmed", recipient: "Customer" },
-                  { emailKey: "notifyProjectInProgressEmail", smsKey: "notifyProjectInProgressSms", label: "Project started (In Progress)", recipient: "Customer" },
-                  { emailKey: "notifyProjectCompleteEmail", smsKey: "notifyProjectCompleteSms", label: "Project completed", recipient: "Customer" },
+                  { emailKey: "notifyLeadWonEmail", smsKey: "notifyLeadWonSms", label: "Lead won / job confirmed", recipient: "Customer" },
+                  { emailKey: "notifyProjectInProgressEmail", smsKey: "notifyProjectInProgressSms", label: "Job started (In Progress)", recipient: "Customer" },
+                  { emailKey: "notifyProjectCompleteEmail", smsKey: "notifyProjectCompleteSms", label: "Job completed", recipient: "Customer" },
                 ].map(row => (
                   <tr key={row.emailKey} className="text-sm">
                     <td className="py-2.5 pr-4 text-slate-700">{row.label}</td>
