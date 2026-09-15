@@ -1115,8 +1115,14 @@ export default function BizzFlowHome() {
           </div>
           <div className="industry-copy reveal">
             <p className="eyebrow">06 / YOUR TRADE. YOUR PLATFORM.</p>
+            {/*
+              "Real trades", not "Real businesses" - the showcase band further
+              up now opens with "Real businesses." and two headings on one page
+              starting with the same two words reads as carelessness. This is
+              the generic one of the pair, so it gives way.
+            */}
             <h2>
-              Real businesses.<br />
+              Real trades.<br />
               Real graft.<br />
               <span className="teal">A smarter setup.</span>
             </h2>
