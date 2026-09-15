@@ -30,6 +30,11 @@ services:
       # Flo, the in-dashboard assistant. Optional: without it the endpoint
       # returns a plain "not switched on yet" rather than failing oddly.
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # Only needed when the key above is an ORGANISATION key rather than one
+      # created inside a workspace. Anthropic rejects an unscoped key with a 400
+      # unless the workspace is named. Empty is fine and means "not needed" --
+      # the header is omitted on a falsy value, never sent blank.
+      ANTHROPIC_WORKSPACE_ID: ${ANTHROPIC_WORKSPACE_ID:-}
 
       # Google Business reviews pulled onto tenant sites. Needs Places API (New)
       # enabled on the key. Unset, the sync stays idle and manually entered

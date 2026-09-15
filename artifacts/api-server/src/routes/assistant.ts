@@ -111,6 +111,20 @@ router.post("/assistant/ask", requireTenantAccess, async (req: any, res) => {
         "content-type": "application/json",
         "x-api-key": apiKey,
         "anthropic-version": "2023-06-01",
+        /**
+         * An organisation-level key is not tied to a workspace, and Anthropic
+         * rejects it with a 400 unless the workspace is named explicitly:
+         *
+         *   "This API key is not scoped to a workspace, so this request must
+         *    include the anthropic-workspace-id header"
+         *
+         * A key created inside a workspace needs none of this, which is the
+         * simpler setup. This header exists so an org-level key also works
+         * rather than Flo being dead until somebody reissues the key.
+         */
+        ...(process.env.ANTHROPIC_WORKSPACE_ID
+          ? { "anthropic-workspace-id": process.env.ANTHROPIC_WORKSPACE_ID }
+          : {}),
       },
       body: JSON.stringify({
         model: MODEL,
@@ -130,7 +144,21 @@ router.post("/assistant/ask", requireTenantAccess, async (req: any, res) => {
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
       req.log.error({ status: response.status, detail: detail.slice(0, 500) }, "Anthropic request failed");
-      res.status(502).json({ error: "Flo could not answer just now. Please try again." });
+      /**
+       * "Try again" is the wrong thing to say about a 4xx.
+       *
+       * A bad key, an unscoped key or a disabled model will fail identically
+       * on every retry, so telling the owner to try again sends them round a
+       * loop we know cannot end — and makes a configuration fault at our end
+       * look like a fault at theirs. 429 is the exception: rate limiting
+       * genuinely does clear on its own.
+       */
+      const willNeverSucceed = response.status >= 400 && response.status < 500 && response.status !== 429;
+      res.status(502).json({
+        error: willNeverSucceed
+          ? "Flo is not set up correctly on our side yet. Nothing is wrong with your account, and retrying will not help — we have been told about it."
+          : "Flo could not answer just now. Please try again.",
+      });
       return;
     }
 
