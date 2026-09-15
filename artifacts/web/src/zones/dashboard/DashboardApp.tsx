@@ -41,6 +41,7 @@ import PropertiesPage from "./PropertiesPage";
 import BookingQrPage from "./BookingQrPage";
 import NewJobForm from "./NewJobForm";
 import JobShareCard from "./JobShareCard";
+import TeamChat from "./TeamChat";
 import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
 import BillingPage from "./BillingPage";
@@ -4321,7 +4322,38 @@ const msgEmail = (m: any): string | null => m?.senderEmail || m?.email || null;
 const msgPhone = (m: any): string | null => m?.senderPhone || m?.phone || null;
 const msgName = (m: any): string => m?.senderName || m?.name || "Unknown";
 
+/**
+ * Two different kinds of message, told apart at the top.
+ *
+ * What was here was only ever the website enquiry inbox, which is why the page
+ * looked empty and optionless for a business with no enquiries yet. Team notes
+ * are a different thing with a different audience, so they get their own tab
+ * rather than being mixed into a customer inbox.
+ */
+function MessagesTabs({ tab, setTab, enquiryCount }: {
+  tab: "enquiries" | "team";
+  setTab: (t: "enquiries" | "team") => void;
+  enquiryCount: number;
+}) {
+  const base = "px-4 py-2 rounded-[10px] text-[14px] font-semibold transition";
+  return (
+    <div className="inline-flex gap-1 p-1 rounded-[12px] bg-slate-100">
+      <button type="button" onClick={() => setTab("enquiries")}
+        aria-pressed={tab === "enquiries"}
+        className={`${base} ${tab === "enquiries" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+        From your website{enquiryCount ? ` (${enquiryCount})` : ""}
+      </button>
+      <button type="button" onClick={() => setTab("team")}
+        aria-pressed={tab === "team"}
+        className={`${base} ${tab === "team" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>
+        Your team
+      </button>
+    </div>
+  );
+}
+
 function MessagesPage() {
+  const [tab, setTab] = useState<"enquiries" | "team">("enquiries");
   const { data: messages, isLoading } = useListContactMessages();
   const [selected, setSelected] = useState<any>(null);       // open detail pane
   const [emailReply, setEmailReply] = useState<any>(null);   // reply-by-email modal
@@ -4347,9 +4379,20 @@ function MessagesPage() {
     } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
   };
 
+  if (tab === "team") {
+    return (
+      <div className="p-4 sm:p-6 space-y-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Messages</h1>
+        <MessagesTabs tab={tab} setTab={setTab} enquiryCount={rows.length} />
+        <TeamChat />
+      </div>
+    );
+  }
+
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Messages</h1>
+      <MessagesTabs tab={tab} setTab={setTab} enquiryCount={rows.length} />
       {rows.length > 0 && (
         <label className="flex w-fit cursor-pointer items-center gap-2 text-xs font-medium text-slate-500">
           <input type="checkbox" className={checkCls} checked={bulk.allSelected} onChange={bulk.toggleAll} /> Select all

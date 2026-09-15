@@ -351,6 +351,13 @@
       "when": 1789100000000,
       "tag": "0049_demo_data_flag",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1789200000000,
+      "tag": "0050_team_messages",
+      "breakpoints": true
     }
   ]
 }
