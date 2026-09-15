@@ -15,6 +15,58 @@ async function getTenantBySlug(slug: string) {
   return tenants[0] ?? null;
 }
 
+/**
+ * The businesses featured on the BizzFlowUK homepage.
+ *
+ * Real clients, read from the database — not a hardcoded list in a component.
+ * A hardcoded list is wrong in one environment or the other the moment the
+ * tenants differ, which they already do: the local database holds three of
+ * these and production holds four. It is also wrong the day a fifth launches.
+ *
+ * Only `showcase_order` opts a tenant in, so onboarding someone never puts
+ * them on a public marketing page by accident, and a suspended tenant drops
+ * out automatically.
+ *
+ * Deliberately narrow: name, industry, the address a visitor can actually
+ * click, the logo and the brand colour. Nothing operational, nothing about
+ * their customers — this is a shop window, and it is unauthenticated.
+ */
+router.get("/public/showcase", async (req: any, res) => {
+  try {
+    const rows = await db
+      .select({
+        name: tenantsTable.name,
+        slug: tenantsTable.slug,
+        industry: tenantsTable.industry,
+        customDomain: tenantsTable.customDomain,
+        website: tenantsTable.website,
+        blurb: tenantsTable.showcaseBlurb,
+        order: tenantsTable.showcaseOrder,
+        logoUrl: sql<string | null>`COALESCE(${tenantSettingsTable.logoUrl}, ${tenantsTable.logoUrl})`,
+        primaryColor: sql<string | null>`COALESCE(${tenantSettingsTable.primaryColor}, ${tenantsTable.primaryColor})`,
+      })
+      .from(tenantsTable)
+      .leftJoin(tenantSettingsTable, eq(tenantSettingsTable.tenantId, tenantsTable.id))
+      .where(and(sql`${tenantsTable.showcaseOrder} is not null`, sql`${tenantsTable.suspended} = false`))
+      .orderBy(tenantsTable.showcaseOrder);
+
+    res.json(rows.map(t => ({
+      name: t.name,
+      slug: t.slug,
+      industry: t.industry,
+      blurb: t.blurb,
+      logoUrl: t.logoUrl,
+      primaryColor: t.primaryColor,
+      // Their own address when they have one, otherwise the platform path.
+      // `website` is the address a customer would be given; customDomain is
+      // what the platform serves. Either is a real, reachable page.
+      url: t.website || (t.customDomain ? `https://${t.customDomain}` : `/site/${t.slug}`),
+      // True when the link leaves this app, which decides target="_blank".
+      external: !!(t.website || t.customDomain),
+    })));
+  } catch (err) { req.log?.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
 router.get("/public/resolve-domain", async (req, res) => {
   try {
     const host = ((req.query.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");

@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { BizzFlowSymbol, BizzFlowWordmark } from "./BizzFlowBrand";
 import { useDocumentMeta, useScrollMeter, useScrollReveals, useSmoothAnchors } from "./useBizzFlowChrome";
@@ -67,8 +67,21 @@ const JOURNEY = [
   },
 ] as const;
 
-/** The six industries. Copy verbatim from reference/site.js. */
+/**
+ * The industries, matched to what actually exists.
+ *
+ * The reference listed Engineering and Paving. Neither has a site template and
+ * neither has a client — they were promises with nothing behind them. Rendering
+ * was missing entirely despite being a live client with its own template. This
+ * list is the four templates the platform ships, plus a catch-all.
+ */
 const INDUSTRIES = [
+  {
+    name: "Rendering & external walls",
+    title: "Quote the wall, not the guesswork.",
+    description:
+      "Keep surveys, render and insulation quotes, job photographs and invoices attached to each property as the work moves.",
+  },
   {
     name: "Construction",
     title: "From site survey to final handover.",
@@ -76,28 +89,16 @@ const INDUSTRIES = [
       "Keep enquiries, project quotes, site schedules and customer records connected as each build moves forward.",
   },
   {
-    name: "Engineering",
-    title: "Give complex work a clear plan.",
-    description:
-      "Bring client requirements, project estimates, team schedules and progress updates into one working view.",
-  },
-  {
-    name: "Landscaping",
+    name: "Landscaping & groundworks",
     title: "From the first idea to the final planting.",
     description:
       "Connect garden enquiries, site visits, design quotes and seasonal work without losing the customer details.",
   },
   {
-    name: "Paving",
-    title: "A smoother path from quote to completion.",
-    description:
-      "Keep measurements, material estimates, installation dates and invoices alongside each driveway or patio job.",
-  },
-  {
     name: "Plumbing & heating",
-    title: "Keep the work flowing.",
+    title: "Keep the work flowing, and the certificates current.",
     description:
-      "Organise customer enquiries, installation quotes, appointments and job records from one connected workspace.",
+      "Enquiries, installation quotes, appointments and job records in one place - with Gas Safe certificates issued, stored and renewed on time.",
   },
   {
     name: "Other trades",
@@ -107,27 +108,41 @@ const INDUSTRIES = [
   },
 ] as const;
 
-/** The five FAQ entries. Answers verbatim, including the demo disclaimer. */
+/**
+ * What somebody deciding whether to pay actually wants to know.
+ *
+ * The reference's five questions were all about the demo. Useful, but nobody
+ * has ever asked "does your demo take payments?" before asking what it costs
+ * and who builds the website.
+ */
 const FAQS = [
   {
+    q: "What does it cost?",
+    a: "£99 a month, everything included — your website, the whole toolkit, hosting and support. No setup fee, no per-user charge, no separate website bill. The first seven days are free.",
+  },
+  {
+    q: "Who builds my website?",
+    a: "We do, during your free trial. You sign up, tell us about the business, and we build your site inside the first week — usually within two days. You use the toolkit straight away while that happens.",
+  },
+  {
+    q: "What if I don't like it?",
+    a: "Cancel in the trial and you pay nothing. Cancel later and you stop at the end of that month. Your data is yours — ask and we export it.",
+  },
+  {
     q: "Is this just a website builder?",
-    a: "No. The website is your business's front door. BizzFlowUK brings the tools behind it together too: customer management, quoting, job planning, scheduling and invoicing.",
+    a: "No. The website is your front door. Behind it you get customers, quotes, invoices, card payments, projects, a schedule, cash flow, expenses, Gas Safe certificates and a customer portal — all connected, so an enquiry becomes a quote becomes a job becomes a paid invoice without retyping anything.",
   },
   {
-    q: "Which businesses is it designed for?",
-    a: "UK businesses in construction, engineering, landscaping, paving, plumbing, heating and related trades. The aim is to support both independent business owners and teams.",
+    q: "Which businesses is it built for?",
+    a: "UK trades: rendering, construction, landscaping, groundworks, plumbing and heating. Independent owners and small teams. If your trade is not on that list, the toolkit still fits — ask us about the website.",
   },
   {
-    q: "Can I see how the tools fit together?",
-    a: "Yes. Open the interactive demo to explore a sample business, switch between tools, inspect jobs and try the quote builder. The demo uses fictional sample data.",
-  },
-  {
-    q: "Does the demo send quotes or take payments?",
-    a: "No. The demo lets you explore the experience safely. It does not send messages, charge customers, connect to a bank or store real business records.",
+    q: "Can I take card payments?",
+    a: "Yes. Send a payment link with a quote or invoice and the customer pays by card. Connect your own Square or Stripe account, so the money goes straight to you and we never sit in the middle of it.",
   },
   {
     q: "Can I use it on site as well as in the office?",
-    a: "The website and demo adapt to mobile, tablet and desktop, so you can explore the same connected workflow wherever you work.",
+    a: "Yes. It works on a phone, a tablet and a desktop — the same workspace wherever you are.",
   },
 ] as const;
 
@@ -258,6 +273,81 @@ function HeroDashboard() {
   );
 }
 
+type ShowcaseSite = {
+  name: string; slug: string; industry: string | null; blurb: string | null;
+  logoUrl: string | null; primaryColor: string | null; url: string; external: boolean;
+};
+
+/**
+ * The businesses already running on BizzFlowUK.
+ *
+ * Real clients with real, clickable sites — read from the API, not written into
+ * this file. The page shipped with a fictional landscaping company in this slot
+ * while four real ones were live, which is both a wasted proof point and a
+ * claim the product could not back up.
+ *
+ * Renders nothing at all if the list comes back empty. An empty "our clients"
+ * section is worse than no section.
+ */
+function ClientShowcase() {
+  const [sites, setSites] = useState<ShowcaseSite[] | null>(null);
+
+  useEffect(() => {
+    let live = true;
+    fetch("/api/public/showcase")
+      .then(r => (r.ok ? r.json() : []))
+      .then(data => { if (live) setSites(Array.isArray(data) ? data : []); })
+      .catch(() => { if (live) setSites([]); });
+    return () => { live = false; };
+  }, []);
+
+  if (!sites?.length) return null;
+
+  return (
+    <section id="built-on-bizzflow" className="platform wrap section" style={{ paddingTop: 0 }}>
+      <div className="section-head reveal">
+        <div>
+          <p className="eyebrow">ALREADY BUILT ON BIZZFLOWUK</p>
+          <h2>
+            Real businesses.<br />
+            <span className="muted-heading">Real websites. Go and look.</span>
+          </h2>
+        </div>
+        <p>
+          Every one of these is a live site<br />
+          running on the platform right now.
+        </p>
+      </div>
+
+      <div className="tool-row reveal" style={{ gridTemplateColumns: `repeat(${Math.min(sites.length, 4)}, 1fr)` }}>
+        {sites.map(site => (
+          <a
+            key={site.slug}
+            href={site.url}
+            {...(site.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+            style={{ display: "block" }}
+          >
+            {/* The tenant's own colour, so the row reads as four different
+                businesses rather than four cards of ours. */}
+            <span
+              aria-hidden="true"
+              style={{
+                display: "block", width: "34px", height: "4px", borderRadius: "2px",
+                background: site.primaryColor || "var(--teal)", marginBottom: "18px",
+              }}
+            />
+            <h3>{site.name}</h3>
+            {site.blurb && <p>{site.blurb}</p>}
+            <p style={{ marginTop: "14px", fontWeight: 650, color: "var(--teal)" }}>
+              Visit the site ↗
+            </p>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 export default function BizzFlowHome() {
   const rootRef = useRef<HTMLDivElement | null>(null);
   const meterRef = useScrollMeter();
@@ -290,10 +380,14 @@ export default function BizzFlowHome() {
           <a href="#platform" onClick={closeMenu}>The platform</a>
           <a href="#industries" onClick={closeMenu}>Who it's for</a>
           <a href="#how-it-works" onClick={closeMenu}>How it works</a>
+          <a href="#pricing" onClick={closeMenu}>Pricing</a>
         </nav>
-        <Link href="/demo" className="button small dark">
-          Explore the demo <span>↗</span>
-        </Link>
+        <div className="header-actions" style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+          <Link href="/demo" className="text-link" style={{ whiteSpace: "nowrap" }}>See the demo</Link>
+          <Link href="/signup" className="button small dark">
+            Start free <span>↗</span>
+          </Link>
+        </div>
         <button
           type="button"
           className="menu-toggle"
@@ -322,12 +416,12 @@ export default function BizzFlowHome() {
               BizzFlowUK.
             </p>
             <div className="hero-actions">
-              <Link href="/demo" className="button teal-bg">
-                See it in action <span>↗</span>
+              <Link href="/signup" className="button teal-bg">
+                Start free for 7 days <span>↗</span>
               </Link>
-              <a className="text-link" href="#platform">
-                <span className="play">▶</span> Meet your new toolkit
-              </a>
+              <Link href="/demo" className="text-link">
+                <span className="play">▶</span> See it in action
+              </Link>
             </div>
             <div className="hero-note">
               <span className="check">✓</span> Your website. Your business tools. One place.
@@ -365,11 +459,11 @@ export default function BizzFlowHome() {
               <strong>THAT BUILD BRITAIN.</strong>
             </p>
             <div>
+              <span>▦ &nbsp; Rendering</span>
               <span>⌂ &nbsp; Construction</span>
-              <span>⚙ &nbsp; Engineering</span>
               <span>♧ &nbsp; Landscaping</span>
-              <span>▦ &nbsp; Paving</span>
-              <span>♧ &nbsp; Plumbing & heating</span>
+              <span>▣ &nbsp; Groundworks</span>
+              <span>£ &nbsp; Plumbing & heating</span>
             </div>
           </div>
         </section>
@@ -390,33 +484,37 @@ export default function BizzFlowHome() {
             </p>
           </div>
           <div className="feature-grid">
-            <Link href="/demo?view=website" className="feature-card website-card reveal">
+            {/* Points at the real client sites further down the page, not at a
+                mock-up. There is no reason to invent a fictional business when
+                four real ones are live on the platform. */}
+            <a href="#built-on-bizzflow" className="feature-card website-card reveal">
               <div className="card-top">
                 <span className="feature-icon">↗</span>
                 <span className="round-arrow">↗</span>
               </div>
               <h3>Your best first impression.</h3>
-              <p>A professional website that showcases your work and turns interest into enquiries.</p>
+              <p>
+                A professional website that showcases your work and turns interest into enquiries — built for you, in
+                your first week.
+              </p>
               <div className="mini-browser">
                 <div className="browser-bar">
                   <i />
                   <i />
                   <i />
-                  <span>YOUR BUSINESS. ONLINE.</span>
+                  <span>BUILT ON BIZZFLOWUK</span>
                 </div>
                 <div className="mini-website">
-                  <span>
-                    OAK & STONE <small>LANDSCAPES</small>
-                  </span>
+                  <span>REAL BUSINESSES. REAL SITES.</span>
                   <b>
-                    Outdoor spaces.<br />
-                    Extraordinary living.
+                    See the websites<br />
+                    we've already built.
                   </b>
-                  <span className="mini-cta">Let's transform your garden ↗</span>
+                  <span className="mini-cta">Have a look ↓</span>
                 </div>
               </div>
               <span className="feature-tag">YOUR WEBSITE</span>
-            </Link>
+            </a>
             <Link href="/demo" className="feature-card operations-card reveal">
               <div className="card-top">
                 <span className="feature-icon">▦</span>
@@ -444,37 +542,96 @@ export default function BizzFlowHome() {
               <span className="feature-tag">YOUR BUSINESS TOOLKIT</span>
             </Link>
           </div>
+          {/* These four name what the dashboard actually contains, in the words
+              the dashboard itself uses. The previous set sold "Jobs &
+              scheduling" — there is no Jobs menu, they are Projects — and never
+              mentioned certificates, automations or card payments, which are the
+              three things nothing else in this price bracket does. */}
           <div className="tool-row reveal">
             <div>
               <span>♧</span>
-              <h3>Customer management</h3>
+              <h3>Customers & quotes</h3>
               <p>
-                Every conversation. Every detail.<br />
-                One complete customer history.
+                Enquiries land from your site.<br />
+                Price them, send them, track them.
               </p>
             </div>
             <div>
-              <span>▤</span>
-              <h3>Quotes & invoices</h3>
+              <span>£</span>
+              <h3>Invoices & card payments</h3>
               <p>
-                Price the work, track approvals<br />
-                and keep your paperwork together.
+                Send a payment link and get paid<br />
+                by card. Cash flow you can see.
               </p>
             </div>
             <div>
               <span>▣</span>
-              <h3>Jobs & scheduling</h3>
+              <h3>Projects & schedule</h3>
               <p>
-                Know who's where, what's next<br />
-                and what needs your attention.
+                Who's where, what's next,<br />
+                and what needs you today.
               </p>
             </div>
             <div>
-              <span>↗</span>
-              <h3>Business overview</h3>
+              <span>✓</span>
+              <h3>Gas Safe certificates</h3>
               <p>
-                A clear view of your pipeline,<br />
-                your workload and your progress.
+                Issue a CP12, store it, and let<br />
+                the renewal chase itself.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Real client sites ───────────────────────────────────────────── */}
+        <ClientShowcase />
+
+        {/* ── What it does that nobody mentions ───────────────────────────── */}
+        <section className="platform wrap section" style={{ paddingTop: 0 }}>
+          <div className="section-head reveal">
+            <div>
+              <p className="eyebrow">02 / THE BITS THAT DO THE CHASING</p>
+              <h2>
+                It keeps working<br />
+                <span className="muted-heading">when you've put the phone down.</span>
+              </h2>
+            </div>
+            <p>
+              Not a list of screens.<br />
+              Things that happen without you.
+            </p>
+          </div>
+          <div className="tool-row reveal">
+            <div>
+              <span>↗</span>
+              <h3>Chases unpaid invoices</h3>
+              <p>
+                Three, seven and fourteen days<br />
+                past due. You never have to ask twice.
+              </p>
+            </div>
+            <div>
+              <span>▦</span>
+              <h3>Raises certificate renewals</h3>
+              <p>
+                Six weeks before a CP12 runs out,<br />
+                next year's job is in your pipeline.
+              </p>
+            </div>
+            <div>
+              <span>▤</span>
+              <h3>Follows up quiet quotes</h3>
+              <p>
+                A quote nobody answered gets<br />
+                a nudge, not a shrug.
+              </p>
+            </div>
+            <div>
+              <span>♧</span>
+              <h3>Customer portal</h3>
+              <p>
+                Your customer can see their job,<br />
+                their quote and their invoice.
               </p>
             </div>
           </div>
@@ -579,9 +736,57 @@ export default function BizzFlowHome() {
             A strong front door. A well-run business behind it.<br />
             That's BizzFlowUK.
           </p>
-          <Link href="/demo" className="button dark">
-            Take a look around <span>↗</span>
+          <Link href="/signup" className="button dark">
+            Start your free week <span>↗</span>
           </Link>
+        </section>
+
+        {/* ── Pricing ─────────────────────────────────────────────────────── */}
+        {/* The page had no price and no way to buy. Every CTA pointed at the
+            demo, so a visitor who was sold had nowhere to go. */}
+        <section id="pricing" className="statement-section wrap reveal" style={{ borderBottom: "1px solid var(--line)" }}>
+          <span className="eyebrow">ONE PRICE. EVERYTHING IN IT.</span>
+          <h2 style={{ marginBottom: "6px" }}>
+            £99 a month.<br />
+            <span>Your website built in the first week.</span>
+          </h2>
+          <p style={{ maxWidth: "62ch", margin: "18px auto 0" }}>
+            Website, hosting, and the whole toolkit — customers, quotes, invoices, card payments, projects,
+            scheduling, cash flow, certificates and the customer portal. No setup fee. No per-user charge.
+            No separate bill for the site.
+          </p>
+
+          <div
+            className="reveal"
+            style={{
+              display: "grid", gap: "18px", margin: "38px auto 0", maxWidth: "62rem",
+              gridTemplateColumns: "repeat(auto-fit, minmax(15rem, 1fr))", textAlign: "left",
+            }}
+          >
+            {[
+              ["Day 1", "You're working", "Sign up and start taking enquiries, quoting and invoicing straight away."],
+              ["Within 2 days", "Your site goes up", "We build it around your trade, your work and your area. Usually inside 48 hours."],
+              ["Day 7", "You decide", "Free until then. Stay and it's £99 a month. Walk away and you've paid nothing."],
+            ].map(([when, what, detail]) => (
+              <div key={when} style={{ background: "var(--mint)", borderRadius: "13px", padding: "26px 24px" }}>
+                <p className="eyebrow" style={{ marginBottom: "10px" }}>{when}</p>
+                <h3 style={{ fontSize: "20px", letterSpacing: "-0.6px", fontWeight: 650 }}>{what}</h3>
+                <p style={{ marginTop: "10px", fontSize: "15px", lineHeight: 1.6, color: "var(--muted)" }}>{detail}</p>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap", marginTop: "38px" }}>
+            <Link href="/signup" className="button teal-bg">
+              Start your 7 days free <span>↗</span>
+            </Link>
+            <Link href="/demo" className="text-link">
+              <span className="play">▶</span> Look around first
+            </Link>
+          </div>
+          <p style={{ marginTop: "16px", fontSize: "14px", color: "var(--muted)" }}>
+            No card needed to start the trial.
+          </p>
         </section>
 
         {/* ── FAQs ────────────────────────────────────────────────────────── */}
@@ -619,8 +824,8 @@ export default function BizzFlowHome() {
                 We've got the flow.
               </h2>
             </div>
-            <Link href="/demo" className="button light">
-              Explore BizzFlowUK <span>↗</span>
+            <Link href="/signup" className="button light">
+              Start free for 7 days <span>↗</span>
             </Link>
           </div>
         </section>
@@ -639,8 +844,10 @@ export default function BizzFlowHome() {
           <div>
             <a href="#platform">The platform</a>
             <a href="#industries">Industries</a>
+            <a href="#pricing">Pricing</a>
             <a href="#faq">FAQs</a>
             <Link href="/demo">Interactive demo ↗</Link>
+            <Link href="/signup">Start free ↗</Link>
           </div>
         </div>
         <div className="footer-bottom">

@@ -148,6 +148,7 @@ const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
 const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
 const BizzFlowHome = lazy(() => import("@/zones/public/bizzflow/BizzFlowHome"));
 const BizzFlowDemo = lazy(() => import("@/zones/public/bizzflow/BizzFlowDemo"));
+const SignUpPage = lazy(() => import("@/zones/public/bizzflow/SignUpPage"));
 
 /**
  * Which tenant's branding the loader may show, resolved before any tenant data has
@@ -317,6 +318,9 @@ function AppRoutes() {
         <Switch>
           <Route path="/" component={LandingPage} />
           {/* Public: the invite token is the credential, so this must sit outside the signed-in gate. */}
+          {/* A signed-in visitor has a workspace already; send them to it
+              rather than offering to create a second one. */}
+          <Route path="/signup">{() => isSignedIn ? <RoleRouter /> : <SignUpPage />}</Route>
           <Route path="/demo" component={BizzFlowDemo} />
           {/* The reference published the demo at /demo.html and links to it may
               already be out there. An alias, not a second implementation — the

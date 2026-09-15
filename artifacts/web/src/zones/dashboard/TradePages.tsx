@@ -777,12 +777,30 @@ export function AutomationsPage() {
             <h2 className="text-[11.5px] font-semibold uppercase tracking-[0.06em] text-slate-400 mb-2.5">{group}</h2>
             <Card className="overflow-hidden">
               {rules.filter(r => r.group === group).map((r, i, arr) => (
-                <div key={r.key} className={`p-5 ${i < arr.length - 1 ? "border-b border-slate-100" : ""}`}>
+                // A live automation is doing work while nobody is looking, so it
+                // should be obvious at a glance which ones are actually on. The
+                // whole row takes a wash of the tenant's own colour and a
+                // colour bar down its left edge — not just the little switch,
+                // which you have to hunt for across a list.
+                <div
+                  key={r.key}
+                  className={`relative p-5 pl-6 transition-colors ${i < arr.length - 1 ? "border-b border-slate-100" : ""}`}
+                  style={r.enabled ? { background: "var(--ws-active)" } : undefined}
+                >
+                  {r.enabled && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-0 bottom-0 w-[3px]"
+                      style={{ background: "var(--brand)" }}
+                    />
+                  )}
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0 flex-1">
                       <h3 className="text-[16px] font-bold text-slate-900">{r.label}</h3>
                       <div className="mt-1.5">
-                        {r.enabled ? <Pill tone="good">On</Pill> : <Pill>Not set up</Pill>}
+                        {r.enabled
+                          ? <span className="ws-pill" data-tone="active">On</span>
+                          : <span className="ws-pill" data-tone="done">Not set up</span>}
                       </div>
                       <p className="mt-1.5 text-[14.5px] text-slate-600 max-w-[62ch] leading-relaxed">{r.description}</p>
 
@@ -810,7 +828,8 @@ export function AutomationsPage() {
                       onClick={() => toggle(r, !r.enabled)}
                       disabled={busy === r.key}
                       aria-label={r.enabled ? `Turn off ${r.label}` : `Turn on ${r.label}`}
-                      className={`shrink-0 w-[52px] h-[30px] rounded-full transition-colors relative ${r.enabled ? "bg-emerald-500" : "bg-slate-200"} disabled:opacity-50`}
+                      className="shrink-0 w-[52px] h-[30px] rounded-full transition-colors relative disabled:opacity-50"
+                      style={{ background: r.enabled ? "var(--brand)" : "#e2e8f0" }}
                     >
                       <span className={`absolute top-[3px] w-6 h-6 rounded-full bg-white shadow transition-all ${r.enabled ? "left-[25px]" : "left-[3px]"}`} />
                     </button>

@@ -62,6 +62,15 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   squareLocationId: text("square_location_id"),
   squareAccessToken: text("square_access_token"),
   squareEnvironment: text("square_environment").default("sandbox"), // 'sandbox' | 'production'
+
+  // Stripe payment settings (per-tenant). Keys carry their own environment
+  // (pk_test/sk_test vs pk_live/sk_live), so unlike Square there is no separate
+  // environment column that can drift out of step with the credentials.
+  stripePublishableKey: text("stripe_publishable_key"),
+  stripeSecretKey: text("stripe_secret_key"),
+  stripeWebhookSecret: text("stripe_webhook_secret"),
+  /** 'square' | 'stripe' | null — null means auto-detect from whichever credentials are complete. */
+  paymentProvider: text("payment_provider"),
   // Customer-facing prefix for quote references, e.g. "AMO-R" -> AMO-R-0007. Null falls back to
   // "QUO". Per-tenant because the reference appears on the quote the customer receives (0019).
   quoteRefPrefix: text("quote_ref_prefix"),

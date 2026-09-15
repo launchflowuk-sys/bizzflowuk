@@ -78,3 +78,25 @@
   opacity: 0.6;
   transform: none;
 }
+
+/* -----------------------------------------------------------------------------
+ * 3. The signup layout.
+ *
+ * Two columns on a desktop — what you get on the left, the form on the right —
+ * and one column below 900px so the form is never squeezed into half a phone.
+ * The pitch goes first in the source order so it is what a phone reads first.
+ * -------------------------------------------------------------------------- */
+.bf .signup-grid {
+  display: grid;
+  gap: 60px;
+  grid-template-columns: 1fr;
+  max-width: 62rem;
+  margin: 0 auto;
+}
+
+@media (min-width: 900px) {
+  .bf .signup-grid {
+    grid-template-columns: 1fr 1.05fr;
+    align-items: start;
+  }
+}

@@ -1,6 +1,7 @@
 import type { SmtpConfig } from "./email";
 import type { SmsCreds } from "./sms";
 import type { SquareCreds } from "./square";
+import { stripeKeysAgree, type StripeCreds } from "./stripe";
 import type { BrandConfig } from "./emailShell";
 import { signObjectAccessToken } from "./objectStorage";
 
@@ -66,6 +67,12 @@ export function maskSecretsForAuth(row: Record<string, unknown> | null | undefin
     smtpPass: row.smtpPass ? "" : null,
     twilioAuthToken: row.twilioAuthToken ? "" : null,
     squareAccessToken: row.squareAccessToken ? "" : null,
+    // The secret key can move money and the webhook secret authenticates
+    // Stripe's callbacks — neither ever leaves the server, not even to the
+    // tenant's own settings page. The publishable key is NOT masked: it is
+    // designed to be public and the browser needs it to render the card field.
+    stripeSecretKey: row.stripeSecretKey ? "" : null,
+    stripeWebhookSecret: row.stripeWebhookSecret ? "" : null,
   };
 }
 
@@ -111,6 +118,41 @@ export function buildBrandConfig(
     youtubeUrl: (settings?.youtubeUrl as string) || null,
     tiktokUrl: (settings?.tiktokUrl as string) || null,
   };
+}
+
+/**
+ * Stripe credentials, or null when the tenant cannot take a Stripe payment.
+ *
+ * Both halves must be present and must belong to the same environment. A live
+ * publishable key paired with a test secret key is a configuration that only
+ * fails at the till, in front of a customer, so it is refused here instead.
+ */
+export function buildStripeConfig(settings: Record<string, unknown> | null | undefined): StripeCreds | null {
+  const publishableKey = settings?.stripePublishableKey as string | undefined;
+  const secretKey = settings?.stripeSecretKey as string | undefined;
+  if (!publishableKey || !secretKey) return null;
+  if (!stripeKeysAgree(publishableKey, secretKey)) return null;
+  return { publishableKey, secretKey };
+}
+
+/**
+ * Which till this tenant is using.
+ *
+ * `paymentProvider` is the explicit choice. When it is unset — which is every
+ * tenant that existed before Stripe was added — fall back to whichever set of
+ * credentials is actually complete, so nobody has to visit a settings page to
+ * keep working exactly as they did yesterday. Square is preferred in that
+ * fallback because it is the one already taking real money.
+ */
+export function resolvePaymentProvider(
+  settings: Record<string, unknown> | null | undefined,
+): "square" | "stripe" | null {
+  const chosen = settings?.paymentProvider as string | undefined;
+  if (chosen === "stripe") return buildStripeConfig(settings) ? "stripe" : null;
+  if (chosen === "square") return buildSquareConfig(settings) ? "square" : null;
+  if (buildSquareConfig(settings)) return "square";
+  if (buildStripeConfig(settings)) return "stripe";
+  return null;
 }
 
 export function buildSquareConfig(settings: Record<string, unknown> | null | undefined): SquareCreds | null {

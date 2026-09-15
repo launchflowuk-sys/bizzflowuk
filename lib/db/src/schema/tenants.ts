@@ -1,4 +1,4 @@
-import { pgTable, text, serial, timestamp, boolean, jsonb } from "drizzle-orm/pg-core";
+import { boolean, integer, jsonb, pgTable, serial, text, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -19,6 +19,14 @@ export const tenantsTable = pgTable("tenants", {
   website: text("website"),
   description: text("description"),
   customDomain: text("custom_domain"),
+  /**
+   * Featured on the BizzFlowUK homepage, and in what order. NULL means not
+   * featured — the default, so onboarding a tenant never puts them on a public
+   * marketing page by accident.
+   */
+  showcaseOrder: integer("showcase_order"),
+  /** The one line shown under their site in the showcase. */
+  showcaseBlurb: text("showcase_blurb"),
   /** Per-tenant module switches. New modules stay dark until enabled (migration 0032). */
   features: jsonb("features").$type<Record<string, boolean>>().notNull().default({}),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),

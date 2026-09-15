@@ -81,10 +81,16 @@ router.get("/settings", requireTenantAccess, async (req, res) => {
 router.patch("/settings", requireTenantAccess, async (req, res) => {
   try {
     const body = req.body as any;
-    // Strip out blank password/token fields so they don't overwrite stored values
+    // Strip out blank password/token fields so they don't overwrite stored values.
+    // maskSecretsForAuth returns "" for a secret that IS set, so the settings
+    // form posts "" straight back on every save that did not retype it — without
+    // this, opening settings and pressing Save would silently wipe the tenant's
+    // ability to take payments or send email.
     if (!body.smtpPass) delete body.smtpPass;
     if (!body.twilioAuthToken) delete body.twilioAuthToken;
     if (!body.squareAccessToken) delete body.squareAccessToken;
+    if (!body.stripeSecretKey) delete body.stripeSecretKey;
+    if (!body.stripeWebhookSecret) delete body.stripeWebhookSecret;
 
     // customDomain lives on tenantsTable — split it out
     const { customDomain, ...rest } = body;
