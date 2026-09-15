@@ -4,6 +4,8 @@ import {
   api, useApi, money, shortDate, dayMonth, timeOf, daysUntil,
   INVOICE_STATUS_LABEL, INVOICE_STATUS_TONE,
 } from "./tradeApi";
+import NewCertificateForm from "./NewCertificateForm";
+import NewJobForm from "./NewJobForm";
 import { StatusBadge, type StatusTone } from "@/components/StatusBadge";
 import { StatCard } from "@/components/StatCard";
 import { FileText, AlarmClock, CheckCircle2 } from "lucide-react";
@@ -490,6 +492,9 @@ export function SchedulePage() {
   const { data, loading, error } = useApi<any[]>(`/schedule?from=${from}&to=${to}`, [from, to]);
   const { data: engineers } = useApi<any[]>("/schedule/engineers");
   const [feedUrl, setFeedUrl] = useState<string | null>(null);
+  // Booking a slot IS creating a job, so this opens the same form rather than a
+  // second, thinner one that would drift out of step with it.
+  const [showNewJob, setShowNewJob] = useState(false);
 
   const byDay = useMemo(() => {
     const m = new Map<string, any[]>();
@@ -522,6 +527,7 @@ export function SchedulePage() {
         sub="Every booked job, and who is on it."
         action={
           <div className="flex flex-wrap gap-2">
+            <Btn onClick={() => setShowNewJob(true)}>+ New job</Btn>
             <Btn tone="ghost" onClick={() => setMonth(new Date(new Date().getFullYear(), new Date().getMonth(), 1))}>Today</Btn>
             <Btn tone="ghost" onClick={async () => {
               try { const f = await api.post<any>("/schedule/feed"); setFeedUrl(f.url); }
@@ -530,6 +536,13 @@ export function SchedulePage() {
           </div>
         }
       />
+
+      {showNewJob && (
+        <NewJobForm
+          onClose={() => setShowNewJob(false)}
+          onCreated={() => { setShowNewJob(false); window.location.reload(); }}
+        />
+      )}
 
       {feedUrl && (
         <Card className="p-5 mb-5">
@@ -635,6 +648,7 @@ export function CertificatesPage() {
   const [, navigate] = useLocation();
   const { data, loading, error, reload } = useApi<any[]>("/certificates");
   const { data: types } = useApi<any[]>("/certificates/types");
+  const [showNew, setShowNew] = useState(false);
 
   if (loading) return <Page><Loading /></Page>;
   if (error) return <Page><ErrorNote message={error} /></Page>;
@@ -647,7 +661,16 @@ export function CertificatesPage() {
       <PageHead
         title="Certificates"
         sub="Compliance records — issue them, send them, and get booked for next year automatically."
+        action={(types ?? []).length > 0 ? <Btn onClick={() => setShowNew(true)}>+ New certificate</Btn> : undefined}
       />
+
+      {showNew && (
+        <NewCertificateForm
+          types={types ?? []}
+          onClose={() => setShowNew(false)}
+          onCreated={() => { setShowNew(false); reload(); }}
+        />
+      )}
 
       {dueSoon.length > 0 && (
         <Card className="p-5 mb-5 border-amber-200 bg-amber-50/50">
