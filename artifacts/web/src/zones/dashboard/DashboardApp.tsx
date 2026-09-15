@@ -40,6 +40,7 @@ import FilesPage from "./FilesPage";
 import PropertiesPage from "./PropertiesPage";
 import BookingQrPage from "./BookingQrPage";
 import AssistantPage from "./AssistantPage";
+import BillingPage from "./BillingPage";
 import "./workspace-theme.css";
 import { StatCard, type StatCardProps } from "@/components/StatCard";
 import { Users, Wallet, Calculator, HardHat } from "lucide-react";
@@ -232,6 +233,7 @@ const NAV_ITEMS = [
   { path: "/dashboard/expenses", label: "Expenses", icon: "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" },
   { path: "/dashboard/certificates", label: "Certificates", icon: "M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z" },
   { path: "/dashboard/automations", label: "Automations", icon: "M13 10V3L4 14h7v7l9-11h-7z" },
+  { path: "/dashboard/billing", label: "Billing", icon: "M3 10h18M7 15h1m4 0h1m-7 4h12a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" },
   { path: "/dashboard/booking-qr", label: "QR code", icon: "M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z" },
   { path: "/dashboard/properties", label: "Properties", icon: "M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" },
   { path: "/dashboard/files", label: "Files", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" },
@@ -268,7 +270,7 @@ function mixHex(rgb: [number, number, number], target: [number, number, number],
 }
 /** Matches --color-brand-500 in index.css. The maths below needs a literal, so
  *  this is the one place the platform colour is repeated as a hex. */
-const BRAND_FALLBACK = "#F97316";
+const BRAND_FALLBACK = "#007F72";
 
 /**
  * The whole workspace palette, derived from the one colour a tenant chose.
@@ -2061,7 +2063,7 @@ function RichTextEditor({ onChange }: { onChange: (html: string) => void }) {
         .email-rich-editor blockquote { border-left: 3px solid #cbd5e1; padding-left: 0.75em; margin: 0.5em 0; color: #64748b; }
         .email-rich-editor ul { list-style: disc; padding-left: 1.5em; }
         .email-rich-editor ol { list-style: decimal; padding-left: 1.5em; }
-        .email-rich-editor a { color: var(--brand, #F97316); text-decoration: underline; }
+        .email-rich-editor a { color: var(--brand, #007F72); text-decoration: underline; }
       `}</style>
     </div>
   );
@@ -4870,6 +4872,7 @@ export default function DashboardApp() {
               <Route path="/dashboard/certificates" component={CertificatesPage} />
               <Route path="/dashboard/automations" component={AutomationsPage} />
               <Route path="/dashboard/customers" component={CustomersPage} />
+              <Route path="/dashboard/billing" component={BillingPage} />
               <Route path="/dashboard/flo" component={AssistantPage} />
               <Route path="/dashboard/booking-qr" component={BookingQrPage} />
               <Route path="/dashboard/properties" component={PropertiesPage} />

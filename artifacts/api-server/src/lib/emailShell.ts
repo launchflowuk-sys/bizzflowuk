@@ -6,7 +6,7 @@
  * It is the one literal, though: keep it in step with --color-brand-500 in
  * artifacts/web/src/index.css so a branded email and the dashboard agree.
  */
-export const BRAND_FALLBACK_COLOR = "#F97316";
+export const BRAND_FALLBACK_COLOR = "#007F72";
 
 // Shared branded HTML email shell — every customer/admin email in the platform renders through
 // this so tenants get a consistent, modern, mobile-first look using their own logo/colors instead

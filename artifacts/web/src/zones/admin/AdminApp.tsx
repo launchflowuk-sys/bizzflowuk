@@ -126,7 +126,7 @@ function NewTenantPage() {
   const createMutation = useCreateTenant();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
-  const [form, setForm] = useState({ name: '', slug: '', industry: 'rendering', plan: 'starter', primaryColor: '#F97316', email: '', phone: '', address: '', city: '', customDomain: '' });
+  const [form, setForm] = useState({ name: '', slug: '', industry: 'rendering', plan: 'starter', primaryColor: '#007F72', email: '', phone: '', address: '', city: '', customDomain: '' });
   const [error, setError] = useState('');
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
