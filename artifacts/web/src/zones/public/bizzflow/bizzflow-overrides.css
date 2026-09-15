@@ -614,136 +614,208 @@
  * The most important proof on the page must not depend on an animation firing,
  * so nothing here is hidden at rest.
  * -------------------------------------------------------------------------- */
+/* ── Built on BizzFlowUK ──────────────────────────────────────────────────────
+ *
+ * The proof section, and it is meant to stop you.
+ *
+ * It used to be four white cards on a white page carrying a logo and a line of
+ * text, sitting in the middle of a long page of other white sections — so the
+ * single most persuasive thing on the whole site, four real businesses running
+ * on it today, read as just more copy. Shoji asked for this three times.
+ *
+ * Now it is a dark green band that breaks the page, holding live previews of
+ * the actual websites. Not screenshots: real frames, so they can never go
+ * stale or show something a client has since changed.
+ */
 .bf .clients-section {
-  padding-block: 84px;
-  background: linear-gradient(180deg, #f6f9f7 0%, #fff 100%);
-  border-block: 1px solid var(--line);
+  padding-block: 96px;
+  /* The one dark band on the page. Everything above and below is white, so
+     this stops the scroll on its own without needing to shout in type. */
+  background:
+    radial-gradient(1200px 400px at 15% 0%, rgba(127, 211, 188, .18), transparent 60%),
+    linear-gradient(165deg, #0c3f35 0%, #0a5346 45%, #0e7c66 100%);
+  border-block: 0;
+  color: #eaf5f1;
+  position: relative;
+  overflow: hidden;
 }
 
 .bf .clients-head {
-  display: grid;
-  gap: 22px;
-  margin-bottom: 44px;
+  display: block;
+  max-width: 760px;
+  margin-bottom: 40px;
 }
 
-@media (min-width: 900px) {
-  .bf .clients-head {
-    grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
-    align-items: end;
-    gap: 50px;
-  }
+.bf .clients-section .eyebrow { color: #7fd3bc }
+.bf .clients-section .mini-line { background: #7fd3bc }
+
+.bf .clients-section h2 {
+  color: #fff;
+  margin: 10px 0 14px;
 }
+.bf .clients-section .muted-heading { color: #9fd9c8 }
 
 .bf .clients-intro {
-  font-size: 15.5px;
-  line-height: 1.75;
-  color: #647b6a;
-  max-width: 42ch;
+  color: #b9dcd2;
+  max-width: 58ch;
+  margin: 0;
 }
 
-.bf .clients-grid {
-  display: grid;
-  gap: 18px;
-  grid-template-columns: 1fr;
+/* The row itself. Real horizontal scrolling with snap rather than a duplicated
+   marquee track: duplicating would mean loading every site twice. */
+.bf .clients-track {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 4px 18px;
+  margin: 0 -4px;
+  scrollbar-width: none;
 }
-
-@media (min-width: 620px) { .bf .clients-grid { grid-template-columns: repeat(2, 1fr) } }
-@media (min-width: 1040px) { .bf .clients-grid { grid-template-columns: repeat(4, 1fr) } }
+.bf .clients-track::-webkit-scrollbar { display: none }
 
 .bf .client-card {
-  position: relative;
+  flex: 0 0 min(430px, 82vw);
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
-  padding: 26px 24px 22px;
-  border-radius: 16px;
   background: #fff;
-  border: 1px solid var(--line);
+  border-radius: 16px;
   overflow: hidden;
-  transition: transform 0.4s var(--ease), box-shadow 0.4s ease-out, border-color 0.3s;
+  text-decoration: none;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, .28);
+  transition: transform .25s ease, box-shadow .25s ease;
 }
 
-/* The tenant's own colour, so the row reads as four different businesses
-   rather than four cards of ours. */
-.bf .client-bar {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: 4px;
-  background: var(--client);
-}
-
-@media (hover: hover) and (pointer: fine) {
+@media (hover: hover) {
   .bf .client-card:hover {
-    transform: translateY(-4px);
-    border-color: color-mix(in srgb, var(--client) 40%, var(--line));
-    box-shadow: 0 18px 38px -24px color-mix(in srgb, var(--client) 55%, transparent);
+    transform: translateY(-6px);
+    box-shadow: 0 26px 56px rgba(0, 0, 0, .36);
   }
   .bf .client-card:hover .client-visit { gap: 10px }
 }
 
+/* Browser chrome, so a shrunken website reads as a website rather than as a
+   broken piece of the page. */
+.bf .client-chrome {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 14px;
+  background: #eef2f1;
+  border-bottom: 1px solid #dde5e2;
+}
+.bf .client-chrome .dot {
+  width: 9px; height: 9px; border-radius: 50%;
+  background: #cbd5d2;
+}
+.bf .client-url {
+  margin-left: 8px;
+  font-size: 11.5px;
+  color: #6b7d78;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The live preview.
+ *
+ * The frame is rendered at full desktop width and scaled down, which is what
+ * makes it look like a real site rather than a phone-width column. The wrapper
+ * clips it and owns the height; the iframe itself is bigger than its box. */
+.bf .client-frame {
+  position: relative;
+  display: block;
+  height: 252px;
+  overflow: hidden;
+  background: #f7faf9;
+}
+.bf .client-frame iframe {
+  position: absolute;
+  top: 0; left: 0;
+  width: 1280px;
+  height: 900px;
+  border: 0;
+  transform: scale(.336);
+  transform-origin: 0 0;
+  /* A picture, not a control. Clicks belong to the card so the whole thing
+     opens the real site. */
+  pointer-events: none;
+}
+
+.bf .client-skeleton {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, #f1f5f4 30%, #e6eeeb 50%, #f1f5f4 70%);
+  background-size: 200% 100%;
+  animation: bf-shimmer 1.4s linear infinite;
+}
+@keyframes bf-shimmer {
+  to { background-position: -200% 0 }
+}
+@media (prefers-reduced-motion: reduce) {
+  .bf .client-skeleton { animation: none }
+}
+
+.bf .client-foot {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-top: 1px solid #edf2f0;
+}
+
 .bf .client-logo {
+  width: 40px; height: 40px;
+  flex: 0 0 40px;
+  border-radius: 10px;
   display: grid;
   place-items: center;
-  width: 62px;
-  height: 62px;
-  margin-bottom: 18px;
-  border-radius: 13px;
-  background: #f4f7f4;
+  background: color-mix(in srgb, var(--client) 12%, #fff);
   overflow: hidden;
 }
-
-/* `contain` not `cover`: these are client logos of wildly different shapes and
-   cropping somebody's brand mark to fill a square is not ours to do. */
-.bf .client-logo img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  padding: 9px;
-}
+.bf .client-logo img { width: 100%; height: 100%; object-fit: contain; padding: 5px }
 
 .bf .client-initial {
-  font-family: 'Archivo Variable', 'DM Sans', Arial, sans-serif;
-  font-size: 26px;
-  font-weight: 700;
+  font-weight: 800;
   color: var(--client);
+  font-size: 17px;
 }
 
-.bf .client-card h3 {
-  font-family: 'Archivo Variable', 'DM Sans', Arial, sans-serif;
-  font-size: 18.5px;
-  font-weight: 650;
-  letter-spacing: -0.022em;
+.bf .client-meta { display: flex; flex-direction: column; min-width: 0; flex: 1 }
+.bf .client-meta strong {
+  font-size: 15px;
+  color: #10231e;
   line-height: 1.25;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-
 .bf .client-trade {
-  margin-top: 6px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: #93a79b;
-}
-
-.bf .client-blurb {
-  margin-top: 12px;
-  font-size: 14px;
-  line-height: 1.7;
-  color: #647b6a;
+  font-size: 12.5px;
+  color: #6b7d78;
+  text-transform: capitalize;
 }
 
 .bf .client-visit {
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  margin-top: auto;
-  padding-top: 20px;
-  font-size: 14px;
-  font-weight: 650;
+  gap: 5px;
+  font-size: 13px;
+  font-weight: 700;
   color: var(--client);
-  transition: gap 0.3s var(--ease);
+  white-space: nowrap;
+  transition: gap .2s ease;
+}
+
+.bf .clients-hint {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #8fc4b6;
 }
 
 @media (max-width: 760px) {
-  .bf .clients-section { padding-block: 60px }
-  .bf .clients-head { margin-bottom: 30px }
+  .bf .clients-section { padding-block: 62px }
+  .bf .clients-head { margin-bottom: 26px }
+  .bf .client-frame { height: 210px }
+  .bf .client-frame iframe { transform: scale(.28) }
 }

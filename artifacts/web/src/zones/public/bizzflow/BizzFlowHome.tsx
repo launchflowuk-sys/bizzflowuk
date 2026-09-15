@@ -378,36 +378,99 @@ type ShowcaseSite = {
  */
 function ClientShowcase() {
   const [sites, setSites] = useState<ShowcaseSite[] | null>(null);
+  const trackRef = useRef<HTMLDivElement | null>(null);
+  const sectionRef = useRef<HTMLElement | null>(null);
+  /**
+   * The previews are LIVE SITES in frames, so they are not mounted until the
+   * section has been scrolled to. Loading four whole websites above the fold
+   * would wreck the page for the majority of visitors who never reach here.
+   */
+  const [live, setLive] = useState(false);
 
   useEffect(() => {
-    let live = true;
+    let alive = true;
     fetch("/api/public/showcase")
       .then(r => (r.ok ? r.json() : []))
-      .then(data => { if (live) setSites(Array.isArray(data) ? data : []); })
-      .catch(() => { if (live) setSites([]); });
-    return () => { live = false; };
+      .then(data => { if (alive) setSites(Array.isArray(data) ? data : []); })
+      .catch(() => { if (alive) setSites([]); });
+    return () => { alive = false; };
   }, []);
+
+  /**
+   * Attach the observer AFTER the sites arrive.
+   *
+   * An observer set up on mount has nothing to watch — the section is not in
+   * the DOM until `sites` is non-empty, so it would never fire and the
+   * previews would stay blank forever. That exact mistake left an earlier
+   * version of this section invisible at full height.
+   */
+  useEffect(() => {
+    if (!sites?.length || live) return;
+    const node = sectionRef.current;
+    if (!node) return;
+    if (typeof IntersectionObserver === "undefined") { setLive(true); return; }
+    const io = new IntersectionObserver(entries => {
+      if (entries.some(e => e.isIntersecting)) { setLive(true); io.disconnect(); }
+    }, { rootMargin: "300px" });
+    io.observe(node);
+    return () => io.disconnect();
+  }, [sites, live]);
+
+  /**
+   * Nudge the row along on its own so it reads as alive.
+   *
+   * Real scrolling rather than a duplicated marquee: duplicating the track
+   * would double the number of live sites being loaded. Stops on hover, on
+   * touch, and for anyone who has asked for reduced motion.
+   */
+  useEffect(() => {
+    if (!live || !sites?.length) return;
+    const track = trackRef.current;
+    if (!track) return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+
+    let paused = false;
+    const pause = () => { paused = true; };
+    const resume = () => { paused = false; };
+    track.addEventListener("pointerenter", pause);
+    track.addEventListener("pointerleave", resume);
+    track.addEventListener("touchstart", pause, { passive: true });
+
+    const timer = window.setInterval(() => {
+      if (paused) return;
+      const card = track.querySelector<HTMLElement>(".client-card");
+      if (!card) return;
+      const step = card.offsetWidth + 24;
+      const atEnd = track.scrollLeft + track.clientWidth >= track.scrollWidth - 8;
+      track.scrollTo({ left: atEnd ? 0 : track.scrollLeft + step, behavior: "smooth" });
+    }, 4500);
+
+    return () => {
+      window.clearInterval(timer);
+      track.removeEventListener("pointerenter", pause);
+      track.removeEventListener("pointerleave", resume);
+      track.removeEventListener("touchstart", pause);
+    };
+  }, [live, sites]);
 
   if (!sites?.length) return null;
 
   return (
-    <section id="built-on-bizzflow" className="clients-section">
+    <section id="built-on-bizzflow" className="clients-section" ref={sectionRef}>
       <div className="wrap">
         <div className="clients-head">
-          <div>
-            <p className="eyebrow"><span className="mini-line" /> ALREADY RUNNING ON BIZZFLOWUK</p>
-            <h2>
-              These are real businesses.<br />
-              <span className="muted-heading">Go and look at their websites.</span>
-            </h2>
-          </div>
+          <p className="eyebrow"><span className="mini-line" /> ALREADY RUNNING ON BIZZFLOWUK</p>
+          <h2>
+            Four real businesses.<br />
+            <span className="muted-heading">These are their actual websites, live right now.</span>
+          </h2>
           <p className="clients-intro">
-            Not mock-ups and not case studies. Every one of these is a live site and a live
-            workspace, built on this platform, taking enquiries today.
+            Not mock-ups and not case studies. Every screen below is the real site, loading as you
+            look at it. Click any of them and you are on the live business.
           </p>
         </div>
 
-        <div className="clients-grid">
+        <div className="clients-track" ref={trackRef}>
           {sites.map(site => (
             <a
               key={site.slug}
@@ -416,24 +479,48 @@ function ClientShowcase() {
               {...(site.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
               style={{ ["--client" as any]: site.primaryColor || "var(--teal)" }}
             >
-              <span className="client-bar" aria-hidden="true" />
-
-              <span className="client-logo">
-                {site.logoUrl
-                  ? <img src={site.logoUrl} alt="" loading="lazy" decoding="async" />
-                  : <span className="client-initial" aria-hidden="true">{site.name.charAt(0)}</span>}
+              {/* Browser chrome, so a scaled-down website reads as a website
+                  rather than as a broken bit of the page. */}
+              <span className="client-chrome" aria-hidden="true">
+                <span className="dot" /><span className="dot" /><span className="dot" />
+                <span className="client-url">{site.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
               </span>
 
-              <h3>{site.name}</h3>
-              {site.industry && <p className="client-trade">{site.industry}</p>}
-              {site.blurb && <p className="client-blurb">{site.blurb}</p>}
+              <span className="client-frame">
+                {live ? (
+                  <iframe
+                    src={site.url}
+                    title={`${site.name} website`}
+                    loading="lazy"
+                    // The frame is a picture, not something to interact with:
+                    // no pointer events, and nothing inside it can navigate the
+                    // parent or run anything it should not.
+                    sandbox="allow-scripts allow-same-origin"
+                    tabIndex={-1}
+                    scrolling="no"
+                  />
+                ) : (
+                  <span className="client-skeleton" aria-hidden="true" />
+                )}
+              </span>
 
-              <span className="client-visit">
-                Visit the site <span aria-hidden="true">&#8599;</span>
+              <span className="client-foot">
+                <span className="client-logo">
+                  {site.logoUrl
+                    ? <img src={site.logoUrl} alt="" loading="lazy" decoding="async" />
+                    : <span className="client-initial" aria-hidden="true">{site.name.charAt(0)}</span>}
+                </span>
+                <span className="client-meta">
+                  <strong>{site.name}</strong>
+                  {site.industry && <span className="client-trade">{site.industry}</span>}
+                </span>
+                <span className="client-visit">Visit&nbsp;<span aria-hidden="true">&#8599;</span></span>
               </span>
             </a>
           ))}
         </div>
+
+        <p className="clients-hint">Drag to see the rest &mdash; or click one to open it.</p>
       </div>
     </section>
   );

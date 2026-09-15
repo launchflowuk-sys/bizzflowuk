@@ -6,6 +6,7 @@ import { seedKdEssexIfMissing, ensureKdEssexAdmin } from "./lib/seedKdEssex";
 import { seedBlogPostsIfMissing } from "./lib/seedBlogPosts";
 import { seedBpsPlumbingIfMissing } from "./lib/seedBpsPlumbing";
 import { seedBpsReviewsIfMissing } from "./lib/seedBpsReviews";
+import { seedDemoTenantIfMissing } from "./lib/demo/seedDemoTenant";
 import { syncBpsContent } from "./lib/syncBpsContent";
 import { startAutomationScheduler } from "./lib/automations/scheduler";
 import { startDemoResetScheduler } from "./lib/demo/reset";
@@ -37,6 +38,10 @@ runSeedFixIfNeeded()
   // himself: it is idempotent against duplicates, but a review he deletes on
   // purpose in the dashboard would come back on the next boot.
   .then(() => seedBpsReviewsIfMissing())
+  // LF Builders, the demo workspace. Seeded on boot because the script that
+  // was supposed to create it never got run against production -- so the Try
+  // the demo button fell through to a mock-up for months.
+  .then(() => seedDemoTenantIfMissing())
   .then(() => seedBlogPostsIfMissing())
   .then(() => startAutomationScheduler())
   // Puts the public demo back how it was, daily and in-process — so it is
