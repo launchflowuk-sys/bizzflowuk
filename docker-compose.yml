@@ -26,6 +26,9 @@ services:
       # cannot work. See .env.example for where to register them.
       XERO_CLIENT_ID: ${XERO_CLIENT_ID:-}
       XERO_CLIENT_SECRET: ${XERO_CLIENT_SECRET:-}
+      # Signs Xero's webhook deliveries. Unset means every delivery is
+      # rejected with 401 -- safe, but the webhook never validates.
+      XERO_WEBHOOK_KEY: ${XERO_WEBHOOK_KEY:-}
       FREEAGENT_CLIENT_ID: ${FREEAGENT_CLIENT_ID:-}
       FREEAGENT_CLIENT_SECRET: ${FREEAGENT_CLIENT_SECRET:-}
       FREEAGENT_SANDBOX: ${FREEAGENT_SANDBOX:-}

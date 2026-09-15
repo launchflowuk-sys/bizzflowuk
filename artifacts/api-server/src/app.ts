@@ -5,6 +5,7 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 import { startReviewRequestScheduler } from "./lib/reviewRequestScheduler";
 import { handleStripeWebhook } from "./routes/billing";
+import { handleXeroWebhook } from "./lib/accounting/xeroWebhook";
 
 const app: Express = express();
 
@@ -44,6 +45,16 @@ app.use(cors());
  * buffer, and it has to be registered before the JSON parser claims it.
  */
 app.post("/api/billing/webhook", express.raw({ type: "application/json" }), handleStripeWebhook);
+
+/**
+ * Xero's webhook, for the same reason and with the same constraint: the
+ * signature is an HMAC over the exact bytes, so this route must see the buffer
+ * and must be registered before express.json() claims it.
+ *
+ * Tells us when an invoice is paid in Xero, so the chase automation stops
+ * emailing a customer who has already paid.
+ */
+app.post("/api/accounting/webhook/xero", express.raw({ type: "application/json" }), handleXeroWebhook);
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
