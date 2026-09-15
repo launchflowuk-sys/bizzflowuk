@@ -5,6 +5,7 @@ import { seedAmoServicesIfMissing } from "./lib/seedAmoServices";
 import { seedKdEssexIfMissing, ensureKdEssexAdmin } from "./lib/seedKdEssex";
 import { seedBlogPostsIfMissing } from "./lib/seedBlogPosts";
 import { seedBpsPlumbingIfMissing } from "./lib/seedBpsPlumbing";
+import { seedBpsReviewsIfMissing } from "./lib/seedBpsReviews";
 import { syncBpsContent } from "./lib/syncBpsContent";
 import { startAutomationScheduler } from "./lib/automations/scheduler";
 import { startDemoResetScheduler } from "./lib/demo/reset";
@@ -31,6 +32,11 @@ runSeedFixIfNeeded()
   .then(() => ensureKdEssexAdmin())
   .then(() => seedBpsPlumbingIfMissing())
   .then(() => syncBpsContent())
+  // One-time backfill of Brandon's real reviews, which Google's five-review
+  // cap will not hand over. DELETE THIS LINE once he starts curating them
+  // himself: it is idempotent against duplicates, but a review he deletes on
+  // purpose in the dashboard would come back on the next boot.
+  .then(() => seedBpsReviewsIfMissing())
   .then(() => seedBlogPostsIfMissing())
   .then(() => startAutomationScheduler())
   // Puts the public demo back how it was, daily and in-process — so it is

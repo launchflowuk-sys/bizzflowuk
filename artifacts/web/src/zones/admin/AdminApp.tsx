@@ -401,6 +401,8 @@ function TenantDetailPage({ id }: { id: number }) {
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [reviewSummary, setReviewSummary] = useState<{ rating: string | null; count: number | null; syncedAt: string | null } | null>(null);
+  const [accessBusy, setAccessBusy] = useState(false);
+  const [accessResult, setAccessResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   // These live on tenant_settings, which GET /tenants/:id does not return.
   useEffect(() => {
@@ -509,6 +511,32 @@ function TenantDetailPage({ id }: { id: number }) {
     }
   };
 
+  /**
+   * Put this business on my own account, so it appears in the dashboard's
+   * business switcher.
+   *
+   * The alternative was asking a paying client for their password to look at
+   * their own screen, which is not a support process.
+   */
+  const handleGrantAccess = async () => {
+    setAccessBusy(true);
+    setAccessResult(null);
+    try {
+      const r = await adminRequest<{ already: boolean; tenant: string; next: string }>(
+        'POST', `/tenants/${id}/members`);
+      setAccessResult({
+        ok: true,
+        text: r.already
+          ? `You already have access to ${r.tenant}. ${r.next}`
+          : `Done. ${r.next}`,
+      });
+    } catch (err: any) {
+      setAccessResult({ ok: false, text: err?.message || 'Could not grant access.' });
+    } finally {
+      setAccessBusy(false);
+    }
+  };
+
   const handleSaveBilling = async () => {
     setSavingBilling(true);
     try {
@@ -558,6 +586,53 @@ function TenantDetailPage({ id }: { id: number }) {
             <Detail label="Email" breakAll value={t.email ? <a href={`mailto:${t.email}`} className="text-brand-600">{t.email}</a> : '-'} />
           </div>
         </div>
+      </div>
+
+      {/* Getting into their dashboard without asking for their password. */}
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+        <h2 className="font-semibold text-slate-900">Their Dashboard</h2>
+        <p className="text-xs text-slate-500">
+          Adds this business to your own account so you can open the dashboard they use &mdash;
+          not the admin view of their rows, the actual screens. You are scoped to this one business
+          while you are in it. It shows in their team list like any other member, and you can hand
+          it back below.
+        </p>
+        <p className="text-xs text-amber-700">
+          This is their live workspace: real customers, real invoices. Anything you change, they see.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={handleGrantAccess}
+            disabled={accessBusy}
+            className="inline-flex h-10 items-center rounded-lg bg-brand-600 px-4 text-sm font-semibold text-white hover:bg-brand-700 disabled:opacity-50"
+          >
+            {accessBusy ? 'Working…' : 'Give me dashboard access'}
+          </button>
+          <button
+            type="button"
+            onClick={async () => {
+              if (!confirm('Remove your access to this business?')) return;
+              setAccessBusy(true);
+              setAccessResult(null);
+              try {
+                await adminRequest('DELETE', `/tenants/${id}/members`);
+                setAccessResult({ ok: true, text: 'Access handed back.' });
+              } catch (err: any) {
+                setAccessResult({ ok: false, text: err?.message || 'Could not remove access.' });
+              } finally {
+                setAccessBusy(false);
+              }
+            }}
+            disabled={accessBusy}
+            className="inline-flex h-10 items-center rounded-lg border border-slate-300 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+          >
+            Hand it back
+          </button>
+        </div>
+        {accessResult && (
+          <p className={`text-xs ${accessResult.ok ? 'text-green-700' : 'text-red-600'}`}>{accessResult.text}</p>
+        )}
       </div>
 
       {/* Custom Domain section */}

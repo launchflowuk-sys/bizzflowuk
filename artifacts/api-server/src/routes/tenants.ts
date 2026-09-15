@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { db } from "@workspace/db";
-import { tenantsTable, tenantSettingsTable, leadsTable, projectsTable, reviewsTable } from "@workspace/db";
-import { eq, count, sql } from "drizzle-orm";
+import { tenantsTable, tenantSettingsTable, leadsTable, projectsTable, reviewsTable, usersTable, userTenantsTable } from "@workspace/db";
+import { eq, and, count, sql } from "drizzle-orm";
 import { requireAuth, requireSuperAdmin } from "../middlewares/auth";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 import { invalidateTenantPageCache } from "../lib/pageCache";
@@ -207,6 +207,123 @@ router.post("/tenants/:id/reviews/import", requireSuperAdmin, async (req, res) =
     req.log.error(err);
     res.status(500).json({ error: err?.message || "Import failed" });
   }
+});
+
+// ── Getting into a tenant's own dashboard ────────────────────────────────────
+
+/**
+ * Give an existing user access to this business, so it appears in their
+ * dashboard switcher.
+ *
+ * Built because there was no way in at all. The platform owner could see a
+ * tenant's rows through /admin, but not the dashboard the tenant actually
+ * uses — and the only route to that was knowing the client's password.
+ * Asking a paying customer for their password to look at their own screen is
+ * not a support process, it is a bad habit.
+ *
+ * Three deliberate limits:
+ *
+ *  - Super admin only, and it grants membership to an account that ALREADY
+ *    exists. It cannot create a user, so it can never mint a login for a
+ *    person who has not been onboarded.
+ *
+ *  - The role granted is TENANT_ADMIN, never SUPER_ADMIN. This matters more
+ *    than it looks: requireAuth swaps the caller's role for the MEMBERSHIP
+ *    role while they are working in that tenant, so the platform owner is
+ *    scoped down to that one business while they are in it, rather than
+ *    carrying a filter-bypassing SUPER_ADMIN role into a tenant's screens.
+ *
+ *  - It is logged. Reaching into a customer's workspace should leave a trace
+ *    even when the person doing it owns the platform.
+ *
+ * What it does NOT do is hide itself. The membership shows in the tenant's own
+ * team list like any other, because a client finding out later that someone
+ * had silent access is worse than them seeing it on day one.
+ */
+router.post("/tenants/:id/members", requireSuperAdmin, async (req: any, res) => {
+  try {
+    const tenantId = Number(req.params.id);
+    if (!Number.isInteger(tenantId)) { res.status(400).json({ error: "Bad tenant id" }); return; }
+
+    const [tenant] = await db.select({ id: tenantsTable.id, name: tenantsTable.name })
+      .from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
+    if (!tenant) { res.status(404).json({ error: "Not found" }); return; }
+
+    // No email means "me" — the common case, and it avoids typing an address
+    // to grant yourself something you already have the authority to grant.
+    const email = typeof req.body?.email === "string" && req.body.email.trim()
+      ? req.body.email.trim().toLowerCase()
+      : req.authUser?.email;
+    if (!email) { res.status(400).json({ error: "No account to grant access to" }); return; }
+
+    const [user] = await db.select({ id: usersTable.id, email: usersTable.email })
+      .from(usersTable).where(eq(usersTable.email, email)).limit(1);
+    if (!user) {
+      res.status(404).json({
+        error: `No account for ${email}. This grants access to an account that already exists — it cannot create one.`,
+      });
+      return;
+    }
+
+    const [existing] = await db.select({ id: userTenantsTable.id }).from(userTenantsTable)
+      .where(and(eq(userTenantsTable.userId, user.id), eq(userTenantsTable.tenantId, tenantId)))
+      .limit(1);
+
+    if (!existing) {
+      await db.insert(userTenantsTable).values({
+        userId: user.id, tenantId, role: "TENANT_ADMIN",
+      });
+      req.log.warn(
+        { grantedTo: user.email, tenantId, tenantName: tenant.name, by: req.authUser?.email },
+        "Super admin granted dashboard access to a tenant",
+      );
+    }
+
+    res.json({
+      ok: true,
+      already: Boolean(existing),
+      email: user.email,
+      tenant: tenant.name,
+      // Told rather than assumed: the switcher is not obvious if you have only
+      // ever had one business on the account.
+      next: `Open the dashboard and pick "${tenant.name}" from the business switcher at the top of the sidebar.`,
+    });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+/** Hand a tenant's workspace back — removes a membership. */
+router.delete("/tenants/:id/members", requireSuperAdmin, async (req: any, res) => {
+  try {
+    const tenantId = Number(req.params.id);
+    const email = typeof req.body?.email === "string" && req.body.email.trim()
+      ? req.body.email.trim().toLowerCase()
+      : req.authUser?.email;
+    if (!Number.isInteger(tenantId) || !email) { res.status(400).json({ error: "Bad request" }); return; }
+
+    const [user] = await db.select({ id: usersTable.id }).from(usersTable)
+      .where(eq(usersTable.email, email)).limit(1);
+    if (!user) { res.status(404).json({ error: "No such account" }); return; }
+
+    /**
+     * Never strip the account the tenant row itself points at.
+     *
+     * users.tenantId is the account's home business. Removing the membership
+     * of the client's own admin would leave them with a login that can reach
+     * nothing — locking a paying customer out of their own workspace from a
+     * screen they cannot see.
+     */
+    const [target] = await db.select({ homeTenant: usersTable.tenantId })
+      .from(usersTable).where(eq(usersTable.id, user.id)).limit(1);
+    if (target?.homeTenant === tenantId) {
+      res.status(409).json({ error: "That is this account's own business — removing it would lock them out." });
+      return;
+    }
+
+    await db.delete(userTenantsTable)
+      .where(and(eq(userTenantsTable.userId, user.id), eq(userTenantsTable.tenantId, tenantId)));
+    req.log.warn({ removedFrom: tenantId, email, by: req.authUser?.email }, "Super admin removed tenant access");
+    res.status(204).end();
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 router.delete("/tenants/:id", requireSuperAdmin, async (req, res) => {
