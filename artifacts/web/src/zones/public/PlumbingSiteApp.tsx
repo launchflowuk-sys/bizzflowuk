@@ -917,28 +917,88 @@ function ClosingCta({ settings }: { settings: any }) {
 }
 
 /**
- * Floating WhatsApp button.
+ * A tenant's phone number in the international form WhatsApp requires, or null
+ * when it cannot receive WhatsApp at all.
  *
- * Renders only when the tenant has a mobile number — a landline would open
- * WhatsApp to a chat that does not exist. UK numbers are normalised to the
- * international form WhatsApp requires.
+ * A landline would open WhatsApp to a chat that does not exist, so the button
+ * is not offered rather than offered and broken. UK mobiles are 447xxxxxxxxx.
  */
-function WhatsAppFloat({ settings, tenant }: { settings: any; tenant: any }) {
+export function whatsappNumber(settings: any): string | null {
   const raw = settings?.whatsappNumber || settings?.phone;
   if (!raw) return null;
-
   const digits = String(raw).replace(/[^\d+]/g, "");
   const intl = digits.startsWith("+") ? digits.slice(1)
     : digits.startsWith("0") ? `44${digits.slice(1)}`
     : digits;
-  // A landline cannot receive WhatsApp. UK mobiles are 447xxxxxxxxx.
-  if (!/^447\d{9}$/.test(intl)) return null;
+  return /^447\d{9}$/.test(intl) ? intl : null;
+}
 
-  const text = encodeURIComponent(`Hi ${tenant?.name || ""}, I found you online and wanted to ask about`.trim());
+/**
+ * What the visitor is actually looking at, in words.
+ *
+ * The message used to end "...wanted to ask about" with nothing after it,
+ * because nothing ever told it the subject. The customer then has to type the
+ * thing the page already knew, and the trade receives an enquiry that could be
+ * about anything.
+ *
+ * Naming the page in plain words rather than pasting its URL is deliberate:
+ * "Boiler Installation" is what the tradesperson needs to read at a glance on
+ * a phone, and a pasted link reads like spam.
+ */
+export type WhatsAppContext =
+  | { kind: "service"; name: string }
+  | { kind: "area"; name: string }
+  | { kind: "quote" }
+  | null;
+
+export function whatsappSubject(path: string, services?: any[], areas?: any[]): WhatsAppContext {
+  const after = (prefix: string) => path.startsWith(prefix) ? path.slice(prefix.length).split(/[?#]/)[0] : null;
+
+  const serviceSlug = after("/services/");
+  const service = serviceSlug ? (services || []).find((s: any) => s.slug === serviceSlug) : null;
+  if (service?.name) return { kind: "service", name: service.name };
+
+  const areaSlug = after("/areas/");
+  const area = areaSlug ? (areas || []).find((a: any) => a.slug === areaSlug) : null;
+  if (area?.name) return { kind: "area", name: area.name };
+
+  if (path.startsWith("/get-a-quote")) return { kind: "quote" };
+  return null;
+}
+
+/**
+ * The full pre-filled message. Always a complete sentence, context or not.
+ *
+ * Each context gets its own sentence rather than one template with a slot,
+ * because a slot produces things nobody would say: an area dropped into the
+ * service sentence reads "I saw work in Romford on your website".
+ */
+export function whatsappMessage(businessName: string | undefined, context: WhatsAppContext): string {
+  const who = businessName ? `Hi ${businessName}` : "Hello";
+  if (context?.kind === "service") return `${who}, I saw ${context.name} on your website and I'd like to ask about it.`;
+  if (context?.kind === "area") return `${who}, I'm in ${context.name} and I'd like to ask about some work.`;
+  if (context?.kind === "quote") return `${who}, I'd like to get a quote please.`;
+  return `${who}, I found you online and I'd like to ask about some work.`;
+}
+
+/** A wa.me link carrying the message, or null when WhatsApp is not available. */
+export function whatsappHref(settings: any, tenant: any, context: WhatsAppContext): string | null {
+  const intl = whatsappNumber(settings);
+  if (!intl) return null;
+  return `https://wa.me/${intl}?text=${encodeURIComponent(whatsappMessage(tenant?.name, context))}`;
+}
+
+/**
+ * Floating WhatsApp button, which now knows which page it was tapped from.
+ */
+function WhatsAppFloat({ settings, tenant, services, areas }: { settings: any; tenant: any; services?: any[]; areas?: any[] }) {
+  const [location] = useLocation();
+  const href = whatsappHref(settings, tenant, whatsappSubject(location, services, areas));
+  if (!href) return null;
 
   return (
     <a
-      href={`https://wa.me/${intl}?text=${text}`}
+      href={href}
       target="_blank"
       rel="noopener noreferrer"
       className="bps-wa"
@@ -1390,7 +1450,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
               </Switch>
             </main>
             <Footer tenant={tenant} settings={settings} services={shared.services}/>
-            <WhatsAppFloat settings={settings} tenant={tenant}/>
+            <WhatsAppFloat settings={settings} tenant={tenant} services={shared.services} areas={shared.areas}/>
             <CookieBanner siteBase={base}/>
           </div>
         </WouterRouter>
