@@ -7,7 +7,7 @@ import {
 import { eq, and, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { maskSecretsForAuth } from "../lib/settingsHelpers";
-import { sanitizeUpdate } from "../lib/sanitizeUpdate";
+import { sanitizeUpdate, coerceTableTimestamps } from "../lib/sanitizeUpdate";
 import { invalidateTenantPageCache } from "../lib/pageCache";
 import { syncGoogleReviews } from "../lib/reviews/googleSync";
 
@@ -24,7 +24,7 @@ function crud<T>(table: any, routePrefix: string, extraInsert?: (req: any) => ob
   });
   router.post(`/${routePrefix}`, requireTenantAccess, async (req, res) => {
     try {
-      const row = await db.insert(table).values({ ...req.body, tenantId: tid(req), ...(extraInsert ? extraInsert(req) : {}) }).returning() as any[];
+      const row = await db.insert(table).values({ ...coerceTableTimestamps(table, req.body), tenantId: tid(req), ...(extraInsert ? extraInsert(req) : {}) }).returning() as any[];
       res.status(201).json(row[0]);
       invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
     } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
@@ -38,7 +38,9 @@ function crud<T>(table: any, routePrefix: string, extraInsert?: (req: any) => ob
   });
   router.patch(`/${routePrefix}/:id`, requireTenantAccess, async (req, res) => {
     try {
-      const row = await db.update(table).set(sanitizeUpdate(req.body)).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req)))).returning();
+      // coerceTableTimestamps: these endpoints return a whole row and take the
+      // whole row back, so any timestamp on the table arrives as a string.
+      const row = await db.update(table).set(coerceTableTimestamps(table, sanitizeUpdate(req.body))).where(and(eq(table.id, Number(req.params.id)), eq(table.tenantId, tid(req)))).returning();
       if (!row.length) { res.status(404).json({ error: "Not found" }); return; }
       res.json(row[0]);
       invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
@@ -93,9 +95,38 @@ router.patch("/settings", requireTenantAccess, async (req, res) => {
     if (!body.stripeSecretKey) delete body.stripeSecretKey;
     if (!body.stripeWebhookSecret) delete body.stripeWebhookSecret;
 
+    /**
+     * Fields the SERVER owns. The form must never write them back.
+     *
+     * This is what broke Save Settings with a 500: `GET /settings` returns the
+     * whole row, the form holds all of it in state, and Save posts all of it
+     * back. `googleReviewsSyncedAt` is a timestamp column, so it arrives as an
+     * ISO *string* and drizzle throws "value.toISOString is not a function"
+     * deep inside PgTimestamp.mapToDriverValue, with nothing in the response to
+     * explain it.
+     *
+     * It only started failing when the Google review sync began working — until
+     * then the column was NULL, and null round-trips harmlessly. A latent bug
+     * that fires the day an unrelated feature starts writing a column.
+     *
+     * Stripped rather than coerced: the rating, the review count and the sync
+     * time are the sync's output. Letting a settings form overwrite them would
+     * be wrong even if the types lined up.
+     */
+    for (const field of ["googleRating", "googleReviewCount", "googleReviewsSyncedAt"]) {
+      delete body[field];
+    }
+
     // customDomain lives on tenantsTable — split it out
     const { customDomain, ...rest } = body;
-    const settingsBody = sanitizeUpdate(rest);
+    /**
+     * Belt and braces: coerce any remaining timestamp-shaped field.
+     *
+     * The strip above fixes the column we know about. This stops the NEXT
+     * timestamp added to tenant_settings reintroducing exactly the same 500,
+     * because the failure mode is silent until someone presses Save.
+     */
+    const settingsBody = coerceTableTimestamps(tenantSettingsTable, sanitizeUpdate(rest));
     if (customDomain !== undefined) {
       await db.update(tenantsTable).set({ customDomain: customDomain || null }).where(eq(tenantsTable.id, tid(req)));
     }
