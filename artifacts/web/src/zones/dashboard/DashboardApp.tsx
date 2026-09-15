@@ -4074,6 +4074,82 @@ const HELP_SECTIONS: HelpSection[] = [
     ],
   },
   {
+    id: "schedule", title: "Schedule", icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z",
+    intro: "The diary. Four ways to look at the same work.",
+    topics: [
+      { q: "Day, Week, Month and Route", a: "Day is the morning view — the jobs on a rail, the address as a map link and the customer's number as a tap-to-call. Week is seven columns for planning. Month is the wide view for spotting a quiet fortnight. Route is the day by address, in order. It remembers whichever you used last." },
+      { q: "What does Route do?", a: "Lists the day's stops in the order they happen, numbered, with a Navigate button on each. “Drive the whole day” builds the multi-stop route and hands it to Google Maps, which is where your traffic and your car screen already are." },
+      { q: "Can I book a job straight from here?", a: "Yes — New job on the Schedule opens the same form as everywhere else, so a phone call at seven in the morning goes straight into the diary." },
+      { q: "Getting it into my phone calendar", a: "Add to my calendar gives you a private link for Google Calendar, Outlook or your phone, and it keeps itself up to date. Treat it like a password — anyone holding it can see what it shows — and turn it off from the same panel whenever you like." },
+    ],
+  },
+  {
+    id: "invoices", title: "Invoices", icon: "M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z",
+    intro: "Raising it, checking it, sending it and getting paid.",
+    topics: [
+      { q: "Can I see what the customer will get?", a: "Yes. Preview opens the actual PDF and Download saves it. They are the same file the customer is emailed, so what you check is what goes out. Both are greyed out while you have unsaved changes to the lines." },
+      { q: "Describe the job instead of typing lines", a: "Press Describe it and say what you did in your own words — you can dictate it rather than type. It drafts the lines from your own price list, and anything it cannot price is left at zero for you to fill in rather than guessed at. Nothing reaches the invoice until you press Save." },
+      { q: "Invoices that repeat", a: "On any invoice, “Does this repeat?” turns it into a series, weekly through to yearly, with an optional end date. That invoice becomes the template, so each copy is exactly what went out last time. Copies wait as drafts unless you switch on Send each one automatically." },
+      { q: "Where do my bank details come from?", a: "Settings → Getting Paid. They are printed on every invoice and its email, so a customer never has to ring and ask for a sort code." },
+      { q: "VAT and CIS", a: "Settings → Tax, and both are off by default. Switch on VAT registration and every invoice carries it at your rate, though a single line can still be zero-rated. CIS comes off the total and is shown as a deduction so it cannot be mistaken for an extra charge." },
+      { q: "Chasing an unpaid one", a: "Automations → Chase unpaid invoices does it under your name at the intervals you choose, and stops the moment it is paid." },
+    ],
+  },
+  {
+    id: "cash-flow", title: "Cash Flow & Expenses", icon: "M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z",
+    intro: "What is coming in, what is going out, and what is late.",
+    topics: [
+      { q: "What does Cash Flow show?", a: "Money due in from unpaid invoices against money going out, so you can see a squeeze coming rather than find out afterwards." },
+      { q: "Recording what you spend", a: "Expenses takes the supplier, what it was for and the VAT. That is what makes the forecast honest and your VAT position real." },
+      { q: "Something on order that has not arrived", a: "Tick “This is on order” and give the promised date. The late-delivery automation then flags it, with the job it is holding up, instead of you finding out on the morning." },
+    ],
+  },
+  {
+    id: "certificates", title: "Certificates", icon: "M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z",
+    intro: "Gas safety records and the rest of the compliance paperwork.",
+    topics: [
+      { q: "Raising one", a: "New certificate takes the type, the property and the date checked. The reference, the expiry date and the status are all worked out for you — you are never asked for something the system already knows." },
+      { q: "Issuing and sending", a: "Issuing renders the PDF and emails it to the landlord and, where you have given one, the occupier. Every send is logged, including “email not configured”, so a silent failure shows up here rather than when somebody asks for their copy." },
+      { q: "Next year's work", a: "Automations raises a renewal into your Leads before each one expires, and can draft next year's quote from last year's figures for you to check and send." },
+    ],
+  },
+  {
+    id: "automations", title: "Automations", icon: "M13 10V3L4 14h7v7l9-11h-9z",
+    intro: "The jobs the platform does for you while you are on the tools.",
+    topics: [
+      { q: "How do they work?", a: "Each one is off until you switch it on, and each asks its questions first — the wording, the timings — so nothing goes out in your name that you have not read. Turning one on for the first time opens its settings for exactly that reason." },
+      { q: "What is there?", a: "Following up quotes, going back to past customers, asking for photos before quoting, reminding customers you are coming, sending the paperwork when a job is finished, chasing unpaid invoices, asking for a review once they have paid, certificate renewals, drafting renewal quotes, recurring visit reminders, and flagging late deliveries." },
+      { q: "Why is “Text back a missed call” greyed out?", a: "It needs a phone number of your own that your calls divert through, and a monthly line rental. It is listed with a switch that does nothing on purpose — a control that looks live and is not is how you lose a job believing it was covered. Ask us and we will quote you for setting it up." },
+      { q: "Did it actually do anything?", a: "The figure at the top is a count of real actions taken this month, not an estimate. Each rule shows its own tally and when it last ran." },
+    ],
+  },
+  {
+    id: "qr", title: "QR Codes", icon: "M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z",
+    intro: "Two different codes doing two different jobs.",
+    topics: [
+      { q: "The booking code", a: "QR code in the menu gives you one for the van, a card or a leaflet. It points at your booking page tagged as having come from the QR, so you can tell whether the van sticker is earning its keep." },
+      { q: "The per-job code", a: "On any job, Share with the customer creates a page showing that job only — when you are coming, who is coming, what is being done and what is owed. No login, because a customer will not make an account to find out what time you are arriving." },
+      { q: "Printing the job sheet", a: "Print job sheet puts the code, the job, the address and the date on one page, from your phone or a printer. Turn off kills the link, so an old printed sheet stops working rather than opening somebody else's job." },
+      { q: "What the customer cannot see", a: "Your job notes, and your engineer's surname, email and phone. The notes are written for whoever is turning up, not for the customer." },
+    ],
+  },
+  {
+    id: "flo", title: "Ask Flo", icon: "M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z",
+    intro: "Questions about your own business, in plain English.",
+    topics: [
+      { q: "What can I ask it?", a: "How the business is doing, who owes you money, what is booked this week, which quotes have gone quiet. It answers from your own figures." },
+      { q: "Can it see anyone else's business?", a: "No. It is handed a snapshot of your data and nothing else — no access to the database, and no way to widen what it can see. Another business's information was never fetched in the first place." },
+    ],
+  },
+  {
+    id: "properties", title: "Properties & Files", icon: "M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6",
+    intro: "Addresses you go back to, and the paperwork that belongs to them.",
+    topics: [
+      { q: "What are Properties for?", a: "Landlords and managing agents with several addresses. The property holds the history — the jobs, the certificates and when the next one is due — so you are not hunting by customer name to find a boiler." },
+      { q: "Files", a: "Photos, manuals, guarantees and anything else worth keeping against a job or a customer." },
+    ],
+  },
+  {
     id: "settings", title: "Settings", icon: "M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z",
     intro: "Branding, contact details, and the three service connections.",
     topics: [
