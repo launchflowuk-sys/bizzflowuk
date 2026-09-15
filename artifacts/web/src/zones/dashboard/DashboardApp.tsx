@@ -1904,7 +1904,7 @@ function QuotesPage() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Reference <span className="font-normal text-slate-400">(leave blank to auto-generate)</span></label>
-                <input value={newRef} onChange={e => setNewRef(e.target.value)} placeholder="e.g. QUO-001" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input value={newRef} onChange={e => setNewRef(e.target.value)} placeholder="e.g. QUO-001" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div className="flex gap-2 pt-1">
                 <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Quote"}</button>
@@ -2052,23 +2052,23 @@ function PaymentLinksPage() {
             <form onSubmit={handleCreate} className="space-y-3">
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Customer Name *</label>
-                <input value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input value={form.customerName} onChange={e => setForm({ ...form, customerName: e.target.value })} required className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Address</label>
-                <input value={form.customerAddress} onChange={e => setForm({ ...form, customerAddress: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input value={form.customerAddress} onChange={e => setForm({ ...form, customerAddress: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Phone Number</label>
-                <input value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input value={form.customerPhone} onChange={e => setForm({ ...form, customerPhone: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Email *</label>
-                <input type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input type="email" value={form.customerEmail} onChange={e => setForm({ ...form, customerEmail: e.target.value })} required className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Amount to request (£) *</label>
-                <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => setForm({ ...form, amount: e.target.value })} required className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div className="flex gap-2 pt-1">
                 <button type="submit" disabled={createLink.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createLink.isPending ? "Creating..." : "Create Payment Link"}</button>
@@ -2332,16 +2332,16 @@ function ComposeEmailModal({ initialTo = "", initialToName = "", initialSubject 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">To Email *</label>
-              <input type="email" value={form.toEmail} onChange={e => setForm({ ...form, toEmail: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <input type="email" value={form.toEmail} onChange={e => setForm({ ...form, toEmail: e.target.value })} required className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
             </div>
             <div>
               <label className="block text-xs font-medium text-slate-700 mb-1">To Name</label>
-              <input value={form.toName} onChange={e => setForm({ ...form, toName: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <input value={form.toName} onChange={e => setForm({ ...form, toName: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
             </div>
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Subject *</label>
-            <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+            <input value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} required className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
           </div>
           <div>
             <label className="block text-xs font-medium text-slate-700 mb-1">Message *</label>
@@ -3012,8 +3012,8 @@ function ProjectDetailPage({ id }: { id: number }) {
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
             <h2 className="font-semibold text-slate-900">Timeline / Updates</h2>
             <form onSubmit={handleAddUpdate} className="space-y-2 border border-slate-200 rounded-lg p-4 bg-slate-50">
-              <input placeholder="Update title (optional)" value={updateForm.title} onChange={e => setUpdateForm({ ...updateForm, title: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
-              <textarea rows={3} placeholder="What happened / what was done..." value={updateForm.content} onChange={e => setUpdateForm({ ...updateForm, content: e.target.value })} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+              <input placeholder="Update title (optional)" value={updateForm.title} onChange={e => setUpdateForm({ ...updateForm, title: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
+              <textarea rows={3} placeholder="What happened / what was done..." value={updateForm.content} onChange={e => setUpdateForm({ ...updateForm, content: e.target.value })} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <label className="flex items-center gap-2 text-xs text-slate-600 cursor-pointer">
                   <input type="checkbox" checked={updateForm.visibleToCustomer} onChange={e => setUpdateForm({ ...updateForm, visibleToCustomer: e.target.checked })} className="rounded" />
@@ -3058,14 +3058,16 @@ function CustomersPage() {
   const qc = useQueryClient();
   const showToast = useToast();
   const [showNew, setShowNew] = useState(false);
-  const emptyCust = { firstName: "", lastName: "", email: "", phone: "", address: "", city: "", postcode: "", notes: "" };
+  const emptyCust = { firstName: "", lastName: "", email: "", phone: "", address: "", city: "", postcode: "", notes: "", portalEnabled: false };
   const [newCust, setNewCust] = useState(emptyCust);
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCust.firstName.trim() && !newCust.lastName.trim()) return;
     try {
-      const c = await createMutation.mutateAsync({ data: newCust } as any) as any;
+      const c = await createMutation.mutateAsync({
+        data: { ...newCust, postcode: newCust.postcode.trim().toUpperCase() || null },
+      } as any) as any;
       qc.invalidateQueries({ queryKey: getListCustomersQueryKey() });
       showToast("Customer created");
       setShowNew(false);
@@ -3106,39 +3108,54 @@ function CustomersPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">First Name</label>
-                  <input value={newCust.firstName} onChange={e => setNewCust(c => ({ ...c, firstName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                  <input value={newCust.firstName} onChange={e => setNewCust(c => ({ ...c, firstName: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Last Name</label>
-                  <input value={newCust.lastName} onChange={e => setNewCust(c => ({ ...c, lastName: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                  <input value={newCust.lastName} onChange={e => setNewCust(c => ({ ...c, lastName: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Email</label>
-                <input type="email" value={newCust.email} onChange={e => setNewCust(c => ({ ...c, email: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input type="email" value={newCust.email} onChange={e => setNewCust(c => ({ ...c, email: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Phone</label>
-                <input type="tel" value={newCust.phone} onChange={e => setNewCust(c => ({ ...c, phone: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input type="tel" value={newCust.phone} onChange={e => setNewCust(c => ({ ...c, phone: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Address</label>
-                <input value={newCust.address} onChange={e => setNewCust(c => ({ ...c, address: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <input value={newCust.address} onChange={e => setNewCust(c => ({ ...c, address: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
-                  <input value={newCust.city} onChange={e => setNewCust(c => ({ ...c, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                  <input value={newCust.city} onChange={e => setNewCust(c => ({ ...c, city: e.target.value }))} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-slate-700 mb-1">Postcode</label>
-                  <input value={newCust.postcode} onChange={e => setNewCust(c => ({ ...c, postcode: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                  <input value={newCust.postcode} onChange={e => setNewCust(c => ({ ...c, postcode: e.target.value }))} autoCapitalize="characters" spellCheck={false} placeholder="RM17 5DB" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
                 </div>
               </div>
               <div>
                 <label className="block text-xs font-medium text-slate-700 mb-1">Notes</label>
-                <textarea value={newCust.notes} onChange={e => setNewCust(c => ({ ...c, notes: e.target.value }))} rows={2} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+                <textarea value={newCust.notes} onChange={e => setNewCust(c => ({ ...c, notes: e.target.value }))} rows={2} className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
               </div>
+              <label className="flex items-start gap-3 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                <input
+                  type="checkbox"
+                  checked={newCust.portalEnabled}
+                  onChange={e => setNewCust(c => ({ ...c, portalEnabled: e.target.checked }))}
+                  className="mt-0.5 h-4 w-4 accent-[var(--brand)]"
+                />
+                <span className="text-[13px] leading-snug">
+                  <strong className="block font-semibold text-slate-800">Give them portal access</strong>
+                  <span className="text-slate-600">
+                    They can sign in and see their own jobs, quotes and invoices — which is most of
+                    the phone calls you would otherwise take while under a floor.
+                  </span>
+                </span>
+              </label>
               <div className="flex gap-2 pt-1">
                 <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Customer"}</button>
                 <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
@@ -4365,7 +4382,7 @@ function SmsReplyModal({ message: m, onClose }: { message: any; onClose: () => v
         <h2 className="font-semibold text-slate-900">Reply by Text</h2>
         <p className="text-xs text-slate-500">To {msgName(m)} · <span className="text-slate-700">{phone}</span></p>
         <form onSubmit={handleSend} className="space-y-3">
-          <textarea value={body} onChange={e => setBody(e.target.value)} rows={4} maxLength={480} autoFocus placeholder="Type your reply…" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
+          <textarea value={body} onChange={e => setBody(e.target.value)} rows={4} maxLength={480} autoFocus placeholder="Type your reply…" className="w-full rounded-lg border border-slate-300 px-3 py-2.5 text-[16px] sm:text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)] focus:border-[var(--brand)] transition" />
           <p className="text-[11px] text-slate-400">{body.length}/480 · Sent from your business's SMS number.</p>
           <div className="flex gap-2">
             <button type="submit" disabled={sendSms.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{sendSms.isPending ? "Sending…" : "Send Text"}</button>
