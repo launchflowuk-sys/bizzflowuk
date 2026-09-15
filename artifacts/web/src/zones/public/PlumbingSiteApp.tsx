@@ -544,29 +544,94 @@ function EmergencyPanel({ settings }: { settings: any }) {
 
 // ── Reviews ──────────────────────────────────────────────────────────────────
 
-function Reviews({ reviews, heading }: { reviews: any[]; heading?: string }) {
+/**
+ * What customers actually said.
+ *
+ * A swipeable rail on a phone and a grid on a desktop, from the same markup —
+ * the rail is what a thumb expects, and six cards stacked vertically is a wall
+ * of text nobody reaches the end of. The peeking next card is the affordance:
+ * without it people do not know there is anything to swipe to.
+ *
+ * Pulled Google reviews say so and link back, because a review you can go and
+ * verify is worth more than one you cannot.
+ */
+function Reviews({ reviews, heading, settings }: { reviews: any[]; heading?: string; settings?: any }) {
   if (!reviews?.length) return null;
+
+  const rating = settings?.googleRating ? Number(settings.googleRating) : null;
+  const total = settings?.googleReviewCount ? Number(settings.googleReviewCount) : null;
+  const shown = reviews.slice(0, 9);
+
   return (
     <section className="py-[76px]" style={{ background: REVIEW_BG }}>
       <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-        {heading !== "" && (
-          <h2 className="section-heading font-bold max-w-[640px]" style={{ color: TEXT, fontSize: "clamp(30px,3.6vw,42px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
-            {heading || "What our customers say"}
-          </h2>
-        )}
-        <div className="review-grid mt-10 grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {reviews.slice(0, 6).map((r: any, i: number) => (
-            <article key={i} className="rounded-[20px] border p-6" style={{ borderColor: BORDER, background: "#fff" }}>
-              <div className="flex gap-0.5" aria-label={`${r.rating || 5} out of 5`}>
-                {Array.from({ length: r.rating || 5 }).map((_, n) => <Star key={n}/>)}
+        <div className="flex flex-wrap items-end justify-between gap-5">
+          {heading !== "" && (
+            <h2 className="section-heading font-bold max-w-[640px]" style={{ color: TEXT, fontSize: "clamp(30px,3.6vw,42px)", letterSpacing: "-0.04em", lineHeight: 1.12 }}>
+              {heading || "What our customers say"}
+            </h2>
+          )}
+
+          {/* The headline figure is for the WHOLE Google profile, not the few
+              reviews below it — so "4.9 from 213" is true even though five
+              cards are shown. Google's API returns at most five. */}
+          {rating !== null && (
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="flex gap-0.5" aria-hidden="true">
+                {Array.from({ length: 5 }).map((_, n) => <Star key={n}/>)}
               </div>
-              <p className="mt-4 text-[15px] leading-[1.75]" style={{ color: TEXT }}>{r.content}</p>
-              <p className="mt-5 text-[13.5px] font-semibold" style={{ color: BODY }}>
-                {r.reviewerName}{r.reviewerLocation ? ` · ${r.reviewerLocation}` : ""}
+              <p className="text-[14.5px] font-semibold" style={{ color: TEXT }}>
+                {rating.toFixed(1)} on Google
+                {total ? <span style={{ color: BODY, fontWeight: 500 }}> · {total} review{total === 1 ? "" : "s"}</span> : null}
               </p>
+            </div>
+          )}
+        </div>
+
+        {/* One list, two behaviours. Below sm it scrolls horizontally with snap
+            points; from sm it becomes an ordinary grid and the scroll
+            properties stop applying. */}
+        <div className="review-rail mt-10">
+          {shown.map((r: any, i: number) => (
+            <article key={r.id ?? i} className="review-card rounded-[20px] border p-6" style={{ borderColor: BORDER, background: "#fff" }}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex gap-0.5" aria-label={`${r.rating || 5} out of 5`}>
+                  {Array.from({ length: r.rating || 5 }).map((_, n) => <Star key={n}/>)}
+                </div>
+                {r.platform === "Google" && (
+                  <span className="text-[11px] font-bold tracking-[0.08em]" style={{ color: BODY }}>GOOGLE</span>
+                )}
+              </div>
+
+              <p className="mt-4 text-[15px] leading-[1.75]" style={{ color: TEXT }}>{r.content}</p>
+
+              <div className="mt-5 flex items-center gap-3">
+                {r.photoUrl
+                  ? <img src={r.photoUrl} alt="" loading="lazy" className="w-9 h-9 rounded-full object-cover shrink-0" />
+                  : <span className="w-9 h-9 rounded-full grid place-items-center text-[13px] font-bold shrink-0"
+                          style={{ background: PALE_2, color: BLUE_CTRL }}>
+                      {(r.reviewerName || "?").trim().charAt(0).toUpperCase()}
+                    </span>}
+                <p className="text-[13.5px] font-semibold min-w-0" style={{ color: BODY }}>
+                  <span className="block truncate">{r.reviewerName}</span>
+                  {r.reviewerLocation && <span className="block text-[12.5px] font-normal truncate">{r.reviewerLocation}</span>}
+                </p>
+              </div>
             </article>
           ))}
         </div>
+
+        {reviews.some((r: any) => r.platform === "Google" && r.platformUrl) && (
+          <p className="mt-7 text-[14px]">
+            <a
+              href={reviews.find((r: any) => r.platform === "Google" && r.platformUrl)?.platformUrl}
+              target="_blank" rel="noopener noreferrer"
+              className="font-semibold" style={{ color: BLUE_CTRL }}
+            >
+              Read every review on Google ↗
+            </a>
+          </p>
+        )}
       </div>
     </section>
   );
@@ -739,7 +804,7 @@ function AreaDetail({ tenant, settings, services, reviews, areas }: any) {
       <ServicesGrid services={services} heading={`What we do in ${area.name}`}
         intro={`Every one of our services is available in ${area.name}, including emergency call-outs.`}/>
 
-      {local.length > 0 && <Reviews reviews={local} heading={`What ${area.name} customers say`}/>}
+      {local.length > 0 && <Reviews reviews={local} heading={`What ${area.name} customers say`} settings={settings}/>}
 
       {nearby.length > 0 && (
         <section className="py-[70px]" style={{ background: PALE_2 }}>
@@ -891,7 +956,7 @@ function HomePage({ tenant, settings, services, areas, reviews }: any) {
       <TrustStrip settings={settings}/>
       <ServicesGrid services={services} heading={settings?.servicesHeading} intro={settings?.servicesIntro}/>
       <EmergencyPanel settings={settings}/>
-      <Reviews reviews={reviews}/>
+      <Reviews reviews={reviews} settings={settings}/>
       <Areas areas={areas} settings={settings} services={services}/>
       <ClosingCta settings={settings}/>
     </>
@@ -1030,7 +1095,7 @@ function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
       </section>
 
       <ProcessSteps steps={service.processSteps}/>
-      <Reviews reviews={reviews} heading="What our customers say"/>
+      <Reviews reviews={reviews} heading="What our customers say" settings={settings}/>
       <ServicesGrid services={others} heading="Other things we do" intro={settings?.serviceArea ? `We cover the lot, right across ${settings.serviceArea}.` : undefined}/>
       <Areas areas={areas} settings={settings} services={services}/>
       <EmergencyPanel settings={settings}/>
@@ -1097,7 +1162,7 @@ function ReviewsPage({ tenant, settings, reviews }: any) {
       <PageSEO title={`Reviews — ${tenant?.name}`} description={`What customers say about ${tenant?.name}.`}/>
       <PageHead eyebrow="Reviews" title="What our customers say"/>
       {reviews?.length
-        ? <Reviews reviews={reviews} heading=""/>
+        ? <Reviews reviews={reviews} heading="" settings={settings}/>
         : (
           // No invented testimonials. An empty state that tells the truth beats
           // filler that would also put false rating schema on the page.

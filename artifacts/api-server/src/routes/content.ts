@@ -9,6 +9,7 @@ import { requireTenantAccess } from "../middlewares/auth";
 import { maskSecretsForAuth } from "../lib/settingsHelpers";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 import { invalidateTenantPageCache } from "../lib/pageCache";
+import { syncGoogleReviews } from "../lib/reviews/googleSync";
 
 const router = Router();
 function tid(req: any) { return req.authUser?.tenantId!; }
@@ -110,6 +111,23 @@ router.patch("/settings", requireTenantAccess, async (req, res) => {
     res.json({ ...maskSecretsForAuth(updated), customDomain: tenantRows[0]?.customDomain ?? null });
     invalidateTenantPageCache(tid(req)).catch(err => req.log.error({ err }, "Failed to invalidate page cache"));
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+
+/**
+ * Pull this business's Google reviews now, rather than waiting for the daily
+ * sweep. Useful right after pasting a Place ID, when nobody wants to be told
+ * to come back tomorrow.
+ */
+router.post("/reviews/sync-google", requireTenantAccess, async (req: any, res) => {
+  try {
+    const result = await syncGoogleReviews(tid(req));
+    if (!result.ok) { res.status(400).json({ error: result.reason }); return; }
+    res.json(result);
+  } catch (err) {
+    req.log.error(err, "Manual Google review sync failed");
+    res.status(502).json({ error: "Could not reach Google just now. Please try again." });
+  }
 });
 
 export default router;

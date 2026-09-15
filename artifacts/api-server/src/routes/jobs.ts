@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { timingSafeEqual } from "node:crypto";
 import { sweepRenewals } from "../lib/certificates/renewals";
+import { resetDemoWorkspace } from "../lib/demo/reset";
 import { runAutomationsForAllTenants } from "./automations";
 
 const router = Router();
@@ -54,6 +55,31 @@ router.post("/internal/jobs/automations-daily", async (req: any, res) => {
     res.json({ ok: true, ...result });
   } catch (err) {
     req.log.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+
+/**
+ * Put the public demo workspace back how it was, on demand.
+ *
+ * The scheduler does this daily in-process; this is the way to do it now —
+ * after someone has left the demo in a state worth clearing, or to prove the
+ * reset works without waiting a day for it.
+ *
+ * Behind the same shared secret as the other internal jobs, and it can only
+ * ever touch the tenant whose slug AND plan are both `demo`.
+ */
+router.post("/internal/jobs/reset-demo", async (req: any, res) => {
+  if (!secretOk(req.get("x-jobs-secret"))) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  try {
+    const result = await resetDemoWorkspace("manual trigger");
+    res.json({ ok: true, ...result });
+  } catch (err) {
+    req.log.error(err, "Manual demo reset failed");
     res.status(500).json({ error: "Internal server error" });
   }
 });

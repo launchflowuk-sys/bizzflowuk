@@ -7,6 +7,8 @@ import { seedBlogPostsIfMissing } from "./lib/seedBlogPosts";
 import { seedBpsPlumbingIfMissing } from "./lib/seedBpsPlumbing";
 import { syncBpsContent } from "./lib/syncBpsContent";
 import { startAutomationScheduler } from "./lib/automations/scheduler";
+import { startDemoResetScheduler } from "./lib/demo/reset";
+import { startGoogleReviewScheduler } from "./lib/reviews/googleSync";
 import { clearAllPageCache } from "./lib/pageCache";
 
 const rawPort = process.env["PORT"];
@@ -31,6 +33,10 @@ runSeedFixIfNeeded()
   .then(() => syncBpsContent())
   .then(() => seedBlogPostsIfMissing())
   .then(() => startAutomationScheduler())
+  // Puts the public demo back how it was, daily and in-process — so it is
+  // never an environment someone has to remember to configure.
+  .then(() => startDemoResetScheduler())
+  .then(() => startGoogleReviewScheduler())
   .then(() => clearAllPageCache().catch((err) => logger.error({ err }, "Page cache clear failed — non-fatal, stale pages may persist")))
   .then(() => {
   app.listen(port, (err) => {

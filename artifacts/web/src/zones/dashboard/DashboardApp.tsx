@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
-import { useAuthCtx, setActiveTenantId } from "@/lib/auth";
+import { useAuthCtx, setActiveTenantId, getStoredToken } from "@/lib/auth";
 import { InvoicesPage, InvoiceDetailPage, ExpensesPage, SchedulePage, CertificatesPage, AutomationsPage, CashFlowPage } from "./TradePages";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
@@ -4407,6 +4407,7 @@ function SettingsPage() {
   const [twilioAuthToken, setTwilioAuthToken] = useState("");
   const [squareAccessToken, setSquareAccessToken] = useState("");
   const [stripeSecretKey, setStripeSecretKey] = useState("");
+  const [googleSync, setGoogleSync] = useState<{ busy: boolean; message: string | null }>({ busy: false, message: null });
   const [emailTestResult, setEmailTestResult] = useState<{ ok: boolean; error?: string | null } | null>(null);
   const [smsTestResult, setSmsTestResult] = useState<{ ok: boolean; error?: string | null } | null>(null);
 
@@ -4499,6 +4500,13 @@ function SettingsPage() {
           <h2 className="font-semibold text-slate-900">Contact Information</h2>
           {field("phone", "Phone")}
           {field("email", "Public Email")}
+          {/* The column has existed since migration 0037; there was never a
+              field to type it into, so the floating WhatsApp button could not
+              appear for anyone. It only renders for a number that can actually
+              receive WhatsApp — a landline is skipped rather than shown as a
+              chat that will never be answered. */}
+          {field("whatsappNumber", "WhatsApp Number", "text",
+                 "A mobile that can receive WhatsApp, e.g. 07700 900123. Leave blank to hide the WhatsApp button.")}
           {field("address", "Address")}
           {field("city", "City")}
         </div>
@@ -4572,6 +4580,57 @@ function SettingsPage() {
             )}
           </div>
         </div>
+        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+          <div>
+            <h2 className="font-semibold text-slate-900">Google reviews</h2>
+            <p className="text-xs text-slate-500 mt-1">
+              Show your Google reviews on your own website. Paste your Place ID and they appear automatically,
+              refreshed daily. Google returns a maximum of five individual reviews — that is their limit, not
+              ours — but your overall rating and total review count are shown in full.
+            </p>
+          </div>
+          {field("googlePlaceId", "Google Place ID",
+                 "text", "From your Google Business profile, e.g. ChIJ… . Find it at developers.google.com/maps/documentation/places/web-service/place-id")}
+          {s?.googleReviewsSyncedAt && (
+            <p className="text-xs text-slate-500">
+              Last pulled {new Date(s.googleReviewsSyncedAt).toLocaleString("en-GB")}
+              {s.googleRating ? ` — ${s.googleRating} from ${s.googleReviewCount ?? 0} reviews` : ""}
+            </p>
+          )}
+          <div className="flex items-center gap-3 flex-wrap">
+            <button
+              type="button"
+              disabled={googleSync.busy || !form.googlePlaceId}
+              onClick={async () => {
+                setGoogleSync({ busy: true, message: null });
+                try {
+                  const token = getStoredToken();
+                  const res = await fetch("/api/reviews/sync-google", {
+                    method: "POST",
+                    headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
+                  });
+                  const data = await res.json().catch(() => ({}));
+                  setGoogleSync({
+                    busy: false,
+                    message: res.ok
+                      ? `Pulled ${data.imported ?? 0} review${data.imported === 1 ? "" : "s"}.`
+                      : (data.error || "Could not pull your reviews."),
+                  });
+                } catch {
+                  setGoogleSync({ busy: false, message: "Could not reach Google just now." });
+                }
+              }}
+              className="inline-flex h-9 items-center rounded-md bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50"
+            >
+              {googleSync.busy ? "Pulling…" : "Pull my reviews now"}
+            </button>
+            {googleSync.message && <span className="text-xs text-slate-600">{googleSync.message}</span>}
+          </div>
+          <p className="text-xs text-slate-400">
+            Save the Place ID first, then pull. Reviews refresh on their own every day after that.
+          </p>
+        </div>
+
         <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
           <div>
             <h2 className="font-semibold text-slate-900">Card payments</h2>

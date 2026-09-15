@@ -1007,3 +1007,57 @@
 .bps-inner-hero > div:not([aria-hidden="true"]){
   width:100%;
 }
+
+/* ============================================================================
+   21. REVIEWS — A RAIL ON A PHONE, A GRID ON A DESKTOP
+   ----------------------------------------------------------------------------
+   Same markup, two behaviours. Six review cards stacked vertically on a phone
+   is a wall of text nobody reaches the end of; a swipeable rail is what a thumb
+   expects. From `sm` the scroll properties stop applying and it is an ordinary
+   grid.
+
+   The peeking next card is the whole affordance — 86% width means the edge of
+   the next one is always visible, which is what tells somebody there is more to
+   swipe to. A full-width card looks like the only card.
+   ========================================================================== */
+
+.review-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 86%;
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  /* Breathing room at both ends so the first and last cards are not welded to
+     the edge of the screen, and the padding is not clipped by the scroller. */
+  padding-inline: 20px;
+  margin-inline: -20px;
+  padding-bottom: 6px;
+  scrollbar-width: none;
+}
+
+.review-rail::-webkit-scrollbar { display: none; }
+
+.review-rail > .review-card {
+  scroll-snap-align: center;
+  /* A grid item defaults to min-width:auto and refuses to shrink below its
+     content, which would blow the track width out and break the snap. */
+  min-width: 0;
+}
+
+@media (min-width: 640px) {
+  .review-rail {
+    grid-auto-flow: row;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-columns: auto;
+    gap: 20px;
+    overflow-x: visible;
+    scroll-snap-type: none;
+    padding-inline: 0;
+    margin-inline: 0;
+  }
+}
+
+@media (min-width: 1024px) {
+  .review-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}

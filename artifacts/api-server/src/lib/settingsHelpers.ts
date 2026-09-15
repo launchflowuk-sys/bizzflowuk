@@ -41,6 +41,10 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   // registered", "Fully insured") and the plumbing template renders them in the
   // strip under the hero. Presentation only — nothing operational.
   "trustBadges", "whatsappNumber",
+  // The Google headline figures are public facts about the business — they are
+  // already on Google Maps. The Place ID is public too, but it is an operational
+  // identifier rather than something a site needs, so it stays out.
+  "googleRating", "googleReviewCount", "googleReviewsSyncedAt",
   "createdAt", "updatedAt",
 ]);
 

@@ -62,6 +62,40 @@ function injectIntoShell(indexHtml: string, appHtml: string, dehydratedState: un
  * tenant slug). Two routes rather than one: Express 5's wildcard route parameter requires at
  * least one path segment, so the bare home-page request needs its own exact route for path "/".
  */
+/**
+ * Retired pages, and where they should go now.
+ *
+ * When a business stops offering something, its page has to go — but the URL
+ * does not stop existing. Google has it indexed, old quotes link to it, and
+ * somebody's bookmark still points at it. Deleting the page turns all of that
+ * into a 404, which loses the ranking the page had earned and sends a real
+ * customer to a dead end.
+ *
+ * A 301 hands that ranking to the page that replaced it and takes the visitor
+ * somewhere useful. It is the difference between moving house and leaving a
+ * forwarding address, and disappearing.
+ *
+ * Keyed by tenant slug, then by the old path. To retire another page, add a
+ * line — no other change is needed.
+ */
+const RETIRED_PATHS: Record<string, Record<string, string>> = {
+  // BPS stopped offering these two; both pages were live long enough to be
+  // indexed, so they point at the services list rather than 404.
+  bps: {
+    "/underfloor-heating": "/services",
+    "/power-flushing": "/services",
+    "/services/underfloor-heating": "/services",
+    "/services/power-flushing": "/services",
+  },
+};
+
+/** The permanent home for a retired path, or null if it is not retired. */
+function retiredTarget(slug: string, path: string): string | null {
+  // Trailing slashes and casing vary in the wild; the redirect should not.
+  const normalised = path.replace(/\/+$/, "").toLowerCase() || "/";
+  return RETIRED_PATHS[slug]?.[normalised] ?? null;
+}
+
 async function handleRender(req: Request, res: Response, requestPath: string) {
   try {
     const host = ((req.query.host as string) || (req.headers.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");
@@ -72,6 +106,14 @@ async function handleRender(req: Request, res: Response, requestPath: string) {
       .limit(1);
     if (!tenants.length) { res.status(404).json({ error: "Domain not found" }); return; }
     const tenant = tenants[0];
+
+    // 301 before anything else: a retired page should never be rendered, and
+    // never reach the cache.
+    const movedTo = retiredTarget(tenant.slug, requestPath);
+    if (movedTo) {
+      res.redirect(301, movedTo);
+      return;
+    }
 
     const cached = await db
       .select()

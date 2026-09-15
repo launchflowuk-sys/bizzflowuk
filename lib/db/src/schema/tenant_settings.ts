@@ -71,6 +71,16 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   stripeWebhookSecret: text("stripe_webhook_secret"),
   /** 'square' | 'stripe' | null — null means auto-detect from whichever credentials are complete. */
   paymentProvider: text("payment_provider"),
+
+  /**
+   * Google Business reviews, pulled onto the tenant's own site.
+   * Place Details returns at most FIVE reviews, chosen by Google — that is
+   * their limit. The rating and count below are for the whole place.
+   */
+  googlePlaceId: text("google_place_id"),
+  googleRating: numeric("google_rating", { precision: 2, scale: 1 }),
+  googleReviewCount: integer("google_review_count"),
+  googleReviewsSyncedAt: timestamp("google_reviews_synced_at", { withTimezone: true }),
   // Customer-facing prefix for quote references, e.g. "AMO-R" -> AMO-R-0007. Null falls back to
   // "QUO". Per-tenant because the reference appears on the quote the customer receives (0019).
   quoteRefPrefix: text("quote_ref_prefix"),

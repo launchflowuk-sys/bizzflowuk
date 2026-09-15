@@ -20,6 +20,12 @@ export const reviewsTable = pgTable("reviews", {
   published: boolean("published").notNull().default(true),
   serviceId: integer("service_id").references(() => servicesTable.id),
   photoUrl: text("photo_url"),
+  /** Identifies a pulled review so a re-sync updates rather than duplicates.
+   *  Google exposes no review id, so this is a stable hash of author + time. */
+  externalId: text("external_id"),
+  /** When the customer wrote it, not when we fetched it. */
+  sourceCreatedAt: timestamp("source_created_at", { withTimezone: true }),
+  syncedAt: timestamp("synced_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow().$onUpdate(() => new Date()),
 }, (table) => [
