@@ -17,6 +17,13 @@ function avatarDisplay(url: string | null | undefined): string | null {
   return url.startsWith("/objects/") ? buildRelativeObjectUrl(url) : url;
 }
 
+/** Just the name, for the support-session banner. */
+async function tenantName(tenantId: number): Promise<string> {
+  const [t] = await db.select({ name: tenantsTable.name })
+    .from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
+  return t?.name ?? "this business";
+}
+
 /** The businesses a user can access, for the dashboard's business switcher. */
 async function getUserBusinesses(userId: number) {
   // Brand colour comes from tenant_settings.primaryColor (what the Settings page edits), falling
@@ -44,7 +51,18 @@ router.get("/me", requireAuth, async (req, res) => {
   } catch (err) {
     req.log.error({ err }, "getUserBusinesses failed (user_tenants may be missing) — returning no businesses");
   }
-  res.json({ id, email, role, firstName, lastName, tenantId, clerkId, avatarUrl: avatarDisplay(avatarUrl), businesses });
+  /**
+   * Tell the dashboard when it is a support session.
+   *
+   * Without this the screens are indistinguishable from the client's own, and
+   * the single most dangerous thing about impersonation is forgetting you are
+   * in it. The banner this feeds is not decoration.
+   */
+  const impersonating = req.authUser?.impersonating
+    ? { tenantId: req.authUser.impersonating.tenantId, name: await tenantName(req.authUser.impersonating.tenantId) }
+    : null;
+
+  res.json({ id, email, role, firstName, lastName, tenantId, clerkId, avatarUrl: avatarDisplay(avatarUrl), businesses, impersonating });
 });
 
 /** Set the current user's avatar image (relative object path from the dashboard upload flow). */

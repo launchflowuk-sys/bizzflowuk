@@ -2,7 +2,7 @@ import { Router } from "express";
 import { db } from "@workspace/db";
 import { tenantsTable, tenantSettingsTable, leadsTable, projectsTable, reviewsTable, usersTable, userTenantsTable } from "@workspace/db";
 import { eq, and, count, sql } from "drizzle-orm";
-import { requireAuth, requireSuperAdmin } from "../middlewares/auth";
+import { requireAuth, requireSuperAdmin, signImpersonationToken } from "../middlewares/auth";
 import { sanitizeUpdate } from "../lib/sanitizeUpdate";
 import { invalidateTenantPageCache } from "../lib/pageCache";
 
@@ -207,6 +207,61 @@ router.post("/tenants/:id/reviews/import", requireSuperAdmin, async (req, res) =
     req.log.error(err);
     res.status(500).json({ error: err?.message || "Import failed" });
   }
+});
+
+// ── Support: working inside a tenant's own dashboard ─────────────────────────
+
+/**
+ * Start a support session inside this business.
+ *
+ * The support tool. You click it on a tenant, you are in their dashboard
+ * seeing exactly what they see, you fix the thing, you come out. No password
+ * asked for, nothing left behind afterwards, and an hour's expiry so a
+ * forgotten tab closes itself.
+ *
+ * Why this and not the membership grant below: a membership is permanent and
+ * visible in the client's team list forever, which is right when the platform
+ * owner genuinely runs that business day to day and wrong for a ten-minute
+ * support job. This leaves no row.
+ *
+ * What makes it safe is all in tryBearerAuth, not here: the role is forced
+ * down to TENANT_ADMIN so the session is scoped to this one business and the
+ * platform console is closed while inside it, and SUPER_ADMIN is re-checked
+ * live on every request so demoting an account kills its live sessions.
+ *
+ * Logged at warn, with the real account and the target, because reaching into
+ * a customer's workspace should leave a trace even when you own the platform.
+ */
+router.post("/tenants/:id/impersonate", requireSuperAdmin, async (req: any, res) => {
+  try {
+    const tenantId = Number(req.params.id);
+    if (!Number.isInteger(tenantId)) { res.status(400).json({ error: "Bad tenant id" }); return; }
+
+    const [tenant] = await db.select({ id: tenantsTable.id, name: tenantsTable.name, slug: tenantsTable.slug })
+      .from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
+    if (!tenant) { res.status(404).json({ error: "Not found" }); return; }
+
+    // Already inside somebody's workspace. Hopping sideways between tenants
+    // without coming out first makes the audit trail read as one session that
+    // was in two places, so it is refused.
+    if (req.authUser?.impersonating) {
+      res.status(409).json({ error: "You are already in a support session. Leave that one first." });
+      return;
+    }
+
+    const token = signImpersonationToken(req.authUser.id, tenantId);
+
+    req.log.warn(
+      { supportUser: req.authUser.email, tenantId, tenantName: tenant.name },
+      "Support session started inside a tenant workspace",
+    );
+
+    res.json({
+      token,
+      tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
+      expiresInMinutes: 60,
+    });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
 // ── Getting into a tenant's own dashboard ────────────────────────────────────

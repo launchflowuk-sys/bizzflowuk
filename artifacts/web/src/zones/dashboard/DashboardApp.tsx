@@ -1,5 +1,5 @@
 import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
-import { useAuthCtx, setActiveTenantId, getStoredToken } from "@/lib/auth";
+import { useAuthCtx, setActiveTenantId, getStoredToken, endSupportSession } from "@/lib/auth";
 import { InvoicesPage, InvoiceDetailPage, ExpensesPage, SchedulePage, CertificatesPage, AutomationsPage, CashFlowPage } from "./TradePages";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
@@ -5044,6 +5044,45 @@ function SettingsPage() {
 }
 
 // ─── Root ──────────────────────────────────────────────────────────────────────
+/**
+ * "You are not you right now."
+ *
+ * The single most dangerous thing about impersonation is forgetting you are in
+ * it: writing a note, deleting a lead, or sending an invoice from inside
+ * somebody else's business while believing it is your own. The screens are
+ * deliberately identical to theirs, so the only thing standing between a
+ * support session and a very awkward phone call is this bar.
+ *
+ * Which is why it is loud, fixed to the top of every screen, unclosable, and
+ * says the business by name. An unobtrusive version of this would be worse
+ * than none, because it would look like it was doing a job it was not.
+ */
+function SupportSessionBanner() {
+  const { data: me } = useGetMe();
+  const imp = (me as any)?.impersonating;
+  if (!imp) return null;
+
+  return (
+    <div className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-2 bg-amber-400 px-4 py-2.5 text-slate-900">
+      <p className="text-[13.5px] font-semibold">
+        Support session &mdash; you are inside <strong>{imp.name}</strong>. Anything you do here is theirs.
+      </p>
+      <button
+        type="button"
+        onClick={() => {
+          endSupportSession();
+          // Full load, not a route change: every cached query in memory belongs
+          // to the tenant you are leaving.
+          window.location.href = "/admin/tenants";
+        }}
+        className="rounded-lg bg-slate-900 px-3.5 py-1.5 text-[13px] font-semibold text-white hover:bg-slate-800"
+      >
+        Leave
+      </button>
+    </div>
+  );
+}
+
 export default function DashboardApp() {
   const { isSignedIn } = useAuthCtx();
   const [location] = useLocation();
@@ -5064,6 +5103,7 @@ export default function DashboardApp() {
 
   return (
     <ToastCtx.Provider value={showToast}>
+      <SupportSessionBanner />
       <div className="ws flex min-h-screen" style={brandVars(activeBrand.color)}>
         <aside className="ws-rail hidden md:flex w-[225px] flex-shrink-0 min-h-screen flex-col">
           <SidebarContent currentPath={location} />

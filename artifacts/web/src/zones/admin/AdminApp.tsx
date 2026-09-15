@@ -1,4 +1,4 @@
-import { useAuthCtx, getStoredToken } from "@/lib/auth";
+import { useAuthCtx, getStoredToken, beginSupportSession } from "@/lib/auth";
 import { InviteUserPanel } from "./InviteUserPanel";
 import { useGetMe, useGetPlatformStats, useListTenants, useCreateTenant, useGetTenant, useUpdateTenant, useDeleteTenant, useSuspendTenant, useGetTenantStats, useListUsers, useUpdateUser } from "@workspace/api-client-react";
 import { useEffect, useState } from "react";
@@ -512,6 +512,30 @@ function TenantDetailPage({ id }: { id: number }) {
   };
 
   /**
+   * Go and work inside their dashboard for a bit.
+   *
+   * The support tool: their screens, their data, scoped to this one business,
+   * expiring on its own in an hour. Nothing is left behind afterwards, which
+   * is the difference between this and the permanent grant below.
+   */
+  const handleImpersonate = async () => {
+    setAccessBusy(true);
+    setAccessResult(null);
+    try {
+      const r = await adminRequest<{ token: string; tenant: { name: string } }>(
+        'POST', `/tenants/${id}/impersonate`);
+      beginSupportSession(r.token);
+      // A full load rather than a client-side route change: every cached query
+      // in memory belongs to the previous identity, and carrying one into a
+      // customer's workspace would show them somebody else's figures.
+      window.location.href = '/dashboard';
+    } catch (err: any) {
+      setAccessResult({ ok: false, text: err?.message || 'Could not start the session.' });
+      setAccessBusy(false);
+    }
+  };
+
+  /**
    * Put this business on my own account, so it appears in the dashboard's
    * business switcher.
    *
@@ -590,15 +614,35 @@ function TenantDetailPage({ id }: { id: number }) {
 
       {/* Getting into their dashboard without asking for their password. */}
       <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
-        <h2 className="font-semibold text-slate-900">Their Dashboard</h2>
+        <h2 className="font-semibold text-slate-900">Support</h2>
         <p className="text-xs text-slate-500">
-          Adds this business to your own account so you can open the dashboard they use &mdash;
-          not the admin view of their rows, the actual screens. You are scoped to this one business
-          while you are in it. It shows in their team list like any other member, and you can hand
-          it back below.
+          Opens their dashboard as them &mdash; same screens, same data, scoped to this business
+          only. The platform console is closed while you are in it. It ends by itself after an
+          hour, or when you press Leave on the banner, and leaves nothing behind.
         </p>
         <p className="text-xs text-amber-700">
-          This is their live workspace: real customers, real invoices. Anything you change, they see.
+          Their live workspace: real customers, real invoices. Anything you change, they keep.
+        </p>
+        <button
+          type="button"
+          onClick={handleImpersonate}
+          disabled={accessBusy}
+          className="inline-flex h-10 items-center rounded-lg bg-slate-900 px-4 text-sm font-semibold text-white hover:bg-slate-800 disabled:opacity-50"
+        >
+          {accessBusy ? 'Opening…' : `Log in as ${t.name}`}
+        </button>
+        {accessResult && !accessResult.ok && (
+          <p className="text-xs text-red-600">{accessResult.text}</p>
+        )}
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
+        <h2 className="font-semibold text-slate-900">Keep This Business On My Account</h2>
+        <p className="text-xs text-slate-500">
+          Different from Support above: this is <strong>permanent</strong>. It adds the business to
+          your switcher for good and shows in their team list like any other member. For a
+          ten-minute fix use Support &mdash; it leaves no trace. Use this only when you actually run
+          this business day to day.
         </p>
         <div className="flex flex-wrap gap-2">
           <button

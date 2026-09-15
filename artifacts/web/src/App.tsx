@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useGetMe, setAuthTokenGetter, setUnauthorizedHandler, setTenantIdGetter, useResolveTenantDomain } from "@workspace/api-client-react";
-import { AuthProvider, useAuthCtx, getStoredToken, clearStoredToken, getActiveTenantId } from "@/lib/auth";
+import { AuthProvider, useAuthCtx, getStoredToken, clearStoredToken, getActiveTenantId, endSupportSession } from "@/lib/auth";
 
 import NotFound from "@/pages/not-found";
 import { BpsLoader } from "@/components/BpsLoader";
@@ -29,6 +29,21 @@ setTenantIdGetter(() => getActiveTenantId());
 // and send the user back to sign in.
 setUnauthorizedHandler(() => {
   if (!getStoredToken()) return;
+
+  /**
+   * A support session that has run out is not a signed-out user.
+   *
+   * The impersonation token lasts an hour. Treating its expiry like any other
+   * dead token would clear the platform admin's OWN session too and dump them
+   * on the login form — a miserable way to discover the hour was up, and the
+   * kind of thing that stops people using the support tool at all. Put the
+   * real account back and return them to the console instead.
+   */
+  if (endSupportSession()) {
+    window.location.replace(`${basePath}/admin/tenants`);
+    return;
+  }
+
   clearStoredToken();
   const signInPath = `${basePath}/sign-in`;
   if (window.location.pathname !== signInPath) window.location.replace(signInPath);
