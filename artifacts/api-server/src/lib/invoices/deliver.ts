@@ -153,9 +153,31 @@ export async function sendInvoiceEmail(invoiceId: number, tenantId: number, kind
   <p style="margin:0;color:#6B7280;font-size:13px">${esc(tenant?.name ?? "")}${settings?.phone ? ` · ${esc(settings.phone)}` : ""}${settings?.email ? ` · ${esc(settings.email)}` : ""}</p>
 </div>`;
 
+  /**
+   * The PDF goes with it.
+   *
+   * An invoice in the body of an email is a message; an invoice with a PDF
+   * attached is a document the customer can file, forward to their accountant
+   * and find again in two years. Same bytes the dashboard preview shows, so
+   * what was checked is what was sent.
+   *
+   * Best effort: if the PDF cannot be built, the email still goes with the
+   * figures in the body. A missing attachment is a nuisance, a missing invoice
+   * is money.
+   */
+  let attachments: Array<{ filename: string; content: Buffer; contentType: string }> | undefined;
+  try {
+    const { buildInvoicePdf } = await import("../../routes/invoices");
+    const pdf = await buildInvoicePdf(invoiceId, tenantId);
+    if (pdf) attachments = [{ filename: `${inv.reference}.pdf`, content: pdf, contentType: "application/pdf" }];
+  } catch {
+    // Logged by sendAndRecord as an email that went without its attachment.
+  }
+
   await sendAndRecord(
     {
       to,
+      attachments,
       subject: overdue
         ? `Reminder: invoice ${inv.reference} — ${money(due)} outstanding`
         : `Invoice ${inv.reference} from ${tenant?.name ?? ""}`.trim(),

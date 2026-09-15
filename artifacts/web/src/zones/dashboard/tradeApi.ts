@@ -47,6 +47,25 @@ export const api = {
   post: <T,>(path: string, body?: unknown) => request<T>("POST", path, body),
   patch: <T,>(path: string, body?: unknown) => request<T>("PATCH", path, body),
   put: <T,>(path: string, body?: unknown) => request<T>("PUT", path, body),
+  /**
+   * Fetch a binary response with the auth header on.
+   *
+   * A PDF endpoint cannot be a plain link: the token lives in localStorage and
+   * a browser navigation sends no Authorization header, so the tab would get a
+   * 401 instead of the document. This pulls the bytes properly and hands back
+   * an object URL the caller can open or save.
+   */
+  blob: async (path: string): Promise<string> => {
+    const token = getStoredToken();
+    const res = await fetch(`/api${path}`, {
+      headers: { ...(token ? { authorization: `Bearer ${token}` } : {}) },
+    });
+    if (!res.ok) {
+      const payload = await res.json().catch(() => null);
+      throw new Error(payload?.error || `Could not load the file (${res.status})`);
+    }
+    return URL.createObjectURL(await res.blob());
+  },
   del: <T,>(path: string) => request<T>("DELETE", path),
 };
 

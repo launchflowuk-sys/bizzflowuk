@@ -338,6 +338,45 @@ export function InvoiceDetailPage() {
     setLines(draft.map((l, n) => n === idx ? { ...l, ...patch } : l));
   }
 
+  /**
+   * Look at it before the customer does.
+   *
+   * There was no way to see an invoice. You filled in the lines, pressed Send,
+   * and the first person to see how it actually read was the customer — a poor
+   * moment to notice the address is wrong or a line still says "New line".
+   *
+   * The window is opened BEFORE the fetch, not after. Popup blockers allow a
+   * window opened synchronously inside a click and block one opened after an
+   * await, so doing it the obvious way means the preview silently never
+   * appears for some people.
+   */
+  async function preview() {
+    const tab = window.open("", "_blank");
+    try {
+      const url = await api.blob(`/invoices/${data.id}/pdf`);
+      if (tab) tab.location.href = url;
+      else window.location.href = url;   // popup blocked: same tab beats nothing
+    } catch (e: any) {
+      tab?.close();
+      setNote(e?.message || "Could not build the PDF.");
+    }
+  }
+
+  async function downloadPdf() {
+    try {
+      const url = await api.blob(`/invoices/${data.id}/pdf?download=1`);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${data.reference}.pdf`;
+      a.click();
+      // Freed on the next tick — revoking immediately can cancel the save in
+      // some browsers before it has read the blob.
+      setTimeout(() => URL.revokeObjectURL(url), 10_000);
+    } catch (e: any) {
+      setNote(e?.message || "Could not build the PDF.");
+    }
+  }
+
   function saveLines() {
     const clean = draft
       .filter(l => l.description.trim())
@@ -358,6 +397,8 @@ export function InvoiceDetailPage() {
         action={
           <div className="flex flex-wrap gap-2">
             <Btn tone="ghost" onClick={() => navigate("/dashboard/invoices")}>Back</Btn>
+            <Btn tone="ghost" onClick={preview} disabled={dirty}>Preview</Btn>
+            <Btn tone="ghost" onClick={downloadPdf} disabled={dirty}>Download</Btn>
             {data.status === "draft" && (
               <Btn onClick={() => run(() => api.post(`/invoices/${data.id}/send`), "Invoice sent")} disabled={busy || dirty}>Send</Btn>
             )}

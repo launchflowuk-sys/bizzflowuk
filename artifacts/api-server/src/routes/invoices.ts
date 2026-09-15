@@ -392,6 +392,100 @@ router.patch("/invoices/:id", requireTenantAccess, async (req: any, res) => {
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
+// ── The PDF ──────────────────────────────────────────────────────────────────
+
+/**
+ * Fetch the tenant's logo for the PDF, best effort.
+ *
+ * Bounded and swallowed on purpose: a slow or dead image host must never be
+ * the reason an invoice will not open. The renderer falls back to the business
+ * name set in type, which is a perfectly good invoice.
+ */
+async function fetchLogo(settings: any): Promise<Buffer | null> {
+  const url = String(settings?.logoUrl ?? "").trim();
+  if (!url) return null;
+  try {
+    const absolute = url.startsWith("http")
+      ? url
+      : `${process.env["PUBLIC_BASE_URL"] || "https://bizzflowuk.com"}${url.startsWith("/") ? "" : "/"}${url}`;
+    const res = await fetch(absolute, { signal: AbortSignal.timeout(4000) });
+    if (!res.ok) return null;
+    const type = res.headers.get("content-type") ?? "";
+    // pdfkit reads PNG and JPEG only. An SVG logo would throw inside the
+    // renderer, which is caught there, but refusing it here is cheaper.
+    if (!/png|jpe?g/i.test(type)) return null;
+    const buf = Buffer.from(await res.arrayBuffer());
+    // A 5MB logo is a mistake, not a logo.
+    return buf.byteLength > 5_000_000 ? null : buf;
+  } catch {
+    return null;
+  }
+}
+
+/** Everything the renderer needs, gathered once so preview and email agree. */
+async function invoicePdfContext(id: number, tenantId: number) {
+  const [inv] = await db.select().from(invoicesTable)
+    .where(and(eq(invoicesTable.id, id), eq(invoicesTable.tenantId, tenantId))).limit(1);
+  if (!inv) return null;
+
+  const items = (await loadItems([id])).get(id) ?? [];
+  const [tenant] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
+  const [settings] = await db.select().from(tenantSettingsTable)
+    .where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
+
+  let customer: any = null;
+  if (inv.customerId) {
+    const [c] = await db.select().from(customersTable).where(eq(customersTable.id, inv.customerId)).limit(1);
+    customer = c ?? null;
+  }
+
+  return {
+    invoice: { ...inv, outstanding: outstanding(inv.total, inv.amountPaid) },
+    items, customer, tenant, settings,
+  };
+}
+
+export async function buildInvoicePdf(id: number, tenantId: number): Promise<Buffer | null> {
+  const ctx = await invoicePdfContext(id, tenantId);
+  if (!ctx) return null;
+  const { renderInvoicePdf } = await import("../lib/invoices/pdf");
+  const logo = await fetchLogo(ctx.settings);
+  return renderInvoicePdf({ ...ctx, logo });
+}
+
+/**
+ * See the invoice before anybody else does.
+ *
+ * There was no way to look at one. You filled in the lines and pressed Send,
+ * and the first person to see how it actually reads was the customer — which
+ * is a poor moment to discover the address is wrong or a line says "New line".
+ *
+ * `?download=1` sets a filename; without it the browser opens it in a tab,
+ * which is what a preview wants. Same bytes either way, and the same bytes the
+ * customer is emailed, so the preview cannot drift from the real thing.
+ */
+router.get("/invoices/:id/pdf", requireTenantAccess, async (req: any, res) => {
+  try {
+    const id = Number(req.params.id);
+    const pdf = await buildInvoicePdf(id, tid(req));
+    if (!pdf) { res.status(404).json({ error: "Not found" }); return; }
+
+    const [inv] = await db.select({ reference: invoicesTable.reference })
+      .from(invoicesTable).where(eq(invoicesTable.id, id)).limit(1);
+    const name = `${inv?.reference ?? `invoice-${id}`}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `${req.query.download ? "attachment" : "inline"}; filename="${name}"`,
+    );
+    // A draft changes constantly while it is being written; a cached preview
+    // showing yesterday's figures would be worse than no preview.
+    res.setHeader("Cache-Control", "no-store");
+    res.send(pdf);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Could not build the PDF" }); }
+});
+
 // ── Draft the lines from a description ───────────────────────────────────────
 
 const draftSchema = z.object({
