@@ -39,6 +39,7 @@ import { StatusBadge } from "@/components/StatusBadge";
 import FilesPage from "./FilesPage";
 import PropertiesPage from "./PropertiesPage";
 import BookingQrPage from "./BookingQrPage";
+import NewJobForm from "./NewJobForm";
 import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
 import BillingPage from "./BillingPage";
@@ -2850,13 +2851,11 @@ function QuoteDetailPage({ id }: { id: number }) {
 // ─── Projects ─────────────────────────────────────────────────────────────────
 function ProjectsPage() {
   const { data: projects, isLoading } = useListProjects();
-  const createMutation = useCreateProject();
   const [, navigate] = useWouterLocation();
   const qc = useQueryClient();
   const showToast = useToast();
   const [statusFilter, setStatusFilter] = useState("");
   const [showNew, setShowNew] = useState(false);
-  const [newProj, setNewProj] = useState({ title: "", city: "", description: "" });
   const filtered = (projects as any[])?.filter((p: any) => !statusFilter || p.status === statusFilter);
   const deleteProject = useDeleteProject();
   const [deleteId, setDeleteId] = useState<number | null>(null);
@@ -2876,49 +2875,27 @@ function ProjectsPage() {
     } catch (err: any) { showToast(err?.message || "Delete failed", "error"); }
   };
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newProj.title.trim()) return;
-    try {
-      const p = await createMutation.mutateAsync({ data: newProj } as any) as any;
-      qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
-      showToast("Job created");
-      setShowNew(false);
-      setNewProj({ title: "", city: "", description: "" });
-      navigate(`/dashboard/projects/${p.id}`);
-    } catch (err: any) { showToast(err?.message || "Failed to create job", "error"); }
-  };
-
   return (
     <div className="p-4 sm:p-6 space-y-4">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Projects</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Jobs</h1>
         <button onClick={() => setShowNew(true)} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] px-4 sm:px-5 text-sm font-semibold text-white shadow-sm hover:brightness-110">+ New</button>
       </div>
+      {/*
+        The old modal had three fields — title, city, description — which is a
+        note, not a job. This one holds everything a job needs, and lets you add
+        a customer without leaving it.
+      */}
       {showNew && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={e => { if (e.target === e.currentTarget) setShowNew(false); }}>
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl p-6 space-y-4">
-            <h2 className="font-semibold text-slate-900">New Project</h2>
-            <form onSubmit={handleCreate} className="space-y-3">
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Title <span className="text-red-400">*</span></label>
-                <input required value={newProj.title} onChange={e => setNewProj(p => ({ ...p, title: e.target.value }))} placeholder="e.g. John Smith — Silicone Render" className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">City</label>
-                <input value={newProj.city} onChange={e => setNewProj(p => ({ ...p, city: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-slate-700 mb-1">Description</label>
-                <textarea rows={2} value={newProj.description} onChange={e => setNewProj(p => ({ ...p, description: e.target.value }))} className="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-[var(--brand)]" />
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button type="submit" disabled={createMutation.isPending} className="flex-1 rounded-md bg-[var(--brand)] py-2 text-sm font-medium text-white hover:brightness-110 disabled:opacity-50">{createMutation.isPending ? "Creating..." : "Create Job"}</button>
-                <button type="button" onClick={() => setShowNew(false)} className="flex-1 rounded-md border border-slate-300 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">Cancel</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <NewJobForm
+          onClose={() => setShowNew(false)}
+          onCreated={job => {
+            setShowNew(false);
+            qc.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+            showToast("Job created");
+            if (job?.id) navigate(`/dashboard/projects/${job.id}`);
+          }}
+        />
       )}
       <div className="flex flex-wrap gap-2">
         {["", "Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"].map(s => (

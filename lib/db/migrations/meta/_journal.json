@@ -316,6 +316,13 @@
       "when": 1788600000000,
       "tag": "0044_managed_billing",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1788700000000,
+      "tag": "0045_job_service_and_items",
+      "breakpoints": true
     }
   ]
 }
