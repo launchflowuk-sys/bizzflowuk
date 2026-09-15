@@ -45,7 +45,13 @@ async function adminRequest<T>(method: string, path: string, body?: unknown): Pr
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const payload = await res.json().catch(() => null);
-  if (!res.ok) throw new Error((payload as any)?.error || `Request failed (${res.status})`);
+  // `reason` as well as `error`: the sync route reports its failure that way,
+  // and swallowing it left the panel saying "Request failed (500)" when the
+  // server had already explained exactly what was wrong.
+  if (!res.ok) {
+    const p = payload as any;
+    throw new Error(p?.error || p?.reason || `Request failed (${res.status})`);
+  }
   return payload as T;
 }
 

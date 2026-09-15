@@ -113,6 +113,22 @@ export async function syncGoogleReviews(tenantId: number): Promise<GoogleSyncRes
 
     await db.insert(reviewsTable).values(values).onConflictDoUpdate({
       target: [reviewsTable.tenantId, reviewsTable.externalId],
+      /**
+       * The index this infers against is PARTIAL:
+       *
+       *   CREATE UNIQUE INDEX reviews_tenant_external_idx
+       *     ON reviews (tenant_id, external_id) WHERE external_id IS NOT NULL;
+       *
+       * Postgres will not match an ON CONFLICT to a partial index unless the
+       * same predicate is repeated here. Without it every insert failed with
+       * "there is no unique or exclusion constraint matching the ON CONFLICT
+       * specification" — so no Google review has ever been imported for any
+       * tenant, and the nightly sweep swallowed it per-tenant as a logged
+       * error nobody was reading.
+       *
+       * The predicate has to stay in step with migration 0043.
+       */
+      targetWhere: sql`${reviewsTable.externalId} is not null`,
       set: {
         reviewerName: values.reviewerName,
         rating: values.rating,
