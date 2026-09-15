@@ -305,7 +305,7 @@ function Header({ tenant, settings, services, areas }: { tenant: any; settings: 
 
           <nav className="bps-drawer" aria-label="Mobile">
             <div className="bps-drawer-head">
-              {settings?.logoUrl && <img src={settings.logoUrl} alt="" className="h-[46px] w-auto"/>}
+              {settings?.logoUrl && <img src={settings.logoUrl} alt="" className="h-[46px] w-auto" loading="lazy" decoding="async"/>}
               <button type="button" className="bps-drawer-x" aria-label="Close menu" onClick={() => closeDrawer()}>
                 <Icon d="M18 6L6 18M6 6l12 12" className="w-5 h-5" color="#fff" strokeWidth={2.2}/>
               </button>
@@ -926,7 +926,7 @@ function Footer({ tenant, settings, services }: { tenant: any; settings: any; se
         <div className="grid md:grid-cols-3 gap-10 pb-10 border-b" style={{ borderColor: "rgba(255,255,255,.12)" }}>
           <div>
             {settings?.logoUrl
-              ? <img src={settings.logoUrl} alt={tenant?.name} className="h-9 w-auto"/>
+              ? <img src={settings.logoUrl} alt={tenant?.name} className="h-9 w-auto" loading="lazy" decoding="async"/>
               : <span className="text-white font-bold text-[18px]">{tenant?.name}</span>}
             {settings?.aboutText && <p className="mt-5 text-[14px] leading-[1.75] text-white/60 max-w-[330px]">{settings.aboutText}</p>}
           </div>
@@ -1165,7 +1165,7 @@ function AboutPage({ tenant, settings, services, areas }: any) {
       {settings?.aboutImageUrl && (
         <section className="py-[56px]" style={{ background: "#fff" }}>
           <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
-            <img src={settings.aboutImageUrl} alt={tenant?.name} className="w-full rounded-[22px]"/>
+            <img src={settings.aboutImageUrl} alt={tenant?.name} className="w-full rounded-[22px]" loading="lazy" decoding="async"/>
           </div>
         </section>
       )}
