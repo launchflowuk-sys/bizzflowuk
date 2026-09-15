@@ -1147,3 +1147,48 @@
 @media (min-width: 1024px) {
   .review-rail { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 }
+
+/* -----------------------------------------------------------------------------
+ * The review wall — everything past the featured six.
+ *
+ * Columns, not a grid. These reviews run from twenty-six characters to nearly
+ * four hundred, and a grid stretches every card in a row to match its tallest
+ * neighbour, which leaves a five-word review sitting in a box six lines deep.
+ * CSS columns let each card be exactly as tall as its own text.
+ *
+ * The height cap and its own scrollbar are the point: the wall says "there is
+ * plenty more here" without the page itself becoming endless and pushing the
+ * call to action somewhere nobody scrolls to.
+ * -------------------------------------------------------------------------- */
+.review-wall {
+  columns: 1;
+  column-gap: 18px;
+  max-height: 560px;
+  overflow-y: auto;
+  /* Room for the scrollbar so it never sits on top of the text. */
+  padding-right: 6px;
+  /* Keyboard users can scroll this region, so it must show focus. */
+  border-radius: 14px;
+}
+
+.review-wall:focus-visible {
+  outline: 3px solid var(--bps-blue-bright, #35baf2);
+  outline-offset: 4px;
+}
+
+@media (min-width: 640px) { .review-wall { columns: 2; max-height: 620px } }
+@media (min-width: 1024px) { .review-wall { columns: 3; max-height: 680px } }
+
+/*
+ * `break-inside: avoid` is load-bearing. Without it a column break lands in
+ * the middle of a card and splits one person's review across two columns,
+ * which reads as two half-reviews by nobody.
+ */
+.review-wall-card {
+  break-inside: avoid;
+  -webkit-column-break-inside: avoid;
+  page-break-inside: avoid;
+  margin-bottom: 18px;
+  display: inline-block;
+  width: 100%;
+}

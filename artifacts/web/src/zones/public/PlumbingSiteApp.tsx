@@ -1193,13 +1193,89 @@ function ServicesPage({ tenant, settings, services }: any) {
   );
 }
 
+/**
+ * Everything past the featured few.
+ *
+ * Google's API hands back five reviews however many a business has, so BPS
+ * shows five of forty-eight. The rest are transcribed by hand, and once they
+ * exist there is no good reason to hide them — but forty cards at full size
+ * would bury the page and push the call to action somewhere nobody reaches.
+ *
+ * So they get a different treatment: compact, dense, and inside its own
+ * bounded scroll. The height cap is the point — the wall reads as "there is
+ * plenty more here" without the page itself becoming endless.
+ *
+ * A marquee was the other option and is the wrong one: text that moves on its
+ * own cannot be read at the reader's pace, cannot be selected, and is a
+ * genuine accessibility problem. A scroll container the reader drives has the
+ * same effect and none of that.
+ */
+function ReviewWall({ reviews }: { reviews: any[] }) {
+  if (!reviews?.length) return null;
+
+  return (
+    <section className="pb-[76px]" style={{ background: REVIEW_BG }}>
+      <div className="mx-auto max-w-[1400px] px-5 sm:px-8">
+        <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 pt-2">
+          <h2 className="font-bold" style={{ color: TEXT, fontSize: "clamp(22px,2.4vw,28px)", letterSpacing: "-0.03em" }}>
+            More from our customers
+          </h2>
+          <p className="text-[14px]" style={{ color: BODY }}>
+            {reviews.length} more review{reviews.length === 1 ? "" : "s"}, in their own words
+          </p>
+        </div>
+
+        {/*
+          CSS columns rather than a grid: reviews are wildly uneven in length —
+          twenty-six characters to three hundred and seventy — and a grid would
+          stretch every card in a row to match its tallest neighbour, leaving
+          "I wouldnt use anyone else!" floating in a box six lines deep.
+          Columns let each card be exactly as tall as its own text.
+        */}
+        <div
+          className="review-wall mt-7"
+          tabIndex={0}
+          role="region"
+          aria-label="More customer reviews"
+        >
+          {reviews.map((r: any, i: number) => (
+            <article
+              key={r.id ?? i}
+              className="review-wall-card rounded-[14px] border p-5"
+              style={{ borderColor: BORDER, background: "#fff" }}
+            >
+              <div className="flex gap-0.5 mb-2.5" aria-label={`${r.rating || 5} out of 5`}>
+                {Array.from({ length: r.rating || 5 }).map((_, n) => <Star key={n}/>)}
+              </div>
+              <p className="text-[14.5px] leading-[1.7]" style={{ color: BODY }}>{r.content}</p>
+              <p className="mt-3 text-[13px] font-semibold flex flex-wrap items-center gap-x-2" style={{ color: TEXT }}>
+                {r.reviewerName}
+                {r.platform && (
+                  <span className="text-[10px] font-bold uppercase tracking-[0.09em]" style={{ color: BODY }}>
+                    {r.platform}
+                  </span>
+                )}
+              </p>
+            </article>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function ReviewsPage({ tenant, settings, reviews }: any) {
   return (
     <>
       <PageSEO title={`Reviews — ${tenant?.name}`} description={`What customers say about ${tenant?.name}.`}/>
       <PageHead eyebrow="Reviews" title="What our customers say"/>
       {reviews?.length
-        ? <Reviews reviews={reviews} heading="" settings={settings}/>
+        ? <>
+            {/* The six most recent get full cards; the rest go in the wall
+                below, so the page leads with reviews rather than volume. */}
+            <Reviews reviews={reviews.slice(0, 6)} heading="" settings={settings}/>
+            <ReviewWall reviews={reviews.slice(6)}/>
+          </>
         : (
           // No invented testimonials. An empty state that tells the truth beats
           // filler that would also put false rating schema on the page.
