@@ -160,7 +160,11 @@ export const draftRenewalQuotes: AutomationRule = {
       const [draft] = await db.insert(quotesTable).values({
         tenantId: ctx.tenantId,
         customerId: cert.customerId,
-        reference: `${previous.reference}-R`,
+        // Keyed on the certificate, not just the quote it was copied from.
+        // Two certificates for the same customer would otherwise both derive
+        // "<quote>-R" and the trade would be looking at two quotes with the
+        // same reference — nothing enforces uniqueness here to stop it.
+        reference: `${previous.reference}-R${cert.id}`,
         status: "Draft",
         subtotal: subtotal.toFixed(2),
         total: subtotal.toFixed(2),

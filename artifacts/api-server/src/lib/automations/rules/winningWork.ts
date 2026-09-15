@@ -55,9 +55,15 @@ export const followUpQuotes: AutomationRule = {
 
       // resolveQuoteRecipient is the one place that knows where a quote's
       // person lives — it may be a customer, or a lead that never became one.
+      //
+      // Its fields are customerEmail / customerPhone, NOT email / phone.
+      // Reading the wrong names gives undefined on every quote, which would
+      // have reproduced exactly the bug this rule is being fixed for: a
+      // follow-up that logs itself and reaches nobody.
       const who = await resolveQuoteRecipient(q);
-      const email = (who as any)?.email ?? null;
-      const firstName = (who as any)?.firstName || "there";
+      const email = who.customerEmail ?? null;
+      const phone = who.customerPhone ?? null;
+      const firstName = who.firstName || "there";
       if (!email) continue;
 
       const ok = await ctx.act({
@@ -71,7 +77,7 @@ export const followUpQuotes: AutomationRule = {
       const sent = await notifyCustomer({
         tenantId: ctx.tenantId,
         voice,
-        to: { firstName, email, phone: (who as any)?.phone ?? null },
+        to: { firstName, email, phone },
         event: "quote_follow_up",
         subject: `About your quote ${q.reference}`,
         html: automationEmail(voice, {
