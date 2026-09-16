@@ -1112,9 +1112,15 @@ export default function BizzFlowHome() {
         {/* ── Industries ──────────────────────────────────────────────────── */}
         <section className="industry-section section wrap" id="industries">
           <div className="industry-photo reveal">
+            {/* Intrinsic size given so the browser reserves the space before
+                the file arrives. Without it the caption and everything below
+                jump once it loads. */}
             <img
-              src="/bizzflow/images/trades-owners.jpg"
+              src="/bizzflow/images/trades-owners.webp"
+              width={1200}
+              height={800}
               loading="lazy"
+              decoding="async"
               alt="Trades business owners planning work together on a residential building site"
             />
             <div className="photo-caption">

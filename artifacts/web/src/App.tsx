@@ -92,7 +92,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
           the page instead of sitting at opposite ends. Same trap as the hero. */}
       <header className="header" style={{ width: "100%" }}>
         <a className="brand" href={basePath || "/"} aria-label="BizzFlowUK home">
-          <img src="/bizzflow/brand/bizzflowuk-symbol-transparent.png" alt="" className="brand-icon" />
+          <img src="/bizzflow/brand/bizzflowuk-symbol.webp" alt="" className="brand-icon" />
           <span>bizzflow<span className="brand-uk">UK</span></span>
         </a>
         <a className="button small dark" href={basePath || "/"}>
@@ -154,6 +154,21 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   );
 }
 
+/**
+ * The marketing homepage is NOT lazy, and that is deliberate.
+ *
+ * Lazy-loading it put a second network round trip on the critical path of the
+ * one page whose job is to be found and to convert: the browser had to fetch
+ * the entry bundle, execute it, discover the import, then fetch the page chunk
+ * before a single word could be painted. Lighthouse measured the result as an
+ * LCP of 5.3s, of which 4.6s was render delay with nothing on screen.
+ *
+ * It costs every other route about 12KB gzipped. Its own stylesheet was already
+ * in the main CSS bundle, so nothing moves there. A homepage that paints a
+ * round trip sooner is worth 12KB on the dashboard.
+ */
+import BizzFlowHome from "@/zones/public/bizzflow/BizzFlowHome";
+
 // ---------------------------------------------------------------------------
 // Zone lazy imports
 // ---------------------------------------------------------------------------
@@ -162,7 +177,6 @@ const DashboardApp = lazy(() => import("@/zones/dashboard/DashboardApp"));
 const PortalApp = lazy(() => import("@/zones/portal/PortalApp"));
 const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
 const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
-const BizzFlowHome = lazy(() => import("@/zones/public/bizzflow/BizzFlowHome"));
 const BizzFlowDemo = lazy(() => import("@/zones/public/bizzflow/BizzFlowDemo"));
 const SignUpPage = lazy(() => import("@/zones/public/bizzflow/SignUpPage"));
 const JobSharePage = lazy(() => import("@/zones/public/JobSharePage"));
