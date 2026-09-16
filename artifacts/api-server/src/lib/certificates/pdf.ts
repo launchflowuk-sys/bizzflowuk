@@ -18,6 +18,8 @@ import { readCertificateFile } from "./storage";
 type RenderArgs = {
   certificate: any;
   appliances: any[];
+  /** Optional: older call sites render without them. */
+  photos?: any[];
   type: CertificateType;
   tenant: any;
   settings: any;
@@ -44,6 +46,7 @@ function fmtCheck(v: boolean | null | undefined): string {
 
 export async function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
   const { certificate: c, appliances, type, tenant, settings } = args;
+  const photoRows = args.photos ?? [];
 
   /**
    * Signatures are read before drawing starts, not during.
@@ -60,6 +63,22 @@ export async function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
     engineer: c.engineerSignaturePath ? await readCertificateFile(c.engineerSignaturePath) : null,
     customer: c.customerSignaturePath ? await readCertificateFile(c.customerSignaturePath) : null,
   };
+
+  /**
+   * Photographs, read up front for the same reason as the signatures: once
+   * pdfkit starts laying out, it is synchronous.
+   *
+   * Capped, because a certificate is a document somebody emails and a landlord
+   * opens on a phone. Thirty photographs would make it slow to send and slow to
+   * open, and the record is the point -- the photos are supporting evidence.
+   * Anything past the cap stays on the job in the dashboard.
+   */
+  const MAX_PDF_PHOTOS = 12;
+  const photos: Array<{ bytes: Buffer; caption: string | null }> = [];
+  for (const row of photoRows.slice(0, MAX_PDF_PHOTOS)) {
+    const bytes = await readCertificateFile(row.path);
+    if (bytes) photos.push({ bytes, caption: row.caption ?? null });
+  }
 
   return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: PAGE_MARGIN, info: {
@@ -206,6 +225,48 @@ export async function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
       doc.font("Helvetica-Bold").fontSize(10).fillColor(INK).text("Notes", left, doc.y);
       doc.font("Helvetica").fontSize(9.5).fillColor(INK).text(String(notes), left, doc.y + 2, { width });
       doc.y += 14;
+    }
+
+    // ── Photographs ─────────────────────────────────────────────────────────
+    //
+    // Three to a row, uniform boxes, `fit` so a portrait shot of a flue and a
+    // landscape shot of a boiler both sit inside their box rather than one
+    // being stretched to match the other.
+    if (photos.length) {
+      if (doc.y > doc.page.height - 220) { doc.addPage(); doc.y = PAGE_MARGIN; }
+      doc.moveTo(left, doc.y).lineTo(right, doc.y).strokeColor(RULE).lineWidth(0.5).stroke();
+      doc.y += 12;
+      doc.font("Helvetica-Bold").fontSize(10).fillColor(INK).text("Photographs", left, doc.y);
+      doc.y += 14;
+
+      const perRow = 3;
+      const gap = 12;
+      const cell = (width - gap * (perRow - 1)) / perRow;
+      const cellH = cell * 0.75;
+
+      for (let i = 0; i < photos.length; i += perRow) {
+        const row = photos.slice(i, i + perRow);
+        const needs = cellH + (row.some(p => p.caption) ? 14 : 4);
+        if (doc.y + needs > doc.page.height - PAGE_MARGIN) { doc.addPage(); doc.y = PAGE_MARGIN; }
+        const top = doc.y;
+
+        row.forEach((photo, n) => {
+          const x = left + n * (cell + gap);
+          try {
+            doc.image(photo.bytes, x, top, { fit: [cell, cellH] });
+          } catch {
+            // A photo that will not decode must never cost the whole record.
+            doc.rect(x, top, cell, cellH).strokeColor(RULE).lineWidth(0.5).stroke();
+          }
+          if (photo.caption) {
+            doc.font("Helvetica").fontSize(7.5).fillColor(MUTED)
+              .text(photo.caption, x, top + cellH + 3, { width: cell, height: 10, ellipsis: true });
+          }
+        });
+
+        doc.y = top + needs + 6;
+      }
+      doc.y += 4;
     }
 
     // ── Signatures ──────────────────────────────────────────────────────────

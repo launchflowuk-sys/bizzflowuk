@@ -42,6 +42,31 @@ export async function storeCertificateSignature(
   return rel;
 }
 
+/**
+ * A photograph from the job.
+ *
+ * Arrives already shrunk by the browser -- see the note in PhotoStrip. The cap
+ * here is the backstop for anything that did not go through that path.
+ */
+export async function storeCertificatePhoto(
+  tenantId: number, certificateId: number, bytes: Buffer, ext: string,
+): Promise<string> {
+  const safeExt = /^[a-z0-9]{2,5}$/.test(ext) ? ext : "jpg";
+  const rel = path.posix.join(String(tenantId), "certificates", `${certificateId}-photo-${randomUUID()}.${safeExt}`);
+  const abs = path.join(uploadsRoot(), rel);
+  await fs.mkdir(path.dirname(abs), { recursive: true });
+  await fs.writeFile(abs, bytes);
+  return rel;
+}
+
+/** Remove a stored file. Never throws -- a missing file is already the goal. */
+export async function removeCertificateFile(relPath: string): Promise<void> {
+  const root = path.resolve(uploadsRoot());
+  const abs = path.resolve(root, relPath);
+  if (!abs.startsWith(root + path.sep)) return;
+  try { await fs.unlink(abs); } catch { /* already gone */ }
+}
+
 /** Read anything we stored for a certificate, PDF or signature. */
 export async function readCertificateFile(relPath: string): Promise<Buffer | null> {
   // Defensive: a stored path is ours, but a traversal here would read anything

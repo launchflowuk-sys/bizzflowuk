@@ -16,6 +16,14 @@ import { z } from "zod/v4";
 
 /** Per-appliance checks. Nullable tri-state: pass / fail / not applicable. */
 const applianceSchema = z.object({
+  /**
+   * A stable id the client mints and keeps across saves.
+   *
+   * Appliances are replaced wholesale on every save, so the primary key is not
+   * stable and photographs keyed to it would silently detach. This is what
+   * they hang off instead.
+   */
+  clientKey: z.string().max(64).optional().nullable(),
   location: z.string().min(1, "Every appliance needs a location"),
   applianceType: z.string().optional(),
   make: z.string().optional(),

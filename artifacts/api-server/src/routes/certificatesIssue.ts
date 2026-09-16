@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { createHash } from "node:crypto";
 import { db } from "@workspace/db";
-import { certificatesTable, certificateAppliancesTable, tenantsTable, tenantSettingsTable } from "@workspace/db";
-import { eq, and } from "drizzle-orm";
+import { certificatesTable, certificateAppliancesTable, certificatePhotosTable, tenantsTable, tenantSettingsTable } from "@workspace/db";
+import { eq, and, asc } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { getCertificateType, computeExpiry } from "../lib/certificates/registry";
 import { renderCertificatePdf } from "../lib/certificates/pdf";
@@ -161,7 +161,11 @@ router.post("/certificates/:id/issue", requireTenantAccess, async (req: any, res
     const [tenant] = await db.select().from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
     const [settings] = await db.select().from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
 
-    const pdf = await renderCertificatePdf({ certificate: cert, appliances, type, tenant, settings });
+    const photos = await db.select().from(certificatePhotosTable)
+      .where(eq(certificatePhotosTable.certificateId, cert.id))
+      .orderBy(asc(certificatePhotosTable.position), asc(certificatePhotosTable.id));
+
+    const pdf = await renderCertificatePdf({ certificate: cert, appliances, photos, type, tenant, settings });
     const sha256 = createHash("sha256").update(pdf).digest("hex");
     const pdfPath = await storeCertificatePdf(tenantId, cert.id, pdf);
 

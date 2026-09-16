@@ -5,6 +5,7 @@ import { Page, PageHead, Card, Btn, Loading, ErrorNote, Pill } from "./TradePage
 import { StatusBadge } from "@/components/StatusBadge";
 import Spinner from "./Spinner";
 import SignaturePad from "./SignaturePad";
+import PhotoStrip from "./PhotoStrip";
 
 /**
  * Filling in a certificate, on site, on a phone.
@@ -36,6 +37,8 @@ import SignaturePad from "./SignaturePad";
 
 type Appliance = {
   id?: number;
+  /** Stable across saves, unlike id. Photographs hang off this. */
+  clientKey?: string | null;
   location: string;
   applianceType?: string | null;
   make?: string | null;
@@ -156,8 +159,14 @@ function Toggle({ value, onChange, on, off, disabled }: {
   );
 }
 
+/** A key that survives the wholesale replace the server does on every save. */
+function newKey(): string {
+  return (crypto.randomUUID?.() ?? `k${Date.now()}${Math.random().toString(36).slice(2)}`).slice(0, 64);
+}
+
 function blankAppliance(): Appliance {
   return {
+    clientKey: newKey(),
     location: "", applianceType: "", make: "", model: "",
     isLandlordOwned: true, wasInspected: true,
     flueFlowPass: null, safetyDevicesPass: null, ventilationPass: null,
@@ -185,11 +194,15 @@ export default function CertificateDetailPage() {
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const saveTimer = useRef<number | null>(null);
   const [savingSig, setSavingSig] = useState<"engineer" | "customer" | null>(null);
+  const { data: photoData, reload: reloadPhotos } = useApi<any[]>(`/certificates/${id}/photos`, [id]);
+  const photos = photoData ?? [];
 
   useEffect(() => {
     if (!data) return;
     setCert(data);
-    setAppliances(data.appliances?.length ? data.appliances : []);
+    // Rows saved before client keys existed get one now, so their photographs
+    // have something stable to attach to from here on.
+    setAppliances((data.appliances ?? []).map(a => (a.clientKey ? a : { ...a, clientKey: newKey() })));
     setDirty(false);
   }, [data]);
 
@@ -247,7 +260,7 @@ export default function CertificateDetailPage() {
         // partial merge on a safety checklist is how a stale row survives.
         appliances: appliances
           .filter(a => a.location.trim())
-          .map(a => ({ ...a, location: a.location.trim() })),
+          .map(a => ({ ...a, clientKey: a.clientKey ?? newKey(), location: a.location.trim() })),
       });
       setDirty(false);
       setSavedAt(new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" }));
@@ -480,6 +493,17 @@ export default function CertificateDetailPage() {
                     </Field>
                   </div>
 
+                  <div className="mt-5">
+                    <PhotoStrip
+                      certificateId={cert.id}
+                      applianceKey={a.clientKey ?? null}
+                      photos={photos}
+                      onChanged={reloadPhotos}
+                      disabled={locked}
+                      label="Photos of this appliance"
+                    />
+                  </div>
+
                   <div className="mt-5 rounded-xl border border-slate-200 bg-slate-50 p-4">
                     <span className={labelCls}>Is this appliance safe to use?</span>
                     <p className="mb-2 text-[12.5px] text-slate-500">
@@ -502,6 +526,22 @@ export default function CertificateDetailPage() {
           )}
         </div>
       )}
+
+      {/* ── Photos of the job ─────────────────────────────────────────────── */}
+      <Card className="p-5 sm:p-6 mb-4">
+        <h2 className="text-[17px] font-semibold text-slate-900">Photos of the job</h2>
+        <p className="mt-1 mb-4 text-[13px] text-slate-500">
+          Anything that is not about one appliance. On a disputed job a photograph taken at the
+          time is the difference between your word and evidence.
+        </p>
+        <PhotoStrip
+          certificateId={cert.id}
+          applianceKey={null}
+          photos={photos}
+          onChanged={reloadPhotos}
+          disabled={locked}
+        />
+      </Card>
 
       {/* ── Signatures ────────────────────────────────────────────────────── */}
       <Card className="p-5 sm:p-6 mb-4">

@@ -119,6 +119,16 @@ export const certificateAppliancesTable = pgTable("certificate_appliances", {
   id: serial("id").primaryKey(),
   certificateId: integer("certificate_id").notNull().references(() => certificatesTable.id, { onDelete: "cascade" }),
   position: integer("position").notNull().default(0),
+  /**
+   * A stable id minted by the client, because the primary key is not stable.
+   *
+   * Appliances are replaced wholesale on every save -- delete the set, insert
+   * the new one -- so `id` changes each time the engineer touches a field.
+   * Anything hung off the id (photographs) would silently detach from the
+   * appliance it belongs to. The client keeps this key across saves; the ids
+   * churn underneath it.
+   */
+  clientKey: text("client_key"),
 
   location: text("location").notNull(),
   applianceType: text("appliance_type"),
@@ -154,3 +164,27 @@ export type CertificateAppliance = typeof certificateAppliancesTable.$inferSelec
 
 /** A certificate that has been issued is a legal record and must not change. */
 export const IMMUTABLE_CERTIFICATE_STATUSES = ["issued", "superseded", "void"] as const;
+
+/**
+ * Photographs taken on the job.
+ *
+ * Keyed to `applianceKey` rather than an appliance id, for the reason spelled
+ * out on certificate_appliances.client_key: the ids do not survive a save.
+ * Null means a photo of the job rather than of one appliance.
+ */
+export const certificatePhotosTable = pgTable("certificate_photos", {
+  id: serial("id").primaryKey(),
+  certificateId: integer("certificate_id").notNull().references(() => certificatesTable.id, { onDelete: "cascade" }),
+  applianceKey: text("appliance_key"),
+  /** Relative to the uploads root, like the PDF and the signatures. */
+  path: text("path").notNull(),
+  caption: text("caption"),
+  contentType: text("content_type").notNull().default("image/jpeg"),
+  byteSize: integer("byte_size"),
+  position: integer("position").notNull().default(0),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (table) => [
+  index("certificate_photos_certificate_id_idx").on(table.certificateId),
+]);
+
+export type CertificatePhoto = typeof certificatePhotosTable.$inferSelect;
