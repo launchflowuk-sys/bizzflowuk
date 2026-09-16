@@ -1192,3 +1192,98 @@
   display: inline-block;
   width: 100%;
 }
+
+/* ── Rebuilt homepage: motion and hover ──────────────────────────────────────
+ *
+ * Everything below is a TRANSFORM or an OPACITY. Animating width, height, top
+ * or background-position forces layout on every frame, which on a mid-range
+ * Android reads as the page stuttering — and this page exists to be opened on a
+ * phone by somebody whose heating has stopped.
+ *
+ * Every rule is inside the reduced-motion guard at the end, so a visitor who
+ * has asked their device to stop moving things gets a still page that still
+ * works.
+ */
+
+/* Utility bar */
+.bps-util-link{ transition:color .2s ease }
+.bps-util-arrow{ transition:transform .28s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-util-link:hover .bps-util-arrow{ transform:translateX(4px) }
+
+/* Primary call to action */
+.bps-cta{
+  position:relative; isolation:isolate; overflow:hidden;
+  box-shadow:0 10px 24px -12px rgba(240,136,45,.85);
+  transition:transform .3s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)), box-shadow .3s ease;
+}
+.bps-cta::before{
+  content:""; position:absolute; inset:0; z-index:-1;
+  background:linear-gradient(120deg, transparent 20%, rgba(255,255,255,.28) 50%, transparent 80%);
+  transform:translateX(-120%);
+  transition:transform .65s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1));
+}
+.bps-cta:hover{ transform:translateY(-2px); box-shadow:0 16px 30px -12px rgba(240,136,45,.95) }
+.bps-cta:hover::before{ transform:translateX(120%) }
+.bps-cta:active{ transform:translateY(0) }
+.bps-cta-arrow{ transition:transform .3s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-cta:hover .bps-cta-arrow{ transform:translateX(4px) }
+
+/* Outlined button on the photograph */
+.bps-ghost{
+  border:1px solid rgba(255,255,255,.3);
+  transition:border-color .25s ease, background-color .25s ease, transform .25s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1));
+}
+.bps-ghost:hover{ border-color:rgba(255,255,255,.65); background:rgba(255,255,255,.07); transform:translateY(-2px) }
+
+/* The warranty badge drifts in after the headline has landed */
+.bps-badge{ animation:bpsRise 760ms var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) 520ms both }
+
+/* The quote card lifts off the hero */
+.bps-quotecard{
+  box-shadow:0 26px 60px -34px rgba(16,35,51,.55);
+  animation:bpsRise 780ms var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) 430ms both;
+}
+.bps-chip{ transition:border-color .2s ease, background-color .2s ease, color .2s ease, transform .2s ease }
+.bps-chip:hover{ transform:translateY(-1px) }
+
+/* Install / repair cards */
+.bps-path{
+  transition:transform .42s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)), box-shadow .42s ease;
+  box-shadow:0 2px 10px -6px rgba(16,35,51,.25);
+}
+.bps-path:hover{ transform:translateY(-6px); box-shadow:0 26px 48px -26px rgba(16,35,51,.42) }
+.bps-path-img{ transition:transform .8s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-path:hover .bps-path-img{ transform:scale(1.055) }
+.bps-path-arrow{ transition:transform .3s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-path:hover .bps-path-arrow{ transform:translateX(5px) }
+
+/* Service groups */
+.bps-group{
+  transition:transform .35s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)), box-shadow .35s ease, border-color .35s ease;
+}
+.bps-group:hover{ transform:translateY(-4px); box-shadow:0 20px 40px -26px rgba(16,35,51,.35) }
+.bps-grouplink{ transition:color .2s ease, padding-left .28s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-grouplink:hover{ color:#0892CF; padding-left:6px }
+.bps-grouplink-arrow{ opacity:.35; transition:opacity .22s ease, transform .28s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-grouplink:hover .bps-grouplink-arrow{ opacity:1; transform:translateX(3px) }
+
+/* Text links */
+.bps-textlink{ transition:opacity .2s ease }
+.bps-textlink:hover{ opacity:.82 }
+.bps-textlink-arrow{ transition:transform .3s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-textlink:hover .bps-textlink-arrow{ transform:translateX(4px) }
+.bps-arealink{ transition:color .2s ease }
+.bps-arealink:hover{ color:#fff }
+
+/* FAQ */
+.bps-faq{ transition:color .2s ease }
+.bps-faq:hover{ color:#0892CF }
+
+@media (prefers-reduced-motion: reduce){
+  .bps-cta, .bps-cta::before, .bps-ghost, .bps-path, .bps-path-img, .bps-group,
+  .bps-grouplink, .bps-grouplink-arrow, .bps-textlink-arrow, .bps-cta-arrow,
+  .bps-path-arrow, .bps-util-arrow, .bps-chip{
+    transition:none !important; animation:none !important; transform:none !important;
+  }
+  .bps-badge, .bps-quotecard{ animation:none !important }
+}

@@ -28,6 +28,9 @@ const REVEAL_SELECTOR = [
   ".bps-rad",
   ".tick-list",
   ".step-card",
+  // The rebuilt homepage sections opt in with one class rather than each
+  // adding its own selector here, which is how this list got to ten entries.
+  ".bps-reveal",
 ].join(",");
 
 const REVEAL_THRESHOLD = 0.08;

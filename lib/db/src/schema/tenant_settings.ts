@@ -12,6 +12,15 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   secondaryColor: text("secondary_color").default("#1e293b"),
   heroHeadline: text("hero_headline"),
   heroSubheadline: text("hero_subheadline"),
+  /**
+   * The badge on the hero photograph, e.g. "10-year warranty".
+   *
+   * A claim, so it is the tenant's to make: the guarantee depends on the boiler
+   * fitted and on the installer's accreditation. Empty means no badge, because
+   * a shared template inventing one would be putting words in an engineer's
+   * mouth about a commitment he has to honour.
+   */
+  heroBadge: text("hero_badge"),
   heroImageUrl: text("hero_image_url"),
   aboutText: text("about_text"),
   aboutImageUrl: text("about_image_url"),

@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { tenantsTable, servicesTable, areasTable, blogPostsTable } from "@workspace/db";
+import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, blogPostsTable } from "@workspace/db";
 import { and, eq, inArray } from "drizzle-orm";
 import { logger } from "./logger";
 import { BPS_SERVICES, BPS_AREAS } from "./bpsContent";
@@ -35,6 +35,33 @@ export async function syncBpsContent(): Promise<void> {
   const tid = tenant.id;
 
   let added = 0, filled = 0, removed = 0;
+
+  /**
+   * The hero photograph moves from the team-and-van shot to the boiler.
+   *
+   * The homepage now leads on boiler installations and repairs, and a hero has
+   * one job: show the visitor the thing they came for. Two lads in front of a
+   * van is a good photograph and it is about the business; somebody whose
+   * heating has stopped at seven in the morning came to see a boiler.
+   *
+   * GUARDED, and this is the point: it only moves the image if it is still the
+   * exact file the original seed set. The moment anyone changes it from the
+   * dashboard, this leaves it alone forever. A boot task that overwrites an
+   * edit every restart is worse than no boot task.
+   *
+   * The team photograph is not deleted -- it is still in public/ and still the
+   * right picture for the About page.
+   */
+  const SEEDED_HERO = "/bps-team-van-hero.webp";
+  const BOILER_HERO = "/bps-boiler-hero.webp";
+  const [currentSettings] = await db.select().from(tenantSettingsTable)
+    .where(eq(tenantSettingsTable.tenantId, tid)).limit(1);
+  if (currentSettings?.heroImageUrl === SEEDED_HERO) {
+    await db.update(tenantSettingsTable)
+      .set({ heroImageUrl: BOILER_HERO, aboutImageUrl: currentSettings.aboutImageUrl ?? SEEDED_HERO })
+      .where(eq(tenantSettingsTable.tenantId, tid));
+    logger.info({ tenantId: tid }, "BPS hero moved to the boiler photograph; team photo kept for About");
+  }
 
   // ── Services ──────────────────────────────────────────────────────────────
   const existingServices = await db.select().from(servicesTable).where(eq(servicesTable.tenantId, tid));

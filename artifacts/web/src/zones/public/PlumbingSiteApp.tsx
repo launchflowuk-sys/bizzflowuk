@@ -1,5 +1,6 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
-import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useBrowsePublicBlog, useGetPublicBlogPost } from "@workspace/api-client-react";
+import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost } from "@workspace/api-client-react";
+import { UtilityBar, BoilerHero, HeroQuoteCard, TwoPathCards, ServiceGroups, ProcessRow, HomeFaqs, WarmthCta } from "./plumbing/homeSections";
 import { useEffect, useState } from "react";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
@@ -968,7 +969,17 @@ function Footer({ tenant, settings, services }: { tenant: any; settings: any; se
 
 // ── Pages ────────────────────────────────────────────────────────────────────
 
-function HomePage({ tenant, settings, services, areas, reviews }: any) {
+/**
+ * The homepage, rebuilt around boiler installations and boiler repairs.
+ *
+ * Those two are where a heating business makes its money, and the old page
+ * treated them as two tiles in a grid of twelve. They now own the hero, the
+ * quote card and a card each; everything else the tenant does is grouped
+ * underneath so it is still findable without competing for the same attention.
+ *
+ * The header and its links are untouched on purpose.
+ */
+function HomePage({ tenant, settings, services, areas, reviews, faqs, tenantSlug }: any) {
   return (
     <>
       <PageSEO
@@ -983,13 +994,15 @@ function HomePage({ tenant, settings, services, areas, reviews }: any) {
         email: settings?.email,
         areaServed: (areas || []).map((a: any) => a.name),
       }}/>
-      <Hero tenant={tenant} settings={settings}/>
+      <BoilerHero tenant={tenant} settings={settings} reviews={reviews} services={services}/>
+      <HeroQuoteCard tenantSlug={tenantSlug} settings={settings} services={services}/>
       <TrustStrip settings={settings}/>
-      <ServicesGrid services={services} heading={settings?.servicesHeading} intro={settings?.servicesIntro}/>
-      <EmergencyPanel settings={settings}/>
+      <TwoPathCards services={services} settings={settings}/>
+      <ServiceGroups services={services} settings={settings}/>
       <Reviews reviews={reviews} settings={settings}/>
-      <Areas areas={areas} settings={settings} services={services}/>
-      <ClosingCta settings={settings}/>
+      <ProcessRow settings={settings}/>
+      <HomeFaqs faqs={faqs} settings={settings}/>
+      <WarmthCta settings={settings} areas={areas}/>
     </>
   );
 }
@@ -1554,6 +1567,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
   const { data: services } = useListPublicServices(tenantSlug);
   const { data: areas } = useListPublicAreas(tenantSlug);
   const { data: reviews } = useListPublicReviews(tenantSlug);
+  const { data: faqs } = useListPublicFaqs(tenantSlug);
 
   const tenant = (site as any)?.tenant;
   const settings = (site as any)?.settings;
@@ -1567,7 +1581,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
 
   if (!tenant) return null;
 
-  const shared = { tenant, settings, services: services || [], areas: areas || [], reviews: reviews || [] };
+  const shared = { tenant, settings, services: services || [], areas: areas || [], reviews: reviews || [], faqs: faqs || [], tenantSlug };
 
   return (
     <SiteOriginCtx.Provider value={props.forcedOrigin || ""}>
@@ -1575,6 +1589,10 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
         <WouterRouter base={base} ssrPath={props.ssrPath}>
           <ScrollToTopOnNavigate />
           <div className="min-h-screen flex flex-col" style={{ background: "#fff", color: TEXT, fontFamily: "Arial, Helvetica, system-ui, sans-serif" }}>
+            {/* Above the header, and only on wide screens: the line that tells a
+                stranger they are in the right area, and a way out for somebody
+                whose heating has just stopped. */}
+            <UtilityBar settings={settings}/>
             <Header tenant={tenant} settings={settings} services={shared.services} areas={shared.areas}/>
             <main className="flex-1">
               <Switch>
@@ -1586,7 +1604,7 @@ export default function PlumbingSiteApp(props: { forcedSlug?: string; forcedBase
                 <Route path="/areas/:slug"><AreaDetail {...shared}/></Route>
                 <Route path="/privacy"><LegalPage tenant={tenant} title="Privacy Policy" body={settings?.privacyContent}/></Route>
                 <Route path="/terms"><LegalPage tenant={tenant} title="Terms & Conditions" body={settings?.termsContent}/></Route>
-                <Route path="/get-a-quote"><QuotePage tenantSlug={tenantSlug} {...shared}/></Route>
+                <Route path="/get-a-quote"><QuotePage {...shared}/></Route>
                 <Route path="/contact"><ContactPage tenantSlug={tenantSlug} tenant={tenant} settings={settings}/></Route>
                 <Route path="/blog"><BlogIndexPage tenantSlug={tenantSlug} tenant={tenant} settings={settings}/></Route>
                 <Route path="/blog/:slug"><BlogArticlePage tenantSlug={tenantSlug} tenant={tenant} settings={settings} services={shared.services}/></Route>
