@@ -41,6 +41,10 @@ const PUBLIC_SETTINGS_ALLOWLIST = new Set([
   // registered", "Fully insured") and the plumbing template renders them in the
   // strip under the hero. Presentation only — nothing operational.
   "trustBadges", "whatsappNumber",
+  // The hero's short claim and the Gas Safe registration. A Gas Safe number is
+  // meant to be shown — customers check it on the public register. Empty for
+  // every tenant that has not set them, so nothing renders for them.
+  "heroBadge", "gasSafeNumber", "gasSafeUrl",
   // The Google headline figures are public facts about the business — they are
   // already on Google Maps. The Place ID is public too, but it is an operational
   // identifier rather than something a site needs, so it stays out.
