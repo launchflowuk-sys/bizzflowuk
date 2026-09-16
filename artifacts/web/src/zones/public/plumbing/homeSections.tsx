@@ -171,10 +171,21 @@ function ratingOf(reviews: any[] | undefined) {
 
 /* ── 3. the quote card that overlaps the hero ─────────────────────────────── */
 
+/** Urgency, worded the way a homeowner says it rather than a CRM would. */
+const URGENCY = [
+  { value: "Today - emergency", label: "Today", tone: "#C0392B" },
+  { value: "This week", label: "This week", tone: BLUE_DEEP },
+  { value: "Just planning", label: "Planning", tone: "#5B7082" },
+];
+
+const PROPERTY_TYPES = ["House", "Flat", "Bungalow", "Landlord / rental"];
+
 export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: string; settings: any; services: any[] }) {
   const mutation = useSubmitQuoteRequest();
   const [intent, setIntent] = useState<string>("");
-  const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "" });
+  const [timeframe, setTimeframe] = useState<string>("");
+  const [propertyType, setPropertyType] = useState<string>("");
+  const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "", notes: "" });
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
 
@@ -198,7 +209,17 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
           email: form.email.trim(),
           postcode: form.postcode.trim(),
           serviceInterest: intent || undefined,
-          notes: intent ? `Enquiry from the homepage: ${intent}` : "Enquiry from the homepage",
+          // Real columns on the lead, not notes with extra steps: the
+          // dashboard can sort and filter on these, which is the entire
+          // point of asking for them.
+          timeframe: timeframe || undefined,
+          propertyType: propertyType || undefined,
+          notes: [
+            intent ? `Looking for: ${intent}` : "Enquiry from the homepage",
+            timeframe ? `How soon: ${timeframe}` : "",
+            propertyType ? `Property: ${propertyType}` : "",
+            form.notes.trim(),
+          ].filter(Boolean).join("\n"),
         },
       } as any);
       setDone(true);
@@ -269,6 +290,60 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
                     );
                   })}
                 </div>
+
+                {/*
+                  HOW SOON, in the space the first control was not using.
+                  Of everything this form could ask, urgency is the one field
+                  that changes what happens next: somebody with no heating
+                  today gets rung before somebody costing a replacement up for
+                  the spring. Three taps, so it costs the visitor nothing.
+                */}
+                <div className="flex w-full flex-col gap-2.5 sm:ml-auto sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+                  <span className="shrink-0 text-[13px] font-semibold" style={{ color: "#5B7082" }}>How soon?</span>
+                  <div role="tablist" aria-label="How soon do you need us?"
+                    className="flex w-full gap-1.5 rounded-[13px] p-1.5 sm:w-auto" style={{ background: PALE_2 }}>
+                    {URGENCY.map(u => {
+                      const on = timeframe === u.value;
+                      return (
+                        <button key={u.value} type="button" role="tab" aria-selected={on}
+                          onClick={() => setTimeframe(on ? "" : u.value)}
+                          className="bps-tab flex-1 rounded-[10px] px-3.5 py-2.5 text-[13.5px] font-bold sm:flex-none"
+                          style={on
+                            ? { background: u.tone, color: "#fff", boxShadow: `0 6px 16px -8px ${u.tone}` }
+                            : { background: "transparent", color: "#4A6072" }}>
+                          {u.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/*
+              Asked only of somebody pricing a new boiler. A repair caller
+              wants to be off this form and on the phone, and their property
+              type changes nothing about what happens next -- on an
+              installation it genuinely changes the quote.
+            */}
+            {intent === "A new boiler" && (
+              <div className="bps-conditional mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
+                <span className="shrink-0 text-[13px] font-semibold" style={{ color: "#5B7082" }}>Your home&hellip;</span>
+                <div className="flex flex-wrap gap-2">
+                  {PROPERTY_TYPES.map(t => {
+                    const on = propertyType === t;
+                    return (
+                      <button key={t} type="button" aria-pressed={on}
+                        onClick={() => setPropertyType(on ? "" : t)}
+                        className="bps-chip rounded-[10px] border px-3.5 py-2 text-[13.5px] font-semibold"
+                        style={on
+                          ? { borderColor: ORANGE, background: "#FFF4E9", color: "#9A5412" }
+                          : { borderColor: BORDER, background: "#fff", color: "#4A6072" }}>
+                        {t}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
@@ -301,6 +376,27 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
                 </button>
               </div>
             </div>
+
+            {/*
+              One optional box, and it is the most useful thing here.
+              "Vaillant, about eight years old, F75 on the display" tells an
+              engineer more than four dropdowns would, and anybody in a hurry
+              can ignore it completely.
+            */}
+            <label className="mt-3.5 block">
+              <span className="mb-1.5 block text-[12.5px] font-semibold" style={{ color: "#3C5262" }}>
+                What&rsquo;s happening? <span className="font-normal" style={{ color: "#8A9AA6" }}>Optional</span>
+              </span>
+              <textarea
+                className="w-full rounded-[11px] border px-3.5 py-3 text-[15px] outline-none transition focus:border-[#087EAE] focus:ring-2 focus:ring-[#087EAE]/20"
+                style={{ borderColor: BORDER, minHeight: 64, resize: "vertical" }}
+                placeholder={intent === "A new boiler"
+                  ? "How many bedrooms and bathrooms? Where does the boiler live now?"
+                  : "Make and age of the boiler, and what it is doing - an error code if there is one."}
+                value={form.notes}
+                onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+              />
+            </label>
 
             {error && <p className="mt-3 text-[13.5px] font-medium text-red-600">{error}</p>}
 

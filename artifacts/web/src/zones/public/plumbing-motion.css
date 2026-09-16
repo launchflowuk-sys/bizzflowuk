@@ -1306,3 +1306,7 @@
 @media (prefers-reduced-motion: reduce){
   .bps-tab{ transition:none !important; transform:none !important }
 }
+
+/* The property-type row only exists once a new boiler is chosen */
+.bps-conditional{ animation:bpsRise 380ms var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) both }
+@media (prefers-reduced-motion: reduce){ .bps-conditional{ animation:none !important } }
