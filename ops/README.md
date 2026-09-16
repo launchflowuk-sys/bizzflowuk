@@ -80,3 +80,44 @@ registrar.
 | Trial started via Stripe | `PLATFORM_ALERT_EMAIL` | |
 | Cancelled / past due / unpaid | `PLATFORM_ALERT_EMAIL` | Money stopped |
 | Help Centre request | `support@launchflow.co.uk` | Falls back to platform SMTP when the tenant has none |
+
+---
+
+## FreeAgent app registration
+
+The code is written and checked against the published API; it cannot connect
+until an app exists. Ten minutes, once, on **our** side — not the tenant's.
+
+1. Sign in at **https://dev.freeagent.com** (a FreeAgent developer account is
+   free and separate from any subscription).
+2. **Create new app**.
+   - Name: `BizzFlowUK`
+   - Description: what it does — pushes invoices and contacts from BizzFlowUK.
+   - **OAuth redirect URI** (exactly this, no trailing slash):
+     `https://bizzflowuk.com/api/accounting/callback/freeagent`
+3. It gives an **OAuth identifier** (the client id) and an **OAuth secret**.
+4. Put both on the **api-server** service in Coolify and redeploy:
+
+| Variable | Value |
+|---|---|
+| `FREEAGENT_CLIENT_ID` | the OAuth identifier |
+| `FREEAGENT_CLIENT_SECRET` | the OAuth secret — **Coolify only, never in chat or git** |
+| `FREEAGENT_SANDBOX` | `1` to point at the sandbox; leave unset for live |
+
+Until those are set, FreeAgent shows in Settings → Accounting as "not available
+yet" with the Connect button disabled, which is deliberate: a button that
+dead-ends on somebody else's error page is worse than one that plainly is not
+ready.
+
+**Sandbox first is worth it here.** Unlike Xero there is no demo company on a
+live account — a mistake posts into somebody's real books. Set
+`FREEAGENT_SANDBOX=1`, connect a sandbox company, push one invoice, then clear
+the variable.
+
+### After the first real connection
+Check the invoice that lands in FreeAgent:
+- it is a **draft**, not issued;
+- the VAT rate matches;
+- the revenue sits in the right category. If not, set the code in
+  Settings → Accounting → Change (FreeAgent calls it a category; type the code
+  as it appears there, e.g. `001`).

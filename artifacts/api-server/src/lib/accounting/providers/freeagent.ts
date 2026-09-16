@@ -3,19 +3,33 @@ import { AccountingError, type AccountingProvider, type AccountingCredentials } 
 /**
  * FreeAgent.
  *
- * VERIFY BEFORE TRUSTING THIS IN ANGER, same as Xero: written against
- * FreeAgent's published OAuth 2.0 and v2 API behaviour, never run against a
- * real account because there is no app registration yet. Check these first:
+ * Worth supporting properly: among UK sole traders and small trades it is more
+ * common than Xero, which is exactly the size of business this platform sells
+ * to.
  *
- *   1. That contacts are created at /v2/contacts and the response carries the
- *      contact's URL under `contact.url`. FreeAgent identifies everything by
- *      URL rather than by id, which is the single biggest difference from
- *      every other provider and the thing most likely to be wrong here.
- *   2. That invoice line items accept `category` as a URL.
- *   3. Whether the sandbox host is wanted. FREEAGENT_SANDBOX=1 switches it.
+ * CHECKED AGAINST THE PUBLISHED API, not assumed. Everything below was read
+ * off dev.freeagent.com rather than inferred from how other providers behave,
+ * because the last integration cost four failed attempts to settle one detail
+ * that a minute of reading would have answered. What that check changed:
  *
- * FreeAgent is worth supporting properly: it is very common among UK sole
- * traders and small trades, more so than Xero at Brandon's size.
+ *   - `payment_terms_in_days` is REQUIRED, along with dated_on and due_on. The
+ *     first draft sent payment terms only when both dates happened to be
+ *     present, so any invoice raised without a due date would have been
+ *     rejected outright - surfacing as a vague "FreeAgent would not accept the
+ *     invoice" with nothing pointing at the cause.
+ *   - `status` is NOT a creation attribute. FreeAgent always creates an
+ *     invoice as a draft, which is the behaviour we wanted anyway.
+ *   - `category` on a line item is optional and is a URL, like everything else
+ *     in this API. It carries the tenant's sales code when they have set one.
+ *   - Contact attributes confirmed: `town` exists (it is not `city`),
+ *     addresses are address1/2/3, phone is `phone_number`, and the response
+ *     carries the new contact's URL at `contact.url`.
+ *
+ * STILL UNVERIFIED, and honestly so: none of this has run against a real
+ * FreeAgent account, because that needs an app registration. The shape is
+ * right; the first live connection is still the real test.
+ *
+ * FREEAGENT_SANDBOX=1 switches every host to the sandbox.
  */
 
 const LIVE = { auth: "https://api.freeagent.com", api: "https://api.freeagent.com" };
@@ -167,6 +181,37 @@ export const freeagent: AccountingProvider = {
       throw new AccountingError("FreeAgent needs a customer on the invoice before it can be sent.");
     }
 
+    /**
+     * dated_on, due_on and payment_terms_in_days are ALL required.
+     *
+     * Checked against FreeAgent's invoice documentation rather than assumed.
+     * An earlier version sent payment terms only when both dates happened to
+     * be present, which would have been rejected outright for any invoice
+     * raised without a due date - and the failure would have read as a vague
+     * "FreeAgent would not accept the invoice" with nothing pointing at why.
+     */
+    if (!invoice.issuedOn) {
+      throw new AccountingError("FreeAgent needs the invoice to have a date on it before it can go across.");
+    }
+    const termDays = invoice.dueOn
+      ? Math.max(0, Math.round((Date.parse(invoice.dueOn) - Date.parse(invoice.issuedOn)) / 86_400_000))
+      : 0; // FreeAgent's own meaning for zero: due on receipt.
+    const dueOn = invoice.dueOn ?? invoice.issuedOn;
+
+    /**
+     * Where the revenue is booked.
+     *
+     * FreeAgent's equivalent of Xero's account code, and like everything else
+     * in its API it is addressed by URL rather than by id. The tenant types the
+     * code they see in FreeAgent ("001") and we build the URL. Left off
+     * entirely when they have not set one - the field is optional and
+     * FreeAgent picks its own default, which beats us guessing at a category
+     * that may not exist in their account.
+     */
+    const categoryUrl = invoice.salesAccountCode
+      ? `${api}/v2/categories/${encodeURIComponent(invoice.salesAccountCode)}`
+      : null;
+
     const res = await fetch(`${api}/v2/invoices`, {
       method: "POST",
       headers,
@@ -174,24 +219,20 @@ export const freeagent: AccountingProvider = {
         invoice: {
           contact: contactUrl,
           dated_on: invoice.issuedOn,
-          ...(invoice.dueOn && invoice.issuedOn
-            ? {
-              payment_terms_in_days: Math.max(
-                0,
-                Math.round((Date.parse(invoice.dueOn) - Date.parse(invoice.issuedOn)) / 86_400_000),
-              ),
-            }
-            : {}),
+          due_on: dueOn,
+          payment_terms_in_days: termDays,
           reference: invoice.reference,
           currency: "GBP",
-          // Raised as a draft. The tenant's accounts are their book of record
-          // and an automated push should never mark something as issued there.
-          status: "Draft",
+          // No `status`. FreeAgent always creates an invoice as a draft and
+          // does not take status at creation - which is the behaviour we
+          // wanted anyway: their accounts are their book of record, and an
+          // automated push should never mark something as issued in them.
           invoice_items: invoice.lines.map(l => ({
             description: l.description,
             item_type: "Services",
             quantity: Number(l.quantity),
             price: Number(l.unitPrice),
+            ...(categoryUrl ? { category: categoryUrl } : {}),
             // null means the business is not VAT registered, so no rate at all
             // rather than a zero that reads as zero-rated.
             ...(l.vatRate === null ? {} : { sales_tax_rate: Number(l.vatRate) }),
