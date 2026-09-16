@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { fetchBrandLogo } from "../lib/brandLogo";
 import { db } from "@workspace/db";
 import {
   invoicesTable, invoiceItemsTable, invoicePaymentsTable,
@@ -394,33 +395,6 @@ router.patch("/invoices/:id", requireTenantAccess, async (req: any, res) => {
 
 // ── The PDF ──────────────────────────────────────────────────────────────────
 
-/**
- * Fetch the tenant's logo for the PDF, best effort.
- *
- * Bounded and swallowed on purpose: a slow or dead image host must never be
- * the reason an invoice will not open. The renderer falls back to the business
- * name set in type, which is a perfectly good invoice.
- */
-async function fetchLogo(settings: any): Promise<Buffer | null> {
-  const url = String(settings?.logoUrl ?? "").trim();
-  if (!url) return null;
-  try {
-    const absolute = url.startsWith("http")
-      ? url
-      : `${process.env["PUBLIC_BASE_URL"] || "https://bizzflowuk.com"}${url.startsWith("/") ? "" : "/"}${url}`;
-    const res = await fetch(absolute, { signal: AbortSignal.timeout(4000) });
-    if (!res.ok) return null;
-    const type = res.headers.get("content-type") ?? "";
-    // pdfkit reads PNG and JPEG only. An SVG logo would throw inside the
-    // renderer, which is caught there, but refusing it here is cheaper.
-    if (!/png|jpe?g/i.test(type)) return null;
-    const buf = Buffer.from(await res.arrayBuffer());
-    // A 5MB logo is a mistake, not a logo.
-    return buf.byteLength > 5_000_000 ? null : buf;
-  } catch {
-    return null;
-  }
-}
 
 /** Everything the renderer needs, gathered once so preview and email agree. */
 async function invoicePdfContext(id: number, tenantId: number) {
@@ -449,7 +423,7 @@ export async function buildInvoicePdf(id: number, tenantId: number): Promise<Buf
   const ctx = await invoicePdfContext(id, tenantId);
   if (!ctx) return null;
   const { renderInvoicePdf } = await import("../lib/invoices/pdf");
-  const logo = await fetchLogo(ctx.settings);
+  const logo = await fetchBrandLogo(ctx.settings);
   return renderInvoicePdf({ ...ctx, logo });
 }
 

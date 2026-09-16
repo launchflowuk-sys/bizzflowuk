@@ -8,6 +8,7 @@ import { getCertificateType, computeExpiry } from "../lib/certificates/registry"
 import { renderCertificatePdf } from "../lib/certificates/pdf";
 import { storeCertificatePdf, storeCertificateSignature } from "../lib/certificates/storage";
 import { sendCertificateEmail } from "../lib/certificates/deliver";
+import { fetchBrandLogo } from "../lib/brandLogo";
 import { nextReference, loadAppliances, tid } from "./certificates";
 
 const router = Router();
@@ -165,7 +166,8 @@ router.post("/certificates/:id/issue", requireTenantAccess, async (req: any, res
       .where(eq(certificatePhotosTable.certificateId, cert.id))
       .orderBy(asc(certificatePhotosTable.position), asc(certificatePhotosTable.id));
 
-    const pdf = await renderCertificatePdf({ certificate: cert, appliances, photos, type, tenant, settings });
+    const logo = await fetchBrandLogo(settings);
+    const pdf = await renderCertificatePdf({ certificate: cert, appliances, photos, logo, type, tenant, settings });
     const sha256 = createHash("sha256").update(pdf).digest("hex");
     const pdfPath = await storeCertificatePdf(tenantId, cert.id, pdf);
 

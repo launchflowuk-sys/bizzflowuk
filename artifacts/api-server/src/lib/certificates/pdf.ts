@@ -20,6 +20,8 @@ type RenderArgs = {
   appliances: any[];
   /** Optional: older call sites render without them. */
   photos?: any[];
+  /** The tenant's own mark, so the document is theirs and not ours. */
+  logo?: Buffer | null;
   type: CertificateType;
   tenant: any;
   settings: any;
@@ -47,6 +49,7 @@ function fmtCheck(v: boolean | null | undefined): string {
 export async function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
   const { certificate: c, appliances, type, tenant, settings } = args;
   const photoRows = args.photos ?? [];
+  const logo = args.logo ?? null;
 
   /**
    * Signatures are read before drawing starts, not during.
@@ -97,20 +100,65 @@ export async function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
     const width = right - left;
 
     // ── Header ──────────────────────────────────────────────────────────────
-    doc.fillColor(INK).font("Helvetica-Bold").fontSize(17).text(type.label, left, left);
-    doc.font("Helvetica").fontSize(10).fillColor(MUTED)
-      .text(`Reference ${c.reference}`, left, doc.y + 2);
+    //
+    // THE BUSINESS FIRST, THE DOCUMENT SECOND. The record Brandon was issuing
+    // before this carried its software vendor's name across the bottom of a
+    // document he hands to his own customer. His mark goes at the top of ours
+    // and nobody else's appears anywhere on it.
+    let headerBottom = left;
 
-    doc.font("Helvetica-Bold").fontSize(12).fillColor(INK)
-      .text(tenant?.name ?? "", left, left, { width, align: "right" });
-    const contact = [settings?.phone, settings?.email].filter(Boolean).join("  ·  ");
-    if (contact) {
-      doc.font("Helvetica").fontSize(9).fillColor(MUTED)
-        .text(contact, left, doc.y + 1, { width, align: "right" });
+    if (logo) {
+      try {
+        // Bounded box, never stretched: a squashed logo looks worse than none.
+        doc.image(logo, left, left, { fit: [150, 42] });
+        headerBottom = left + 42;
+      } catch {
+        // A logo pdfkit cannot read falls back to the name, rather than taking
+        // the whole certificate down with it.
+        doc.font("Helvetica-Bold").fontSize(15).fillColor(INK).text(tenant?.name ?? "", left, left);
+        headerBottom = doc.y;
+      }
+    } else {
+      doc.font("Helvetica-Bold").fontSize(15).fillColor(INK).text(tenant?.name ?? "", left, left);
+      headerBottom = doc.y;
     }
 
-    doc.moveTo(left, 104).lineTo(right, 104).strokeColor(RULE).lineWidth(1).stroke();
-    doc.y = 118;
+    const contact = [settings?.phone, settings?.email].filter(Boolean).join("  ·  ");
+    if (contact) {
+      doc.font("Helvetica").fontSize(8.5).fillColor(MUTED).text(contact, left, headerBottom + 4, { width: 260 });
+      headerBottom = Math.max(headerBottom, doc.y);
+    }
+
+    doc.font("Helvetica-Bold").fontSize(15).fillColor(INK)
+      .text(type.label, left, left, { width, align: "right" });
+    doc.font("Helvetica").fontSize(9).fillColor(MUTED)
+      .text(`Reference ${c.reference}`, left, doc.y + 2, { width, align: "right" });
+    headerBottom = Math.max(headerBottom, doc.y);
+
+    const ruleY = headerBottom + 12;
+    doc.moveTo(left, ruleY).lineTo(right, ruleY).strokeColor(RULE).lineWidth(1).stroke();
+    doc.y = ruleY + 16;
+
+    // ── The outcome, before anything else ───────────────────────────────────
+    //
+    // An unsafe appliance was findable only by reading down to the right row.
+    // A landlord skims this on a phone, and the one thing they must not miss is
+    // that something in their property is dangerous. It goes at the top, in a
+    // band, before the addresses.
+    const unsafe = appliances.filter((a: any) => a.safeToUse === false);
+    if (unsafe.length) {
+      const bandH = 30;
+      doc.rect(left, doc.y, width, bandH).fill("#FEF3F2");
+      doc.rect(left, doc.y, 4, bandH).fill("#B42318");
+      doc.font("Helvetica-Bold").fontSize(11).fillColor("#B42318")
+        .text(
+          unsafe.length === 1
+            ? "AN APPLIANCE AT THIS PROPERTY IS NOT SAFE TO USE"
+            : `${unsafe.length} APPLIANCES AT THIS PROPERTY ARE NOT SAFE TO USE`,
+          left + 14, doc.y + 10, { width: width - 24 },
+        );
+      doc.y = doc.y + bandH + 14;
+    }
 
     // ── Two-column detail block ─────────────────────────────────────────────
     const colGap = 18;
