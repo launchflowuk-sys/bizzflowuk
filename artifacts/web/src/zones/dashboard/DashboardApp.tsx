@@ -1,6 +1,7 @@
 import { Switch, Route, useLocation, Link, useLocation as useWouterLocation, Redirect } from "wouter";
 import { useAuthCtx, setActiveTenantId, getStoredToken, endSupportSession } from "@/lib/auth";
 import { InvoicesPage, InvoiceDetailPage, ExpensesPage, SchedulePage, CertificatesPage, AutomationsPage, CashFlowPage } from "./TradePages";
+import CertificateDetailPage from "./CertificateDetailPage";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 import {
@@ -5286,6 +5287,9 @@ export default function DashboardApp() {
               <Route path="/dashboard/expenses" component={ExpensesPage} />
               <Route path="/dashboard/cash-flow" component={CashFlowPage} />
               <Route path="/dashboard/certificates" component={CertificatesPage} />
+              {/* Filling one in. Registered AFTER the list so the bare path still
+                  matches the list rather than being swallowed by :id. */}
+              <Route path="/dashboard/certificates/:id" component={CertificateDetailPage} />
               <Route path="/dashboard/automations" component={AutomationsPage} />
               <Route path="/dashboard/customers" component={CustomersPage} />
               <Route path="/dashboard/billing" component={BillingPage} />

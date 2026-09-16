@@ -37,7 +37,13 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
     // Surface the server's own words — it explains what is blocking an issue or a
     // send far better than a status code does.
     const detail = payload?.problems?.join(" ") || payload?.error || `Request failed (${res.status})`;
-    throw new Error(detail);
+    // The list is carried alongside the joined message, not only inside it: a
+    // certificate refused for four reasons reads as four bullet points on the
+    // screen and as an unparseable run-on sentence in a single string.
+    const err = new Error(detail) as Error & { problems?: string[]; status?: number };
+    if (Array.isArray(payload?.problems)) err.problems = payload.problems;
+    err.status = res.status;
+    throw err;
   }
   return payload as T;
 }

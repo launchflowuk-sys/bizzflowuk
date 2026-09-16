@@ -38,7 +38,7 @@ const PILL_TONE: Record<string, StatusTone> = {
   info: "info",
 };
 
-function Pill({ tone = "muted", children }: { tone?: string; children: React.ReactNode }) {
+export function Pill({ tone = "muted", children }: { tone?: string; children: React.ReactNode }) {
   return (
     <span
       className={`inline-flex items-center px-2.5 py-1 rounded-full text-[13px] font-semibold text-white ${
@@ -52,7 +52,7 @@ function Pill({ tone = "muted", children }: { tone?: string; children: React.Rea
   );
 }
 
-function PageHead({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) {
+export function PageHead({ title, sub, action }: { title: string; sub?: string; action?: React.ReactNode }) {
   return (
     <div className="flex flex-wrap items-start justify-between gap-4 mb-6">
       <div>
@@ -72,15 +72,15 @@ function PageHead({ title, sub, action }: { title: string; sub?: string; action?
  * every other page was inset — subtle, and exactly the kind of thing that makes a
  * product feel assembled rather than designed.
  */
-function Page({ children }: { children: React.ReactNode }) {
+export function Page({ children }: { children: React.ReactNode }) {
   return <div className="p-4 sm:p-6">{children}</div>;
 }
 
-function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
+export function Card({ children, className = "" }: { children: React.ReactNode; className?: string }) {
   return <div className={`bg-white border border-slate-200 rounded-[20px] ${className}`}>{children}</div>;
 }
 
-function Empty({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
+export function Empty({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
   return (
     <Card className="p-12 text-center">
       <h3 className="text-[17px] font-bold text-slate-900">{title}</h3>
@@ -90,7 +90,7 @@ function Empty({ title, body, action }: { title: string; body: string; action?: 
   );
 }
 
-function Btn({ children, onClick, tone = "primary", type = "button", disabled }: {
+export function Btn({ children, onClick, tone = "primary", type = "button", disabled }: {
   children: React.ReactNode; onClick?: () => void; tone?: "primary" | "ghost" | "danger"; type?: "button" | "submit"; disabled?: boolean;
 }) {
   const styles = {
@@ -118,11 +118,11 @@ function Field({ label, children, hint }: { label: string; children: React.React
 
 const inputCls = "w-full h-12 px-3.5 rounded-[14px] border border-slate-200 bg-transparent text-[15px] text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/40 focus:border-sky-500";
 
-function Loading() {
+export function Loading() {
   return <Card className="p-12 text-center text-slate-400 text-[14.5px]">Loading…</Card>;
 }
 
-function ErrorNote({ message }: { message: string }) {
+export function ErrorNote({ message }: { message: string }) {
   return (
     <Card className="p-5 border-red-200 bg-red-50">
       <p className="text-[14.5px] text-red-700">{message}</p>
@@ -1566,7 +1566,13 @@ export function CertificatesPage() {
         <NewCertificateForm
           types={types ?? []}
           onClose={() => setShowNew(false)}
-          onCreated={() => { setShowNew(false); reload(); }}
+          onCreated={(created: any) => {
+            setShowNew(false);
+            // Straight into the record. Creating a draft and being returned
+            // to a list is how every certificate here ended up unfinished.
+            if (created?.id) navigate(`/dashboard/certificates/${created.id}`);
+            else reload();
+          }}
         />
       )}
 
@@ -1604,8 +1610,10 @@ export function CertificatesPage() {
                   const left = daysUntil(r.expiresAt);
                   const tone = r.status !== "issued" ? "muted" : left === null ? "muted" : left < 0 ? "bad" : left <= 42 ? "warn" : "good";
                   return (
-                    <tr key={r.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                      <td className="px-5 py-3.5 font-mono text-[13.5px] font-semibold text-slate-900">{r.reference}</td>
+                    <tr key={r.id}
+                      onClick={() => navigate(`/dashboard/certificates/${r.id}`)}
+                      className="border-b border-slate-100 last:border-0 hover:bg-slate-50 cursor-pointer">
+                      <td className="px-5 py-3.5 font-mono text-[13.5px] font-semibold text-[var(--brand)]">{r.reference}</td>
                       <td className="px-5 py-3.5 text-slate-700">{r.propertyAddress}</td>
                       <td className="px-5 py-3.5 text-slate-600">{shortDate(r.checkedAt)}</td>
                       <td className="px-5 py-3.5">

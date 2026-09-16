@@ -31,7 +31,7 @@ export type CertificateType = {
 export default function NewCertificateForm({ types, onClose, onCreated }: {
   types: CertificateType[];
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (created: { id: number }) => void;
 }) {
   const { data: customers } = useApi<any[]>("/customers");
   const { data: jobs } = useApi<any[]>("/projects");
@@ -62,7 +62,7 @@ export default function NewCertificateForm({ types, onClose, onCreated }: {
     setSaving(true);
     setErr(null);
     try {
-      await api.post("/certificates", {
+      const created = await api.post<{ id: number }>("/certificates", {
         type: form.type,
         propertyAddress: form.propertyAddress.trim(),
         // The optional strings on the server are `z.string().optional()`, which
@@ -85,7 +85,9 @@ export default function NewCertificateForm({ types, onClose, onCreated }: {
         checkedAt: form.checkedAt,
         data: {},
       });
-      onCreated();
+      // Hand the new record back so the caller can open it. Returning to the
+      // list instead is what left every draft unfinished.
+      onCreated(created as { id: number });
     } catch (e: any) {
       setErr(e?.message || "Could not create the certificate.");
       setSaving(false);
