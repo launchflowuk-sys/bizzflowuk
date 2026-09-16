@@ -237,21 +237,38 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
             </div>
 
             {choices.length > 0 && (
-              <div className="mt-5 flex flex-wrap items-center gap-2.5">
-                <span className="text-[13px] font-semibold" style={{ color: "#5B7082" }}>I&rsquo;m looking for&hellip;</span>
-                {choices.map(c => (
-                  <button
-                    key={c.label} type="button"
-                    onClick={() => setIntent(intent === c.label ? "" : c.label)}
-                    aria-pressed={intent === c.label}
-                    className="bps-chip inline-flex items-center gap-2 rounded-[10px] border px-3.5 py-2 text-[13.5px] font-semibold transition"
-                    style={intent === c.label
-                      ? { borderColor: ORANGE, background: "#FFF4E9", color: "#9A5412" }
-                      : { borderColor: BORDER, background: "#fff", color: "#3C5262" }}
-                  >
-                    {c.label}
-                  </button>
-                ))}
+              /**
+               * A segmented control, not two loose chips.
+               *
+               * On a phone the chips wrapped onto separate lines and read as two
+               * unrelated buttons — so the choice between a new boiler and a
+               * repair, which is the single most useful thing this form
+               * captures, looked optional and got skipped. Sharing one track
+               * makes them obviously one question with two answers, and each
+               * takes its own brand colour when chosen so the selection is
+               * unmissable at arm's length in daylight.
+               */
+              <div className="mt-5 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
+                <span className="shrink-0 text-[13px] font-semibold" style={{ color: "#5B7082" }}>I&rsquo;m looking for&hellip;</span>
+                <div role="tablist" aria-label="What do you need?"
+                  className="flex w-full gap-1.5 rounded-[13px] p-1.5 sm:w-auto" style={{ background: PALE_2 }}>
+                  {choices.map((c, i) => {
+                    const on = intent === c.label;
+                    const tone = i === 0 ? ORANGE : BLUE_DEEP;
+                    return (
+                      <button
+                        key={c.label} type="button" role="tab" aria-selected={on}
+                        onClick={() => setIntent(on ? "" : c.label)}
+                        className="bps-tab flex-1 rounded-[10px] px-4 py-2.5 text-[14px] font-bold sm:flex-none"
+                        style={on
+                          ? { background: tone, color: "#fff", boxShadow: `0 6px 16px -8px ${tone}` }
+                          : { background: "transparent", color: "#4A6072" }}
+                      >
+                        {c.label}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 

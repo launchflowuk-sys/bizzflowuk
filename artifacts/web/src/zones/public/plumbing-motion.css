@@ -1295,3 +1295,14 @@
 @media (prefers-reduced-motion: reduce){
   .bps-grouplink-chev{ transition:none !important; transform:none !important }
 }
+
+/* The new boiler / boiler repair tabs */
+.bps-tab{
+  transition:background-color .22s ease, color .22s ease, box-shadow .28s ease, transform .18s ease;
+  -webkit-tap-highlight-color:transparent;
+}
+.bps-tab[aria-selected="false"]:hover{ background:rgba(16,35,51,.06) }
+.bps-tab:active{ transform:scale(.97) }
+@media (prefers-reduced-motion: reduce){
+  .bps-tab{ transition:none !important; transform:none !important }
+}
