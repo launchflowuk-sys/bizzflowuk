@@ -1361,7 +1361,7 @@ function ReviewsPage({ tenant, settings, reviews }: any) {
  * synced Google profile, the badges from their settings. Nothing is asserted
  * on behalf of a business that has not told us it is true.
  */
-function QuotePage({ tenantSlug, tenant, settings, reviews }: any) {
+function QuotePage({ tenantSlug, tenant, settings, reviews, services }: any) {
   const phone = settings?.phone;
   const hero = settings?.heroImageUrl;
   const rating = settings?.googleRating ? Number(settings.googleRating) : null;
@@ -1487,7 +1487,42 @@ function QuotePage({ tenantSlug, tenant, settings, reviews }: any) {
         </div>
       </section>
 
-      <QuoteFormSection tenantSlug={tenantSlug} accent={BLUE_CTRL} panel={NAVY}/>
+      {/*
+        TWO ROUTES, because two very different people land on this page.
+
+        A boiler that has stopped wants to be off the page in twenty seconds.
+        A new bathroom or a full heating system genuinely needs the long form —
+        the detail it captures is what makes the quote worth anything, and that
+        form submits the same lead with far more on it. Neither replaces the
+        other, so the page offers the quick one first and points plainly at the
+        detailed one underneath.
+
+        QuoteFormSection is DELIBERATELY UNTOUCHED. It is shared by the
+        construction, landscaping and default templates as well as this one, so
+        editing it to suit a boiler page would change the quote form on every
+        other tenant's site. The improvement is composed around it instead.
+      */}
+      <HeroQuoteCard
+        tenantSlug={tenantSlug}
+        settings={settings}
+        services={services}
+        inline
+        heading="Boiler trouble? Start here."
+      />
+
+      <div className="mx-auto -mt-6 max-w-[1160px] px-5 pb-10 sm:px-8">
+        <p className="text-[14.5px]" style={{ color: BODY }}>
+          Planning something bigger — a new bathroom, or a full heating system?{" "}
+          <a href="#full-quote" className="font-bold" style={{ color: BLUE_CTRL }}>
+            Give us the full picture below
+          </a>{" "}
+          and we can quote properly rather than guess.
+        </p>
+      </div>
+
+      <div id="full-quote" style={{ scrollMarginTop: 90 }}>
+        <QuoteFormSection tenantSlug={tenantSlug} accent={BLUE_CTRL} panel={NAVY}/>
+      </div>
 
       {/* Proof, immediately after the form rather than on a page nobody visits. */}
       {reviews?.length > 0 && (
