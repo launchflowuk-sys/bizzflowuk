@@ -86,9 +86,14 @@ router.get("/public/resolve-domain", async (req, res) => {
  *
  * Same reasoning as sitemap.xml below — robots.txt needs a tenant-specific
  * absolute Sitemap: URL, which a static file baked at build time can't give
- * every custom domain. Falls back to a generic allow-all with no Sitemap
- * line for hosts that aren't a recognized tenant custom domain (e.g. the
- * platform's own domain).
+ * every custom domain.
+ *
+ * The platform's own domain now gets its own answer rather than the bare
+ * allow-all it used to get. That version named no sitemap — which is why
+ * bizzflowuk.com had nothing to submit to Search Console — and it invited
+ * crawlers into /dashboard, /admin and /portal: pages that need a login, hand a
+ * crawler nothing, and spend crawl budget belonging to the one page we actually
+ * want ranked.
  */
 router.get("/public/robots.txt", async (req, res) => {
   try {
@@ -98,11 +103,41 @@ router.get("/public/robots.txt", async (req, res) => {
       .from(tenantsTable)
       .where(and(eq(tenantsTable.customDomain, host), sql`${tenantsTable.suspended} = false`))
       .limit(1);
-    const sitemapLine = tenants.length ? `\nSitemap: https://${tenants[0].customDomain}/sitemap.xml\n` : "";
     res.setHeader("Content-Type", "text/plain; charset=utf-8");
-    res.send(`User-agent: *\nAllow: /\n${sitemapLine}`);
+
+    if (tenants.length) {
+      res.send(`User-agent: *\nAllow: /\n\nSitemap: https://${tenants[0].customDomain}/sitemap.xml\n`);
+      return;
+    }
+
+    // The platform's own marketing site.
+    res.send([
+      "User-agent: *",
+      "Allow: /",
+      "",
+      "# Signed-in areas. A crawler gets a login screen and nothing else.",
+      ...PLATFORM_DISALLOW.map(path => `Disallow: ${path}`),
+      "",
+      `Sitemap: ${platformBaseUrl(host)}/sitemap.xml`,
+      "",
+    ].join("\n"));
   } catch (err) { req.log.error(err); res.status(500).send("User-agent: *\nAllow: /\n"); }
 });
+
+/** Signed-in areas: a crawler gets a login screen, so keep it out of them. */
+const PLATFORM_DISALLOW = ["/dashboard", "/admin", "/portal", "/j/", "/accept-invite", "/sign-in"];
+
+/**
+ * The platform's own absolute base URL.
+ *
+ * Prefers the host actually asked for, so a staging hostname describes itself
+ * instead of pointing Google at production, and falls back to the configured
+ * public URL when there is no usable Host header.
+ */
+function platformBaseUrl(host: string): string {
+  if (host && /^[a-z0-9.-]+$/i.test(host) && host !== "localhost") return `https://${host}`;
+  return (process.env["PUBLIC_BASE_URL"] || "https://bizzflowuk.com").replace(/\/+$/, "");
+}
 
 function escapeXml(value: string): string {
   return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -130,7 +165,34 @@ router.get("/public/sitemap.xml", async (req, res) => {
       .from(tenantsTable)
       .where(and(eq(tenantsTable.customDomain, host), sql`${tenantsTable.suspended} = false`))
       .limit(1);
-    if (!tenants.length) { res.status(404).json({ error: "Domain not found" }); return; }
+    if (!tenants.length) {
+      /**
+       * The platform's own sitemap.
+       *
+       * This used to 404 with "Domain not found", because the handler assumed
+       * every caller was a tenant custom domain. bizzflowuk.com therefore had
+       * no sitemap at all, and there was nothing to submit to Search Console.
+       *
+       * Short on purpose: the marketing site is one long page plus the two
+       * doors off it. /sign-in is left out deliberately — a login form has
+       * nothing to rank for, and asking Google to crawl it spends budget that
+       * belongs to the page that sells.
+       */
+      const home = platformBaseUrl(host);
+      const platformUrls = [
+        urlEntry(`${home}/`, new Date()),
+        urlEntry(`${home}/demo`),
+        urlEntry(`${home}/signup`),
+      ];
+      res.setHeader("Content-Type", "application/xml; charset=utf-8");
+      res.setHeader("Cache-Control", "public, max-age=3600");
+      res.send(
+        `<?xml version="1.0" encoding="UTF-8"?>\n` +
+        `<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
+        `${platformUrls.join("\n")}\n</urlset>\n`,
+      );
+      return;
+    }
     const tenant = tenants[0];
     const tid = tenant.id;
     const base = `https://${tenant.customDomain}`;

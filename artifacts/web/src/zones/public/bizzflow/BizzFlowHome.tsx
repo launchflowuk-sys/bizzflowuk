@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useAuthCtx } from "@/lib/auth";
 import { BizzFlowSymbol, BizzFlowWordmark } from "./BizzFlowBrand";
-import { useDocumentMeta, useScrollMeter, useScrollReveals, useSmoothAnchors } from "./useBizzFlowChrome";
+import { useScrollMeter, useScrollReveals, useSmoothAnchors } from "./useBizzFlowChrome";
+import BizzFlowSeo from "./BizzFlowSeo";
 import "./bizzflow.css";
 import "./bizzflow-overrides.css";
 
@@ -583,10 +584,16 @@ export default function BizzFlowHome() {
   const demo = useDemoLogin();
 
   useSmoothAnchors();
-  useDocumentMeta(
-    "BizzFlowUK — Built for the way you work",
-    "Your website, customers, quotes, jobs and invoices. One connected platform built for UK trades and industry.",
-  );
+  /*
+   * The title and description live in BizzFlowSeo now, not in a
+   * useDocumentMeta call.
+   *
+   * There were three of them fighting: index.html's fallback tags, this hook
+   * writing document.title imperatively in an effect, and the rendered head
+   * tags. The hook ran last and won, so whatever the page declared was
+   * overwritten a frame later by "Built for the way you work" - a slogan, where
+   * a search result needs to say what the thing is. One owner now.
+   */
 
   const journey = JOURNEY[step];
   const trade = INDUSTRIES[industry];
@@ -612,6 +619,11 @@ export default function BizzFlowHome() {
 
   return (
     <div className={`bf ${revealClass}`.trim()} ref={rootRef}>
+      {/* Title, canonical, share card and structured data. Passed the same
+          FAQS the page renders so the marked-up answers can never drift from
+          the visible ones. */}
+      <BizzFlowSeo faqs={FAQS} />
+
       <div className="scroll-meter" aria-hidden="true" ref={meterRef} />
 
       <header className="header">
