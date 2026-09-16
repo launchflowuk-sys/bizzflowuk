@@ -480,7 +480,7 @@
 .bf .bf-caps-intro {
   font-size: 15.5px;
   line-height: 1.75;
-  color: #6c7b72;
+  color: #636f68;
   margin-top: 22px;
   max-width: 38ch;
 }
@@ -713,7 +713,7 @@
 .bf .client-url {
   margin-left: 8px;
   font-size: 11.5px;
-  color: #6b7d78;
+  color: #5f6f6a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -792,7 +792,7 @@
 }
 .bf .client-trade {
   font-size: 12.5px;
-  color: #6b7d78;
+  color: #5f6f6a;
   text-transform: capitalize;
 }
 
