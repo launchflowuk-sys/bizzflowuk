@@ -83,8 +83,18 @@ notification email succeeds. An enquiry that arrives while the mail server is
 down is stored as "queued" and that event never runs.
 
 So this plugin also watches the moment Splendid finishes storing an enquiry,
-which happens on both paths. The leads most worth rescuing are exactly the ones
-that arrive while email is broken.
+which happens on both paths -- BUT ONLY IF "Store enquiries in WordPress" IS ON.
+
+That setting ships OFF, deliberately, until the privacy notice covers stored
+enquiries. With it off, an enquiry that arrives while email is broken is not
+stored, is not sent to BizzFlow, and the visitor is shown a "please try again"
+message. Nothing is lost silently -- but BizzFlow can only ever be as reliable
+as the site's email.
+
+The proper fix is in Splendid core rather than here: treat BizzFlow as a
+delivery route in its own right, so an enquiry succeeds if EITHER the email OR
+BizzFlow accepts it. That is a change to the client's own plugin and needs
+deciding before it is made.
 
 Field mapping:
 
