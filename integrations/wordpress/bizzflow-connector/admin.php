@@ -171,7 +171,10 @@ function bizzflow_admin_page() {
 				<tr>
 					<th scope="row"><label for="bf-slug"><?php esc_html_e( 'Business code', 'bizzflow-connector' ); ?></label></th>
 					<td>
-						<input id="bf-slug" type="text" class="regular-text code" name="<?php echo esc_attr( BIZZFLOW_CONNECTOR_OPTION ); ?>[tenant_slug]" value="<?php echo esc_attr( $s['tenant_slug'] ); ?>" placeholder="splendid">
+						<input id="bf-slug" type="text" class="regular-text code" name="<?php echo esc_attr( BIZZFLOW_CONNECTOR_OPTION ); ?>[tenant_slug]" value="<?php echo esc_attr( $s['tenant_slug'] ); ?>" placeholder="e.g. your-business-code">
+						<?php if ( '' === trim( (string) $s['tenant_slug'] ) ) : ?>
+							<p style="color:#b32d2e;font-weight:600;margin:.4em 0 0"><?php esc_html_e( 'Not set yet — nothing will be sent until this is filled in and saved.', 'bizzflow-connector' ); ?></p>
+						<?php endif; ?>
 						<p class="description"><?php esc_html_e( 'The short name of the business in BizzFlow. LaunchFlow will give you this.', 'bizzflow-connector' ); ?></p>
 					</td>
 				</tr>
