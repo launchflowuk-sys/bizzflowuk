@@ -247,6 +247,39 @@ export default function AccountingPanel() {
         </div>
       )}
 
+      {/*
+        THE OTHER PACKAGES STAY ON SCREEN WHEN ONE IS CONNECTED.
+        
+        This list used to be hidden entirely the moment anything was linked, so
+        a business already on Xero had no way of knowing FreeAgent existed --
+        the section simply had nothing in it but the live connection. The first
+        person to hit that assumed the integration was broken or missing an
+        environment variable, which is exactly the wrong conclusion to hand
+        somebody.
+
+        One package at a time is deliberate: an invoice belongs in one set of
+        books, and `tenantConnection` returns a single row. So the others are
+        shown as what they are -- available, once you unlink -- rather than as
+        buttons that would silently fail.
+      */}
+      {live && conn && providers.filter(p => p.key !== conn.provider).length > 0 && (
+        <div className="rounded-lg border border-slate-200 p-3.5">
+          <p className="text-xs text-slate-500">
+            Also available:{" "}
+            {providers.filter(p => p.key !== conn.provider).map((p, i, arr) => (
+              <span key={p.key}>
+                <span className="font-semibold text-slate-700">{p.label}</span>
+                {!p.configured && <span className="text-amber-700"> (not set up yet)</span>}
+                {i < arr.length - 1 ? ", " : ""}
+              </span>
+            ))}
+            . One accounting package at a time — unlink{" "}
+            {providers.find(p => p.key === conn.provider)?.label ?? conn.provider} first. Invoices
+            already sent stay where they are.
+          </p>
+        </div>
+      )}
+
       {!live && (
         <div className="space-y-2">
           {providers.map(p => (
