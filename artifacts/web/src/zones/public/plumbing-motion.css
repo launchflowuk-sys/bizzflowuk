@@ -1310,3 +1310,15 @@
 /* The property-type row only exists once a new boiler is chosen */
 .bps-conditional{ animation:bpsRise 380ms var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) both }
 @media (prefers-reduced-motion: reduce){ .bps-conditional{ animation:none !important } }
+
+/* Gas Safe badge */
+.bps-gassafe{
+  box-shadow:0 8px 20px -12px rgba(0,0,0,.45);
+  transition:transform .28s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)), box-shadow .28s ease, filter .28s ease;
+}
+.bps-gassafe:hover{ transform:translateY(-2px); box-shadow:0 14px 26px -12px rgba(0,0,0,.5); filter:brightness(1.04) }
+.bps-gassafe-arrow{ transition:transform .28s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-gassafe:hover .bps-gassafe-arrow{ transform:translate(2px,-2px) }
+@media (prefers-reduced-motion: reduce){
+  .bps-gassafe, .bps-gassafe-arrow{ transition:none !important; transform:none !important }
+}

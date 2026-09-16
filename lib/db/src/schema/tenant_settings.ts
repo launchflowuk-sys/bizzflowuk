@@ -21,6 +21,21 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
    * mouth about a commitment he has to honour.
    */
   heroBadge: text("hero_badge"),
+
+  /**
+   * Gas Safe registration, for the badge on a heating site.
+   *
+   * The number is the claim; the URL is where a visitor goes to check it. They
+   * are separate because the register's deep-link format could not be verified
+   * -- gassaferegister.co.uk refuses automated requests -- so the business
+   * pastes the link they can see in their own browser rather than us guessing a
+   * path and shipping a trust badge that 404s.
+   *
+   * Empty means no badge: a template must never assert that a business is Gas
+   * Safe registered.
+   */
+  gasSafeNumber: text("gas_safe_number"),
+  gasSafeUrl: text("gas_safe_url"),
   heroImageUrl: text("hero_image_url"),
   aboutText: text("about_text"),
   aboutImageUrl: text("about_image_url"),

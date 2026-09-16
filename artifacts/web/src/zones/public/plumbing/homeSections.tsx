@@ -134,8 +134,15 @@ export function BoilerHero({ tenant, settings, reviews, services }: any) {
             )}
           </div>
 
+          {/*
+            The two things a homeowner checks before letting a stranger near
+            their gas: what other people said, and whether he is on the
+            register. Side by side, in the hero, above the fold.
+          */}
+          <div className="bps-rise mt-8 flex flex-wrap items-center gap-4" style={{ animationDelay: "370ms" }}>
+            <GasSafeBadge settings={settings} compact/>
           {rated && (
-            <div className="bps-rise mt-8 flex items-center gap-3" style={{ animationDelay: "370ms" }}>
+            <div className="flex items-center gap-3">
               <span className="grid h-[30px] w-[30px] place-items-center rounded-full bg-white text-[14px] font-bold" style={{ color: "#4285F4" }}>G</span>
               <Stars value={rated.average}/>
               <span className="text-[13px] text-white/75">
@@ -143,6 +150,7 @@ export function BoilerHero({ tenant, settings, reviews, services }: any) {
               </span>
             </div>
           )}
+          </div>
         </div>
       </div>
 
@@ -841,6 +849,10 @@ export function WarmthCta({ settings, areas }: { settings: any; areas: any[] }) 
                 {phone}
               </a>
             )}
+            {/* Second showing, at the point somebody decides to ring. Far enough
+                from the hero not to read as repetition, and this is the moment
+                the question "is this lot legitimate" actually gets asked. */}
+            <GasSafeBadge settings={settings} compact/>
           </div>
         </div>
 
@@ -854,5 +866,61 @@ export function WarmthCta({ settings, areas }: { settings: any; areas: any[] }) 
         )}
       </div>
     </section>
+  );
+}
+
+/* ── Gas Safe ─────────────────────────────────────────────────────────────── */
+
+const GAS_SAFE_YELLOW = "#FFCC00";
+const GAS_SAFE_INK = "#1A1A1A";
+const GAS_SAFE_HOME = "https://www.gassaferegister.co.uk/";
+
+/**
+ * The registration, as something a visitor can actually check.
+ *
+ * "Gas Safe registered" as one of four small items in a trust strip is where
+ * the strongest signal a heating business has goes to be ignored. Gas Safe's
+ * own advice to homeowners is to check the register before letting anyone near
+ * their gas, so this puts the number on the page and links to the place that
+ * proves it.
+ *
+ * In their own yellow and black, because that scheme is recognised on sight by
+ * anyone who has had a boiler fitted — and using a hand-built badge rather than
+ * their logo file, which is theirs and licensed to registered engineers, not to
+ * a platform that renders pages for them.
+ *
+ * Renders nothing without a number. The template never asserts this about a
+ * business: it is the tenant's claim alone, and the one claim on the whole site
+ * that is a criminal matter to fake.
+ */
+export function GasSafeBadge({ settings, compact }: { settings: any; compact?: boolean }) {
+  const number = String(settings?.gasSafeNumber ?? "").trim();
+  if (!number) return null;
+  const href = String(settings?.gasSafeUrl ?? "").trim() || GAS_SAFE_HOME;
+
+  return (
+    <a
+      href={href} target="_blank" rel="noopener noreferrer"
+      className={`bps-gassafe group inline-flex items-center gap-3.5 rounded-[14px] ${compact ? "px-4 py-2.5" : "px-5 py-3.5"}`}
+      style={{ background: GAS_SAFE_YELLOW, color: GAS_SAFE_INK }}
+    >
+      <span className="grid h-[34px] w-[34px] shrink-0 place-items-center rounded-[9px]" style={{ background: GAS_SAFE_INK }}>
+        {/* A flame, drawn rather than borrowed. */}
+        <svg width="18" height="18" viewBox="0 0 24 24" fill={GAS_SAFE_YELLOW} aria-hidden="true">
+          <path d="M12.5 2c.6 3-1.2 4.3-2.6 5.7C8.2 9.4 7 11 7 13.6A5.4 5.4 0 0012.4 19a5.3 5.3 0 005.3-5.4c0-3.6-2.6-5-3.3-7.6-.3 1.2-1 2-1.9 2.7.5-2.3.5-4.6 0-6.7z"/>
+        </svg>
+      </span>
+      <span className="flex flex-col leading-tight">
+        <strong className={`font-extrabold tracking-[-0.01em] ${compact ? "text-[13.5px]" : "text-[15px]"}`}>
+          Gas Safe Register
+        </strong>
+        <span className={compact ? "text-[12px]" : "text-[13px]"} style={{ color: "#3A3A3A" }}>
+          No. {number} &middot; <span className="underline">check it</span>
+        </span>
+      </span>
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true" className="bps-gassafe-arrow ml-1 shrink-0">
+        <path d="M7 17L17 7M9 7h8v8" stroke={GAS_SAFE_INK} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    </a>
   );
 }

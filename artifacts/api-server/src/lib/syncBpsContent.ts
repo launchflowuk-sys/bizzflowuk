@@ -83,10 +83,31 @@ export async function syncBpsContent(): Promise<void> {
    * The team photograph is not deleted -- it is still in public/ and still the
    * right picture for the About page.
    */
+  /**
+   * The Gas Safe number, from the client's own certificate.
+   *
+   * 627766 is what Brandon issues records under -- it is on the boiler service
+   * record he sent, twice. Not a claim invented here: it is already his, on his
+   * own paperwork. Set only when empty, so editing it from the dashboard wins
+   * forever after.
+   *
+   * The URL is deliberately left unset. The register's deep-link format could
+   * not be verified (gassaferegister.co.uk refuses automated requests), and a
+   * trust badge that 404s is worse than one pointing at the register's front
+   * page -- which is what an empty value falls back to.
+   */
+  const BPS_GAS_SAFE = "627766";
+
   const SEEDED_HERO = "/bps-team-van-hero.webp";
   const BOILER_HERO = "/bps-boiler-hero.webp";
   const [currentSettings] = await db.select().from(tenantSettingsTable)
     .where(eq(tenantSettingsTable.tenantId, tid)).limit(1);
+  if (currentSettings && !String(currentSettings.gasSafeNumber ?? "").trim()) {
+    await db.update(tenantSettingsTable).set({ gasSafeNumber: BPS_GAS_SAFE })
+      .where(eq(tenantSettingsTable.tenantId, tid));
+    logger.info({ tenantId: tid }, "BPS Gas Safe number set from the client's own certificate");
+  }
+
   if (currentSettings?.heroImageUrl === SEEDED_HERO) {
     await db.update(tenantSettingsTable)
       .set({ heroImageUrl: BOILER_HERO, aboutImageUrl: currentSettings.aboutImageUrl ?? SEEDED_HERO })

@@ -1,6 +1,6 @@
 import { Switch, Route, useParams, useLocation, Router as WouterRouter, Link as WouterLink } from "wouter";
 import { useGetPublicSite, useListPublicServices, useGetPublicService, useListPublicAreas, useGetPublicArea, useListPublicReviews, useListPublicFaqs, useBrowsePublicBlog, useGetPublicBlogPost } from "@workspace/api-client-react";
-import { UtilityBar, BoilerHero, HeroQuoteCard, TwoPathCards, ServiceGroups, ProcessRow, HomeFaqs, WarmthCta } from "./plumbing/homeSections";
+import { UtilityBar, BoilerHero, HeroQuoteCard, TwoPathCards, ServiceGroups, ProcessRow, HomeFaqs, WarmthCta, GasSafeBadge } from "./plumbing/homeSections";
 import { useEffect, useState } from "react";
 import { initGoogleTag } from "./analytics";
 import { SiteBaseCtx, SiteOriginCtx, useSiteBase, PageSEO, JsonLd, CookieBanner, QuoteFormSection } from "./PublicSiteApp";
@@ -462,9 +462,20 @@ function TrustStrip({ settings, narrow }: { settings: any; narrow?: boolean }) {
   // A template must never assert "Gas Safe registered" about a business that has
   // not told us it is — so an empty list renders no strip rather than a default one.
   const ICONS = [<ShieldIcon/>, <ClockIcon/>, <TagIcon/>, <BadgeIcon/>];
-  const badges: string[] = Array.isArray(settings?.trustBadges)
+  /**
+   * Drop the words when the real badge is on the page.
+   *
+   * With a registration number set, the hero carries a proper Gas Safe
+   * badge that links to the register. Leaving "Gas Safe registered" in
+   * this strip as well says the same thing twice in one screen, and the
+   * plain version is the weaker of the two -- it asserts, where the badge
+   * invites you to go and check.
+   */
+  const hasGasSafeBadge = Boolean(String(settings?.gasSafeNumber ?? "").trim());
+  const badges: string[] = (Array.isArray(settings?.trustBadges)
     ? (settings.trustBadges as any[]).map(b => (typeof b === "string" ? b : b?.label)).filter(Boolean)
-    : [];
+    : []
+  ).filter((label: string) => !(hasGasSafeBadge && /gas\s*safe/i.test(label)));
 
   if (!badges.length) return null;
   const items = badges.slice(0, 4).map((label, i) => ({ icon: ICONS[i % ICONS.length], label }));
