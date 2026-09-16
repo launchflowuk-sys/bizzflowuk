@@ -267,9 +267,15 @@ function HeroDashboard() {
           <div className="dash-heading">
             <div>
               <p className="muted">MONDAY, 14 SEPTEMBER</p>
-              <h3>
+              {/* Not a heading. This is the greeting inside a PICTURE of a
+                  dashboard, and as an <h3> sitting straight after the page's
+                  <h1> it skipped a level — so a screen reader announced the
+                  illustration as the page's first real section, and the
+                  document outline claimed a heading that leads nowhere.
+                  Styled identically; it just no longer lies about structure. */}
+              <p className="dash-greeting">
                 Let's get to work, James <span className="wave">✳</span>
-              </h3>
+              </p>
             </div>
             <span className="sample-label">Sample business</span>
           </div>
