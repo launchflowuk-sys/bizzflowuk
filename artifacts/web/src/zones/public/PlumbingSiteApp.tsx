@@ -767,7 +767,7 @@ function Areas({ areas, settings, services }: { areas: any[]; settings: any; ser
 
 // ── Area detail ──────────────────────────────────────────────────────────────
 
-function AreaDetail({ tenant, settings, services, reviews, areas }: any) {
+function AreaDetail({ tenant, settings, services, reviews, areas, tenantSlug }: any) {
   const { slug } = useParams<{ slug: string }>();
   const { data } = useGetPublicArea(tenant?.slug, slug);
   const area = data as any;
@@ -871,6 +871,21 @@ function AreaDetail({ tenant, settings, services, reviews, areas }: any) {
 
       <ServicesGrid services={services} heading={`What we do in ${area.name}`}
         intro={`Every one of our services is available in ${area.name}, including emergency call-outs.`}/>
+
+      {/*
+        The tabs stay on an area page: somebody who landed on "boiler help in
+        Romford" has told us WHERE they are, not what they need. Only the
+        heading changes — and it earns its place, because a form headed with the
+        name of your own town reads as a local firm rather than a national lead
+        broker, which is the entire reason these pages exist.
+      */}
+      <HeroQuoteCard
+        tenantSlug={tenantSlug}
+        settings={settings}
+        services={services}
+        inline
+        heading={`Boiler help in ${area.name}.`}
+      />
 
       {local.length > 0 && <Reviews reviews={local} heading={`What ${area.name} customers say`} settings={settings}/>}
 
@@ -1007,7 +1022,7 @@ function HomePage({ tenant, settings, services, areas, reviews, faqs, tenantSlug
   );
 }
 
-function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
+function ServiceDetail({ tenant, settings, services, reviews, areas, tenantSlug }: any) {
   const { slug } = useParams<{ slug: string }>();
   const { data } = useGetPublicService(tenant?.slug, slug);
   const service = data as any;
@@ -1145,6 +1160,27 @@ function ServiceDetail({ tenant, settings, services, reviews, areas }: any) {
       </section>
 
       <ProcessSteps steps={service.processSteps}/>
+
+      {/*
+        The same card as the homepage, except this page already knows what
+        they want -- so it says so rather than asking again, and spends the
+        space on how soon they need it.
+
+        `isInstall` decides whether the property-type row appears: it changes
+        an installation quote and is noise on a repair.
+      */}
+      <HeroQuoteCard
+        tenantSlug={tenantSlug}
+        settings={settings}
+        services={services}
+        inline
+        heading={`Get a price for ${service.name.toLowerCase()}.`}
+        subject={{
+          label: service.name,
+          isInstall: /install|new boiler|replacement|fitting|bathroom/i.test(`${service.name} ${service.slug}`),
+        }}
+      />
+
       <Reviews reviews={reviews} heading="What our customers say" settings={settings}/>
       <ServicesGrid services={others} heading="Other things we do" intro={settings?.serviceArea ? `We cover the lot, right across ${settings.serviceArea}.` : undefined}/>
       <Areas areas={areas} settings={settings} services={services}/>

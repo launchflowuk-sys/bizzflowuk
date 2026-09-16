@@ -180,9 +180,27 @@ const URGENCY = [
 
 const PROPERTY_TYPES = ["House", "Flat", "Bungalow", "Landlord / rental"];
 
-export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: string; settings: any; services: any[] }) {
+/**
+ * The quote card.
+ *
+ * On the homepage it asks what you are after. Given a `subject` -- a service
+ * or an area page -- it STATES it instead, because somebody reading
+ * /services/boiler-installation has already answered that question and asking
+ * again is the kind of small friction that quietly costs enquiries.
+ *
+ * `inline` drops the overlap-the-hero positioning for pages where the card
+ * sits in the flow rather than hanging off a photograph.
+ */
+export function HeroQuoteCard({ tenantSlug, settings, services, subject, inline, heading }: {
+  tenantSlug: string;
+  settings: any;
+  services: any[];
+  subject?: { label: string; isInstall?: boolean } | null;
+  inline?: boolean;
+  heading?: string;
+}) {
   const mutation = useSubmitQuoteRequest();
-  const [intent, setIntent] = useState<string>("");
+  const [intent, setIntent] = useState<string>(subject?.label ?? "");
   const [timeframe, setTimeframe] = useState<string>("");
   const [propertyType, setPropertyType] = useState<string>("");
   const [form, setForm] = useState({ name: "", phone: "", email: "", postcode: "", notes: "" });
@@ -231,7 +249,9 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
   const field = "h-[46px] w-full rounded-[11px] border px-3.5 text-[15px] outline-none transition focus:border-[#087EAE] focus:ring-2 focus:ring-[#087EAE]/20";
 
   return (
-    <div className="relative z-10 mx-auto -mt-[100px] max-w-[1160px] px-5 sm:px-8">
+    <div className={inline
+      ? "mx-auto max-w-[1160px] px-5 sm:px-8 py-[54px]"
+      : "relative z-10 mx-auto -mt-[100px] max-w-[1160px] px-5 sm:px-8"}>
       <div className="bps-quotecard rounded-[18px] bg-white p-6 sm:p-8" style={{ border: `1px solid ${BORDER}` }}>
         {done ? (
           <div className="py-6 text-center">
@@ -249,7 +269,7 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
               <div>
                 <p className="text-[11.5px] font-bold tracking-[0.15em]" style={{ color: ORANGE }}>LET&rsquo;S GET IT SORTED</p>
                 <h2 className="mt-2 font-bold" style={{ fontSize: "clamp(21px,2.4vw,27px)", color: NAVY, letterSpacing: "-0.03em" }}>
-                  {settings?.quoteCardHeading || "Your warmer home starts here."}
+                  {heading || settings?.quoteCardHeading || "Your warmer home starts here."}
                 </h2>
               </div>
               <p className="flex items-center gap-2 text-[13px]" style={{ color: "#5B7082" }}>
@@ -257,7 +277,40 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
               </p>
             </div>
 
-            {choices.length > 0 && (
+            {subject ? (
+              /*
+               * Stated, not asked. The room the tabs would have taken goes to
+               * How soon, which is the question worth asking on this page.
+               */
+              <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+                <p className="flex items-center gap-2.5 text-[14px]" style={{ color: "#3C5262" }}>
+                  <span className="inline-flex h-[26px] items-center rounded-[8px] px-2.5 text-[12.5px] font-bold"
+                    style={{ background: "#FFF4E9", color: "#9A5412" }}>
+                    {subject.label}
+                  </span>
+                  <span style={{ color: "#6C808F" }}>is what we will quote for.</span>
+                </p>
+                <div className="flex w-full flex-col gap-2.5 sm:w-auto sm:flex-row sm:items-center sm:gap-3">
+                  <span className="shrink-0 text-[13px] font-semibold" style={{ color: "#5B7082" }}>How soon?</span>
+                  <div role="tablist" aria-label="How soon do you need us?"
+                    className="flex w-full gap-1.5 rounded-[13px] p-1.5 sm:w-auto" style={{ background: PALE_2 }}>
+                    {URGENCY.map(u => {
+                      const on = timeframe === u.value;
+                      return (
+                        <button key={u.value} type="button" role="tab" aria-selected={on}
+                          onClick={() => setTimeframe(on ? "" : u.value)}
+                          className="bps-tab flex-1 rounded-[10px] px-3.5 py-2.5 text-[13.5px] font-bold sm:flex-none"
+                          style={on
+                            ? { background: u.tone, color: "#fff", boxShadow: `0 6px 16px -8px ${u.tone}` }
+                            : { background: "transparent", color: "#4A6072" }}>
+                          {u.label}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : choices.length > 0 ? (
               /**
                * A segmented control, not two loose chips.
                *
@@ -318,7 +371,7 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/*
               Asked only of somebody pricing a new boiler. A repair caller
@@ -326,7 +379,7 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
               type changes nothing about what happens next -- on an
               installation it genuinely changes the quote.
             */}
-            {intent === "A new boiler" && (
+            {(subject ? subject.isInstall : intent === "A new boiler") && (
               <div className="bps-conditional mt-4 flex flex-col gap-2.5 sm:flex-row sm:items-center sm:gap-4">
                 <span className="shrink-0 text-[13px] font-semibold" style={{ color: "#5B7082" }}>Your home&hellip;</span>
                 <div className="flex flex-wrap gap-2">
@@ -390,7 +443,7 @@ export function HeroQuoteCard({ tenantSlug, settings, services }: { tenantSlug: 
               <textarea
                 className="w-full rounded-[11px] border px-3.5 py-3 text-[15px] outline-none transition focus:border-[#087EAE] focus:ring-2 focus:ring-[#087EAE]/20"
                 style={{ borderColor: BORDER, minHeight: 64, resize: "vertical" }}
-                placeholder={intent === "A new boiler"
+                placeholder={(subject ? subject.isInstall : intent === "A new boiler")
                   ? "How many bedrooms and bathrooms? Where does the boiler live now?"
                   : "Make and age of the boiler, and what it is doing - an error code if there is one."}
                 value={form.notes}
