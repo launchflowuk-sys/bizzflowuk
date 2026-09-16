@@ -73,6 +73,21 @@ export const certificatesTable = pgTable("certificates", {
   data: jsonb("data").$type<Record<string, unknown>>().notNull().default({}),
 
   pdfPath: text("pdf_path"),
+
+  /**
+   * Signatures, stored as paths on the uploads volume rather than inline.
+   *
+   * A signature PNG is tens of kilobytes, and the certificate list reads every
+   * row a tenant owns -- carrying two images per row through that query to
+   * serve a renderer that reads them once is the kind of thing that is fine at
+   * fifty records and miserable at five thousand.
+   */
+  engineerSignaturePath: text("engineer_signature_path"),
+  customerSignaturePath: text("customer_signature_path"),
+  /** Who signed for the customer. A squiggle alone does not say who made it. */
+  customerSignatureName: text("customer_signature_name"),
+  /** When the ENGINEER signed, which is not necessarily when it was issued. */
+  signedAt: timestamp("signed_at", { withTimezone: true }),
   pdfSha256: text("pdf_sha256"),
   issuedAt: timestamp("issued_at", { withTimezone: true }),
   supersededById: integer("superseded_by_id"),

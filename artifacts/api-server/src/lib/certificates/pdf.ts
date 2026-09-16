@@ -1,5 +1,6 @@
 import PDFDocument from "pdfkit";
 import type { CertificateType } from "./registry";
+import { readCertificateFile } from "./storage";
 
 /**
  * Certificate PDF renderer.
@@ -41,10 +42,26 @@ function fmtCheck(v: boolean | null | undefined): string {
   return "N/A";
 }
 
-export function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
+export async function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
   const { certificate: c, appliances, type, tenant, settings } = args;
 
-  return new Promise((resolve, reject) => {
+  /**
+   * Signatures are read before drawing starts, not during.
+   *
+   * pdfkit's document building is synchronous once it begins; awaiting a file
+   * read in the middle of it means pages get written in whatever order the
+   * promises settle. Read first, then draw.
+   *
+   * A missing file leaves an empty box rather than failing the render. The
+   * record is still the truth of what was checked; losing the whole PDF
+   * because one image went astray helps nobody.
+   */
+  const signatures = {
+    engineer: c.engineerSignaturePath ? await readCertificateFile(c.engineerSignaturePath) : null,
+    customer: c.customerSignaturePath ? await readCertificateFile(c.customerSignaturePath) : null,
+  };
+
+  return new Promise<Buffer>((resolve, reject) => {
     const doc = new PDFDocument({ size: "A4", margin: PAGE_MARGIN, info: {
       Title: `${type.label} — ${c.reference}`,
       Author: tenant?.name ?? "",
@@ -189,6 +206,49 @@ export function renderCertificatePdf(args: RenderArgs): Promise<Buffer> {
       doc.font("Helvetica-Bold").fontSize(10).fillColor(INK).text("Notes", left, doc.y);
       doc.font("Helvetica").fontSize(9.5).fillColor(INK).text(String(notes), left, doc.y + 2, { width });
       doc.y += 14;
+    }
+
+    // ── Signatures ──────────────────────────────────────────────────────────
+    //
+    // The engineer's signature is one of the particulars a landlord gas safety
+    // record has to carry, so an empty box here is not a cosmetic gap -- it is
+    // an unfinished document. Drawn before the attestation because that is
+    // where a signature belongs on anything anybody has ever signed.
+    if (signatures.engineer || signatures.customer) {
+      if (doc.y > doc.page.height - 200) { doc.addPage(); doc.y = PAGE_MARGIN; }
+      doc.moveTo(left, doc.y).lineTo(right, doc.y).strokeColor(RULE).lineWidth(0.5).stroke();
+      doc.y += 12;
+
+      const boxW = (width - 24) / 2;
+      const boxH = 62;
+      const top = doc.y;
+
+      const drawSignature = (x: number, title: string, png: Buffer | null, name: string, when: unknown) => {
+        doc.font("Helvetica").fontSize(8).fillColor(MUTED)
+          .text(title.toUpperCase(), x, top, { width: boxW, characterSpacing: 0.6 });
+        if (png) {
+          try {
+            // `fit` keeps the aspect ratio, so a wide scrawl and a small neat
+            // one both sit inside the box instead of stretching to fill it.
+            doc.image(png, x, top + 12, { fit: [boxW, boxH - 28] });
+          } catch { /* a corrupt image must never take down the whole record */ }
+        }
+        doc.moveTo(x, top + boxH - 14).lineTo(x + boxW, top + boxH - 14)
+          .strokeColor(RULE).lineWidth(0.5).stroke();
+        doc.font("Helvetica").fontSize(8.5).fillColor(INK)
+          .text(name || "—", x, top + boxH - 10, { width: boxW });
+        if (when) {
+          doc.font("Helvetica").fontSize(8).fillColor(MUTED)
+            .text(fmtDate(when), x, top + boxH + 2, { width: boxW });
+        }
+      };
+
+      drawSignature(left, "Engineer", signatures.engineer,
+        c.engineerName ?? "", c.signedAt ?? c.checkedAt);
+      drawSignature(left + boxW + 24, "Received by", signatures.customer,
+        c.customerSignatureName ?? "", c.customerSignaturePath ? c.checkedAt : null);
+
+      doc.y = top + boxH + 18;
     }
 
     // ── Attestation + footer ────────────────────────────────────────────────

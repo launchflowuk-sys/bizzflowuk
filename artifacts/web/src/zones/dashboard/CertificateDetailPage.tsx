@@ -4,6 +4,7 @@ import { api, useApi, shortDate, daysUntil } from "./tradeApi";
 import { Page, PageHead, Card, Btn, Loading, ErrorNote, Pill } from "./TradePages";
 import { StatusBadge } from "@/components/StatusBadge";
 import Spinner from "./Spinner";
+import SignaturePad from "./SignaturePad";
 
 /**
  * Filling in a certificate, on site, on a phone.
@@ -61,6 +62,8 @@ type Certificate = {
   engineerName: string | null; engineerRegNo: string | null;
   checkedAt: string | null; expiresAt: string | null;
   outcome: string | null; supersededById: number | null;
+  engineerSignaturePath: string | null; customerSignaturePath: string | null;
+  customerSignatureName: string | null;
   appliances: Appliance[];
 };
 
@@ -181,6 +184,7 @@ export default function CertificateDetailPage() {
   const [problems, setProblems] = useState<string[]>([]);
   const [note, setNote] = useState<{ ok: boolean; text: string } | null>(null);
   const saveTimer = useRef<number | null>(null);
+  const [savingSig, setSavingSig] = useState<"engineer" | "customer" | null>(null);
 
   useEffect(() => {
     if (!data) return;
@@ -253,6 +257,44 @@ export default function CertificateDetailPage() {
       setNote({ ok: false, text: e?.message || "Could not save that." });
       return false;
     } finally { setSaving(false); }
+  }
+
+  /**
+   * Signatures save on their own, immediately, and not as part of the record.
+   *
+   * A signature captured at the door and then lost because the van drove out of
+   * signal before Save was pressed is the one failure that sends an engineer
+   * back to the property. It goes the moment it is drawn.
+   */
+  async function saveSignature(who: "engineer" | "customer", dataUrl: string) {
+    if (!cert) return;
+    setSavingSig(who); setNote(null);
+    try {
+      const updated = await api.post<Certificate>(`/certificates/${cert.id}/signature`, {
+        who, dataUrl, name: who === "customer" ? cert.customerSignatureName ?? "" : undefined,
+      });
+      setCert(c => (c ? { ...c, ...updated } : c));
+    } catch (e: any) {
+      setNote({ ok: false, text: e?.message || "Could not save that signature." });
+    } finally { setSavingSig(null); }
+  }
+
+  async function clearSignature(who: "engineer" | "customer") {
+    if (!cert) return;
+    try {
+      const updated = await api.post<Certificate>(`/certificates/${cert.id}/signature`, { who, dataUrl: null });
+      setCert(c => (c ? { ...c, ...updated } : c));
+    } catch (e: any) {
+      setNote({ ok: false, text: e?.message || "Could not clear that signature." });
+    }
+  }
+
+  /** Renaming who signed, without making them sign again. */
+  async function saveSignatureName() {
+    if (!cert?.customerSignaturePath) return;
+    try {
+      await api.post(`/certificates/${cert.id}/signature`, { who: "customer", name: cert.customerSignatureName ?? "" });
+    } catch { /* the name is a nicety; never block the record for it */ }
   }
 
   async function issue() {
@@ -460,6 +502,47 @@ export default function CertificateDetailPage() {
           )}
         </div>
       )}
+
+      {/* ── Signatures ────────────────────────────────────────────────────── */}
+      <Card className="p-5 sm:p-6 mb-4">
+        <h2 className="text-[17px] font-semibold text-slate-900">Signatures</h2>
+        <p className="mt-1 mb-4 text-[13px] text-slate-500">
+          Signed on the screen, at the property. Saved the moment you press save, so a lost
+          connection later cannot take it with it.
+        </p>
+        <div className="grid gap-5 sm:grid-cols-2">
+          <SignaturePad
+            label="Engineer"
+            hint="Yours. Required before this can be issued."
+            existing={!!cert.engineerSignaturePath}
+            disabled={locked}
+            busy={savingSig === "engineer"}
+            onSave={d => saveSignature("engineer", d)}
+            onClear={() => clearSignature("engineer")}
+          />
+          <div>
+            <SignaturePad
+              label="Received by"
+              hint="The customer or tenant, if they are here. Optional."
+              existing={!!cert.customerSignaturePath}
+              disabled={locked}
+              busy={savingSig === "customer"}
+              onSave={d => saveSignature("customer", d)}
+              onClear={() => clearSignature("customer")}
+            />
+            {!locked && (
+              <div className="mt-3">
+                <Field label="Their name">
+                  <input className={input} placeholder="Who signed"
+                    value={cert.customerSignatureName ?? ""}
+                    onChange={e => setCert(c => (c ? { ...c, customerSignatureName: e.target.value } : c))}
+                    onBlur={() => { if (cert.customerSignaturePath) void saveSignatureName(); }} />
+                </Field>
+              </div>
+            )}
+          </div>
+        </div>
+      </Card>
 
       {/* ── What is stopping this ─────────────────────────────────────────── */}
       {problems.length > 0 && (

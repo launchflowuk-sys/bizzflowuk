@@ -6,11 +6,98 @@ import { eq, and } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import { getCertificateType, computeExpiry } from "../lib/certificates/registry";
 import { renderCertificatePdf } from "../lib/certificates/pdf";
-import { storeCertificatePdf } from "../lib/certificates/storage";
+import { storeCertificatePdf, storeCertificateSignature } from "../lib/certificates/storage";
 import { sendCertificateEmail } from "../lib/certificates/deliver";
 import { nextReference, loadAppliances, tid } from "./certificates";
 
 const router = Router();
+
+/**
+ * Capture a signature.
+ *
+ * On a gas safety record the engineer's signature is one of the particulars the
+ * regulations require, so a record without one is not a finished document. Gas
+ * Safe accept electronic signatures, which is what makes capturing it on a
+ * phone at the property the intended route rather than a workaround.
+ *
+ * Only on a draft. A signature added after issue would mean the PDF in the
+ * landlord's inbox and the record here no longer match, which is the whole
+ * thing the issue lock exists to prevent -- correcting an issued record goes
+ * through supersede.
+ */
+const MAX_SIGNATURE_BYTES = 400 * 1024;
+
+router.post("/certificates/:id/signature", requireTenantAccess, async (req: any, res) => {
+  try {
+    const id = Number(req.params.id);
+    const who = String(req.body?.who ?? "");
+    if (who !== "engineer" && who !== "customer") {
+      res.status(400).json({ error: "who must be engineer or customer" });
+      return;
+    }
+
+    const [cert] = await db.select().from(certificatesTable)
+      .where(and(eq(certificatesTable.id, id), eq(certificatesTable.tenantId, tid(req)))).limit(1);
+    if (!cert) { res.status(404).json({ error: "Not found" }); return; }
+    if (cert.status !== "draft") {
+      res.status(409).json({ error: "This certificate has been issued. Create a replacement to change it." });
+      return;
+    }
+
+    // Clearing a signature is a legitimate thing to want after a bad squiggle.
+    if (req.body?.dataUrl === null) {
+      const [cleared] = await db.update(certificatesTable).set(
+        who === "engineer"
+          ? { engineerSignaturePath: null, signedAt: null }
+          : { customerSignaturePath: null, customerSignatureName: null },
+      ).where(eq(certificatesTable.id, id)).returning();
+      res.json(cleared);
+      return;
+    }
+
+    /**
+     * Correcting who signed, without making them sign again.
+     *
+     * Sent with a name and no image. Worth handling here rather than as its own
+     * endpoint: it is the same field on the same record, and a second route
+     * would need the same draft check and the same ownership check to say the
+     * same thing.
+     */
+    if (req.body?.dataUrl === undefined && typeof req.body?.name === "string") {
+      if (who !== "customer") { res.status(400).json({ error: "Only the customer signature carries a name." }); return; }
+      const [named] = await db.update(certificatesTable)
+        .set({ customerSignatureName: req.body.name.trim().slice(0, 120) || null })
+        .where(eq(certificatesTable.id, id)).returning();
+      res.json(named);
+      return;
+    }
+
+    const dataUrl = String(req.body?.dataUrl ?? "");
+    const match = /^data:image\/png;base64,([A-Za-z0-9+/=]+)$/.exec(dataUrl);
+    if (!match) { res.status(400).json({ error: "Expected a PNG signature." }); return; }
+
+    const png = Buffer.from(match[1], "base64");
+    // A hand-drawn signature is tens of kilobytes. Anything near half a
+    // megabyte is not a signature, and the cap is what stops this endpoint
+    // being a way to fill the volume.
+    if (!png.length || png.length > MAX_SIGNATURE_BYTES) {
+      res.status(400).json({ error: "That signature image is not the right size." });
+      return;
+    }
+
+    const stored = await storeCertificateSignature(tid(req), id, who, png);
+    const [updated] = await db.update(certificatesTable).set(
+      who === "engineer"
+        ? { engineerSignaturePath: stored, signedAt: new Date() }
+        : {
+          customerSignaturePath: stored,
+          customerSignatureName: typeof req.body?.name === "string" ? req.body.name.trim().slice(0, 120) || null : null,
+        },
+    ).where(eq(certificatesTable.id, id)).returning();
+
+    res.json(updated);
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
 
 /**
  * Issue a certificate.
@@ -48,6 +135,16 @@ router.post("/certificates/:id/issue", requireTenantAccess, async (req: any, res
       problems.push("A Gas Safe registration number is required on a landlord gas safety record.");
     }
     if (!cert.propertyAddress) problems.push("A property address is required.");
+    /**
+     * The engineer's signature is one of the particulars a landlord gas safety
+     * record has to carry, so an unsigned one is not a finished document.
+     * Enforced only where it is actually required -- a commissioning note or a
+     * purge record does not need it, and demanding it everywhere would just
+     * teach people to scribble something to get past the check.
+     */
+    if (type.key === "gas_safety" && !cert.engineerSignaturePath) {
+      problems.push("A landlord gas safety record must carry the engineer's signature.");
+    }
     if (type.usesAppliances && appliances.length === 0) {
       problems.push("At least one appliance must be recorded.");
     }
