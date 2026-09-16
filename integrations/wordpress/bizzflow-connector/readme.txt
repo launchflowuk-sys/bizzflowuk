@@ -4,7 +4,7 @@ Tags: leads, enquiries, crm, contact form 7, wpforms
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.0.0
+Stable tag: 1.1.0
 License: GPLv2 or later
 
 Sends website enquiries into BizzFlowUK as leads. The site stays exactly as it is.
@@ -91,10 +91,15 @@ stored, is not sent to BizzFlow, and the visitor is shown a "please try again"
 message. Nothing is lost silently -- but BizzFlow can only ever be as reliable
 as the site's email.
 
-The proper fix is in Splendid core rather than here: treat BizzFlow as a
-delivery route in its own right, so an enquiry succeeds if EITHER the email OR
-BizzFlow accepts it. That is a change to the client's own plugin and needs
-deciding before it is made.
+Fixed from Splendid core 1 onwards (commit 4a8c6e3 in their repo): Splendid
+asks the `splendid_enquiry_delivered_elsewhere` filter when its email fails, and
+this plugin answers yes once BizzFlow has confirmed receipt -- never for an
+enquiry that is only queued. The visitor then sees the normal success message.
+Until that Splendid version is deployed, the older behaviour above applies.
+
+If BizzFlow is unreachable, this plugin holds an enquiry for no more than 24
+hours while retrying, then deletes it. The activity log never stores names or
+messages.
 
 Field mapping:
 
@@ -105,6 +110,11 @@ Field mapping:
 * Material, how many, where it came from, and the message → notes
 
 == Changelog ==
+
+= 1.1.0 =
+* Answers Splendid's delivered-elsewhere question, so a mail outage no longer turns a visitor away once BizzFlow has the enquiry.
+* Retry queue holds an enquiry for at most 24 hours.
+* Empty business code is flagged instead of looking filled in.
 
 = 1.0.0 =
 * First release.

@@ -3,7 +3,7 @@
  * Plugin Name:       BizzFlow Connector
  * Plugin URI:        https://bizzflowuk.com
  * Description:       Sends website enquiries into BizzFlowUK as leads, so the business manages everything in one place. Works with the Splendid core plugin, Contact Form 7, WPForms and Gravity Forms.
- * Version:           1.0.0
+ * Version:           1.1.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            LaunchFlow UK
@@ -43,7 +43,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BIZZFLOW_CONNECTOR_VERSION', '1.0.0' );
+define( 'BIZZFLOW_CONNECTOR_VERSION', '1.1.0' );
 define( 'BIZZFLOW_CONNECTOR_OPTION', 'bizzflow_connector_settings' );
 define( 'BIZZFLOW_CONNECTOR_QUEUE', 'bizzflow_connector_queue' );
 define( 'BIZZFLOW_CONNECTOR_LOG', 'bizzflow_connector_log' );
@@ -250,6 +250,22 @@ function bizzflow_queue_run() {
 	$remaining = array();
 
 	foreach ( $queue as $item ) {
+		/*
+		 * A HARD 24-HOUR LIMIT, for the privacy notice as much as anything.
+		 *
+		 * While BizzFlow is unreachable this queue holds a full enquiry --
+		 * name, email, phone, message -- in the WordPress database. Six
+		 * attempts sounds bounded, but WP-Cron only runs when somebody visits,
+		 * so on a quiet site those attempts could stretch across days. The
+		 * privacy notice has to state how long personal data is held here,
+		 * and "until six attempts happen to have run" is not a period anyone
+		 * can write down.
+		 */
+		if ( time() - (int) ( $item['first'] ?? 0 ) > DAY_IN_SECONDS ) {
+			bizzflow_log( 'dropped', 'Not delivered within 24 hours; removed', (array) ( $item['lead'] ?? array() ) );
+			continue;
+		}
+
 		$item['attempts'] = (int) ( $item['attempts'] ?? 0 ) + 1;
 
 		if ( bizzflow_send( (array) $item['lead'], true ) ) {
@@ -316,10 +332,22 @@ function bizzflow_log( $status, $detail, array $lead = array() ) {
  * @return void
  */
 function bizzflow_from_splendid( $values ) {
-	if ( ! is_array( $values ) ) {
-		return;
+	if ( is_array( $values ) ) {
+		bizzflow_send_once( bizzflow_map_splendid( $values ) );
 	}
+}
 
+/**
+ * Splendid's enquiry, in BizzFlow's shape.
+ *
+ * One mapping for every Splendid path. Three hooks can now carry the same
+ * enquiry, and if they built the lead even slightly differently the
+ * de-duplication key would differ and one enquiry would arrive twice.
+ *
+ * @param array $values Splendid's cleaned values.
+ * @return array
+ */
+function bizzflow_map_splendid( array $values ) {
 	list( $first, $last ) = bizzflow_split_name( $values['name'] ?? '' );
 
 	$notes = array();
@@ -332,16 +360,14 @@ function bizzflow_from_splendid( $values ) {
 		$notes[] = trim( (string) $values['message'] );
 	}
 
-	bizzflow_send_once(
-		array(
-			'firstName'       => $first,
-			'lastName'        => $last,
-			'email'           => (string) ( $values['email'] ?? '' ),
-			'phone'           => (string) ( $values['phone'] ?? '' ),
-			'postcode'        => (string) ( $values['postcode'] ?? '' ),
-			'serviceInterest' => (string) ( $values['product'] ?? '' ),
-			'notes'           => implode( "\n", $notes ),
-		)
+	return array(
+		'firstName'       => $first,
+		'lastName'        => $last,
+		'email'           => (string) ( $values['email'] ?? '' ),
+		'phone'           => (string) ( $values['phone'] ?? '' ),
+		'postcode'        => (string) ( $values['postcode'] ?? '' ),
+		'serviceInterest' => (string) ( $values['product'] ?? '' ),
+		'notes'           => implode( "\n", $notes ),
 	);
 }
 add_action( 'splendid_enquiry_sent', 'bizzflow_from_splendid', 10, 1 );
@@ -527,33 +553,87 @@ function bizzflow_send_once( array $lead ) {
 		return;
 	}
 
-	/*
-	 * Identity from the fields that are the same on every path -- NOT the notes.
-	 *
-	 * On Splendid both hooks fire for one enquiry, and they read the values
-	 * from two different places: the in-memory array, and the stored meta.
-	 * Those can differ by a field (quantity is stored; the other may not carry
-	 * it), which changes the notes string. With notes in the key, one enquiry
-	 * produced two different keys and went through twice.
-	 */
+	$key = bizzflow_dedupe_key( $lead );
+	if ( ! $key || get_transient( $key ) ) {
+		return;
+	}
+
+	// "pending" until BizzFlow confirms, so the email-failure path below can
+	// tell an enquiry that arrived from one that was merely attempted.
+	set_transient( $key, 'pending', 10 * MINUTE_IN_SECONDS );
+
+	if ( bizzflow_send( $lead ) ) {
+		set_transient( $key, 'sent', 10 * MINUTE_IN_SECONDS );
+	}
+}
+
+/**
+ * The de-duplication key for one enquiry, or '' if there is nothing to key on.
+ *
+ * Identity from the fields that are the same on every path -- NOT the notes.
+ * On Splendid two hooks fire for one enquiry and read the values from two
+ * different places, the in-memory array and the stored meta. Those can differ
+ * by a field (quantity is stored; the other may not carry it), which changes
+ * the notes. With notes in the key, one enquiry made two keys and went twice.
+ *
+ * @param array $lead Mapped payload.
+ * @return string
+ */
+function bizzflow_dedupe_key( array $lead ) {
 	$identity = strtolower( implode( '|', array(
 		preg_replace( '/\s+/', '', (string) ( $lead['email'] ?? '' ) ),
 		preg_replace( '/\D+/', '', (string) ( $lead['phone'] ?? '' ) ),
 		preg_replace( '/\s+/', '', (string) ( $lead['postcode'] ?? '' ) ),
 		trim( (string) ( $lead['serviceInterest'] ?? '' ) ),
 	) ) );
-	if ( '' === trim( $identity, '|' ) ) {
-		return;
-	}
 
-	$key = 'bizzflow_sent_' . md5( $identity );
-	if ( get_transient( $key ) ) {
-		return;
-	}
-	set_transient( $key, 1, 10 * MINUTE_IN_SECONDS );
-
-	bizzflow_send( $lead );
+	return '' === trim( $identity, '|' ) ? '' : 'bizzflow_sent_' . md5( $identity );
 }
+
+/**
+ * Answer Splendid's "did anything else take this enquiry?" question.
+ *
+ * Asked only when the site's own email has FAILED. Returning true lets the
+ * visitor see success, so it must mean BizzFlow has confirmed receipt -- not
+ * that we tried, and not that it is sitting in our retry queue. A lead that is
+ * merely queued returns false, and the site falls back to its own behaviour.
+ *
+ * Nothing is queued from here. If BizzFlow is also unreachable the visitor is
+ * asked to try again, and holding a copy as well would only turn their second
+ * attempt into a duplicate lead later.
+ *
+ * @param bool  $delivered Whether something already took it.
+ * @param array $values    Splendid's cleaned values.
+ * @return bool
+ */
+function bizzflow_splendid_delivered_elsewhere( $delivered, $values ) {
+	if ( $delivered || ! bizzflow_ready() || ! is_array( $values ) ) {
+		return (bool) $delivered;
+	}
+
+	$lead = bizzflow_map_splendid( $values );
+	$key  = bizzflow_dedupe_key( $lead );
+	if ( ! $key ) {
+		return false;
+	}
+
+	// Already confirmed a moment ago on another path: it is in BizzFlow.
+	if ( 'sent' === get_transient( $key ) ) {
+		return true;
+	}
+
+	if ( bizzflow_send( $lead, true ) ) {
+		set_transient( $key, 'sent', 10 * MINUTE_IN_SECONDS );
+
+		return true;
+	}
+
+	// Leave no marker behind: a genuine later attempt must be allowed through.
+	delete_transient( $key );
+
+	return false;
+}
+add_filter( 'splendid_enquiry_delivered_elsewhere', 'bizzflow_splendid_delivered_elsewhere', 10, 2 );
 
 /* -------------------------------------------------------------------------
  * Admin
