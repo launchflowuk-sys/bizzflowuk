@@ -19,7 +19,78 @@ type Provider = { key: string; label: string; description: string; configured: b
 type Connection = {
   provider: string; status: string; organisationName: string | null;
   connectedAt: string; lastSyncAt: string | null; lastError: string | null;
+  salesAccountCode: string | null;
 };
+
+/**
+ * The sales nominal, tucked under the connection rather than beside it.
+ *
+ * Most businesses should never touch this — Xero's default chart puts sales on
+ * 200 and that is what we use. It is here for the ones who built their own
+ * chart, and the wording has to make clear which of those two you are without
+ * making anybody worry they have missed a setup step.
+ */
+function AccountCodeField({ current, busy, disabled, onSave }: {
+  current: string | null;
+  busy: boolean;
+  disabled: boolean;
+  onSave: (code: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [value, setValue] = useState(current ?? "");
+
+  // Somebody else's save (or a reload) should win over a field left half-typed
+  // and forgotten.
+  useEffect(() => { setValue(current ?? ""); }, [current]);
+
+  if (!open) {
+    return (
+      <p className="mt-3 text-xs text-slate-500">
+        Sales post to account{" "}
+        <span className="font-semibold text-slate-700">{current || "200"}</span>
+        {current ? "" : " (the default)"}.{" "}
+        <button type="button" onClick={() => setOpen(true)} className="font-semibold text-[var(--brand)] hover:underline">
+          Change
+        </button>
+      </p>
+    );
+  }
+
+  return (
+    <div className="mt-3 rounded-lg border border-slate-200 bg-white p-3">
+      <label className="block text-xs font-semibold text-slate-700" htmlFor="sales-account-code">
+        Sales account code
+      </label>
+      <p className="mt-1 text-xs text-slate-500">
+        The code your chart of accounts uses for sales. If you have never changed your chart in
+        Xero, leave this alone — 200 is right.
+      </p>
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <input
+          id="sales-account-code"
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          placeholder="200"
+          inputMode="text"
+          maxLength={20}
+          className="h-9 w-28 rounded-lg border border-slate-300 px-3 text-sm"
+        />
+        <button type="button" disabled={disabled} onClick={() => { onSave(value.trim()); setOpen(false); }}
+          className="inline-flex h-9 items-center rounded-lg bg-[var(--brand)] px-3.5 text-xs font-semibold text-white disabled:opacity-50">
+          {busy && <Spinner className="mr-2" />}
+          Save
+        </button>
+        <button type="button" onClick={() => { setValue(current ?? ""); setOpen(false); }}
+          className="inline-flex h-9 items-center rounded-lg px-3 text-xs font-semibold text-slate-500 hover:text-slate-800">
+          Cancel
+        </button>
+      </div>
+      <p className="mt-2 text-xs text-slate-400">
+        Only affects invoices sent from now on. Anything already across stays where it is.
+      </p>
+    </div>
+  );
+}
 
 export default function AccountingPanel() {
   const { data, loading, reload } = useApi<{ providers: Provider[]; connection: Connection | null }>("/accounting");
@@ -75,6 +146,26 @@ export default function AccountingPanel() {
     try { await api.del(`/accounting/${key}`); reload(); }
     catch (e: any) { setNote({ ok: false, text: e?.message || "Could not unlink." }); }
     finally { setBusy(null); }
+  }
+
+  /**
+   * Which nominal the sales land in.
+   *
+   * Every invoice used to go across on a hardcoded 200 — Sales in Xero's
+   * default UK chart, right for most businesses and wrong for anyone who built
+   * their own. Revenue posted to the wrong nominal is the sort of thing an
+   * accountant finds in January, so it needs to be changeable by the person
+   * who knows the answer.
+   */
+  async function saveAccountCode(key: string, code: string) {
+    setBusy("account-code"); setNote(null);
+    try {
+      await api.patch(`/accounting/${key}/settings`, { salesAccountCode: code });
+      setNote({ ok: true, text: code ? `New invoices will post to ${code}.` : "Back to the default sales account." });
+      reload();
+    } catch (e: any) {
+      setNote({ ok: false, text: e?.message || "Could not save that code." });
+    } finally { setBusy(null); }
   }
 
   async function catchUp() {
@@ -144,6 +235,15 @@ export default function AccountingPanel() {
               Unlink
             </button>
           </div>
+
+          {conn.status !== "needs_reauth" && (
+            <AccountCodeField
+              current={conn.salesAccountCode}
+              busy={busy === "account-code"}
+              disabled={!!busy}
+              onSave={code => saveAccountCode(conn.provider, code)}
+            />
+          )}
         </div>
       )}
 

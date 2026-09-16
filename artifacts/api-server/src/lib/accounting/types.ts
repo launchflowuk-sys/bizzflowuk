@@ -51,6 +51,21 @@ export type OutboundInvoice = {
     city: string | null;
     postcode: string | null;
   } | null;
+
+  /**
+   * Which account in THEIR chart of accounts the sale lands in.
+   *
+   * This was hardcoded to "200", which is the sales code in Xero's demo
+   * company and in their default UK chart — so it worked in testing and will
+   * keep working for most people. It is not universal: a business that built
+   * its own chart, or migrated one in from another package, can easily have
+   * 200 as something else entirely or not have it at all. Posting revenue to
+   * the wrong nominal is the kind of error their accountant finds in January.
+   *
+   * Null means "use the provider's default", which is the right behaviour for
+   * the many tenants who will never think about this.
+   */
+  salesAccountCode: string | null;
 };
 
 export type PushResult = {

@@ -173,7 +173,24 @@ async function outbound(invoiceId: number): Promise<OutboundInvoice | null> {
       total: l.total,
     })),
     customer,
+    // Filled in by syncInvoice, which is the only place that knows which
+    // connection this is going to.
+    salesAccountCode: null,
   };
+}
+
+/**
+ * The tenant's chosen sales nominal, if they set one.
+ *
+ * Lives in the connection's `settings` jsonb rather than a column of its own
+ * because it means nothing outside the provider it belongs to: Xero calls it an
+ * account code, FreeAgent calls it a category, and the next one will call it
+ * something else again.
+ */
+export function salesAccountCodeOf(conn: { settings?: Record<string, unknown> | null }): string | null {
+  const raw = conn?.settings?.["salesAccountCode"];
+  const code = typeof raw === "string" ? raw.trim() : "";
+  return code || null;
 }
 
 export type SyncOutcome =
@@ -212,6 +229,7 @@ export async function syncInvoice(invoiceId: number, tenantId: number): Promise<
   const payload = await outbound(invoiceId);
   if (!payload) return { ok: false, reason: "That invoice does not exist." };
   if (!payload.lines.length) return { ok: false, reason: "The invoice has no lines on it." };
+  payload.salesAccountCode = salesAccountCodeOf(conn);
 
   try {
     const result = await usable.provider.pushInvoice({ credentials: usable.credentials, invoice: payload });

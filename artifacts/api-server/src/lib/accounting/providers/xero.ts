@@ -71,6 +71,16 @@ const API_BASE = "https://api.xero.com";
  * account code note in pushInvoice) but it is not this scope's job to
  * pre-empt.
  */
+/**
+ * Where a sale lands when the business has not told us otherwise.
+ *
+ * 200 is "Sales" in Xero's own default UK chart of accounts, which is what a
+ * new Xero organisation is created with, so it is right for most people and
+ * wrong for nobody who has not customised their chart. Anyone who has can set
+ * their own code against the connection.
+ */
+const DEFAULT_SALES_ACCOUNT_CODE = "200";
+
 const SCOPES = [
   "offline_access",
   "accounting.invoices",
@@ -239,10 +249,12 @@ export const xero: AccountingProvider = {
           Description: l.description,
           Quantity: Number(l.quantity),
           UnitAmount: Number(l.unitPrice),
-          // NOTE TO VERIFY: 200 is the sales code in Xero's demo company and
-          // is not universal. This wants to be a per-tenant setting on the
-          // connection before anyone relies on it.
-          AccountCode: String((invoice as any).salesAccountCode ?? "200"),
+          // 200 is the sales code in Xero's own default UK chart of accounts
+          // and in their demo company, so it is the right default and the only
+          // reason this worked at all. It is NOT universal: a business that
+          // built its own chart, or migrated one in, can have 200 as something
+          // else or not have it. Now settable per connection, in Accounting.
+          AccountCode: invoice.salesAccountCode ?? DEFAULT_SALES_ACCOUNT_CODE,
           ...(l.vatRate === null
             ? { TaxType: "NONE" }
             : { TaxType: Number(l.vatRate) === 0 ? "ZERORATED" : "OUTPUT2" }),

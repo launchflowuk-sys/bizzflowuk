@@ -5,7 +5,7 @@ import { and, desc, eq, isNull, sql } from "drizzle-orm";
 import { requireTenantAccess } from "../middlewares/auth";
 import {
   describeAccountingProviders, getAccountingProvider, providerConfigured,
-  syncInvoice, tenantConnection,
+  salesAccountCodeOf, syncInvoice, tenantConnection,
 } from "../lib/accounting";
 
 const router = Router();
@@ -68,9 +68,49 @@ router.get("/accounting", requireTenantAccess, async (req: any, res) => {
           connectedAt: conn.connectedAt,
           lastSyncAt: conn.lastSyncAt,
           lastError: conn.lastError,
+          salesAccountCode: salesAccountCodeOf(conn),
         }
         : null,
     });
+  } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
+});
+
+/**
+ * Which nominal the sales land in.
+ *
+ * Every invoice we push carried a hardcoded "200" — Sales in Xero's default UK
+ * chart, which is why it worked on the demo company and will keep working for
+ * most businesses. A business that built its own chart of accounts, or brought
+ * one over from another package, can have 200 as something else entirely, and
+ * revenue posted to the wrong nominal is the sort of thing their accountant
+ * discovers in January.
+ *
+ * Stored on the connection's settings rather than a column, because the idea
+ * only means anything inside the provider that owns it.
+ */
+router.patch("/accounting/:provider/settings", requireTenantAccess, async (req: any, res) => {
+  try {
+    const conn = await tenantConnection(tid(req));
+    if (!conn || conn.provider !== String(req.params.provider)) {
+      res.status(404).json({ error: "That package is not connected." });
+      return;
+    }
+
+    const raw = (req.body ?? {}).salesAccountCode;
+    const code = typeof raw === "string" ? raw.trim() : "";
+    // Codes are short and alphanumeric everywhere we support. Rejecting the
+    // rest here beats a rejected invoice later, which surfaces as a failed
+    // sync nobody can explain.
+    if (code && !/^[A-Za-z0-9.\-]{1,20}$/.test(code)) {
+      res.status(400).json({ error: "Use the code exactly as it appears in your chart of accounts — letters, numbers, dashes." });
+      return;
+    }
+
+    await db.update(accountingConnectionsTable)
+      .set({ settings: { ...(conn.settings ?? {}), salesAccountCode: code || null } })
+      .where(eq(accountingConnectionsTable.id, conn.id));
+
+    res.json({ ok: true, salesAccountCode: code || null });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
