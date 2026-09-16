@@ -21,6 +21,7 @@ export * from "./team";
 export * from "./sent_emails";
 export * from "./page_render_cache";
 export * from "./user_invites";
+export * from "./password_resets";
 export * from "./certificates";
 export * from "./invoices";
 export * from "./automations";

@@ -132,7 +132,15 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
               />
             </label>
             <label style={{ display: "block" }}>
-              <span style={{ display: "block", fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>Password</span>
+              <span style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", gap: "12px", fontSize: "13px", fontWeight: 600, marginBottom: "8px" }}>
+                Password
+                {/* Beside the field, not buried under the button. Somebody who
+                    cannot remember their password is looking at this box when
+                    they realise it, and that is where the way out belongs. */}
+                <a href={`${basePath}/forgot-password`} className="teal" style={{ fontSize: "13px", fontWeight: 600 }}>
+                  Forgotten it?
+                </a>
+              </span>
               <input
                 type="password" value={password} onChange={e => setPassword(e.target.value)}
                 required autoComplete="current-password" placeholder="••••••••"
@@ -179,6 +187,8 @@ const AdminApp = lazy(() => import("@/zones/admin/AdminApp"));
 const PublicSiteApp = lazy(() => import("@/zones/public/TenantSiteRouter"));
 const BizzFlowDemo = lazy(() => import("@/zones/public/bizzflow/BizzFlowDemo"));
 const SignUpPage = lazy(() => import("@/zones/public/bizzflow/SignUpPage"));
+const ForgotPasswordPage = lazy(() => import("@/zones/public/bizzflow/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("@/zones/public/bizzflow/ResetPasswordPage"));
 const JobSharePage = lazy(() => import("@/zones/public/JobSharePage"));
 
 /**
@@ -372,6 +382,11 @@ function AppRoutes() {
             {() => <Redirect to={`/demo${window.location.search}`} replace />}
           </Route>
           <Route path="/accept-invite" component={AcceptInvitePage} />
+          {/* Public: the reset token IS the credential, exactly like an invite,
+              so both must sit outside the signed-in gate. Somebody locked out
+              by definition has no session to check. */}
+          <Route path="/forgot-password" component={ForgotPasswordPage} />
+          <Route path="/reset-password" component={ResetPasswordPage} />
           <Route path="/sign-in">{() => isSignedIn ? <RoleRouter /> : <LoginForm />}</Route>
           <Route path="/dashboard/*?" component={DashboardApp} />
           <Route path="/portal/*?" component={PortalApp} />
