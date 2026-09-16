@@ -457,7 +457,7 @@ function Hero({ tenant, settings }: { tenant: any; settings: any }) {
 
 // ── Trust strip ──────────────────────────────────────────────────────────────
 
-function TrustStrip({ settings }: { settings: any }) {
+function TrustStrip({ settings, narrow }: { settings: any; narrow?: boolean }) {
   // Claims that carry regulatory weight stay tenant-owned, in settings.trustBadges.
   // A template must never assert "Gas Safe registered" about a business that has
   // not told us it is — so an empty list renders no strip rather than a default one.
@@ -471,7 +471,17 @@ function TrustStrip({ settings }: { settings: any }) {
 
   return (
     <section className="border-b" style={{ background: "#fff", borderColor: BORDER }}>
-      <div className="bps-rad mx-auto max-w-[1400px] px-5 sm:px-8 py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5">
+      {/*
+        `narrow` lines the strip up with the quote card above it on the
+        homepage. Without it the card sits inset at 1160 while the badges spread
+        across 1400, so the first and last badge hang past the card's edges and
+        the whole block reads as crooked — which is exactly how it looked.
+
+        Optional rather than changed outright: every other page in this template
+        lays its content out on the 1400 grid, and narrowing the strip there
+        would just move the misalignment somewhere else.
+      */}
+      <div className={`bps-rad mx-auto ${narrow ? "max-w-[1160px]" : "max-w-[1400px]"} px-5 sm:px-8 py-6 grid grid-cols-2 lg:grid-cols-4 gap-x-6 gap-y-5`}>
         {items.map((it, i) => (
           <div key={i} className="flex items-center gap-3">
             <span className="shrink-0">{it.icon}</span>
@@ -1011,7 +1021,7 @@ function HomePage({ tenant, settings, services, areas, reviews, faqs, tenantSlug
       }}/>
       <BoilerHero tenant={tenant} settings={settings} reviews={reviews} services={services}/>
       <HeroQuoteCard tenantSlug={tenantSlug} settings={settings} services={services}/>
-      <TrustStrip settings={settings}/>
+      <TrustStrip settings={settings} narrow/>
       <TwoPathCards services={services} settings={settings}/>
       <ServiceGroups services={services} settings={settings}/>
       <Reviews reviews={reviews} settings={settings}/>
