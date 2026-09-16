@@ -35,8 +35,9 @@ Supported out of the box:
 * It never makes the visitor wait. If BizzFlow is slow or unreachable the
   enquiry is queued and retried up to six times, and the visitor still sees
   their normal success message.
-* It does not keep a second copy of anybody's details. The activity log records
-  what happened, not who it was.
+* It keeps no lasting copy of anybody's details. An enquiry waiting to be
+  retried is held for at most 24 hours, then deleted; the activity log records
+  what happened, never who it was.
 
 == Installation ==
 
@@ -91,7 +92,7 @@ stored, is not sent to BizzFlow, and the visitor is shown a "please try again"
 message. Nothing is lost silently -- but BizzFlow can only ever be as reliable
 as the site's email.
 
-Fixed from Splendid core 1 onwards (commit 4a8c6e3 in their repo): Splendid
+Fixed in the Splendid core version from commit 4a8c6e3 in their repo: Splendid
 asks the `splendid_enquiry_delivered_elsewhere` filter when its email fails, and
 this plugin answers yes once BizzFlow has confirmed receipt -- never for an
 enquiry that is only queued. The visitor then sees the normal success message.
