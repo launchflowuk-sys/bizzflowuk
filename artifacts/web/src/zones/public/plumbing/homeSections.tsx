@@ -310,10 +310,29 @@ function matches(service: any, words: string[]): boolean {
   return words.some(w => hay.includes(w));
 }
 
+/**
+ * The two headline services: a BOILER install and a BOILER repair.
+ *
+ * "boiler" is required, not optional. Matching on the action word alone picked
+ * whatever happened to be first in the list, and on a real plumbing tenant that
+ * list also holds bathroom installation, toilet repairs, gas installation and
+ * radiator repairs. The first version of this promoted whichever of those the
+ * database returned first and, worse, treated all six as "already covered
+ * above" so they disappeared from the page entirely.
+ */
+function pickHeadline(services: any[]) {
+  const list = services ?? [];
+  const boiler = (s: any) => `${s?.name ?? ""} ${s?.slug ?? ""}`.toLowerCase().includes("boiler");
+  const install = list.find(s => boiler(s) && matches(s, INSTALL_WORDS))
+    ?? list.find(s => matches(s, INSTALL_WORDS));
+  const repair = list.find(s => boiler(s) && matches(s, REPAIR_WORDS))
+    ?? list.find(s => matches(s, REPAIR_WORDS));
+  return { install, repair };
+}
+
 /** The two the quote card offers as choices, taken from the tenant's own list. */
 function headlineServices(services: any[]): Array<{ label: string }> {
-  const install = (services ?? []).find(s => matches(s, INSTALL_WORDS));
-  const repair = (services ?? []).find(s => matches(s, REPAIR_WORDS));
+  const { install, repair } = pickHeadline(services);
   const out = [
     { label: install ? "A new boiler" : "" },
     { label: repair ? "A boiler repair" : "" },
@@ -322,8 +341,7 @@ function headlineServices(services: any[]): Array<{ label: string }> {
 }
 
 export function TwoPathCards({ services, settings }: { services: any[]; settings: any }) {
-  const install = (services ?? []).find(s => matches(s, INSTALL_WORDS));
-  const repair = (services ?? []).find(s => matches(s, REPAIR_WORDS));
+  const { install, repair } = pickHeadline(services);
   // Nothing to show rather than an invented pair: a tenant whose services do
   // not include these gets the grid below and no empty promises.
   if (!install && !repair) return null;
@@ -440,7 +458,19 @@ const GROUPS = [
 ];
 
 export function ServiceGroups({ services, settings }: { services: any[]; settings: any }) {
-  const rest = (services ?? []).filter(s => !matches(s, INSTALL_WORDS) && !matches(s, REPAIR_WORDS));
+  /**
+   * Exclude the TWO SERVICES SHOWN ABOVE, by slug -- not everything whose name
+   * happens to contain "install" or "repair".
+   *
+   * That was the first version, and on this tenant it silently swallowed six
+   * services: central heating installation and repairs, radiator repairs,
+   * bathroom installation, toilet repairs and gas installation all matched the
+   * keywords, so the page claimed to cover "the rest of your home" while
+   * listing four things out of twelve.
+   */
+  const { install, repair } = pickHeadline(services);
+  const shownAbove = new Set([install?.slug, repair?.slug].filter(Boolean));
+  const rest = (services ?? []).filter(s => !shownAbove.has(s.slug));
   if (!rest.length) return null;
 
   // Each service lands in the first group it matches, so nothing is listed
@@ -469,26 +499,28 @@ export function ServiceGroups({ services, settings }: { services: any[]; setting
 
         <div className="mt-9 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {shown.map((g, i) => (
-            <div key={g.key} className="bps-reveal bps-group flex flex-col rounded-[18px] bg-white p-7"
+            <div key={g.key} className="bps-reveal bps-group flex flex-col rounded-[20px] bg-white p-8 sm:p-9"
               style={{ border: `1px solid ${BORDER}`, animationDelay: `${i * 90}ms` }}>
-              <div className="flex items-start gap-3.5">
-                <span className="grid h-[46px] w-[46px] shrink-0 place-items-center rounded-[13px]" style={{ background: PALE }}>
+              <div className="flex items-start gap-4">
+                <span className="grid h-[56px] w-[56px] shrink-0 place-items-center rounded-[16px]" style={{ background: PALE }}>
                   <GroupIcon which={g.key}/>
                 </span>
                 <span>
-                  <strong className="block text-[19px] font-bold leading-tight" style={{ color: NAVY, letterSpacing: "-0.025em" }}>{g.title}</strong>
-                  <span className="mt-1 block text-[13.5px]" style={{ color: "#6C808F" }}>{g.sub}</span>
+                  <strong className="block text-[22px] font-bold leading-tight" style={{ color: NAVY, letterSpacing: "-0.03em" }}>{g.title}</strong>
+                  <span className="mt-1.5 block text-[14.5px] leading-snug" style={{ color: "#6C808F" }}>{g.sub}</span>
                 </span>
               </div>
 
-              <ul className="mt-6 flex flex-col">
+              <ul className="mt-7 flex flex-col">
                 {buckets[g.key].map((s: any) => (
                   <li key={s.slug}>
                     <SiteLink href={`/services/${s.slug}`}
-                      className="bps-grouplink flex items-center justify-between gap-3 border-t py-[15px] text-[15.5px] font-semibold"
+                      className="bps-grouplink flex items-center justify-between gap-3 border-t py-[17px] text-[16.5px] font-semibold"
                       style={{ borderColor: "#EBF1F5", color: NAVY }}>
                       <span>{s.name}</span>
-                      <Arrow className="bps-grouplink-arrow shrink-0"/>
+                      <span className="bps-grouplink-chev grid h-[30px] w-[30px] shrink-0 place-items-center rounded-full" style={{ background: PALE_2 }}>
+                        <Arrow className="bps-grouplink-arrow"/>
+                      </span>
                     </SiteLink>
                   </li>
                 ))}
@@ -512,7 +544,7 @@ export function ServiceGroups({ services, settings }: { services: any[]; setting
 }
 
 function GroupIcon({ which }: { which: string }) {
-  const common = { width: 22, height: 22, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true } as any;
+  const common = { width: 26, height: 26, viewBox: "0 0 24 24", fill: "none", "aria-hidden": true } as any;
   if (which === "water") {
     return <svg {...common}><path d="M12 3s6 6.4 6 10.4A6 6 0 016 13.4C6 9.4 12 3 12 3z" stroke={BLUE} strokeWidth="1.7" strokeLinejoin="round"/></svg>;
   }

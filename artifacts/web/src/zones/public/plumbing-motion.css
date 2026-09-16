@@ -1287,3 +1287,11 @@
   }
   .bps-badge, .bps-quotecard{ animation:none !important }
 }
+
+/* The chevron pill on a grouped service row */
+.bps-grouplink-chev{ transition:background-color .24s ease, transform .3s var(--bps-ease-settle, cubic-bezier(.22,1,.36,1)) }
+.bps-grouplink:hover .bps-grouplink-chev{ background:#0892CF; transform:translateX(3px) }
+.bps-grouplink:hover .bps-grouplink-chev svg{ color:#fff }
+@media (prefers-reduced-motion: reduce){
+  .bps-grouplink-chev{ transition:none !important; transform:none !important }
+}

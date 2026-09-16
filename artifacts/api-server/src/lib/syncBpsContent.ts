@@ -1,5 +1,5 @@
 import { db } from "@workspace/db";
-import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, blogPostsTable } from "@workspace/db";
+import { tenantsTable, tenantSettingsTable, servicesTable, areasTable, blogPostsTable, faqsTable } from "@workspace/db";
 import { and, eq, inArray } from "drizzle-orm";
 import { logger } from "./logger";
 import { BPS_SERVICES, BPS_AREAS } from "./bpsContent";
@@ -21,6 +21,37 @@ import { BPS_POSTS } from "./bpsPosts";
  */
 
 const SLUG = "bps";
+
+/**
+ * A starting set of questions, in the client's own terms.
+ *
+ * Deliberately the ones a homeowner actually asks before ringing -- what it
+ * costs, how fast someone comes, repair or replace -- rather than questions
+ * about the business. Every answer stays inside what the client already claims
+ * on his own site: nothing here invents a guarantee, a price or a response time.
+ */
+const BPS_FAQS = [
+  {
+    q: "Do you cover my area?",
+    a: "We are based in Grays and cover Thurrock and south Essex, including Romford, Hornchurch, Basildon and Brentwood. If you are nearby but unsure, call us with your postcode. For urgent jobs, we will tell you honestly how quickly we can reach you.",
+  },
+  {
+    q: "How much does a new boiler cost?",
+    a: "It depends on the boiler, where it is going and what the system needs. We survey the property, talk you through the options and put a fixed written quote in front of you before any work starts. The quote is free and there is no obligation.",
+  },
+  {
+    q: "Can you help if my boiler has stopped working?",
+    a: "Yes. Tell us what the boiler is doing -- no heating, no hot water, a pressure drop, an error code -- and we will diagnose it and explain the fix and the cost before we carry it out.",
+  },
+  {
+    q: "Should I repair or replace my boiler?",
+    a: "Often a repair is the sensible answer, and we will say so. If a boiler is old enough that repairs are going to keep coming, we will tell you that too, with the numbers, so you can decide rather than be sold to.",
+  },
+  {
+    q: "Are you Gas Safe registered?",
+    a: "Yes. Every gas appliance we work on is handled by a Gas Safe registered engineer, and our workmanship is insured. Ask to see the card on the day -- a good engineer expects to be asked.",
+  },
+];
 
 /** Placeholder slugs from the first seed, superseded by the migrated content. */
 const RETIRED_SERVICE_SLUGS = ["central-heating", "bathrooms", "emergency-plumbing"];
@@ -61,6 +92,26 @@ export async function syncBpsContent(): Promise<void> {
       .set({ heroImageUrl: BOILER_HERO, aboutImageUrl: currentSettings.aboutImageUrl ?? SEEDED_HERO })
       .where(eq(tenantSettingsTable.tenantId, tid));
     logger.info({ tenantId: tid }, "BPS hero moved to the boiler photograph; team photo kept for About");
+  }
+
+  /**
+   * Questions the homepage can answer.
+   *
+   * The FAQ section renders nothing without them, and this tenant had none --
+   * so the page had a hole where the reassurance belongs, and no FAQPage
+   * structured data for Google either.
+   *
+   * Inserted ONLY when the tenant has no global FAQs at all. The moment anyone
+   * adds or edits one from the dashboard this never touches them again: these
+   * are a starting point, not a source of truth.
+   */
+  const existingFaqs = await db.select().from(faqsTable)
+    .where(and(eq(faqsTable.tenantId, tid), eq(faqsTable.global, true))).limit(1);
+  if (!existingFaqs.length) {
+    await db.insert(faqsTable).values(BPS_FAQS.map((f, i) => ({
+      tenantId: tid, question: f.q, answer: f.a, global: true, sortOrder: i + 1,
+    })));
+    logger.info({ tenantId: tid, count: BPS_FAQS.length }, "BPS starter FAQs added");
   }
 
   // ── Services ──────────────────────────────────────────────────────────────
