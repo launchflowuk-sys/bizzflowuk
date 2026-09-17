@@ -3,7 +3,7 @@ import { fetchBrandLogo } from "../lib/brandLogo";
 import { db } from "@workspace/db";
 import {
   invoicesTable, invoiceItemsTable, invoicePaymentsTable,
-  quotesTable, quoteItemsTable, customersTable,
+  quotesTable, quoteItemsTable, customersTable, projectsTable,
   tenantsTable, tenantSettingsTable, priceItemsTable, INVOICE_RECURRENCES,
 } from "@workspace/db";
 import { eq, and, sql, desc, inArray } from "drizzle-orm";
@@ -12,6 +12,7 @@ import { requireTenantAccess } from "../middlewares/auth";
 import { computeTotals, deriveStatus, outstanding } from "../lib/invoices/totals";
 import { nextInvoiceReference } from "../lib/invoices/reference";
 import { firstOccurrenceAfter } from "../lib/invoices/recurring";
+import { ensureCustomerForQuote } from "../lib/customerSync";
 import { callClaude, claudeConfigured, parseJsonReply, ClaudeError } from "../lib/anthropic";
 
 const router = Router();
@@ -135,6 +136,129 @@ async function recalc(invoiceId: number, tenantId: number) {
   }).where(eq(invoicesTable.id, invoiceId)).returning();
 
   return updated;
+}
+
+/** An issue date plus the tenant's payment terms, as a date string. */
+async function dueDateFrom(tenantId: number, issuedOn: string): Promise<string> {
+  const [terms] = await db.select({ days: tenantSettingsTable.paymentDays })
+    .from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, tenantId)).limit(1);
+  const d = new Date(`${issuedOn}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + (terms?.days ?? 14));
+  return d.toISOString().slice(0, 10);
+}
+
+type SendResult =
+  | { ok: true; invoice: any }
+  | { ok: false; status: number; error: string; problems?: string[] };
+
+type Log = { error: (obj: unknown, msg?: string) => void };
+
+/**
+ * Send one invoice: check it is complete, mark it sent, email it, and copy it
+ * to the accounting package. Shared by the Send button, "invoice now" on a
+ * quote, and the job-completed release, so all three behave identically.
+ */
+export async function sendInvoice(id: number, tenantId: number, log: Log): Promise<SendResult> {
+  const [inv] = await db.select().from(invoicesTable)
+    .where(and(eq(invoicesTable.id, id), eq(invoicesTable.tenantId, tenantId))).limit(1);
+  if (!inv) return { ok: false, status: 404, error: "Not found" };
+
+  const items = (await loadItems([id])).get(id) ?? [];
+  const problems: string[] = [];
+  if (!items.length) problems.push("An invoice needs at least one line.");
+  if (!inv.customerId) problems.push("An invoice needs a customer to send it to.");
+  if (Number(inv.total) <= 0) problems.push("The invoice total is zero.");
+  if (problems.length) return { ok: false, status: 422, error: "This invoice is not ready to send", problems };
+
+  await db.update(invoicesTable)
+    .set({ status: "sent", sentAt: inv.sentAt ?? new Date(), sendOnCompletion: false })
+    .where(eq(invoicesTable.id, id));
+
+  const updated = await recalc(id, tenantId);
+
+  // Delivery is fired by the caller's automation config rather than forced here,
+  // so sending is recorded even when email is not configured yet.
+  const { sendInvoiceEmail } = await import("../lib/invoices/deliver");
+  sendInvoiceEmail(id, tenantId).catch(e => log.error({ err: e }, "Invoice email failed"));
+
+  /**
+   * And into their accounting package, if they have linked one.
+   *
+   * Sending is the right moment: a draft has nothing to post, and waiting
+   * for payment would leave the accounts missing everything outstanding —
+   * which is exactly the figure an accountant asks for.
+   *
+   * Best effort and never awaited. The invoice reaching the customer is the
+   * job; the copy reaching Xero is bookkeeping, and a slow accounting API
+   * must not hold up the send. A failure is written onto the invoice itself
+   * by syncInvoice, so it shows up rather than going quiet.
+   */
+  import("../lib/accounting")
+    .then(({ syncInvoice }) => syncInvoice(id, tenantId))
+    .catch(e => log.error({ err: e }, "Accounting push failed"));
+
+  return { ok: true, invoice: { ...updated, items } };
+}
+
+/**
+ * A job was just marked Completed: release the invoices waiting for it.
+ *
+ * "Waiting" = a draft raised from this job's quote with "when the job is
+ * complete". With the tenant's auto-send on, each is dated today and sent.
+ * With it off, the flag is cleared and the invoice sits as an ordinary draft
+ * for the business to check and send. Never throws — completing a job must
+ * not fail because an invoice could not go.
+ */
+export async function releaseInvoicesForJob(
+  job: { id: number; tenantId: number; quoteId: number | null },
+  log: Log,
+): Promise<void> {
+  try {
+    const match = job.quoteId
+      ? sql`(${invoicesTable.projectId} = ${job.id} OR ${invoicesTable.quoteId} = ${job.quoteId})`
+      : eq(invoicesTable.projectId, job.id);
+    const waiting = await db.select({ id: invoicesTable.id }).from(invoicesTable).where(and(
+      eq(invoicesTable.tenantId, job.tenantId),
+      eq(invoicesTable.status, "draft"),
+      eq(invoicesTable.sendOnCompletion, true),
+      match,
+    ));
+    if (!waiting.length) return;
+
+    const [settings] = await db.select({ auto: tenantSettingsTable.autoSendInvoiceOnCompletion })
+      .from(tenantSettingsTable).where(eq(tenantSettingsTable.tenantId, job.tenantId)).limit(1);
+    const auto = settings?.auto ?? true;
+    const today = new Date().toISOString().slice(0, 10);
+
+    const dueOn = await dueDateFrom(job.tenantId, today);
+    for (const { id } of waiting) {
+      /**
+       * Claim it first, in one conditional update. A double-tapped Completed
+       * button fires two releases at once; both see the same waiting draft, but
+       * only one can flip the flag — the other gets no row back and stops, so
+       * the customer is emailed once.
+       */
+      const [claimed] = await db.update(invoicesTable)
+        .set(auto
+          ? { sendOnCompletion: false, projectId: job.id, issuedOn: today, dueOn } // dated the day the work finished
+          : { sendOnCompletion: false, projectId: job.id })
+        .where(and(
+          eq(invoicesTable.id, id),
+          eq(invoicesTable.status, "draft"),
+          eq(invoicesTable.sendOnCompletion, true),
+        ))
+        .returning({ id: invoicesTable.id });
+      if (!claimed || !auto) continue;
+
+      const result = await sendInvoice(id, job.tenantId, log);
+      if (!result.ok) {
+        // Left as a draft so it is visible, never silently dropped.
+        log.error({ invoiceId: id, problems: result.problems }, "Invoice on completion could not be sent");
+      }
+    }
+  } catch (err) {
+    log.error({ err, jobId: job.id }, "Releasing invoices on job completion failed");
+  }
 }
 
 // ── List ─────────────────────────────────────────────────────────────────────
@@ -276,17 +400,45 @@ router.post("/invoices", requireTenantAccess, async (req: any, res) => {
  * The quote's lines carry over so nothing is retyped. Refuses to convert twice —
  * duplicate invoices for one job is the mistake that costs a customer's trust.
  */
+/**
+ * Turn a quote into an invoice.
+ *
+ * `when` says what happens to it:
+ *   "now"           raise it and send it straight away
+ *   "on_completion" raise it as a draft that is released when the job made
+ *                   from this quote is marked Completed
+ *   (absent)        raise a draft and do nothing else — the original behaviour
+ */
+const convertInvoiceSchema = z.object({
+  when: z.enum(["now", "on_completion"]).optional(),
+});
+
 router.post("/quotes/:id/convert-invoice", requireTenantAccess, async (req: any, res) => {
   try {
     const quoteId = Number(req.params.id);
     const tenantId = tid(req);
+    const parsedBody = convertInvoiceSchema.safeParse(req.body ?? {});
+    if (!parsedBody.success) { res.status(400).json({ error: "Choose when to send the invoice" }); return; }
+    const when = parsedBody.data.when;
 
-    const [quote] = await db.select().from(quotesTable)
+    let [quote] = await db.select().from(quotesTable)
       .where(and(eq(quotesTable.id, quoteId), eq(quotesTable.tenantId, tenantId))).limit(1);
     if (!quote) { res.status(404).json({ error: "Not found" }); return; }
 
+    // An invoice is addressed to a customer. A quote raised from a lead may not
+    // have one yet — create it from the lead, the same way accepting does.
+    if (!quote.customerId) {
+      const customerId = await ensureCustomerForQuote(quote.id);
+      if (customerId) quote = { ...quote, customerId };
+    }
+
+    const [job] = await db.select({ id: projectsTable.id, status: projectsTable.status })
+      .from(projectsTable)
+      .where(and(eq(projectsTable.quoteId, quoteId), eq(projectsTable.tenantId, tenantId)))
+      .limit(1);
+
     const [existing] = await db.select().from(invoicesTable)
-      .where(and(eq(invoicesTable.quoteId, quoteId), sql`${invoicesTable.status} <> 'void'`)).limit(1);
+      .where(and(eq(invoicesTable.quoteId, quoteId), eq(invoicesTable.tenantId, tenantId), sql`${invoicesTable.status} <> 'void'`)).limit(1);
     if (existing) {
       res.status(409).json({ error: "This quote has already been invoiced.", invoiceId: existing.id });
       return;
@@ -294,6 +446,10 @@ router.post("/quotes/:id/convert-invoice", requireTenantAccess, async (req: any,
 
     const qItems = await db.select().from(quoteItemsTable)
       .where(eq(quoteItemsTable.quoteId, quoteId)).orderBy(quoteItemsTable.sortOrder);
+    if (!qItems.length) {
+      res.status(422).json({ error: "This quote has no lines to invoice.", problems: ["Add at least one line to the quote first."] });
+      return;
+    }
 
     const tax = await taxSettings(tenantId);
     // The quote's rate only counts if the tenant is actually VAT registered.
@@ -304,16 +460,17 @@ router.post("/quotes/:id/convert-invoice", requireTenantAccess, async (req: any,
     );
 
     const issuedOn = new Date().toISOString().slice(0, 10);
-    const due = new Date(); due.setUTCDate(due.getUTCDate() + 14);
 
     const [inv] = await db.insert(invoicesTable).values({
       tenantId,
       customerId: quote.customerId,
       quoteId: quote.id,
+      projectId: job?.id ?? null,
       reference: await nextInvoiceReference(tenantId),
       status: "draft",
+      sendOnCompletion: when === "on_completion",
       issuedOn,
-      dueOn: due.toISOString().slice(0, 10),
+      dueOn: await dueDateFrom(tenantId, issuedOn),
       vatRate: effectiveVat,
       subtotal: totals.subtotal,
       vatAmount: totals.vatAmount,
@@ -334,8 +491,28 @@ router.post("/quotes/:id/convert-invoice", requireTenantAccess, async (req: any,
       })));
     }
 
+    await recalc(inv.id, tenantId);
+
+    if (when === "now") {
+      const sent = await sendInvoice(inv.id, tenantId, req.log);
+      if (!sent.ok) {
+        // Raised but not sent: say why, and let them fix it on the invoice.
+        const [draft] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id)).limit(1);
+        res.status(201).json({ ...draft, sent: false, sendProblems: sent.problems ?? [sent.error] });
+        return;
+      }
+      res.status(201).json({ ...sent.invoice, sent: true, payments: [] });
+      return;
+    }
+
+    // The job finished before the invoice was raised: release it now.
+    if (when === "on_completion" && job?.status === "Completed") {
+      await releaseInvoicesForJob({ id: job.id, tenantId, quoteId }, req.log);
+    }
+
+    const [fresh] = await db.select().from(invoicesTable).where(eq(invoicesTable.id, inv.id)).limit(1);
     const items = (await loadItems([inv.id])).get(inv.id) ?? [];
-    res.status(201).json({ ...inv, items, payments: [] });
+    res.status(201).json({ ...fresh, items, payments: [], sent: fresh.status === "sent" });
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 
@@ -670,47 +847,12 @@ router.get("/invoices/:id/series", requireTenantAccess, async (req: any, res) =>
 
 router.post("/invoices/:id/send", requireTenantAccess, async (req: any, res) => {
   try {
-    const id = Number(req.params.id);
-    const tenantId = tid(req);
-    const [inv] = await db.select().from(invoicesTable)
-      .where(and(eq(invoicesTable.id, id), eq(invoicesTable.tenantId, tenantId))).limit(1);
-    if (!inv) { res.status(404).json({ error: "Not found" }); return; }
-
-    const items = (await loadItems([id])).get(id) ?? [];
-    const problems: string[] = [];
-    if (!items.length) problems.push("An invoice needs at least one line.");
-    if (!inv.customerId) problems.push("An invoice needs a customer to send it to.");
-    if (Number(inv.total) <= 0) problems.push("The invoice total is zero.");
-    if (problems.length) { res.status(422).json({ error: "This invoice is not ready to send", problems }); return; }
-
-    await db.update(invoicesTable)
-      .set({ status: "sent", sentAt: inv.sentAt ?? new Date() })
-      .where(eq(invoicesTable.id, id));
-
-    const updated = await recalc(id, tenantId);
-
-    // Delivery is fired by the caller's automation config rather than forced here,
-    // so sending is recorded even when email is not configured yet.
-    const { sendInvoiceEmail } = await import("../lib/invoices/deliver");
-    sendInvoiceEmail(id, tenantId).catch(e => req.log.error({ err: e }, "Invoice email failed"));
-
-    /**
-     * And into their accounting package, if they have linked one.
-     *
-     * Sending is the right moment: a draft has nothing to post, and waiting
-     * for payment would leave the accounts missing everything outstanding —
-     * which is exactly the figure an accountant asks for.
-     *
-     * Best effort and never awaited. The invoice reaching the customer is the
-     * job; the copy reaching Xero is bookkeeping, and a slow accounting API
-     * must not hold up the send. A failure is written onto the invoice itself
-     * by syncInvoice, so it shows up rather than going quiet.
-     */
-    import("../lib/accounting")
-      .then(({ syncInvoice }) => syncInvoice(id, tenantId))
-      .catch(e => req.log.error({ err: e }, "Accounting push failed"));
-
-    res.json({ ...updated, items });
+    const result = await sendInvoice(Number(req.params.id), tid(req), req.log);
+    if (!result.ok) {
+      res.status(result.status).json(result.problems ? { error: result.error, problems: result.problems } : { error: result.error });
+      return;
+    }
+    res.json(result.invoice);
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }
 });
 

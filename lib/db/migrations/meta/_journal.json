@@ -407,6 +407,13 @@
       "when": 1789900000000,
       "tag": "0057_gas_safe_badge",
       "breakpoints": true
+    },
+    {
+      "idx": 58,
+      "version": "7",
+      "when": 1790000000000,
+      "tag": "0058_invoice_on_completion",
+      "breakpoints": true
     }
   ]
 }

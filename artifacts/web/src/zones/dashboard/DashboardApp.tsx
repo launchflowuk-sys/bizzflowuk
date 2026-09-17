@@ -48,6 +48,7 @@ import AccountingPanel from "./AccountingPanel";
 import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
 import LeadEnquiryPanel from "./LeadEnquiryPanel";
+import QuoteInvoiceCard from "./QuoteInvoiceCard";
 import { waNumber } from "./leadFields";
 import BillingPage from "./BillingPage";
 import "./workspace-theme.css";
@@ -2714,6 +2715,7 @@ function QuoteDetailPage({ id }: { id: number }) {
               )}
             </div>
           )}
+          <QuoteInvoiceCard quoteId={id} quoteStatus={q.status} />
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <h2 className="font-semibold text-slate-900">Payments</h2>
             {links.length > 0 && (
@@ -2974,7 +2976,7 @@ function ProjectDetailPage({ id }: { id: number }) {
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
             <h2 className="font-semibold text-slate-900">Update Status</h2>
             {["Enquiry", "Survey Booked", "Quote Approved", "Scheduled", "In Progress", "Completed"].map(s => (
-              <button key={s} onClick={() => handleStatusChange(s)} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors ${p.status === s ? "bg-[var(--brand)] text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
+              <button key={s} onClick={() => handleStatusChange(s)} disabled={updateMutation.isPending || p.status === s} className={`w-full text-left px-3 py-2.5 rounded-md text-sm transition-colors disabled:cursor-default ${p.status === s ? "bg-[var(--brand)] text-white font-medium" : "bg-slate-50 text-slate-700 hover:bg-slate-100"}`}>{s}</button>
             ))}
           </div>
           <JobShareCard projectId={id} job={p} />
@@ -4611,6 +4613,23 @@ function SecretBadge({ stored }: { stored: unknown }) {
 }
 
 // ─── Settings ─────────────────────────────────────────────────────────────────
+/**
+ * Settings, in tabs.
+ *
+ * It had grown to twenty sections in one column — a phone scroll of several
+ * metres with the invoice terms somewhere past the SEO box. Grouped by what a
+ * person came to change. One form and one Save still cover every tab, so
+ * switching tabs never loses an edit.
+ */
+const SETTINGS_TABS = [
+  { key: "business", label: "Your business", hint: "Contact, branding, domain" },
+  { key: "website", label: "Website", hint: "Homepage, SEO, reviews" },
+  { key: "money", label: "Invoices & payments", hint: "Invoices, bank, tax, cards" },
+  { key: "notifications", label: "Notifications", hint: "Who hears about what" },
+  { key: "connections", label: "Email & SMS", hint: "Mail server, Twilio" },
+] as const;
+type SettingsTab = typeof SETTINGS_TABS[number]["key"];
+
 function SettingsPage() {
   const { data: settings, isLoading } = useGetSettings();
   const updateMutation = useUpdateSettings();
@@ -4625,6 +4644,17 @@ function SettingsPage() {
   const [googleSync, setGoogleSync] = useState<{ busy: boolean; message: string | null }>({ busy: false, message: null });
   const [emailTestResult, setEmailTestResult] = useState<{ ok: boolean; error?: string | null } | null>(null);
   const [smsTestResult, setSmsTestResult] = useState<{ ok: boolean; error?: string | null } | null>(null);
+  const [tab, setTab] = useState<SettingsTab>(() => {
+    const asked = new URLSearchParams(window.location.search).get("tab");
+    return SETTINGS_TABS.some(t => t.key === asked) ? (asked as SettingsTab) : "business";
+  });
+  // Kept in the address so a link can open a tab (the invoice card links to Invoices & payments).
+  const chooseTab = (key: SettingsTab) => {
+    setTab(key);
+    const url = new URL(window.location.href);
+    url.searchParams.set("tab", key);
+    window.history.replaceState(null, "", url.toString());
+  };
 
   const s = settings as any;
   if (!form && s) setForm(s);
@@ -4689,413 +4719,465 @@ function SettingsPage() {
   );
 
   return (
-    <div className="p-4 sm:p-6 max-w-2xl">
-      <h1 className="text-xl sm:text-2xl font-bold text-slate-900 mb-6">Settings</h1>
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Custom Domain</h2>
-          {field("customDomain", "Your Domain", "text", "e.g. www.amorendering.co.uk — add a CNAME DNS record pointing to bizzflowuk.com")}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Branding</h2>
-          {field("primaryColor", "Primary Colour", "color")}
-          {field("logoUrl", "Logo URL", "text", "Full URL to your logo image (shown in the site header)")}
-          {field("faviconUrl", "Favicon URL", "text", "URL to your browser tab icon — paste the full URL to a PNG or ICO file (ideally 64×64px)")}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Hero Section</h2>
-          {field("heroHeadline", "Hero Headline")}
-          <div>
-            <label className={labelCls}>Hero Subheadline</label>
-            <textarea rows={3} className={inputCls} value={form.heroSubheadline || ""} onChange={e => setForm({ ...form, heroSubheadline: e.target.value })} />
+    <div className="p-4 sm:p-6 max-w-6xl">
+      <div className="mb-5">
+        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Settings</h1>
+        <p className="text-sm text-slate-500 mt-1">How your business appears, gets paid and keeps customers informed.</p>
+      </div>
+      <div className="lg:grid lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-8">
+        <nav aria-label="Settings sections" className="-mx-4 mb-5 overflow-x-auto px-4 lg:mx-0 lg:mb-0 lg:overflow-visible lg:px-0">
+          <div role="tablist" aria-orientation="vertical" className="flex gap-2 lg:sticky lg:top-24 lg:flex-col lg:gap-1">
+            {SETTINGS_TABS.map(t => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={tab === t.key}
+                onClick={() => chooseTab(t.key)}
+                className={`shrink-0 whitespace-nowrap rounded-lg px-3.5 py-2.5 text-left text-sm font-medium transition-colors ${tab === t.key ? "bg-[var(--brand)] text-white shadow-sm" : "bg-white text-slate-600 ring-1 ring-slate-200 hover:bg-slate-50 lg:bg-transparent lg:ring-0"}`}
+              >
+                <span className="block">{t.label}</span>
+                <span className={`hidden lg:block text-xs font-normal ${tab === t.key ? "text-white/80" : "text-slate-400"}`}>{t.hint}</span>
+              </button>
+            ))}
           </div>
-          {field("ctaText", "CTA Button Text")}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Contact Information</h2>
-          {field("phone", "Phone")}
-          {field("email", "Public Email")}
-          {/* The column has existed since migration 0037; there was never a
-              field to type it into, so the floating WhatsApp button could not
-              appear for anyone. It only renders for a number that can actually
-              receive WhatsApp — a landline is skipped rather than shown as a
-              chat that will never be answered. */}
-          {field("whatsappNumber", "WhatsApp Number", "text",
-                 "A mobile that can receive WhatsApp, e.g. 07700 900123. Leave blank to hide the WhatsApp button.")}
-          {field("address", "Address")}
-          {field("city", "City")}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Where You Work</h2>
-          <p className="text-xs text-slate-500 -mt-2">These two drive the wording across your public website — headings, page copy and search listings. They are separate from the postal address above.</p>
-          {field("serviceBase", "Based In", "text", "The town you work out of, e.g. Grays, Thurrock")}
-          {field("serviceArea", "Areas You Cover", "text", "The region you sell into, e.g. Essex & London")}
-        </div>
-        <AccountingPanel />
-
-        {/*
-          Tax and bank details.
-
-          vat_registered, cis_registered, invoice_terms and payment_days have
-          been in the database since migration 0032 with nowhere to type them.
-          The invoice engine has always read them — so a VAT-registered trade
-          had no way to say so, and every invoice the platform sent went out
-          with no VAT on it and no bank details to pay it into.
-        */}
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Tax</h2>
-            <p className="text-xs text-slate-500 mt-1">Drives what appears on every quote and invoice. Leave both off if neither applies to you.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <input type="checkbox" id="vatRegistered" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]"
-              checked={!!form.vatRegistered} onChange={e => setForm({ ...form, vatRegistered: e.target.checked })} />
-            <label htmlFor="vatRegistered" className="text-sm font-medium text-slate-700">I am VAT registered</label>
-          </div>
-          {form.vatRegistered && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7">
-              {field("vatNumber", "VAT Number", "text", "Shown on the invoice, e.g. GB123456789")}
+        </nav>
+      <form onSubmit={handleSubmit} className="space-y-5 min-w-0">
+        {tab === "business" && (
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Contact Information</h2>
+              {field("phone", "Phone")}
+              {field("email", "Public Email")}
+              {/* The column has existed since migration 0037; there was never a
+                  field to type it into, so the floating WhatsApp button could not
+                  appear for anyone. It only renders for a number that can actually
+                  receive WhatsApp — a landline is skipped rather than shown as a
+                  chat that will never be answered. */}
+              {field("whatsappNumber", "WhatsApp Number", "text",
+                     "A mobile that can receive WhatsApp, e.g. 07700 900123. Leave blank to hide the WhatsApp button.")}
+              {field("address", "Address")}
+              {field("city", "City")}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Where You Work</h2>
+              <p className="text-xs text-slate-500 -mt-2">These two drive the wording across your public website — headings, page copy and search listings. They are separate from the postal address above.</p>
+              {field("serviceBase", "Based In", "text", "The town you work out of, e.g. Grays, Thurrock")}
+              {field("serviceArea", "Areas You Cover", "text", "The region you sell into, e.g. Essex & London")}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Branding</h2>
+              {field("primaryColor", "Primary Colour", "color")}
+              {field("logoUrl", "Logo URL", "text", "Full URL to your logo image (shown in the site header)")}
+              {field("faviconUrl", "Favicon URL", "text", "URL to your browser tab icon — paste the full URL to a PNG or ICO file (ideally 64×64px)")}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Custom Domain</h2>
+              {field("customDomain", "Your Domain", "text", "e.g. www.amorendering.co.uk — add a CNAME DNS record pointing to bizzflowuk.com")}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Social Media</h2>
+              {field("facebookUrl", "Facebook URL")}
+              {field("instagramUrl", "Instagram URL")}
+              {field("twitterUrl", "Twitter/X URL")}
+            </div>
+          </>
+        )}
+        {tab === "website" && (
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Hero Section</h2>
+              {field("heroHeadline", "Hero Headline")}
               <div>
-                <label className={labelCls}>VAT Rate (%)</label>
-                <input type="number" step="0.01" className={inputCls} value={form.vatRate ?? "20"}
-                  onChange={e => setForm({ ...form, vatRate: e.target.value })} />
-                <p className="text-xs text-slate-400 mt-1">20% standard. A line can still be zero-rated on its own.</p>
+                <label className={labelCls}>Hero Subheadline</label>
+                <textarea rows={3} className={inputCls} value={form.heroSubheadline || ""} onChange={e => setForm({ ...form, heroSubheadline: e.target.value })} />
+              </div>
+              {field("ctaText", "CTA Button Text")}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">SEO</h2>
+              {field("seoTitle", "SEO Title")}
+              <div>
+                <label className={labelCls}>SEO Description</label>
+                <textarea rows={3} className={inputCls} value={form.seoDescription || ""} onChange={e => setForm({ ...form, seoDescription: e.target.value })} />
+              </div>
+              {field("googleAnalyticsId", "Google Analytics ID", "text", "GA4 Measurement ID, e.g. G-XXXXXXXXXX")}
+              {field("googleAdsConversionId", "Google Ads Conversion ID", "text", "e.g. AW-XXXXXXXXX — used to track quote-request conversions for ad campaigns")}
+              {field("googleAdsConversionLabel", "Google Ads Conversion Label", "text", "The conversion label from your Google Ads conversion action")}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Google reviews</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Show your Google reviews on your own website. Paste your Place ID and they appear automatically,
+                  refreshed daily. Google returns a maximum of five individual reviews — that is their limit, not
+                  ours — but your overall rating and total review count are shown in full.
+                </p>
+              </div>
+              {field("googlePlaceId", "Google Place ID",
+                     "text", "From your Google Business profile, e.g. ChIJ… . Find it at developers.google.com/maps/documentation/places/web-service/place-id")}
+              {s?.googleReviewsSyncedAt && (
+                <p className="text-xs text-slate-500">
+                  Last pulled {new Date(s.googleReviewsSyncedAt).toLocaleString("en-GB")}
+                  {s.googleRating ? ` — ${s.googleRating} from ${s.googleReviewCount ?? 0} reviews` : ""}
+                </p>
+              )}
+              <div className="flex items-center gap-3 flex-wrap">
+                <button
+                  type="button"
+                  disabled={googleSync.busy || !form.googlePlaceId}
+                  onClick={async () => {
+                    setGoogleSync({ busy: true, message: null });
+                    try {
+                      const token = getStoredToken();
+                      const res = await fetch("/api/reviews/sync-google", {
+                        method: "POST",
+                        headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
+                      });
+                      const data = await res.json().catch(() => ({}));
+                      setGoogleSync({
+                        busy: false,
+                        message: res.ok
+                          ? `Pulled ${data.imported ?? 0} review${data.imported === 1 ? "" : "s"}.`
+                          : (data.error || "Could not pull your reviews."),
+                      });
+                    } catch {
+                      setGoogleSync({ busy: false, message: "Could not reach Google just now." });
+                    }
+                  }}
+                  className="inline-flex h-9 items-center rounded-md bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50"
+                >
+                  {googleSync.busy ? "Pulling…" : "Pull my reviews now"}
+                </button>
+                {googleSync.message && <span className="text-xs text-slate-600">{googleSync.message}</span>}
+              </div>
+              <p className="text-xs text-slate-400">
+                Save the Place ID first, then pull. Reviews refresh on their own every day after that.
+              </p>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Legal Pages</h2>
+                <p className="text-xs text-slate-500 mt-1">Your site already publishes a solid default Terms &amp; Conditions and Privacy Policy for a UK rendering business, linked in the footer and referenced on the quote form and payment pages. Leave these blank to use the default, or paste your own wording to replace it entirely.</p>
+              </div>
+              <div>
+                <label className={labelCls}>Custom Terms &amp; Conditions (optional)</label>
+                <textarea rows={6} className={inputCls} placeholder="Leave blank to use the default Terms & Conditions" value={form.termsContent || ""} onChange={e => setForm({ ...form, termsContent: e.target.value })} />
+              </div>
+              <div>
+                <label className={labelCls}>Custom Privacy Policy (optional)</label>
+                <textarea rows={6} className={inputCls} placeholder="Leave blank to use the default Privacy Policy" value={form.privacyContent || ""} onChange={e => setForm({ ...form, privacyContent: e.target.value })} />
               </div>
             </div>
-          )}
-
-          <div className="flex items-center gap-3 pt-2">
-            <input type="checkbox" id="cisRegistered" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]"
-              checked={!!form.cisRegistered} onChange={e => setForm({ ...form, cisRegistered: e.target.checked })} />
-            <label htmlFor="cisRegistered" className="text-sm font-medium text-slate-700">I work under CIS (Construction Industry Scheme)</label>
-          </div>
-          {form.cisRegistered && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7">
-              {field("cisUtr", "UTR Number", "text", "Your Unique Taxpayer Reference")}
+          </>
+        )}
+        {tab === "money" && (
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
               <div>
-                <label className={labelCls}>Deduction Rate (%)</label>
-                <input type="number" step="0.01" className={inputCls} value={form.cisRate ?? "20"}
-                  onChange={e => setForm({ ...form, cisRate: e.target.value })} />
-                <p className="text-xs text-slate-400 mt-1">20% if verified, 30% if not. Deducted from the invoice total.</p>
+                <h2 className="font-semibold text-slate-900">Invoices</h2>
+                <p className="text-xs text-slate-500 mt-1">For invoices you raise from a quote &ldquo;for when the job is complete&rdquo;.</p>
               </div>
+              <label className="flex items-start justify-between gap-4 cursor-pointer">
+                <span>
+                  <span className="block text-sm font-medium text-slate-800">Send the invoice automatically when I mark the job complete</span>
+                  <span className="block text-xs text-slate-500 mt-0.5">Off: the invoice waits as a draft so you can check it and send it yourself.</span>
+                </span>
+                <input type="checkbox" role="switch" className="mt-1 h-5 w-5 shrink-0 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]"
+                  checked={form.autoSendInvoiceOnCompletion ?? true}
+                  onChange={e => setForm({ ...form, autoSendInvoiceOnCompletion: e.target.checked })} />
+              </label>
             </div>
-          )}
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Getting Paid</h2>
-            <p className="text-xs text-slate-500 mt-1">Printed on every invoice. Without these, an invoice tells the customer what they owe and nothing about where to send it.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="col-span-1 sm:col-span-2">{field("bankAccountName", "Account Name", "text", "The name on the account, as your bank has it")}</div>
-            <div className="col-span-1 sm:col-span-2">{field("bankName", "Bank", "text", "e.g. Barclays, Starling")}</div>
-            {field("bankSortCode", "Sort Code", "text", "e.g. 20-00-00")}
-            {field("bankAccountNumber", "Account Number", "text", "8 digits")}
-            <div>
-              <label className={labelCls}>Days To Pay</label>
-              <input type="number" className={inputCls} value={form.paymentDays ?? 14}
-                onChange={e => setForm({ ...form, paymentDays: Number(e.target.value) })} />
-              <p className="text-xs text-slate-400 mt-1">The due date a new invoice starts with. 14 is the trade norm.</p>
-            </div>
-          </div>
-          <div>
-            <label className={labelCls}>Payment Instructions</label>
-            <textarea rows={2} className={inputCls} value={form.paymentInstructions || ""}
-              placeholder="Please quote the invoice number as the reference. We also take card on the day."
-              onChange={e => setForm({ ...form, paymentInstructions: e.target.value })} />
-            <p className="text-xs text-slate-400 mt-1">Anything else the customer needs to know to pay you.</p>
-          </div>
-          <div>
-            <label className={labelCls}>Default Invoice Terms</label>
-            <textarea rows={2} className={inputCls} value={form.invoiceTerms || ""}
-              placeholder="Payment due within 14 days of the invoice date."
-              onChange={e => setForm({ ...form, invoiceTerms: e.target.value })} />
-            <p className="text-xs text-slate-400 mt-1">Used on every invoice unless you override it on that one.</p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Email Notifications</h2>
-          {field("adminNotificationEmail", "Admin Notification Email", "email", "Receives emails when a lead/quote/contact form is submitted")}
-          {field("customerEmail", "Customer Confirmation Email", "email", "Shown to customers as your contact email in confirmation messages")}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Email Server (SMTP)</h2>
-            <p className="text-xs text-slate-500 mt-1">Connect your own mail server so notifications send from your domain.</p>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="col-span-1 sm:col-span-2">{field("smtpHost", "Mail Server Host", "text", "e.g. mail.yourdomain.com or smtp.office365.com")}</div>
-            <div>
-              <label className={labelCls}>Port</label>
-              <input type="number" className={inputCls} value={form.smtpPort ?? 587} onChange={e => setForm({ ...form, smtpPort: Number(e.target.value) })} />
-              <p className="text-xs text-slate-400 mt-1">Usually 587 (STARTTLS) or 465 (SSL)</p>
-            </div>
-            <div className="flex items-center gap-3 sm:pt-6">
-              <input type="checkbox" id="smtpSecure" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form.smtpSecure} onChange={e => setForm({ ...form, smtpSecure: e.target.checked })} />
-              <label htmlFor="smtpSecure" className="text-sm font-medium text-slate-700">Use SSL/TLS (port 465)</label>
-            </div>
-            <div>{field("smtpUser", "Username / Email", "email", "Usually your full email address")}</div>
-            <div>
-              <label className={labelCls}>Password<SecretBadge stored={s?.smtpPass} /></label>
-              <input type="password" className={inputCls} placeholder={s?.smtpPass === "" ? "•••••••• saved — leave blank to keep" : "Enter password"} value={smtpPass} onChange={e => setSmtpPass(e.target.value)} autoComplete="new-password" />
-              <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved password</p>
-            </div>
-            <div className="col-span-1 sm:col-span-2">{field("smtpFrom", "From Address", "text", `e.g. Your Business Name <info@yourbusiness.co.uk>`)}</div>
-          </div>
-          <div className="flex items-center gap-3 flex-wrap">
-            <button type="button" onClick={handleTestEmail} disabled={testEmailMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {testEmailMutation.isPending ? "Sending..." : "Send Test Email"}
-            </button>
-            {emailTestResult && (
-              <span className={`text-sm font-medium ${emailTestResult.ok ? "text-green-600" : "text-red-600"}`}>
-                {emailTestResult.ok ? "✓ Test email sent!" : `✕ ${emailTestResult.error}`}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">SMS Notifications (Twilio)</h2>
-            <p className="text-xs text-slate-500 mt-1">Optional — connect Twilio to send SMS notifications.</p>
-          </div>
-          {field("twilioAccountSid", "Account SID")}
-          <div>
-            <label className={labelCls}>Auth Token<SecretBadge stored={s?.twilioAuthToken} /></label>
-            <input type="password" className={inputCls} placeholder={s?.twilioAuthToken === "" ? "•••••••• saved — leave blank to keep" : "Enter auth token"} value={twilioAuthToken} onChange={e => setTwilioAuthToken(e.target.value)} autoComplete="new-password" />
-            <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved token</p>
-          </div>
-          {field("twilioFromNumber", "From Number", "text", "e.g. +447700000000")}
-          {field("adminNotificationPhone", "Admin Notification Phone", "text", "Receives SMS when a lead/quote is submitted")}
-          <div className="flex items-center gap-3 flex-wrap">
-            <button type="button" onClick={handleTestSms} disabled={testSmsMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
-              {testSmsMutation.isPending ? "Sending..." : "Send Test SMS"}
-            </button>
-            {smsTestResult && (
-              <span className={`text-sm font-medium ${smsTestResult.ok ? "text-green-600" : "text-red-600"}`}>
-                {smsTestResult.ok ? "✓ Test SMS sent!" : `✕ ${smsTestResult.error}`}
-              </span>
-            )}
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Google reviews</h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Show your Google reviews on your own website. Paste your Place ID and they appear automatically,
-              refreshed daily. Google returns a maximum of five individual reviews — that is their limit, not
-              ours — but your overall rating and total review count are shown in full.
-            </p>
-          </div>
-          {field("googlePlaceId", "Google Place ID",
-                 "text", "From your Google Business profile, e.g. ChIJ… . Find it at developers.google.com/maps/documentation/places/web-service/place-id")}
-          {s?.googleReviewsSyncedAt && (
-            <p className="text-xs text-slate-500">
-              Last pulled {new Date(s.googleReviewsSyncedAt).toLocaleString("en-GB")}
-              {s.googleRating ? ` — ${s.googleRating} from ${s.googleReviewCount ?? 0} reviews` : ""}
-            </p>
-          )}
-          <div className="flex items-center gap-3 flex-wrap">
-            <button
-              type="button"
-              disabled={googleSync.busy || !form.googlePlaceId}
-              onClick={async () => {
-                setGoogleSync({ busy: true, message: null });
-                try {
-                  const token = getStoredToken();
-                  const res = await fetch("/api/reviews/sync-google", {
-                    method: "POST",
-                    headers: { "content-type": "application/json", ...(token ? { authorization: `Bearer ${token}` } : {}) },
-                  });
-                  const data = await res.json().catch(() => ({}));
-                  setGoogleSync({
-                    busy: false,
-                    message: res.ok
-                      ? `Pulled ${data.imported ?? 0} review${data.imported === 1 ? "" : "s"}.`
-                      : (data.error || "Could not pull your reviews."),
-                  });
-                } catch {
-                  setGoogleSync({ busy: false, message: "Could not reach Google just now." });
-                }
-              }}
-              className="inline-flex h-9 items-center rounded-md bg-brand-500 px-4 text-sm font-medium text-white hover:bg-brand-400 disabled:opacity-50"
-            >
-              {googleSync.busy ? "Pulling…" : "Pull my reviews now"}
-            </button>
-            {googleSync.message && <span className="text-xs text-slate-600">{googleSync.message}</span>}
-          </div>
-          <p className="text-xs text-slate-400">
-            Save the Place ID first, then pull. Reviews refresh on their own every day after that.
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Card payments</h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Take card payments on your quotes and invoices. Connect your own Square or Stripe account —
-              the money goes straight to you and BizzFlow never sits in the middle of it.
-            </p>
-          </div>
-          <div>
-            <label className={labelCls}>Which one do you use?</label>
-            <select className={inputCls} value={form.paymentProvider ?? ""} onChange={e => setForm({ ...form, paymentProvider: e.target.value || null })}>
-              {/* Blank is not "none" — it means work it out from whichever set of
-                  credentials is complete, which is how every tenant that existed
-                  before Stripe keeps working without touching this page. */}
-              <option value="">Work it out automatically</option>
-              <option value="square">Square</option>
-              <option value="stripe">Stripe</option>
-            </select>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Stripe</h2>
-            <p className="text-xs text-slate-500 mt-1">
-              From your Stripe dashboard under Developers → API keys. Test keys (<code>pk_test</code> /
-              <code>sk_test</code>) take no real money; live keys do. Both halves must be from the same
-              set — a live publishable key with a test secret key is refused, because that combination
-              only fails at the till.
-            </p>
-          </div>
-          {field("stripePublishableKey", "Publishable key")}
-          <div>
-            <label className={labelCls}>Secret key<SecretBadge stored={s?.stripeSecretKey} /></label>
-            <input type="password" className={inputCls}
-              placeholder={s?.stripeSecretKey === "" ? "•••••••• saved — leave blank to keep" : "sk_live_… or sk_test_…"}
-              value={stripeSecretKey} onChange={e => setStripeSecretKey(e.target.value)} autoComplete="new-password" />
-            <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved key. It never leaves the server.</p>
-          </div>
-        </div>
-
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Square</h2>
-            <p className="text-xs text-slate-500 mt-1">Sandbox and production use different credentials — update all three fields when you switch.</p>
-          </div>
-          {form.squareEnvironment === "sandbox" && (
-            <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 inline-block">Sandbox mode — no real charges will be made</p>
-          )}
-          <div>
-            <label className={labelCls}>Environment</label>
-            <select className={inputCls} value={form.squareEnvironment ?? "sandbox"} onChange={e => setForm({ ...form, squareEnvironment: e.target.value })}>
-              <option value="sandbox">Sandbox (testing)</option>
-              <option value="production">Production (real charges)</option>
-            </select>
-          </div>
-          {field("squareApplicationId", "Application ID")}
-          {field("squareLocationId", "Location ID")}
-          <div>
-            <label className={labelCls}>Access Token<SecretBadge stored={s?.squareAccessToken} /></label>
-            <input type="password" className={inputCls} placeholder={s?.squareAccessToken === "" ? "•••••••• saved — leave blank to keep" : "Enter access token"} value={squareAccessToken} onChange={e => setSquareAccessToken(e.target.value)} autoComplete="new-password" />
-            <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved token</p>
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Notification Events</h2>
-          <p className="text-xs text-slate-500">Choose which events trigger email and/or SMS notifications.</p>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
-                <th className="text-left py-2 pr-4">Event</th><th className="text-center py-2 px-3">Email</th><th className="text-center py-2 px-3">SMS</th><th className="text-left py-2 pl-3">Recipient</th>
-              </tr></thead>
-              <tbody className="divide-y divide-slate-50">
-                {[
-                  { emailKey: "notifyLeadNewEmail", smsKey: "notifyLeadNewSms", label: "New lead submitted", recipient: "Admin alert + customer acknowledgement" },
-                  { emailKey: "notifySurveyBookedEmail", smsKey: "notifySurveyBookedSms", label: "Survey booked", recipient: "Customer" },
-                  { emailKey: "notifyQuoteSentEmail", smsKey: "notifyQuoteSentSms", label: "Quote sent", recipient: "Customer" },
-                  { emailKey: "notifyQuoteAcceptedEmail", smsKey: "notifyQuoteAcceptedSms", label: "Quote accepted", recipient: "Admin alert" },
-                  { emailKey: "notifyPaymentReceivedEmail", smsKey: "notifyPaymentReceivedSms", label: "Payment received", recipient: "Admin alert + customer receipt" },
-                  { emailKey: "notifyLeadWonEmail", smsKey: "notifyLeadWonSms", label: "Lead won / job confirmed", recipient: "Customer" },
-                  { emailKey: "notifyProjectInProgressEmail", smsKey: "notifyProjectInProgressSms", label: "Job started (In Progress)", recipient: "Customer" },
-                  { emailKey: "notifyProjectCompleteEmail", smsKey: "notifyProjectCompleteSms", label: "Job completed", recipient: "Customer" },
-                ].map(row => (
-                  <tr key={row.emailKey} className="text-sm">
-                    <td className="py-2.5 pr-4 text-slate-700">{row.label}</td>
-                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form[row.emailKey]} onChange={e => setForm({ ...form, [row.emailKey]: e.target.checked })} /></td>
-                    <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form[row.smsKey]} onChange={e => setForm({ ...form, [row.smsKey]: e.target.checked })} /></td>
-                    <td className="py-2.5 pl-3 text-slate-500 text-xs">{row.recipient}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Review Requests</h2>
-            <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review after a project completes.</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <input type="checkbox" id="reviewEnabled" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
-            <label htmlFor="reviewEnabled" className="text-sm font-medium text-slate-700">Enable automatic review requests</label>
-          </div>
-          {form.reviewRequestEnabled && (
-            <>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Getting Paid</h2>
+                <p className="text-xs text-slate-500 mt-1">Printed on every invoice. Without these, an invoice tells the customer what they owe and nothing about where to send it.</p>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="col-span-1 sm:col-span-2">{field("bankAccountName", "Account Name", "text", "The name on the account, as your bank has it")}</div>
+                <div className="col-span-1 sm:col-span-2">{field("bankName", "Bank", "text", "e.g. Barclays, Starling")}</div>
+                {field("bankSortCode", "Sort Code", "text", "e.g. 20-00-00")}
+                {field("bankAccountNumber", "Account Number", "text", "8 digits")}
                 <div>
-                  <label className={labelCls}>Delay (hours after completion)</label>
-                  <input type="number" min={1} className={inputCls} value={form.reviewRequestDelayHours ?? 24} onChange={e => setForm({ ...form, reviewRequestDelayHours: Number(e.target.value) })} />
-                </div>
-                <div>
-                  <label className={labelCls}>Send via</label>
-                  <select className={inputCls} value={form.reviewRequestChannel || "both"} onChange={e => setForm({ ...form, reviewRequestChannel: e.target.value })}>
-                    <option value="email">Email only</option>
-                    <option value="sms">SMS only</option>
-                    <option value="both">Email + SMS</option>
-                  </select>
+                  <label className={labelCls}>Days To Pay</label>
+                  <input type="number" className={inputCls} value={form.paymentDays ?? 14}
+                    onChange={e => setForm({ ...form, paymentDays: Number(e.target.value) })} />
+                  <p className="text-xs text-slate-400 mt-1">The due date a new invoice starts with. 14 is the trade norm.</p>
                 </div>
               </div>
-              {field("reviewPlatformUrl", "Review Platform URL", "text", "e.g. https://g.page/r/your-business/review — where customers go to leave a review")}
               <div>
-                <label className={labelCls}>Custom Message (optional)</label>
-                <textarea rows={5} className={inputCls} placeholder="Leave blank to use the default message. Use {name} for the customer's first name and {reviewUrl} for the review link." value={form.reviewRequestTemplate || ""} onChange={e => setForm({ ...form, reviewRequestTemplate: e.target.value })} />
-                <p className="text-xs text-slate-400 mt-1">If blank, a professional default message is used.</p>
+                <label className={labelCls}>Payment Instructions</label>
+                <textarea rows={2} className={inputCls} value={form.paymentInstructions || ""}
+                  placeholder="Please quote the invoice number as the reference. We also take card on the day."
+                  onChange={e => setForm({ ...form, paymentInstructions: e.target.value })} />
+                <p className="text-xs text-slate-400 mt-1">Anything else the customer needs to know to pay you.</p>
               </div>
-            </>
-          )}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">Social Media</h2>
-          {field("facebookUrl", "Facebook URL")}
-          {field("instagramUrl", "Instagram URL")}
-          {field("twitterUrl", "Twitter/X URL")}
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <div>
-            <h2 className="font-semibold text-slate-900">Legal Pages</h2>
-            <p className="text-xs text-slate-500 mt-1">Your site already publishes a solid default Terms &amp; Conditions and Privacy Policy for a UK rendering business, linked in the footer and referenced on the quote form and payment pages. Leave these blank to use the default, or paste your own wording to replace it entirely.</p>
-          </div>
-          <div>
-            <label className={labelCls}>Custom Terms &amp; Conditions (optional)</label>
-            <textarea rows={6} className={inputCls} placeholder="Leave blank to use the default Terms & Conditions" value={form.termsContent || ""} onChange={e => setForm({ ...form, termsContent: e.target.value })} />
-          </div>
-          <div>
-            <label className={labelCls}>Custom Privacy Policy (optional)</label>
-            <textarea rows={6} className={inputCls} placeholder="Leave blank to use the default Privacy Policy" value={form.privacyContent || ""} onChange={e => setForm({ ...form, privacyContent: e.target.value })} />
-          </div>
-        </div>
-        <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
-          <h2 className="font-semibold text-slate-900">SEO</h2>
-          {field("seoTitle", "SEO Title")}
-          <div>
-            <label className={labelCls}>SEO Description</label>
-            <textarea rows={3} className={inputCls} value={form.seoDescription || ""} onChange={e => setForm({ ...form, seoDescription: e.target.value })} />
-          </div>
-          {field("googleAnalyticsId", "Google Analytics ID", "text", "GA4 Measurement ID, e.g. G-XXXXXXXXXX")}
-          {field("googleAdsConversionId", "Google Ads Conversion ID", "text", "e.g. AW-XXXXXXXXX — used to track quote-request conversions for ad campaigns")}
-          {field("googleAdsConversionLabel", "Google Ads Conversion Label", "text", "The conversion label from your Google Ads conversion action")}
-        </div>
-        <div className="flex items-center gap-4 pb-4">
+              <div>
+                <label className={labelCls}>Default Invoice Terms</label>
+                <textarea rows={2} className={inputCls} value={form.invoiceTerms || ""}
+                  placeholder="Payment due within 14 days of the invoice date."
+                  onChange={e => setForm({ ...form, invoiceTerms: e.target.value })} />
+                <p className="text-xs text-slate-400 mt-1">Used on every invoice unless you override it on that one.</p>
+              </div>
+            </div>
+            {/*
+              Tax and bank details.
+
+              vat_registered, cis_registered, invoice_terms and payment_days have
+              been in the database since migration 0032 with nowhere to type them.
+              The invoice engine has always read them — so a VAT-registered trade
+              had no way to say so, and every invoice the platform sent went out
+              with no VAT on it and no bank details to pay it into.
+            */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Tax</h2>
+                <p className="text-xs text-slate-500 mt-1">Drives what appears on every quote and invoice. Leave both off if neither applies to you.</p>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="vatRegistered" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]"
+                  checked={!!form.vatRegistered} onChange={e => setForm({ ...form, vatRegistered: e.target.checked })} />
+                <label htmlFor="vatRegistered" className="text-sm font-medium text-slate-700">I am VAT registered</label>
+              </div>
+              {form.vatRegistered && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7">
+                  {field("vatNumber", "VAT Number", "text", "Shown on the invoice, e.g. GB123456789")}
+                  <div>
+                    <label className={labelCls}>VAT Rate (%)</label>
+                    <input type="number" step="0.01" className={inputCls} value={form.vatRate ?? "20"}
+                      onChange={e => setForm({ ...form, vatRate: e.target.value })} />
+                    <p className="text-xs text-slate-400 mt-1">20% standard. A line can still be zero-rated on its own.</p>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex items-center gap-3 pt-2">
+                <input type="checkbox" id="cisRegistered" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]"
+                  checked={!!form.cisRegistered} onChange={e => setForm({ ...form, cisRegistered: e.target.checked })} />
+                <label htmlFor="cisRegistered" className="text-sm font-medium text-slate-700">I work under CIS (Construction Industry Scheme)</label>
+              </div>
+              {form.cisRegistered && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pl-7">
+                  {field("cisUtr", "UTR Number", "text", "Your Unique Taxpayer Reference")}
+                  <div>
+                    <label className={labelCls}>Deduction Rate (%)</label>
+                    <input type="number" step="0.01" className={inputCls} value={form.cisRate ?? "20"}
+                      onChange={e => setForm({ ...form, cisRate: e.target.value })} />
+                    <p className="text-xs text-slate-400 mt-1">20% if verified, 30% if not. Deducted from the invoice total.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+            <AccountingPanel />
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Card payments</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  Take card payments on your quotes and invoices. Connect your own Square or Stripe account —
+                  the money goes straight to you and BizzFlow never sits in the middle of it.
+                </p>
+              </div>
+              <div>
+                <label className={labelCls}>Which one do you use?</label>
+                <select className={inputCls} value={form.paymentProvider ?? ""} onChange={e => setForm({ ...form, paymentProvider: e.target.value || null })}>
+                  {/* Blank is not "none" — it means work it out from whichever set of
+                      credentials is complete, which is how every tenant that existed
+                      before Stripe keeps working without touching this page. */}
+                  <option value="">Work it out automatically</option>
+                  <option value="square">Square</option>
+                  <option value="stripe">Stripe</option>
+                </select>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Stripe</h2>
+                <p className="text-xs text-slate-500 mt-1">
+                  From your Stripe dashboard under Developers → API keys. Test keys (<code>pk_test</code> /
+                  <code>sk_test</code>) take no real money; live keys do. Both halves must be from the same
+                  set — a live publishable key with a test secret key is refused, because that combination
+                  only fails at the till.
+                </p>
+              </div>
+              {field("stripePublishableKey", "Publishable key")}
+              <div>
+                <label className={labelCls}>Secret key<SecretBadge stored={s?.stripeSecretKey} /></label>
+                <input type="password" className={inputCls}
+                  placeholder={s?.stripeSecretKey === "" ? "•••••••• saved — leave blank to keep" : "sk_live_… or sk_test_…"}
+                  value={stripeSecretKey} onChange={e => setStripeSecretKey(e.target.value)} autoComplete="new-password" />
+                <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved key. It never leaves the server.</p>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Square</h2>
+                <p className="text-xs text-slate-500 mt-1">Sandbox and production use different credentials — update all three fields when you switch.</p>
+              </div>
+              {form.squareEnvironment === "sandbox" && (
+                <p className="text-xs font-medium text-amber-700 bg-amber-50 border border-amber-200 rounded px-2.5 py-1.5 inline-block">Sandbox mode — no real charges will be made</p>
+              )}
+              <div>
+                <label className={labelCls}>Environment</label>
+                <select className={inputCls} value={form.squareEnvironment ?? "sandbox"} onChange={e => setForm({ ...form, squareEnvironment: e.target.value })}>
+                  <option value="sandbox">Sandbox (testing)</option>
+                  <option value="production">Production (real charges)</option>
+                </select>
+              </div>
+              {field("squareApplicationId", "Application ID")}
+              {field("squareLocationId", "Location ID")}
+              <div>
+                <label className={labelCls}>Access Token<SecretBadge stored={s?.squareAccessToken} /></label>
+                <input type="password" className={inputCls} placeholder={s?.squareAccessToken === "" ? "•••••••• saved — leave blank to keep" : "Enter access token"} value={squareAccessToken} onChange={e => setSquareAccessToken(e.target.value)} autoComplete="new-password" />
+                <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved token</p>
+              </div>
+            </div>
+          </>
+        )}
+        {tab === "notifications" && (
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Email Notifications</h2>
+              {field("adminNotificationEmail", "Admin Notification Email", "email", "Receives emails when a lead/quote/contact form is submitted")}
+              {field("customerEmail", "Customer Confirmation Email", "email", "Shown to customers as your contact email in confirmation messages")}
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <h2 className="font-semibold text-slate-900">Notification Events</h2>
+              <p className="text-xs text-slate-500">Choose which events trigger email and/or SMS notifications.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b border-slate-100 text-xs text-slate-500 uppercase tracking-wide">
+                    <th className="text-left py-2 pr-4">Event</th><th className="text-center py-2 px-3">Email</th><th className="text-center py-2 px-3">SMS</th><th className="text-left py-2 pl-3">Recipient</th>
+                  </tr></thead>
+                  <tbody className="divide-y divide-slate-50">
+                    {[
+                      { emailKey: "notifyLeadNewEmail", smsKey: "notifyLeadNewSms", label: "New lead submitted", recipient: "Admin alert + customer acknowledgement" },
+                      { emailKey: "notifySurveyBookedEmail", smsKey: "notifySurveyBookedSms", label: "Survey booked", recipient: "Customer" },
+                      { emailKey: "notifyQuoteSentEmail", smsKey: "notifyQuoteSentSms", label: "Quote sent", recipient: "Customer" },
+                      { emailKey: "notifyQuoteAcceptedEmail", smsKey: "notifyQuoteAcceptedSms", label: "Quote accepted", recipient: "Admin alert" },
+                      { emailKey: "notifyPaymentReceivedEmail", smsKey: "notifyPaymentReceivedSms", label: "Payment received", recipient: "Admin alert + customer receipt" },
+                      { emailKey: "notifyLeadWonEmail", smsKey: "notifyLeadWonSms", label: "Lead won / job confirmed", recipient: "Customer" },
+                      { emailKey: "notifyProjectInProgressEmail", smsKey: "notifyProjectInProgressSms", label: "Job started (In Progress)", recipient: "Customer" },
+                      { emailKey: "notifyProjectCompleteEmail", smsKey: "notifyProjectCompleteSms", label: "Job completed", recipient: "Customer" },
+                    ].map(row => (
+                      <tr key={row.emailKey} className="text-sm">
+                        <td className="py-2.5 pr-4 text-slate-700">{row.label}</td>
+                        <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form[row.emailKey]} onChange={e => setForm({ ...form, [row.emailKey]: e.target.checked })} /></td>
+                        <td className="py-2.5 px-3 text-center"><input type="checkbox" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form[row.smsKey]} onChange={e => setForm({ ...form, [row.smsKey]: e.target.checked })} /></td>
+                        <td className="py-2.5 pl-3 text-slate-500 text-xs">{row.recipient}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Review Requests</h2>
+                <p className="text-xs text-slate-500 mt-1">Automatically ask customers for a review after a project completes.</p>
+              </div>
+              <div className="flex items-center gap-3">
+                <input type="checkbox" id="reviewEnabled" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form.reviewRequestEnabled} onChange={e => setForm({ ...form, reviewRequestEnabled: e.target.checked })} />
+                <label htmlFor="reviewEnabled" className="text-sm font-medium text-slate-700">Enable automatic review requests</label>
+              </div>
+              {form.reviewRequestEnabled && (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className={labelCls}>Delay (hours after completion)</label>
+                      <input type="number" min={1} className={inputCls} value={form.reviewRequestDelayHours ?? 24} onChange={e => setForm({ ...form, reviewRequestDelayHours: Number(e.target.value) })} />
+                    </div>
+                    <div>
+                      <label className={labelCls}>Send via</label>
+                      <select className={inputCls} value={form.reviewRequestChannel || "both"} onChange={e => setForm({ ...form, reviewRequestChannel: e.target.value })}>
+                        <option value="email">Email only</option>
+                        <option value="sms">SMS only</option>
+                        <option value="both">Email + SMS</option>
+                      </select>
+                    </div>
+                  </div>
+                  {field("reviewPlatformUrl", "Review Platform URL", "text", "e.g. https://g.page/r/your-business/review — where customers go to leave a review")}
+                  <div>
+                    <label className={labelCls}>Custom Message (optional)</label>
+                    <textarea rows={5} className={inputCls} placeholder="Leave blank to use the default message. Use {name} for the customer's first name and {reviewUrl} for the review link." value={form.reviewRequestTemplate || ""} onChange={e => setForm({ ...form, reviewRequestTemplate: e.target.value })} />
+                    <p className="text-xs text-slate-400 mt-1">If blank, a professional default message is used.</p>
+                  </div>
+                </>
+              )}
+            </div>
+          </>
+        )}
+        {tab === "connections" && (
+          <>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">Email Server (SMTP)</h2>
+                <p className="text-xs text-slate-500 mt-1">Connect your own mail server so notifications send from your domain.</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="col-span-1 sm:col-span-2">{field("smtpHost", "Mail Server Host", "text", "e.g. mail.yourdomain.com or smtp.office365.com")}</div>
+                <div>
+                  <label className={labelCls}>Port</label>
+                  <input type="number" className={inputCls} value={form.smtpPort ?? 587} onChange={e => setForm({ ...form, smtpPort: Number(e.target.value) })} />
+                  <p className="text-xs text-slate-400 mt-1">Usually 587 (STARTTLS) or 465 (SSL)</p>
+                </div>
+                <div className="flex items-center gap-3 sm:pt-6">
+                  <input type="checkbox" id="smtpSecure" className="h-4 w-4 rounded border-slate-300 text-[var(--brand-ink)] focus:ring-[var(--brand)]" checked={!!form.smtpSecure} onChange={e => setForm({ ...form, smtpSecure: e.target.checked })} />
+                  <label htmlFor="smtpSecure" className="text-sm font-medium text-slate-700">Use SSL/TLS (port 465)</label>
+                </div>
+                <div>{field("smtpUser", "Username / Email", "email", "Usually your full email address")}</div>
+                <div>
+                  <label className={labelCls}>Password<SecretBadge stored={s?.smtpPass} /></label>
+                  <input type="password" className={inputCls} placeholder={s?.smtpPass === "" ? "•••••••• saved — leave blank to keep" : "Enter password"} value={smtpPass} onChange={e => setSmtpPass(e.target.value)} autoComplete="new-password" />
+                  <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved password</p>
+                </div>
+                <div className="col-span-1 sm:col-span-2">{field("smtpFrom", "From Address", "text", `e.g. Your Business Name <info@yourbusiness.co.uk>`)}</div>
+              </div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <button type="button" onClick={handleTestEmail} disabled={testEmailMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  {testEmailMutation.isPending ? "Sending..." : "Send Test Email"}
+                </button>
+                {emailTestResult && (
+                  <span className={`text-sm font-medium ${emailTestResult.ok ? "text-green-600" : "text-red-600"}`}>
+                    {emailTestResult.ok ? "✓ Test email sent!" : `✕ ${emailTestResult.error}`}
+                  </span>
+                )}
+              </div>
+            </div>
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-6 space-y-4">
+              <div>
+                <h2 className="font-semibold text-slate-900">SMS Notifications (Twilio)</h2>
+                <p className="text-xs text-slate-500 mt-1">Optional — connect Twilio to send SMS notifications.</p>
+              </div>
+              {field("twilioAccountSid", "Account SID")}
+              <div>
+                <label className={labelCls}>Auth Token<SecretBadge stored={s?.twilioAuthToken} /></label>
+                <input type="password" className={inputCls} placeholder={s?.twilioAuthToken === "" ? "•••••••• saved — leave blank to keep" : "Enter auth token"} value={twilioAuthToken} onChange={e => setTwilioAuthToken(e.target.value)} autoComplete="new-password" />
+                <p className="text-xs text-slate-400 mt-1">Leave blank to keep the saved token</p>
+              </div>
+              {field("twilioFromNumber", "From Number", "text", "e.g. +447700000000")}
+              {field("adminNotificationPhone", "Admin Notification Phone", "text", "Receives SMS when a lead/quote is submitted")}
+              <div className="flex items-center gap-3 flex-wrap">
+                <button type="button" onClick={handleTestSms} disabled={testSmsMutation.isPending} className="inline-flex h-9 items-center rounded-md border border-slate-300 px-4 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50">
+                  {testSmsMutation.isPending ? "Sending..." : "Send Test SMS"}
+                </button>
+                {smsTestResult && (
+                  <span className={`text-sm font-medium ${smsTestResult.ok ? "text-green-600" : "text-red-600"}`}>
+                    {smsTestResult.ok ? "✓ Test SMS sent!" : `✕ ${smsTestResult.error}`}
+                  </span>
+                )}
+              </div>
+            </div>
+          </>
+        )}
+        <div className="sticky bottom-0 z-10 -mx-4 flex items-center justify-between gap-4 border-t border-slate-200 bg-white/95 px-4 py-3 backdrop-blur sm:mx-0 sm:rounded-xl sm:border">
+          <span className="text-xs text-slate-500">Saves every tab at once.</span>
           <button type="submit" disabled={updateMutation.isPending} className="inline-flex h-10 items-center rounded-xl bg-[var(--brand)] shadow-sm px-6 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50">
-            {updateMutation.isPending ? "Saving..." : "Save Settings"}
+            {updateMutation.isPending ? "Saving..." : "Save settings"}
           </button>
         </div>
       </form>
+      </div>
     </div>
   );
 }

@@ -48,6 +48,12 @@ export const invoicesTable = pgTable("invoices", {
   /** A deposit request rather than a full invoice — shown differently to the customer. */
   isDeposit: boolean("is_deposit").notNull().default(false),
 
+  /**
+   * Raised from a quote "for when the job is complete" (migration 0058). A
+   * draft that waits; completing the job made from that quote releases it.
+   */
+  sendOnCompletion: boolean("send_on_completion").notNull().default(false),
+
   notes: text("notes"),
   terms: text("terms"),
 

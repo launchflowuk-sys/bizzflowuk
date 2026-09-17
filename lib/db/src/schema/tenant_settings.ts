@@ -118,6 +118,11 @@ export const tenantSettingsTable = pgTable("tenant_settings", {
   cisUtr: text("cis_utr"),
   cisRate: numeric("cis_rate", { precision: 5, scale: 2 }).default("20"),
   invoiceTerms: text("invoice_terms"),
+  /**
+   * When a job is completed, send the invoice that was waiting for it
+   * (migration 0058). Off leaves it as a draft for the business to send.
+   */
+  autoSendInvoiceOnCompletion: boolean("auto_send_invoice_on_completion").notNull().default(true),
   paymentDays: integer("payment_days").notNull().default(14),
 
   /**

@@ -141,6 +141,12 @@ router.patch("/projects/:id", requireTenantAccess, async (req, res) => {
         fireNotification({ ...ctx, event: "project_in_progress" });
       } else if (newStatus === "Completed") {
         fireNotification({ ...ctx, event: "project_completed" });
+        // Send (or ready) any invoice raised "for when the job is complete".
+        import("./invoices")
+          .then(({ releaseInvoicesForJob }) => releaseInvoicesForJob(
+            { id: p[0].id, tenantId: p[0].tenantId, quoteId: p[0].quoteId ?? null }, req.log,
+          ))
+          .catch(err => req.log.error({ err }, "Invoice release on completion failed"));
       }
     }
   } catch (err) { req.log.error(err); res.status(500).json({ error: "Internal server error" }); }

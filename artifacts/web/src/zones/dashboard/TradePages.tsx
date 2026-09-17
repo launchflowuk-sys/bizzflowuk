@@ -183,6 +183,8 @@ export function InvoicesPage() {
         <StatCard label="Paid this month" value={money(totals.paidThisMonth)} hint="cleared funds" category="money" icon={CheckCircle2} />
       </div>
 
+      <AutoSendSwitch />
+
       {rows.length === 0 ? (
         <Empty
           title="No invoices yet"
@@ -214,7 +216,9 @@ export function InvoicesPage() {
                     <td className="px-5 py-3.5 text-right tabular-nums font-semibold text-slate-900">{money(r.total)}</td>
                     <td className="px-5 py-3.5 text-right tabular-nums text-slate-600">{money(r.outstanding)}</td>
                     <td className="px-5 py-3.5">
-                      <Pill tone={INVOICE_STATUS_TONE[r.status]}>{INVOICE_STATUS_LABEL[r.status] ?? r.status}</Pill>
+                      {r.status === "draft" && r.sendOnCompletion
+                        ? <Pill tone="warn">Waiting for job</Pill>
+                        : <Pill tone={INVOICE_STATUS_TONE[r.status]}>{INVOICE_STATUS_LABEL[r.status] ?? r.status}</Pill>}
                     </td>
                   </tr>
                 ))}
@@ -224,6 +228,51 @@ export function InvoicesPage() {
         </Card>
       )}
     </Page>  );
+}
+
+/**
+ * The one invoice setting people change often enough to want it here as well
+ * as in Settings: whether completing a job sends the invoice waiting for it.
+ */
+function AutoSendSwitch() {
+  const { data, reload } = useApi<any>("/settings");
+  const [saving, setSaving] = useState(false);
+  if (!data) return null;
+  const on = data.autoSendInvoiceOnCompletion ?? true;
+
+  async function toggle() {
+    setSaving(true);
+    try {
+      await api.patch("/settings", { autoSendInvoiceOnCompletion: !on });
+      reload();
+    } catch (e: any) {
+      alert(e.message);
+    } finally { setSaving(false); }
+  }
+
+  return (
+    <Card className="mb-6 flex items-center justify-between gap-4 px-5 py-4">
+      <div className="min-w-0">
+        <div className="font-semibold text-slate-900 text-[15px]">Send invoices when a job is completed</div>
+        <div className="text-[13px] text-slate-500">
+          {on
+            ? "On: invoices raised “for when the job is complete” go to the customer the moment you mark the job done."
+            : "Off: they wait as drafts, so you can check them and send them yourself."}
+        </div>
+      </div>
+      <button
+        type="button"
+        role="switch"
+        aria-checked={on}
+        aria-label="Send invoices automatically when a job is completed"
+        onClick={toggle}
+        disabled={saving}
+        className={`relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:opacity-50 ${on ? "bg-[var(--brand)]" : "bg-slate-300"}`}
+      >
+        <span className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${on ? "translate-x-[22px]" : "translate-x-0.5"}`} />
+      </button>
+    </Card>
+  );
 }
 
 /**
