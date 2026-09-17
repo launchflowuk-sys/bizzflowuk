@@ -47,6 +47,8 @@ import CustomerHistory from "./CustomerHistory";
 import AccountingPanel from "./AccountingPanel";
 import { BIZZFLOW_SYMBOL } from "@/zones/public/bizzflow/BizzFlowBrand";
 import AssistantPage from "./AssistantPage";
+import LeadEnquiryPanel from "./LeadEnquiryPanel";
+import { waNumber } from "./leadFields";
 import BillingPage from "./BillingPage";
 import "./workspace-theme.css";
 import { StatCard, type StatCardProps } from "@/components/StatCard";
@@ -1200,16 +1202,6 @@ function UrgencyTag({ lead }: { lead: any }) {
   );
 }
 
-/** UK mobile/landline -> E.164 so wa.me and tel: behave on a phone. */
-function waNumber(phone?: string): string | null {
-  if (!phone) return null;
-  const digits = phone.replace(/[^\d+]/g, "");
-  if (digits.startsWith("+")) return digits.slice(1);
-  if (digits.startsWith("0")) return `44${digits.slice(1)}`;
-  if (digits.startsWith("44")) return digits;
-  return digits || null;
-}
-
 /** Call / WhatsApp / mark-contacted, close enough together to hit with one thumb. */
 function LeadQuickActions({ lead, onContacted, busy }: { lead: any; onContacted: (id: number) => void; busy: boolean }) {
   const wa = waNumber(lead.phone);
@@ -1569,10 +1561,6 @@ function LeadDetailPage({ id }: { id: number }) {
   if (isLoading) return <div className="flex h-64 items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand)]" /></div>;
   if (!l) return <div className="p-8 text-center text-slate-500">Lead not found</div>;
 
-  // Construction-tenant leads populate clientType/projectDescription instead of the
-  // rendering-specific survey fields — hide the rendering rows for those to avoid a wall of "-".
-  const isConstructionLead = !!(l.clientType || l.projectDescription);
-
   const handleStatusChange = async (status: string) => {
     try {
       await updateMutation.mutateAsync({ id, data: { status } } as any);
@@ -1614,16 +1602,14 @@ function LeadDetailPage({ id }: { id: number }) {
   };
 
   return (
-    <div className="p-4 sm:p-6 space-y-5 max-w-5xl">
-      <div className="flex items-center gap-3 flex-wrap">
+    <div className="p-4 sm:p-6 space-y-5 max-w-7xl">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <Link href="/dashboard/leads" className="text-sm text-slate-500 hover:text-[var(--brand-ink)]">&larr; Leads</Link>
         <DeleteEntityButton onDelete={() => deleteLead.mutateAsync({ id } as any)} label="lead" redirect="/dashboard/leads" />
-        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">{l.firstName} {l.lastName}</h1>
-        <Badge status={l.status} />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="md:col-span-2 space-y-4">
-          <LeadSurveyCard lead={l} onCreateQuote={handleConvertToQuote} converting={convertToQuote.isPending} />
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-5">
+        <div className="space-y-5 min-w-0">
+          <LeadEnquiryPanel lead={l} onEmail={() => setShowCompose(true)} />
           {Array.isArray(l.estimateItems) && l.estimateItems.length > 0 && (
             <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-3">
               <div className="flex items-center justify-between flex-wrap gap-2">
@@ -1650,67 +1636,9 @@ function LeadDetailPage({ id }: { id: number }) {
               <p className="text-xs text-slate-400">The customer received this same estimate by email. Book a survey to confirm the price, then Convert to Quote — these items pre-fill the quote automatically.</p>
             </div>
           )}
+          <LeadSurveyCard lead={l} onCreateQuote={handleConvertToQuote} converting={convertToQuote.isPending} />
           <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
-            <div className="flex items-center justify-between flex-wrap gap-2">
-              <h2 className="font-semibold text-slate-900">Contact Details</h2>
-              {l.reference && <span className="text-xs font-mono text-slate-400">{l.reference}</span>}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-              <div><span className="text-slate-500">Email: </span><a href={`mailto:${l.email}`} className="text-[var(--brand-ink)] hover:underline break-all">{l.email || "-"}</a></div>
-              <div><span className="text-slate-500">Phone: </span><a href={`tel:${l.phone}`} className="text-[var(--brand-ink)] hover:underline">{l.phone || "-"}</a></div>
-              <div><span className="text-slate-500">Preferred Contact Method: </span><span className="text-slate-900">{l.preferredContactMethod || "-"}</span></div>
-              <div><span className="text-slate-500">Best Time to Contact: </span><span className="text-slate-900">{l.bestTimeToContact || "-"}</span></div>
-              <div><span className="text-slate-500">City: </span><span className="text-slate-900">{l.city || "-"}</span></div>
-              <div><span className="text-slate-500">Postcode: </span><span className="text-slate-900">{l.postcode || "-"}</span></div>
-              <div className="sm:col-span-2"><span className="text-slate-500">Address: </span><span className="text-slate-900">{l.address || "-"}</span></div>
-              {!isConstructionLead && <div><span className="text-slate-500">Property Type: </span><span className="text-slate-900">{l.propertyType === "Other" && l.propertyTypeOther ? `Other — ${l.propertyTypeOther}` : (l.propertyType || "-")}</span></div>}
-              {l.companyName && <div><span className="text-slate-500">Company Name: </span><span className="text-slate-900">{l.companyName}</span></div>}
-              {/* Construction-industry lead fields — present only when the lead came from a construction tenant's form */}
-              {l.clientType && <div><span className="text-slate-500">Client Type: </span><span className="text-slate-900">{l.clientType}</span></div>}
-              {l.urgency && <div><span className="text-slate-500">Urgency: </span><span className="text-slate-900">{l.urgency}</span></div>}
-              {l.planningStatus && <div><span className="text-slate-500">Planning / Building Regs: </span><span className="text-slate-900">{l.planningStatus}</span></div>}
-              {l.hasDrawings && <div><span className="text-slate-500">Has Drawings / Plans: </span><span className="text-slate-900">{l.hasDrawings}</span></div>}
-              {l.projectDescription && <div className="sm:col-span-2"><span className="text-slate-500">Job Description: </span><span className="text-slate-900 whitespace-pre-wrap">{l.projectDescription}</span></div>}
-              {!isConstructionLead && (<>
-              <div><span className="text-slate-500">Area to Be Rendered: </span><span className="text-slate-900">{l.areaToRender === "Other" && l.areaToRenderOther ? `Other — ${l.areaToRenderOther}` : (l.areaToRender || "-")}</span></div>
-              <div><span className="text-slate-500">Number of Storeys: </span><span className="text-slate-900">{l.numberOfStoreys || "-"}</span></div>
-              <div><span className="text-slate-500">Approx. Wall Area: </span><span className="text-slate-900">{l.wallArea || "-"}</span></div>
-              </>)}
-              <div><span className="text-slate-500">Service: </span><span className="text-slate-900">{l.serviceInterest || "-"}</span></div>
-              {!isConstructionLead && (<>
-              <div><span className="text-slate-500">Existing Surface: </span><span className="text-slate-900">{l.existingSurface || "-"}</span></div>
-              <div className="sm:col-span-2"><span className="text-slate-500">Current Condition: </span><span className="text-slate-900">{(l.currentCondition as string[] | undefined)?.length ? (l.currentCondition as string[]).join(", ") : "-"}</span></div>
-              <div><span className="text-slate-500">Desired Finish: </span><span className="text-slate-900">{l.desiredFinish || "-"}</span></div>
-              <div><span className="text-slate-500">Preferred Colour: </span><span className="text-slate-900">{(l.preferredColour === "Custom Colour" || l.preferredColour === "Other") && l.preferredColourOther ? `${l.preferredColour} — ${l.preferredColourOther}` : (l.preferredColour || "-")}</span></div>
-              {l.serviceInterest === "External Wall Insulation" && (
-                <>
-                  <div><span className="text-slate-500">Requires Insulation: </span><span className="text-slate-900">{l.requiresInsulation || "-"}</span></div>
-                  <div><span className="text-slate-500">Insulation Thickness: </span><span className="text-slate-900">{l.insulationThickness || "-"}</span></div>
-                  <div><span className="text-slate-500">Insulation Material: </span><span className="text-slate-900">{l.insulationMaterial || "-"}</span></div>
-                </>
-              )}
-              <div className="sm:col-span-2"><span className="text-slate-500">Access Conditions: </span><span className="text-slate-900">{(l.accessConditions as string[] | undefined)?.length ? (l.accessConditions as string[]).join(", ") : "-"}</span></div>
-              <div><span className="text-slate-500">Property Status: </span><span className="text-slate-900">{l.propertyStatus || "-"}</span></div>
-              </>)}
-              <div><span className="text-slate-500">Timeframe: </span><span className="text-slate-900">{l.timeframe || "-"}</span></div>
-              <div><span className="text-slate-500">Source: </span><span className="text-slate-900">{l.source || "-"}</span></div>
-              <div><span className="text-slate-500">Budget: </span><span className="text-slate-900">{l.budget || "-"}</span></div>
-              <div><span className="text-slate-500">Created: </span><span className="text-slate-900">{l.createdAt ? new Date(l.createdAt).toLocaleDateString("en-GB") : "-"}</span></div>
-              {l.notes && <div className="sm:col-span-2"><span className="text-slate-500">Notes: </span><span className="text-slate-900">{l.notes}</span></div>}
-              {!!(l.photoUrls as string[] | undefined)?.length && (
-                <div className="sm:col-span-2">
-                  <span className="text-slate-500">Attachments: </span>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {(l.photoUrls as string[]).map((u, i) => (
-                      <a key={u} href={u} target="_blank" rel="noreferrer" className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-medium text-[var(--brand-ink)] hover:bg-[var(--brand-tint)]">Attachment {i + 1}</a>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-          <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4">
-            <h2 className="font-semibold text-slate-900">Notes</h2>
+            <h2 className="font-semibold text-slate-900">Follow-up notes</h2>
             <form onSubmit={handleNoteSubmit} className="flex gap-2">
               <input value={noteContent} onChange={e => setNoteContent(e.target.value)} placeholder="Add a note..." className="flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--brand)]" />
               <button type="submit" disabled={noteMutation.isPending} className="inline-flex items-center rounded-xl bg-[var(--brand)] shadow-sm px-5 py-2.5 text-sm font-semibold text-white hover:brightness-110 disabled:opacity-50">Add</button>
