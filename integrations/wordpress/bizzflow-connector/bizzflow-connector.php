@@ -2,8 +2,8 @@
 /**
  * Plugin Name:       BizzFlow Connector
  * Plugin URI:        https://bizzflowuk.com
- * Description:       Sends website enquiries into BizzFlowUK as leads, so the business manages everything in one place. Works with the Splendid core plugin, Contact Form 7, WPForms and Gravity Forms.
- * Version:           1.2.0
+ * Description:       Sends website enquiries into BizzFlowUK as leads, so the business manages everything in one place. Works with the Splendid core plugin, Contact Form 7, WPForms, Gravity Forms and Quform.
+ * Version:           1.3.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            LaunchFlow UK
@@ -43,7 +43,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BIZZFLOW_CONNECTOR_VERSION', '1.2.0' );
+define( 'BIZZFLOW_CONNECTOR_VERSION', '1.3.0' );
 define( 'BIZZFLOW_CONNECTOR_OPTION', 'bizzflow_connector_settings' );
 define( 'BIZZFLOW_CONNECTOR_QUEUE', 'bizzflow_connector_queue' );
 define( 'BIZZFLOW_CONNECTOR_LOG', 'bizzflow_connector_log' );
@@ -483,6 +483,105 @@ function bizzflow_from_gravity( $entry, $form ) {
 	bizzflow_send_once( bizzflow_map_generic( $flat ) );
 }
 add_action( 'gform_after_submission', 'bizzflow_from_gravity', 10, 2 );
+
+/**
+ * Quform.
+ *
+ * Quform names fields `quform_2_3`, which says nothing about what they hold, so
+ * each value is keyed by its element label when Quform exposes one. When it
+ * does not, the value itself is read: an email looks like an email, a phone
+ * number is mostly digits, and the longest remaining text is the message.
+ *
+ * Runs after the form is processed and valid; the honeypot and spam checks
+ * have already rejected junk by then.
+ *
+ * @param array  $result Quform's result, passed through untouched.
+ * @param object $form   Quform_Form.
+ * @return array
+ */
+function bizzflow_from_quform( $result, $form ) {
+	if ( ! is_object( $form ) || ! method_exists( $form, 'getValues' ) ) {
+		return $result;
+	}
+
+	$labelled = array();
+	$unknown  = array();
+	foreach ( (array) $form->getValues() as $name => $value ) {
+		$text = is_array( $value ) ? implode( ', ', array_filter( array_map( 'strval', $value ) ) ) : trim( (string) $value );
+		if ( '' === $text ) {
+			continue;
+		}
+		$label = '';
+		if ( method_exists( $form, 'getElementByName' ) ) {
+			$element = $form->getElementByName( $name );
+			if ( is_object( $element ) && method_exists( $element, 'getLabel' ) ) {
+				$label = strtolower( trim( (string) $element->getLabel() ) );
+			}
+		}
+		if ( '' !== $label ) {
+			$labelled[ sanitize_key( str_replace( ' ', '-', $label ) ) ] = $text;
+		} else {
+			$unknown[] = $text;
+		}
+	}
+
+	foreach ( bizzflow_guess_fields( $unknown ) as $key => $text ) {
+		if ( ! isset( $labelled[ $key ] ) ) {
+			$labelled[ $key ] = $text;
+		}
+	}
+
+	if ( $labelled ) {
+		bizzflow_send_once( bizzflow_map_generic( $labelled ) );
+	}
+
+	return $result;
+}
+add_filter( 'quform_post_process', 'bizzflow_from_quform', 10, 2 );
+
+/**
+ * Name the values of a form whose fields carry no usable names.
+ *
+ * @param string[] $values Non-empty submitted values, in form order.
+ * @return array
+ */
+function bizzflow_guess_fields( array $values ) {
+	$out  = array();
+	$rest = array();
+	foreach ( $values as $text ) {
+		if ( ! isset( $out['email'] ) && is_email( $text ) ) {
+			$out['email'] = $text;
+		} elseif ( ! isset( $out['phone'] ) && preg_match( '/^\+?[\d\s()-]{7,20}$/', $text ) ) {
+			$out['phone'] = $text;
+		} else {
+			$rest[] = $text;
+		}
+	}
+	if ( ! $rest ) {
+		return $out;
+	}
+
+	$longest = 0;
+	foreach ( $rest as $i => $text ) {
+		if ( strlen( $text ) > strlen( $rest[ $longest ] ) ) {
+			$longest = $i;
+		}
+	}
+	// A single short value is a name, not a message.
+	if ( count( $rest ) > 1 || strlen( $rest[ $longest ] ) > 40 ) {
+		$out['message'] = $rest[ $longest ];
+		unset( $rest[ $longest ] );
+	}
+	$rest = array_values( $rest );
+	if ( $rest ) {
+		$out['name'] = array_shift( $rest );
+	}
+	foreach ( $rest as $i => $text ) {
+		$out[ 'field-' . ( $i + 1 ) ] = $text;
+	}
+
+	return $out;
+}
 
 /**
  * Best-effort mapping for a form we know nothing about.

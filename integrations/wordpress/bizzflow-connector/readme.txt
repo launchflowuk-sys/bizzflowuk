@@ -1,10 +1,10 @@
 === BizzFlow Connector ===
 Contributors: launchflowuk
-Tags: leads, enquiries, crm, contact form 7, wpforms
+Tags: leads, enquiries, crm, contact form 7, wpforms, quform
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.2.0
+Stable tag: 1.3.0
 License: GPLv2 or later
 
 Sends website enquiries into BizzFlowUK as leads. The site stays exactly as it is.
@@ -25,6 +25,7 @@ Supported out of the box:
 * Contact Form 7
 * WPForms
 * Gravity Forms
+* Quform
 
 = What it does not do =
 
@@ -111,6 +112,9 @@ Field mapping:
 * Material, how many, where it came from, and the message → notes
 
 == Changelog ==
+
+= 1.3.0 =
+* Quform support. Fields are read by their label, or recognised from their contents when a form gives none.
 
 = 1.2.0 =
 * Contact Form 7: an enquiry still reaches BizzFlow when the site's own email fails to send.

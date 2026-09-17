@@ -317,12 +317,36 @@ function TenantsPage() {
   );
 }
 
+interface Industry { key: string; label: string; template?: boolean }
+
+/**
+ * Business types come from the API (GET /signup/industries) — the same list
+ * signup uses — so adding a niche never means editing two dropdowns. A tenant
+ * already saved with a type no longer on the list keeps it as an option.
+ */
+function useIndustries(current?: string): Industry[] {
+  const [list, setList] = useState<Industry[]>([]);
+  useEffect(() => {
+    let live = true;
+    fetch('/api/signup/industries')
+      .then(r => (r.ok ? r.json() : []))
+      .then(data => { if (live && Array.isArray(data)) setList(data); })
+      .catch(() => {});
+    return () => { live = false; };
+  }, []);
+  if (current && list.length && !list.some(i => i.key === current)) {
+    return [...list, { key: current, label: current }];
+  }
+  return list;
+}
+
 function NewTenantPage() {
   const createMutation = useCreateTenant();
   const qc = useQueryClient();
   const [, setLocation] = useLocation();
-  const [form, setForm] = useState({ name: '', slug: '', industry: 'rendering', plan: 'starter', primaryColor: '#007F72', email: '', phone: '', address: '', city: '', customDomain: '' });
+  const [form, setForm] = useState({ name: '', slug: '', industry: 'general', plan: 'starter', primaryColor: '#007F72', email: '', phone: '', address: '', city: '', customDomain: '' });
   const [error, setError] = useState('');
+  const industries = useIndustries();
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -346,7 +370,8 @@ function NewTenantPage() {
         {f('slug', 'URL Slug * (e.g. amo-rendering)')}
         <div><label className="block text-sm font-medium text-slate-700 mb-1">Industry</label>
           <select className={FIELD} value={form.industry} onChange={e => setForm({...form, industry: e.target.value})}>
-            {['rendering','roofing','landscaping','plastering','driveway','painting','windows','general'].map(i => <option key={i} value={i}>{i}</option>)}
+            {industries.length === 0 && <option value={form.industry}>Loading…</option>}
+            {industries.map(i => <option key={i.key} value={i.key}>{i.label}</option>)}
           </select>
         </div>
         <div><label className="block text-sm font-medium text-slate-700 mb-1">Plan</label>
@@ -398,6 +423,9 @@ function TenantDetailPage({ id }: { id: number }) {
   const [placeBusy, setPlaceBusy] = useState<null | "save" | "sync">(null);
   const [placeResult, setPlaceResult] = useState<{ ok: boolean; text: string } | null>(null);
   const [savedPlaceId, setSavedPlaceId] = useState<string | null>(null);
+  const industries = useIndustries(t?.industry);
+  const [savingIndustry, setSavingIndustry] = useState(false);
+  const [industryError, setIndustryError] = useState('');
   const [importText, setImportText] = useState('');
   const [importBusy, setImportBusy] = useState(false);
   const [importResult, setImportResult] = useState<{ ok: boolean; text: string } | null>(null);
@@ -603,7 +631,35 @@ function TenantDetailPage({ id }: { id: number }) {
         <h2 className="font-semibold text-slate-900">Details</h2>
         <div className="grid grid-cols-2 gap-x-4 gap-y-3">
           <Detail label="Slug" value={<code className="font-mono text-xs">{t.slug}</code>} />
-          <Detail label="Industry" value={<span className="capitalize">{t.industry}</span>} />
+          <Detail label="Business type" value={
+            <select
+              aria-label="Business type"
+              className="w-full rounded-md border border-slate-300 bg-white px-2 py-1 text-sm disabled:opacity-60"
+              value={t.industry}
+              disabled={savingIndustry || industries.length === 0}
+              onChange={async e => {
+                const next = e.target.value;
+                const label = industries.find(i => i.key === next)?.label ?? next;
+                const hasSite = !!(t.customDomain || t.showcaseOrder != null);
+                // The type picks the public site design and quote form, so a live site changes too.
+                if (hasSite && !window.confirm(`Change ${t.name} to "${label}"? Their BizzFlow public site and quote form follow this setting.`)) return;
+                setSavingIndustry(true);
+                setIndustryError('');
+                try {
+                  await updateMutation.mutateAsync({ id, data: { industry: next } } as any);
+                  qc.invalidateQueries();
+                } catch (err: any) {
+                  setIndustryError(err?.message || 'Could not save');
+                } finally {
+                  setSavingIndustry(false);
+                }
+              }}
+            >
+              {industries.length === 0 && <option value={t.industry}>{t.industry}</option>}
+              {industries.map(i => <option key={i.key} value={i.key}>{i.label}</option>)}
+            </select>
+          } />
+          {industryError && <p className="col-span-2 text-xs text-red-600">{industryError}</p>}
           <Detail label="Plan" value={<span className="capitalize">{t.plan}</span>} />
           <Detail label="City" value={t.city || '-'} />
           <Detail label="Phone" value={t.phone ? <a href={`tel:${t.phone}`} className="text-brand-600">{t.phone}</a> : '-'} />

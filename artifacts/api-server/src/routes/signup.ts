@@ -23,13 +23,25 @@ const router = Router();
  * separate decisions that should not be buried inside a signup form.
  */
 
-/** Industries that have a public site template. Anything else gets the default. */
+/**
+ * The one list of business types — signup and the platform console both read it
+ * from GET /signup/industries, so a new niche is added here and nowhere else.
+ *
+ * `template` marks the types that have their own public site design. Everything
+ * else gets the default site; most of those businesses keep their own website
+ * and send enquiries in through the WordPress connector anyway.
+ */
 const INDUSTRIES = [
-  { key: "plumbing", label: "Plumbing & heating" },
-  { key: "construction", label: "Construction & building" },
-  { key: "landscaping", label: "Landscaping & groundworks" },
-  { key: "rendering", label: "Rendering & external walls" },
-  { key: "other", label: "Something else" },
+  { key: "plumbing", label: "Plumbing & heating", template: true },
+  { key: "construction", label: "Construction & building", template: true },
+  { key: "landscaping", label: "Landscaping & groundworks", template: true },
+  { key: "rendering", label: "Rendering & external walls", template: true },
+  { key: "cleaning", label: "Cleaning & facilities management", template: false },
+  { key: "training", label: "Training & education", template: false },
+  { key: "windows", label: "Windows, doors & glazing", template: false },
+  { key: "roofing", label: "Roofing", template: false },
+  { key: "electrical", label: "Electrical", template: false },
+  { key: "general", label: "Something else", template: false },
 ] as const;
 
 const signupSchema = z.object({
@@ -108,9 +120,9 @@ router.post("/signup", publicFormRateLimiter, async (req: any, res) => {
       return;
     }
 
-    const industry = INDUSTRIES.some(i => i.key === input.industry) && input.industry !== "other"
+    const industry = INDUSTRIES.some(i => i.key === input.industry)
       ? input.industry!
-      : "rendering"; // the default public template
+      : "general"; // served by the default public template
 
     const slug = await uniqueSlug(slugify(input.businessName));
 

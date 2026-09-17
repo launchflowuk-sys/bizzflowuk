@@ -138,6 +138,7 @@ function bizzflow_admin_page() {
 		'Contact Form 7'     => defined( 'WPCF7_VERSION' ),
 		'WPForms'            => function_exists( 'wpforms' ),
 		'Gravity Forms'      => class_exists( 'GFForms' ),
+		'Quform'             => defined( 'QUFORM_VERSION' ) || class_exists( 'Quform' ),
 	) );
 	?>
 	<div class="wrap">

@@ -113,10 +113,14 @@ export function parseLeadNotes(notes: unknown): ParsedNotes {
   const free: string[] = [];
   if (!raw) return { fields, freeText: "" };
 
-  // Packed notes start with a field and carry at least two. Anything else is a
+  // Packed notes start with a form field: either several of them, or one whose
+  // name is plainly a form's ("your-message", "message"). Anything else is a
   // person's own note and is shown exactly as typed.
   const lines = raw.split(/\r?\n/);
-  const packed = NOTE_LINE.test(lines[0]) && lines.filter(l => NOTE_LINE.test(l)).length >= 2;
+  const first = NOTE_LINE.exec(lines[0]);
+  const packed = !!first && (
+    lines.filter(l => NOTE_LINE.test(l)).length >= 2 || /[-_]/.test(first[1]) || MESSAGE_KEY.test(first[1])
+  );
   if (!packed) return { fields, freeText: raw };
 
   for (const line of lines) {
