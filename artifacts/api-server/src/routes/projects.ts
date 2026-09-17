@@ -109,14 +109,31 @@ router.patch("/projects/:id", requireTenantAccess, async (req, res) => {
     if (req.body.status === "Completed" && !before[0]?.completedAt) {
       updateData.completedAt = new Date();
     }
-    const p = await db.update(projectsTable).set(updateData)
-      .where(and(eq(projectsTable.id, Number(req.params.id)), tenantFilter(req, projectsTable.tenantId)))
-      .returning();
+    const target = and(eq(projectsTable.id, Number(req.params.id)), tenantFilter(req, projectsTable.tenantId));
+    const newStatus = req.body.status;
+
+    /**
+     * A status change is claimed in the update itself. Two requests (a
+     * double-tapped "Completed") both read the old status above; only the one
+     * whose UPDATE still finds a different status fires the customer email and
+     * the invoice release. The other still saves, but announces nothing.
+     */
+    let changed = false;
+    let p: typeof before = [];
+    if (newStatus && before[0] && before[0].status !== newStatus) {
+      p = await db.update(projectsTable).set(updateData)
+        .where(and(target, sql`${projectsTable.status} IS DISTINCT FROM ${newStatus}`))
+        .returning();
+      changed = p.length > 0;
+    }
+    if (!changed) {
+      const { completedAt: _alreadySet, ...rest } = updateData;
+      p = await db.update(projectsTable).set(newStatus ? rest : updateData).where(target).returning();
+    }
     if (!p.length) { res.status(404).json({ error: "Not found" }); return; }
     res.json(p[0]);
 
-    const newStatus = req.body.status;
-    if (newStatus && before[0]?.status !== newStatus) {
+    if (changed) {
       let firstName: string | undefined;
       let lastName: string | undefined;
       let customerEmail: string | undefined;
