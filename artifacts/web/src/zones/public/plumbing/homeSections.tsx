@@ -226,9 +226,12 @@ export function HeroQuoteCard({ tenantSlug, settings, services, subject, inline,
     }
     const [firstName, ...rest] = form.name.trim().split(/\s+/);
     try {
+      // tenantSlug belongs INSIDE data: the generated client sends only `data`
+      // to POST /quote-request. Outside it, the slug was silently dropped and
+      // every submission came back 400 "tenantSlug required".
       await mutation.mutateAsync({
-        tenantSlug,
         data: {
+          tenantSlug,
           firstName,
           lastName: rest.join(" "),
           phone: form.phone.trim(),
@@ -240,6 +243,9 @@ export function HeroQuoteCard({ tenantSlug, settings, services, subject, inline,
           // point of asking for them.
           timeframe: timeframe || undefined,
           propertyType: propertyType || undefined,
+          // No tick box on this card, only the "we'll use your details to
+          // respond" notice — so no consent is claimed.
+          consentAgreed: false,
           notes: [
             intent ? `Looking for: ${intent}` : "Enquiry from the homepage",
             timeframe ? `How soon: ${timeframe}` : "",
@@ -247,7 +253,7 @@ export function HeroQuoteCard({ tenantSlug, settings, services, subject, inline,
             form.notes.trim(),
           ].filter(Boolean).join("\n"),
         },
-      } as any);
+      });
       setDone(true);
     } catch {
       setError("That did not send. Please try again, or give us a call.");
