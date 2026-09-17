@@ -3,7 +3,7 @@
  * Plugin Name:       BizzFlow Connector
  * Plugin URI:        https://bizzflowuk.com
  * Description:       Sends website enquiries into BizzFlowUK as leads, so the business manages everything in one place. Works with the Splendid core plugin, Contact Form 7, WPForms and Gravity Forms.
- * Version:           1.1.0
+ * Version:           1.2.0
  * Requires at least: 6.0
  * Requires PHP:      7.4
  * Author:            LaunchFlow UK
@@ -43,7 +43,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'BIZZFLOW_CONNECTOR_VERSION', '1.1.0' );
+define( 'BIZZFLOW_CONNECTOR_VERSION', '1.2.0' );
 define( 'BIZZFLOW_CONNECTOR_OPTION', 'bizzflow_connector_settings' );
 define( 'BIZZFLOW_CONNECTOR_QUEUE', 'bizzflow_connector_queue' );
 define( 'BIZZFLOW_CONNECTOR_LOG', 'bizzflow_connector_log' );
@@ -439,6 +439,10 @@ function bizzflow_from_cf7( $form ) {
 	bizzflow_send_once( bizzflow_map_generic( (array) $submission->get_posted_data() ) );
 }
 add_action( 'wpcf7_mail_sent', 'bizzflow_from_cf7', 10, 1 );
+// A form whose email fails is still a real enquiry. Without this, a broken
+// mailbox would silently cap BizzFlow at the site's mail reliability -- the
+// trap Splendid hit. Spam and invalid submissions fire neither hook.
+add_action( 'wpcf7_mail_failed', 'bizzflow_from_cf7', 10, 1 );
 
 /**
  * WPForms.

@@ -4,7 +4,7 @@ Tags: leads, enquiries, crm, contact form 7, wpforms
 Requires at least: 6.0
 Tested up to: 6.6
 Requires PHP: 7.4
-Stable tag: 1.1.0
+Stable tag: 1.2.0
 License: GPLv2 or later
 
 Sends website enquiries into BizzFlowUK as leads. The site stays exactly as it is.
@@ -111,6 +111,9 @@ Field mapping:
 * Material, how many, where it came from, and the message → notes
 
 == Changelog ==
+
+= 1.2.0 =
+* Contact Form 7: an enquiry still reaches BizzFlow when the site's own email fails to send.
 
 = 1.1.0 =
 * Answers Splendid's delivered-elsewhere question, so a mail outage no longer turns a visitor away once BizzFlow has the enquiry.
