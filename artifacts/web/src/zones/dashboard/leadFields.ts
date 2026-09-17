@@ -70,8 +70,12 @@ const FIELD_SPECS: FieldSpec[] = [
 
 /** Form field names that mean "the enquiry itself". */
 const MESSAGE_KEY = /message|enquiry|inquiry|comment|details|description/i;
-/** A packed note line: a machine-style field name, a colon, a value. */
-const NOTE_LINE = /^([a-z0-9][a-z0-9_-]*):\s?(.*)$/i;
+/**
+ * A packed note line: a form field name as the connector writes it — lowercase,
+ * no spaces — a colon, a value. Lowercase-only keeps "Note: call after 5" typed
+ * by a person out of it.
+ */
+const NOTE_LINE = /^([a-z0-9][a-z0-9_-]*):\s?(.*)$/;
 
 function text(value: unknown): string {
   if (Array.isArray(value)) return value.filter(Boolean).map(String).join(", ");
@@ -109,7 +113,13 @@ export function parseLeadNotes(notes: unknown): ParsedNotes {
   const free: string[] = [];
   if (!raw) return { fields, freeText: "" };
 
-  for (const line of raw.split(/\r?\n/)) {
+  // Packed notes start with a field and carry at least two. Anything else is a
+  // person's own note and is shown exactly as typed.
+  const lines = raw.split(/\r?\n/);
+  const packed = NOTE_LINE.test(lines[0]) && lines.filter(l => NOTE_LINE.test(l)).length >= 2;
+  if (!packed) return { fields, freeText: raw };
+
+  for (const line of lines) {
     const match = NOTE_LINE.exec(line);
     if (match) {
       fields.push({ key: match[1], label: humaniseKey(match[1]), value: match[2].trim() });
@@ -136,6 +146,12 @@ export function buildLeadView(lead: Lead): LeadView {
   const company = text(lead.companyName);
   const parsed = parseLeadNotes(lead.notes);
 
+  const details: LeadField[] = [];
+  for (const spec of FIELD_SPECS) {
+    const value = specValue(lead, spec);
+    if (value) details.push({ label: spec.label, value, wide: spec.wide });
+  }
+
   const messageParts = [text(lead.projectDescription)];
   const extra: LeadField[] = [];
   for (const f of parsed.fields) {
@@ -144,13 +160,8 @@ export function buildLeadView(lead: Lead): LeadView {
     // Already shown from its own column — don't say it twice.
     if (lower.includes("service") && f.value === service) continue;
     if (lower.includes("company") && f.value === company) continue;
+    if (details.some(d => d.label === f.label && d.value === f.value)) continue;
     extra.push({ label: f.label, value: f.value, wide: f.value.length > 60 });
-  }
-
-  const details: LeadField[] = [];
-  for (const spec of FIELD_SPECS) {
-    const value = specValue(lead, spec);
-    if (value) details.push({ label: spec.label, value, wide: spec.wide });
   }
 
   return {

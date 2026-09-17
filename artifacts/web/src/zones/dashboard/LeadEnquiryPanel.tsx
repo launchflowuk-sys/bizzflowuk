@@ -94,8 +94,8 @@ export default function LeadEnquiryPanel({ lead, onEmail }: LeadEnquiryPanelProp
           <div>
             <h2 className="mb-3 text-xs font-semibold uppercase tracking-wide text-slate-400">Details they gave</h2>
             <dl className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
-              {view.details.map(d => (
-                <div key={d.label} className={d.wide ? "sm:col-span-2 lg:col-span-3" : ""}>
+              {view.details.map((d, i) => (
+                <div key={`${d.label}-${i}`} className={d.wide ? "sm:col-span-2 lg:col-span-3" : ""}>
                   <dt className="text-xs text-slate-500">{d.label}</dt>
                   <dd className="mt-0.5 whitespace-pre-wrap text-[15px] font-medium text-slate-900">{d.value}</dd>
                 </div>
