@@ -98,6 +98,16 @@ function retiredTarget(slug: string, path: string): string | null {
 
 async function handleRender(req: Request, res: Response, requestPath: string) {
   try {
+    // Bots continuously probe paths like /wp-content/plugins/.../error.log
+    // and /opencart/.../error.log hunting for exposed log files. Nginx's own
+    // try_files already served any real static file before a request falls
+    // through to this route, and no genuine page in this app ends in a file
+    // extension -- so anything that looks like one here is scanner noise.
+    // Reject it before it reaches the database or the SSR renderer, or every
+    // scan gets rendered as a real page and cached in page_render_cache
+    // forever.
+    if (/\.[a-z0-9]{1,6}$/i.test(requestPath)) { res.status(404).json({ error: "Not found" }); return; }
+
     const host = ((req.query.host as string) || (req.headers.host as string) || "").replace(/:\d+$/, "").replace(/^www\./i, "");
     const tenants = await db
       .select()
