@@ -9,6 +9,7 @@ import { loginRateLimiter } from "../middlewares/rateLimit";
 import { buildRelativeObjectUrl } from "../lib/objectStorage";
 import { sendPlatformEmail, appBaseUrl } from "../lib/platformMail";
 import { logger } from "../lib/logger";
+import { resolveModules } from "../lib/modules";
 
 const router = Router();
 
@@ -30,17 +31,21 @@ async function tenantName(tenantId: number): Promise<string> {
 async function getUserBusinesses(userId: number) {
   // Brand colour comes from tenant_settings.primaryColor (what the Settings page edits), falling
   // back to tenants.primaryColor — so the admin themes to the colour the tenant actually set.
-  return db
+  const rows = await db
     .select({
       tenantId: userTenantsTable.tenantId, role: userTenantsTable.role, name: tenantsTable.name, slug: tenantsTable.slug,
       primaryColor: sql<string | null>`COALESCE(${tenantSettingsTable.primaryColor}, ${tenantsTable.primaryColor})`,
       industry: tenantsTable.industry,
+      features: tenantsTable.features,
     })
     .from(userTenantsTable)
     .innerJoin(tenantsTable, eq(userTenantsTable.tenantId, tenantsTable.id))
     .leftJoin(tenantSettingsTable, eq(tenantSettingsTable.tenantId, tenantsTable.id))
     .where(eq(userTenantsTable.userId, userId))
     .orderBy(tenantsTable.name);
+  // Every screen, menu and Flo snapshot reads this same resolved list — never
+  // industry or slug directly (docs/plans/modules-system.md).
+  return rows.map(r => ({ ...r, modules: resolveModules(r.industry, r.features) }));
 }
 
 router.get("/me", requireAuth, async (req, res) => {

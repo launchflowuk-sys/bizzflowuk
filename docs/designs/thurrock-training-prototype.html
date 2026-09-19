@@ -1,0 +1,950 @@
+<title>Thurrock Training Website</title>
+<meta name="description" content="Clickable prototype of the Thurrock Training website: courses, dates and booking.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --navy:#0A2240; --navy-2:#12325C; --navy-ink:#C9D6E8;
+  --blue:#1570EF; --blue-hover:#0F5FD0; --blue-tint:#EAF2FE; --blue-line:#C7DBFB;
+  --ink:#0E1B2C; --slate:#56677D; --line:#DCE4EE; --ground:#F4F7FB; --paper:#FFFFFF;
+  --amber:#B45309; --amber-tint:#FEF3C7; --green:#15803D; --green-tint:#DCFCE7; --red:#B42318;
+  --display:"Archivo","Arial Narrow",system-ui,sans-serif;
+  --body:"Public Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --wrap:1400px; --r:14px; --r-sm:10px;
+  color-scheme:light;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ground);color:var(--ink);font:16px/1.6 var(--body);font-variant-numeric:lining-nums;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img{max-width:100%}
+h1,h2,h3,h4{font-family:var(--display);margin:0;line-height:1.08;letter-spacing:-.02em;text-wrap:balance;color:var(--ink)}
+p{margin:0}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px;border-radius:6px}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+.wrap{max-width:var(--wrap);margin:0 auto;padding:0 20px}
+@media(min-width:768px){.wrap{padding:0 32px}}
+.eyebrow{font:700 12px/1 var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--blue)}
+.muted{color:var(--slate)}
+.num{font-variant-numeric:tabular-nums}
+
+/* prototype banner */
+.proto{background:var(--ink);color:#E6ECF4;font-size:13px}
+.proto .wrap{display:flex;gap:12px;align-items:center;justify-content:space-between;padding-top:8px;padding-bottom:8px;flex-wrap:wrap}
+.proto b{color:#fff}
+.tbc{display:inline-flex;align-items:center;border:1px dashed currentColor;border-radius:6px;padding:0 6px;font-size:.85em;font-weight:600;opacity:.85;white-space:nowrap}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:0 22px;border-radius:12px;font:700 15px/1 var(--body);text-decoration:none;border:2px solid transparent;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.btn svg{width:16px;height:16px;transition:transform .15s}
+.btn:hover svg{transform:translateX(3px)}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:var(--blue-hover)}
+.btn-ghost{border-color:rgba(255,255,255,.7);color:#fff;background:transparent}
+.btn-ghost:hover{background:rgba(255,255,255,.1)}
+.btn-line{border-color:var(--line);background:var(--paper);color:var(--ink)}
+.btn-line:hover{border-color:var(--blue-line)}
+.btn-block{width:100%}
+.btn[disabled]{background:#AFC2DA;cursor:not-allowed}
+.link{color:var(--blue);font-weight:700;text-decoration:none;display:inline-flex;gap:6px;align-items:center}
+.link:hover{text-decoration:underline}
+
+/* header */
+.site-head{background:var(--paper);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:30}
+.site-head .wrap{display:flex;align-items:center;gap:24px;min-height:76px}
+.logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex-shrink:0}
+.logo svg{width:40px;height:46px}
+.logo-word{display:grid;line-height:1}
+.logo-word b{font:900 21px/1 var(--display);color:var(--navy);letter-spacing:.01em}
+.logo-word span{font:600 11.5px/1 var(--body);letter-spacing:.42em;color:var(--blue);margin-top:4px}
+.nav{display:none;gap:4px;margin-left:auto}
+.nav a{padding:10px 12px;border-radius:8px;text-decoration:none;font-weight:600;font-size:15px;color:var(--ink)}
+.nav a:hover,.nav a[aria-current="page"]{background:var(--blue-tint);color:var(--blue)}
+.head-call{display:none;text-decoration:none;line-height:1.2}
+.head-call b{display:block;font-size:16px}
+.head-call span{font-size:12.5px;color:var(--slate)}
+.head-book{display:none}
+.menu-btn{margin-left:auto;background:none;border:1px solid var(--line);border-radius:10px;width:46px;height:46px;display:grid;place-items:center;cursor:pointer}
+.menu-btn svg{width:22px;height:22px}
+.drawer{display:none;border-top:1px solid var(--line);background:var(--paper)}
+.drawer.open{display:block}
+.drawer a{display:block;padding:14px 20px;border-bottom:1px solid var(--line);text-decoration:none;font-weight:600}
+@media(min-width:1080px){.nav,.head-call,.head-book{display:flex}.head-call{display:block}.menu-btn,.drawer.open{display:none}}
+
+/* mobile action bar */
+.mbar{position:fixed;left:0;right:0;bottom:0;z-index:40;display:grid;grid-template-columns:1fr 1.4fr;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:var(--paper);border-top:1px solid var(--line);box-shadow:0 -6px 20px rgba(10,34,64,.08)}
+@media(min-width:1080px){.mbar{display:none}}
+body{padding-bottom:78px}
+@media(min-width:1080px){body{padding-bottom:0}}
+
+/* hero */
+.hero{background:var(--navy);color:#fff;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;inset:0;background:
+  radial-gradient(120% 90% at 100% 0%,rgba(21,112,239,.35),transparent 55%),
+  repeating-linear-gradient(135deg,rgba(255,255,255,.035) 0 2px,transparent 2px 22px);pointer-events:none}
+.hero .wrap{position:relative;display:grid;gap:36px;padding-top:48px;padding-bottom:40px}
+@media(min-width:960px){.hero .wrap{grid-template-columns:1.15fr .85fr;align-items:center;padding-top:72px;padding-bottom:64px}}
+.hero h1{color:#fff;font-size:clamp(40px,6.2vw,76px);font-weight:900;letter-spacing:-.035em;line-height:.98}
+.hero h1 em{font-style:normal;color:#5FA0FF}
+.hero .lede{font-size:clamp(17px,1.6vw,20px);color:var(--navy-ink);margin-top:18px;max-width:34ch}
+.hero .actions{display:flex;flex-wrap:wrap;gap:12px;margin-top:28px}
+.hero .eyebrow{color:#8DB8FF;margin-bottom:16px}
+.proofs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;margin-top:32px;max-width:560px}
+@media(min-width:640px){.proofs{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.proof{display:flex;gap:10px;align-items:flex-start;font-size:13.5px;line-height:1.35;color:var(--navy-ink)}
+.proof svg{width:22px;height:22px;flex-shrink:0;color:#8DB8FF}
+
+/* licence card in hero */
+.badge-card{background:linear-gradient(160deg,#fff,#EEF4FD);color:var(--ink);border-radius:20px;padding:22px;box-shadow:0 30px 60px -20px rgba(0,0,0,.45);max-width:440px;justify-self:center;width:100%;transform:rotate(-2deg)}
+.badge-top{display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);padding-bottom:12px}
+.badge-top b{font:800 13px/1 var(--display);letter-spacing:.08em;color:var(--navy)}
+.badge-top span{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--blue)}
+.badge-body{display:grid;grid-template-columns:96px 1fr;gap:16px;padding-top:16px}
+.badge-photo{aspect-ratio:3/4;border-radius:10px;background:repeating-linear-gradient(135deg,#DCE6F3 0 6px,#E8EFF8 6px 12px);display:grid;place-items:center;color:var(--slate);font-size:11px;text-align:center;padding:6px}
+.badge-rows{display:grid;gap:8px;font-size:12.5px}
+.badge-rows dt{color:var(--slate);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase}
+.badge-rows dd{margin:0;font-weight:700}
+.badge-foot{margin-top:14px;padding-top:12px;border-top:1px dashed var(--line);font-size:12px;color:var(--slate)}
+.badge-caption{text-align:center;color:var(--navy-ink);font-size:13px;margin-top:14px}
+
+/* sections */
+section.block{padding:56px 0}
+@media(min-width:960px){section.block{padding:80px 0}}
+.sec-head{display:flex;justify-content:space-between;align-items:end;gap:16px;flex-wrap:wrap;margin-bottom:28px}
+.sec-head h2{font-size:clamp(28px,3.4vw,42px);font-weight:800}
+.sec-head p{margin-top:8px;max-width:60ch}
+.white{background:var(--paper)}
+
+/* next dates strip */
+.dates-strip{margin-top:-28px;position:relative;z-index:2}
+.strip{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:18px;box-shadow:0 12px 30px -18px rgba(10,34,64,.3)}
+.strip-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.strip-head h2{font-size:22px;font-weight:800}
+.strip-list{display:grid;gap:10px}
+@media(min-width:900px){.strip-list{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.session-mini{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:12px;border:1px solid var(--line);border-radius:12px;text-decoration:none;transition:border-color .15s}
+.session-mini:hover{border-color:var(--blue)}
+.cal{width:58px;border-radius:10px;overflow:hidden;text-align:center;border:1px solid var(--blue-line)}
+.cal i{display:block;font:700 11px/1 var(--body);letter-spacing:.1em;background:var(--blue);color:#fff;padding:5px 0;font-style:normal}
+.cal b{display:block;font:800 24px/1 var(--display);padding:6px 0 7px;color:var(--navy)}
+.session-mini h3{font-size:16px;font-weight:700;font-family:var(--body);letter-spacing:0;line-height:1.3}
+.session-mini p{font-size:13px;color:var(--slate)}
+
+/* seat chip */
+.seats{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:4px 10px;font-size:12.5px;font-weight:700;white-space:nowrap;background:var(--green-tint);color:var(--green)}
+.seats.low{background:var(--amber-tint);color:var(--amber)}
+.seats.full{background:#E9EDF2;color:var(--slate)}
+.seats::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor}
+
+/* course cards */
+.course-grid{display:grid;gap:20px}
+@media(min-width:820px){.course-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.course-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;overflow:hidden;display:flex;flex-direction:column}
+.slot{position:relative;background:var(--navy-2);color:var(--navy-ink);display:grid;place-items:center;text-align:center;font-size:12px;letter-spacing:.06em;overflow:hidden}
+.slot::before{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 16px)}
+.slot span{position:relative;border:1px dashed rgba(201,214,232,.5);border-radius:8px;padding:6px 10px}
+.course-card .slot{aspect-ratio:16/8}
+.course-card .body{padding:22px;display:flex;flex-direction:column;gap:12px;flex:1}
+.course-card .kicker{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--blue)}
+.course-card h3{font-size:24px;font-weight:800}
+.course-card .facts{display:flex;flex-wrap:wrap;gap:8px 16px;font-size:13.5px;color:var(--slate);margin-top:auto;padding-top:14px;border-top:1px solid var(--line)}
+.fact{display:inline-flex;gap:6px;align-items:center}
+.fact svg{width:16px;height:16px;color:var(--blue)}
+
+/* route */
+.route{background:var(--navy);color:#fff}
+.route h2,.route h3{color:#fff}
+.route .muted{color:var(--navy-ink)}
+.route-steps{display:grid;gap:14px;counter-reset:step;list-style:none;padding:0;margin:0}
+@media(min-width:900px){.route-steps{grid-template-columns:repeat(4,minmax(0,1fr));gap:0}}
+.route-steps li{position:relative;padding:20px;border:1px solid rgba(201,214,232,.2);border-radius:16px;background:rgba(255,255,255,.03)}
+@media(min-width:900px){.route-steps li{border-radius:0;border-right:none}.route-steps li:first-child{border-radius:16px 0 0 16px}.route-steps li:last-child{border-radius:0 16px 16px 0;border-right:1px solid rgba(201,214,232,.2)}}
+.route-steps li::before{counter-increment:step;content:counter(step);display:grid;place-items:center;width:44px;height:44px;border-radius:50%;background:var(--blue);font:800 20px/1 var(--display);margin-bottom:14px}
+.route-steps h3{font-size:19px;font-weight:700;margin-bottom:6px}
+.route-steps p{font-size:14.5px;color:var(--navy-ink)}
+.route-steps small{display:block;margin-top:10px;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#8DB8FF;font-weight:700}
+
+/* why */
+.why{display:grid;gap:20px}
+@media(min-width:700px){.why{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1100px){.why{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.why-item{display:grid;grid-template-columns:48px 1fr;gap:14px}
+.why-item .ico{width:48px;height:48px;border-radius:12px;background:var(--blue-tint);display:grid;place-items:center;color:var(--blue)}
+.why-item .ico svg{width:24px;height:24px}
+.why-item h3{font-family:var(--body);font-size:16.5px;font-weight:700;letter-spacing:0;margin-bottom:4px}
+.why-item p{font-size:14.5px;color:var(--slate)}
+
+/* split: reviews + employers */
+.split{display:grid;gap:20px}
+@media(min-width:960px){.split{grid-template-columns:1.6fr 1fr}}
+.panel{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px}
+.empty-reviews{display:grid;gap:10px;place-items:start;padding:22px;border:1px dashed var(--line);border-radius:12px;background:var(--ground);margin-top:16px}
+.employer{background:var(--navy);color:#fff;border-radius:18px;padding:28px;display:flex;flex-direction:column;gap:14px}
+.employer h3{color:#fff;font-size:26px;font-weight:800}
+.employer p{color:var(--navy-ink)}
+
+/* faq */
+.faq{display:grid;gap:10px}
+@media(min-width:900px){.faq.two{grid-template-columns:repeat(2,minmax(0,1fr));align-items:start}}
+details{background:var(--paper);border:1px solid var(--line);border-radius:12px}
+summary{list-style:none;cursor:pointer;padding:16px 18px;font-weight:600;display:flex;justify-content:space-between;gap:16px;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";width:10px;height:10px;border-right:2px solid var(--slate);border-bottom:2px solid var(--slate);transform:rotate(45deg) translateY(-3px);flex-shrink:0;transition:transform .2s}
+details[open] summary::after{transform:rotate(-135deg) translateY(-2px)}
+details[open] summary{color:var(--blue)}
+details .ans{padding:0 18px 18px;color:var(--slate);max-width:70ch}
+
+/* cta band */
+.cta{background:var(--navy);border-radius:20px;color:#fff;padding:32px;display:flex;flex-wrap:wrap;gap:20px;justify-content:space-between;align-items:center}
+.cta h2{color:#fff;font-size:clamp(26px,3vw,36px);font-weight:800}
+.cta p{color:var(--navy-ink);margin-top:6px}
+.cta .actions{display:flex;gap:12px;flex-wrap:wrap}
+
+/* footer */
+.site-foot{background:var(--paper);border-top:1px solid var(--line);padding:40px 0 28px;margin-top:56px}
+.foot-grid{display:grid;gap:28px}
+@media(min-width:900px){.foot-grid{grid-template-columns:1.3fr 1fr 1fr 1fr}}
+.site-foot h4{font:700 13px/1 var(--body);letter-spacing:.1em;text-transform:uppercase;color:var(--slate);margin-bottom:12px}
+.site-foot ul{list-style:none;padding:0;margin:0;display:grid;gap:8px}
+.site-foot a{text-decoration:none}
+.site-foot a:hover{color:var(--blue)}
+.foot-base{display:flex;flex-wrap:wrap;justify-content:space-between;gap:12px;margin-top:32px;padding-top:20px;border-top:1px solid var(--line);font-size:13px;color:var(--slate)}
+.powered{display:inline-flex;align-items:center;gap:6px;font-weight:700;color:var(--ink)}
+
+/* inner page hero */
+.page-hero{background:var(--navy);color:#fff;position:relative;overflow:hidden}
+.page-hero::before{content:"";position:absolute;inset:0;background:radial-gradient(90% 120% at 100% 0%,rgba(21,112,239,.3),transparent 60%)}
+.page-hero .wrap{position:relative;padding-top:40px;padding-bottom:44px}
+.page-hero h1{color:#fff;font-size:clamp(34px,5vw,58px);font-weight:900;letter-spacing:-.03em}
+.page-hero p{color:var(--navy-ink);margin-top:12px;max-width:62ch;font-size:17px}
+.crumbs{font-size:13px;color:var(--navy-ink);margin-bottom:14px;display:flex;gap:8px;flex-wrap:wrap}
+.crumbs a{text-decoration:none}
+.crumbs a:hover{color:#fff}
+.keyfacts{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.keyfacts span{display:inline-flex;gap:8px;align-items:center;background:rgba(255,255,255,.08);border:1px solid rgba(201,214,232,.2);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:600}
+.keyfacts svg{width:16px;height:16px;color:#8DB8FF}
+
+/* course page */
+.course-layout{display:grid;gap:28px;padding-top:36px}
+@media(min-width:1000px){.course-layout{grid-template-columns:minmax(0,1fr) 380px;align-items:start}}
+.prose{display:grid;gap:36px}
+.prose section h2{font-size:28px;font-weight:800;margin-bottom:12px}
+.prose p+p{margin-top:10px}
+.prose p{max-width:68ch}
+.checklist{list-style:none;padding:0;margin:0;display:grid;gap:10px}
+.checklist li{display:grid;grid-template-columns:24px 1fr;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.checklist svg{width:22px;height:22px;color:var(--blue)}
+.checklist b{display:block}
+.checklist span{color:var(--slate);font-size:14.5px}
+.days{display:grid;gap:0;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:var(--paper)}
+.day{display:grid;grid-template-columns:120px 1fr;gap:16px;padding:14px 16px;border-top:1px solid var(--line)}
+.day:first-child{border-top:none}
+.day b{font-family:var(--display);color:var(--navy)}
+.day.pre{background:var(--blue-tint)}
+.learn{display:grid;gap:10px;padding:0;margin:0;list-style:none}
+@media(min-width:700px){.learn{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.learn li{display:flex;gap:10px}
+.learn li::before{content:"";flex-shrink:0;width:18px;height:18px;margin-top:3px;border-radius:50%;background:var(--blue-tint) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%231570EF' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 6 9 17l-5-5'/%3E%3C/svg%3E") center/11px no-repeat}
+.note{border-left:4px solid var(--blue);background:var(--blue-tint);padding:14px 16px;border-radius:0 12px 12px 0}
+.note.warn{border-color:var(--amber);background:var(--amber-tint)}
+
+.book-card{background:var(--paper);border:1px solid var(--line);border-radius:18px;box-shadow:0 18px 40px -24px rgba(10,34,64,.35);overflow:hidden}
+@media(min-width:1000px){.book-card{position:sticky;top:96px}}
+.book-card header{padding:18px 20px;border-bottom:1px solid var(--line)}
+.book-card header b{font:800 22px/1 var(--display)}
+.book-card .rows{display:grid}
+.pick{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:14px 20px;border-bottom:1px solid var(--line);cursor:pointer}
+.pick input{width:18px;height:18px;accent-color:var(--blue)}
+.pick:has(input:checked){background:var(--blue-tint)}
+.pick.is-full{cursor:not-allowed;opacity:.65}
+.pick small{display:block;color:var(--slate);font-size:12.5px}
+.book-card footer{padding:18px 20px;display:grid;gap:10px}
+.book-card footer p{font-size:13px;color:var(--slate);text-align:center}
+
+/* dates page */
+.filters{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:28px 0 18px}
+.chip{border:1px solid var(--line);background:var(--paper);border-radius:999px;padding:9px 16px;font:600 14px/1 var(--body);cursor:pointer;min-height:40px}
+.chip[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#fff}
+.month{margin-top:26px}
+.month h2{font-size:20px;font-weight:800;margin-bottom:10px}
+.session-row{display:grid;gap:12px;background:var(--paper);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:10px}
+@media(min-width:860px){.session-row{grid-template-columns:70px 1.4fr 1fr 1fr auto;align-items:center}}
+.session-row h3{font-family:var(--body);font-size:16.5px;letter-spacing:0;font-weight:700}
+.session-row .meta{font-size:14px;color:var(--slate)}
+
+/* booking */
+.stepper{display:flex;gap:8px;list-style:none;padding:0;margin:0 0 24px;counter-reset:s}
+.stepper li{flex:1;display:grid;gap:8px;font-size:13px;font-weight:600;color:var(--slate)}
+.stepper li::before{content:"";height:5px;border-radius:9px;background:var(--line)}
+.stepper li.done::before,.stepper li.now::before{background:var(--blue)}
+.stepper li.now{color:var(--ink)}
+.book-layout{display:grid;gap:24px;padding-top:32px}
+@media(min-width:1000px){.book-layout{grid-template-columns:minmax(0,1fr) 360px;align-items:start}}
+.form{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:24px;display:grid;gap:18px}
+.form h2{font-size:26px;font-weight:800}
+.field{display:grid;gap:6px}
+.field label,.field legend{font-weight:600;font-size:14.5px}
+.field input,.field select,.field textarea{font:inherit;min-height:48px;padding:10px 14px;border:1px solid #C3CFDD;border-radius:10px;background:#fff;color:var(--ink)}
+.field textarea{min-height:110px}
+.field input:focus,.field select:focus,.field textarea:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(21,112,239,.2)}
+.field .err{color:var(--red);font-size:13.5px;font-weight:600;display:none}
+.field.bad .err{display:block}
+.field.bad input{border-color:var(--red)}
+.grid2{display:grid;gap:16px}
+@media(min-width:640px){.grid2{grid-template-columns:1fr 1fr}}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;border:1px solid var(--line);border-radius:12px;padding:14px 16px;cursor:pointer}
+.opt input{width:20px;height:20px;margin-top:2px;accent-color:var(--blue)}
+.opt:has(input:checked){border-color:var(--blue);background:var(--blue-tint)}
+.opt span{display:block;color:var(--slate);font-size:14px}
+fieldset{border:0;padding:0;margin:0;display:grid;gap:10px}
+.form-actions{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.summary dl{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;margin:0;font-size:14.5px}
+.summary dt{color:var(--slate)}
+.summary dd{margin:0;font-weight:600;text-align:right}
+.total{display:flex;justify-content:space-between;align-items:baseline;margin-top:14px;padding-top:14px;border-top:1px solid var(--line)}
+.total b{font:800 24px/1 var(--display)}
+
+.done-icon{width:64px;height:64px;border-radius:50%;background:var(--green-tint);color:var(--green);display:grid;place-items:center}
+.done-icon svg{width:32px;height:32px}
+.next-steps{list-style:none;padding:0;margin:0;display:grid;gap:12px;counter-reset:n}
+.next-steps li{display:grid;grid-template-columns:36px 1fr;gap:12px;align-items:start}
+.next-steps li::before{counter-increment:n;content:counter(n);width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--blue-tint);color:var(--blue);font:800 16px/1 var(--display)}
+
+.two-col{display:grid;gap:24px}
+@media(min-width:960px){.two-col{grid-template-columns:1fr 1fr;align-items:start}}
+.stat-line{display:grid;gap:12px}
+.guide-step{display:grid;grid-template-columns:56px 1fr;gap:18px;padding:22px 0;border-top:1px solid var(--line)}
+.guide-step .n{font:900 44px/1 var(--display);color:var(--blue)}
+.guide-step h3{font-size:22px;font-weight:800;margin-bottom:6px}
+.contact-list{display:grid;gap:14px;list-style:none;padding:0;margin:0}
+.contact-list a{display:flex;gap:12px;align-items:center;text-decoration:none;font-weight:700;font-size:17px}
+.contact-list .ico{width:44px;height:44px;border-radius:12px;background:var(--blue-tint);display:grid;place-items:center;color:var(--blue)}
+.contact-list svg{width:20px;height:20px}
+.toast{position:fixed;left:50%;bottom:100px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;z-index:60;display:none}
+.toast.show{display:block}
+</style>
+
+<div class="proto" role="note">
+  <div class="wrap">
+    <span><b>Prototype.</b> Sample dates; prices and venues marked <span class="tbc">TBC</span> until Thurrock Training confirms them. No payment is taken.</span>
+    <span>Prepared by LaunchFlow</span>
+  </div>
+</div>
+
+<header class="site-head">
+  <div class="wrap">
+    <a class="logo" href="#/" aria-label="Thurrock Training home">
+      <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 1 38 7.5v14.8C38 33.6 30.6 41.2 20 45 9.4 41.2 2 33.6 2 22.3V7.5Z" fill="#0A2240"/><path d="M20 1 38 7.5v14.8C38 33.6 30.6 41.2 20 45Z" fill="#12325C"/><path d="M9.5 11h21v6h-7.5v20.5L20 40l-3-2.5V17H9.5Z" fill="#1570EF"/><path d="M20 11h10.5v6h-7.5v20.5L20 40Z" fill="#E8EEF6"/></svg>
+      <span class="logo-word"><b>THURROCK</b><span>TRAINING</span></span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/courses">Courses</a><a href="#/dates">Dates</a><a href="#/employers">Employers</a><a href="#/sia-licence">SIA licence guide</a><a href="#/about">About</a><a href="#/contact">Contact</a>
+    </nav>
+    <a class="head-call" href="tel:+441375486325"><b class="num">01375 486 325</b><span>Call for a free assessment</span></a>
+    <a class="btn btn-primary head-book" href="#/dates">Book a course <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h13M12 5l7 7-7 7"/></svg></a>
+    <button class="menu-btn" type="button" aria-expanded="false" aria-controls="drawer" aria-label="Open menu"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg></button>
+  </div>
+  <nav class="drawer" id="drawer" aria-label="Mobile">
+    <a href="#/courses">Courses</a><a href="#/dates">Course dates</a><a href="#/employers">Training for employers</a><a href="#/sia-licence">SIA licence guide</a><a href="#/faqs">FAQs</a><a href="#/about">About</a><a href="#/contact">Contact</a>
+  </nav>
+</header>
+
+<main id="app" tabindex="-1"></main>
+
+<footer class="site-foot">
+  <div class="wrap">
+    <div class="foot-grid">
+      <div>
+        <a class="logo" href="#/" aria-label="Thurrock Training home">
+          <svg viewBox="0 0 40 46" aria-hidden="true"><path d="M20 1 38 7.5v14.8C38 33.6 30.6 41.2 20 45 9.4 41.2 2 33.6 2 22.3V7.5Z" fill="#0A2240"/><path d="M9.5 11h21v6h-7.5v20.5L20 40l-3-2.5V17H9.5Z" fill="#1570EF"/><path d="M20 11h10.5v6h-7.5v20.5L20 40Z" fill="#E8EEF6"/></svg>
+          <span class="logo-word"><b>THURROCK</b><span>TRAINING</span></span>
+        </a>
+        <p class="muted" style="margin-top:14px;max-width:34ch">Security and safety training in Thurrock, Essex. SIA door supervisor, first aid and IOSH courses.</p>
+      </div>
+      <div><h4>Courses</h4><ul><li><a href="#/courses/door-supervisor">SIA Door Supervisor</a></li><li><a href="#/courses/emergency-first-aid">Emergency First Aid at Work</a></li><li><a href="#/courses/iosh">IOSH Health &amp; Safety</a></li><li><a href="#/dates">All dates</a></li></ul></div>
+      <div><h4>Help</h4><ul><li><a href="#/sia-licence">How to get your SIA licence</a></li><li><a href="#/faqs">FAQs</a></li><li><a href="#/employers">Employers</a></li><li><a href="#/about">About us</a></li></ul></div>
+      <div><h4>Contact</h4><ul><li><a class="num" href="tel:+441375486325">01375 486 325</a></li><li><a href="mailto:info@thurrocktraining.co.uk">info@thurrocktraining.co.uk</a></li><li class="muted">Venue <span class="tbc">TBC</span></li></ul></div>
+    </div>
+    <div class="foot-base">
+      <span>© 2026 Thurrock Training · <a href="#/contact">Privacy</a> · <a href="#/contact">Terms</a></span>
+      <span class="powered">Powered by LaunchFlow</span>
+    </div>
+  </div>
+</footer>
+
+<div class="mbar">
+  <a class="btn btn-line" href="tel:+441375486325">Call</a>
+  <a class="btn btn-primary" href="#/dates">Book a course</a>
+</div>
+<div class="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+const ICON = {
+  arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h13M12 5l7 7-7 7"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  pin:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 21s-7-6.2-7-12a7 7 0 0 1 14 0c0 5.8-7 12-7 12Z"/><circle cx="12" cy="9" r="2.5"/></svg>',
+  cert:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="6"/><path d="m8.5 14 -1.5 8 5-3 5 3-1.5-8"/></svg>',
+  cap:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 9 10-5 10 5-10 5Z"/><path d="M6 11v5c3 2.5 9 2.5 12 0v-5"/></svg>',
+  people:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/></svg>',
+  book:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 6c-2-1.5-5-2-8-1.5v14c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5v-14c-3-.5-6 0-8 1.5Z"/><path d="M12 6v14"/></svg>',
+  chart:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>',
+  tick:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9.5"/><path d="m8 12 3 3 5-6"/></svg>',
+  phone:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h3.5l1.6 4.4-2.2 1.4a11 11 0 0 0 5.3 5.3l1.4-2.2L19 13.5V17a2 2 0 0 1-2 2A15 15 0 0 1 3 5a2 2 0 0 1 2-2Z"/></svg>',
+  mail:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>',
+};
+
+// Everything business-specific lives here: this is what BizzFlow will supply.
+const COURSES = [
+  { slug:'door-supervisor', short:'SIA Door Supervisor', name:'SIA Door Supervisor (Level 2)', kicker:'SIA licence-linked',
+    outcome:'The qualification you need to apply for an SIA Door Supervisor licence and work on the door, at events and in security.',
+    duration:'6 days in class', format:'Classroom', cert:'Level 2 qualification', price:null, slot:'Photo: door supervisor on shift',
+    learn:['Working in the private security industry','Working as a door supervisor','Conflict management','Physical intervention skills','Terror threat awareness','Handling licensed premises safely'],
+    who:'Anyone aged 18 or over who wants to work as a door supervisor or security officer at licensed premises, events or venues.',
+    requirements:[
+      ['Be 18 or over','The SIA only licenses adults.'],
+      ['Bring identity documents','Accepted ID is checked before the course starts. List to be confirmed.'],
+      ['Hold a valid first aid certificate','Emergency First Aid at Work or equivalent, valid for at least 12 months from your course start date.'],
+      ['Complete the distance learning','Sent to you when you book, and must be finished before day one.'],
+    ],
+    days:[
+      ['Before day 1','Mandatory distance learning, emailed to you when you book.', true],
+      ['Day 1','A 20-question multiple-choice test on your distance learning, then classroom learning begins.'],
+      ['Days 2–5','Classroom learning and practical skills.'],
+      ['Day 6','Final assessments.'],
+    ],
+    assessment:'Multiple-choice exams and practical assessments. Exam details to be confirmed with the awarding body.',
+    after:'Once you pass, apply for your licence on the SIA website. Your certificate is the evidence of training they ask for.',
+    faqs:[
+      ['Do I need a first aid certificate first?','Yes. The SIA requires a current Emergency First Aid at Work certificate (or equivalent) that is valid for at least 12 months from the day your door supervisor course starts. You can take our first aid course before it.'],
+      ['Why is there work to do before the course?','The SIA lets the course run over six days only if you complete distance learning first. You sit a 20-question test on it on the first morning.'],
+      ['Is the licence included?','No. The course gives you the qualification. You then apply and pay for the licence directly with the SIA.'],
+    ]},
+  { slug:'emergency-first-aid', short:'Emergency First Aid at Work', name:'Emergency First Aid at Work (Level 3)', kicker:'Meets the SIA first aid requirement',
+    outcome:'Learn to handle an emergency at work: CPR, choking, an unresponsive casualty, bleeding, wounds and minor injuries.',
+    duration:'1 day', format:'Classroom', cert:'Level 3 certificate', price:null, slot:'Photo: CPR practice on a manikin',
+    learn:['Your role as a first aider','Assessing an incident','CPR and using a defibrillator','Helping someone who is choking','Caring for an unresponsive casualty','Bleeding, wounds and minor injuries'],
+    who:'Anyone who needs a first aid certificate for work, including people about to take SIA door supervisor training.',
+    requirements:[['Be 16 or over','Age requirement to be confirmed.'],['Able to take part in practical work','CPR practice is done kneeling on the floor.']],
+    days:[['Day 1','Theory and practical first aid skills, with assessment during the day.']],
+    assessment:'Practical demonstrations and questions throughout the day.',
+    after:'Your certificate is valid for three years. We’ll remind you before it runs out.',
+    faqs:[['Does this count for the SIA?','Yes, Emergency First Aid at Work meets the SIA first aid requirement, as long as it is valid for at least 12 months from your security course start date.'],['How long is the certificate valid?','Three years from the day you pass.']]},
+  { slug:'iosh', short:'IOSH Health & Safety', name:'IOSH Health & Safety', kicker:'Workplace safety',
+    outcome:'Build the health and safety knowledge employers look for, with an IOSH-certified course.',
+    duration:null, format:'Classroom', cert:'IOSH certificate', price:null, slot:'Photo: site safety briefing',
+    learn:['Why safety matters','Assessing hazards and risks','Controlling risks','Understanding your responsibilities','Identifying common hazards','Improving safety performance'],
+    who:'Staff and supervisors in any workplace who need a recognised health and safety certificate.',
+    requirements:[['No previous qualifications needed','Course level and entry requirements to be confirmed.']],
+    days:[['Course days','Timetable to be confirmed.']],
+    assessment:'Assessment details to be confirmed.',
+    after:'You receive an IOSH certificate once you pass.',
+    faqs:[['Which IOSH course is this?','To be confirmed: IOSH Working Safely and IOSH Managing Safely are different lengths.']]},
+];
+
+// Sample dates only. Real sessions will come from BizzFlow.
+const SESSIONS = [
+  { id:'ds-oct', course:'door-supervisor', start:'2026-10-05', end:'2026-10-10', times:'9:00am – 5:00pm', seats:8 },
+  { id:'fa-sep', course:'emergency-first-aid', start:'2026-09-26', end:'2026-09-26', times:'9:00am – 4:00pm', seats:10 },
+  { id:'io-oct', course:'iosh', start:'2026-10-12', end:null, times:null, seats:6 },
+  { id:'fa-oct', course:'emergency-first-aid', start:'2026-10-24', end:'2026-10-24', times:'9:00am – 4:00pm', seats:3 },
+  { id:'ds-nov', course:'door-supervisor', start:'2026-11-02', end:'2026-11-07', times:'9:00am – 5:00pm', seats:0 },
+  { id:'ds-nov2', course:'door-supervisor', start:'2026-11-23', end:'2026-11-28', times:'9:00am – 5:00pm', seats:12 },
+  { id:'fa-nov', course:'emergency-first-aid', start:'2026-11-14', end:'2026-11-14', times:'9:00am – 4:00pm', seats:12 },
+].sort((a,b)=>a.start.localeCompare(b.start));
+
+const FAQS = [
+  ['Do I need a first aid certificate for the SIA course?','Yes. You need a current Emergency First Aid at Work certificate (or equivalent) valid for at least 12 months from your door supervisor course start date.'],
+  ['How long does the SIA Door Supervisor course take?','Six days in the classroom, plus mandatory distance learning you complete before day one.'],
+  ['When can I apply for my SIA licence?','Once you have passed, you apply to the SIA directly on their website. They check your identity, training and criminal record.'],
+  ['Are there entry requirements?','You must be 18 or over for SIA training, bring accepted identity documents and hold a valid first aid certificate.'],
+  ['Can you train our staff at our workplace?','Ask us. We run group bookings for employers and can talk through on-site training.'],
+  ['How do I book?','Pick a date, fill in your details and pay online. If you are not sure which course you need, book a free one-to-one assessment first.'],
+];
+
+const $ = (s, el=document) => el.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const course = slug => COURSES.find(c => c.slug === slug);
+const fmt = (iso, o) => new Date(iso+'T12:00:00').toLocaleDateString('en-GB', o);
+const dateRange = s => s.end && s.end !== s.start ? `${fmt(s.start,{weekday:'short',day:'numeric',month:'short'})} – ${fmt(s.end,{weekday:'short',day:'numeric',month:'short'})}` : fmt(s.start,{weekday:'long',day:'numeric',month:'long'});
+const tbc = label => `<span class="tbc">${esc(label)} TBC</span>`;
+const price = c => c.price ? `£${c.price}` : tbc('Price');
+const seatChip = n => n === 0 ? '<span class="seats full">Fully booked</span>' : n <= 3 ? `<span class="seats low">${n} ${n===1?'place':'places'} left</span>` : `<span class="seats">${n} places left</span>`;
+const cal = iso => `<span class="cal" aria-hidden="true"><i>${fmt(iso,{month:'short'}).toUpperCase()}</i><b class="num">${fmt(iso,{day:'numeric'})}</b></span>`;
+const upcoming = (slug) => SESSIONS.filter(s => !slug || s.course === slug);
+
+function faqList(list, two) {
+  return `<div class="faq ${two?'two':''}">${list.map(([q,a])=>`<details><summary>${esc(q)}</summary><p class="ans">${esc(a)}</p></details>`).join('')}</div>`;
+}
+function ctaBand() {
+  return `<section class="block" style="padding-top:0"><div class="wrap"><div class="cta">
+    <div><h2>Ready to start your security career?</h2><p>Find a date, or book a free one-to-one assessment first.</p></div>
+    <div class="actions"><a class="btn btn-primary" href="#/dates">Find a date ${ICON.arrow}</a><a class="btn btn-ghost" href="#/contact">Free assessment</a></div>
+  </div></div></section>`;
+}
+function courseCard(c) {
+  const next = upcoming(c.slug).find(s => s.seats > 0);
+  return `<article class="course-card">
+    <div class="slot"><span>${esc(c.slot)}</span></div>
+    <div class="body">
+      <span class="kicker">${esc(c.kicker)}</span>
+      <h3>${esc(c.short)}</h3>
+      <p class="muted">${esc(c.outcome)}</p>
+      <div class="facts">
+        <span class="fact">${ICON.clock}${c.duration ? esc(c.duration) : tbc('Duration')}</span>
+        <span class="fact">${ICON.cert}${esc(c.cert)}</span>
+        <span class="fact">${ICON.cal}${next ? 'Next: '+fmt(next.start,{day:'numeric',month:'short'}) : 'No dates yet'}</span>
+        <span class="fact">From ${price(c)}</span>
+      </div>
+      <a class="btn btn-primary btn-block" href="#/courses/${c.slug}">View dates and book ${ICON.arrow}</a>
+    </div>
+  </article>`;
+}
+
+const pages = {
+home() {
+  const next = SESSIONS.filter(s => s.seats > 0).slice(0,3);
+  return `
+  <section class="hero" aria-labelledby="h1">
+    <div class="wrap">
+      <div>
+        <p class="eyebrow">Security careers start here</p>
+        <h1 id="h1">Get SIA-licensed and <em>working.</em></h1>
+        <p class="lede">Door supervisor, first aid and health &amp; safety courses in Thurrock, with a free one-to-one assessment before you book.</p>
+        <div class="actions"><a class="btn btn-primary" href="#/dates">Find a date ${ICON.arrow}</a><a class="btn btn-ghost" href="#/contact">Free assessment</a></div>
+        <div class="proofs">
+          <span class="proof">${ICON.cap}SIA licence-linked training</span>
+          <span class="proof">${ICON.people}Professional instructors</span>
+          <span class="proof">${ICON.book}Learning materials any time</span>
+          <span class="proof">${ICON.chat}Free one-to-one assessment</span>
+        </div>
+      </div>
+      <div>
+        <div class="badge-card" aria-hidden="true">
+          <div class="badge-top"><b>DOOR SUPERVISOR</b><span>YOUR NEXT STEP</span></div>
+          <div class="badge-body">
+            <div class="badge-photo">Your photo</div>
+            <dl class="badge-rows">
+              <div><dt>Qualification</dt><dd>Level 2 Door Supervisor</dd></div>
+              <div><dt>Classroom</dt><dd class="num">6 days</dd></div>
+              <div><dt>First aid</dt><dd>Valid 12+ months</dd></div>
+            </dl>
+          </div>
+          <p class="badge-foot">Pass the course, then apply to the SIA for your licence.</p>
+        </div>
+        <p class="badge-caption">Train with us · Apply to the SIA · Start work</p>
+      </div>
+    </div>
+  </section>
+
+  <div class="wrap dates-strip">
+    <div class="strip">
+      <div class="strip-head"><h2>Next course dates</h2><a class="link" href="#/dates">View all dates ${ICON.arrow.replace('<svg','<svg width="16" height="16"')}</a></div>
+      <div class="strip-list">${next.map(s => { const c = course(s.course); return `
+        <a class="session-mini" href="#/book/${s.id}">${cal(s.start)}
+          <span><h3>${esc(c.short)}</h3><p>${esc(dateRange(s))}</p></span>${seatChip(s.seats)}</a>`; }).join('')}
+      </div>
+    </div>
+  </div>
+
+  <section class="block"><div class="wrap">
+    <div class="sec-head"><div><p class="eyebrow">Our courses</p><h2>Train for the job you want</h2></div><a class="link" href="#/courses">All courses ${ICON.arrow.replace('<svg','<svg width="16" height="16"')}</a></div>
+    <div class="course-grid">${COURSES.map(courseCard).join('')}</div>
+  </div></section>
+
+  <section class="block route" aria-labelledby="route-h"><div class="wrap">
+    <div class="sec-head"><div><p class="eyebrow" style="color:#8DB8FF">Your route to an SIA licence</p><h2 id="route-h">From booking to badge</h2><p class="muted">Four steps, in this order.</p></div><a class="btn btn-ghost" href="#/sia-licence">Read the full guide</a></div>
+    <ol class="route-steps">
+      <li><h3>Book your course</h3><p>Pick a date and secure your place online.</p><small>Today</small></li>
+      <li><h3>Distance learning</h3><p>Complete the mandatory pre-course learning we email you.</p><small>Before day 1</small></li>
+      <li><h3>Classroom and exams</h3><p>Six days with us, starting with a 20-question test.</p><small>6 days</small></li>
+      <li><h3>Apply for your licence</h3><p>Use your qualification to apply to the SIA.</p><small>After you pass</small></li>
+    </ol>
+  </div></section>
+
+  <section class="block white"><div class="wrap">
+    <div class="sec-head"><div><p class="eyebrow">Why Thurrock Training</p><h2>Training that gets you through</h2></div></div>
+    <div class="why">
+      <div class="why-item"><span class="ico">${ICON.people}</span><div><h3>Professional instructors</h3><p>Experienced trainers who know the security industry.</p></div></div>
+      <div class="why-item"><span class="ico">${ICON.book}</span><div><h3>Learning materials any time</h3><p>Detailed, well-structured materials you can come back to.</p></div></div>
+      <div class="why-item"><span class="ico">${ICON.chart}</span><div><h3>Strong pass rates</h3><p>Training shaped around what you need to pass.</p></div></div>
+      <div class="why-item"><span class="ico">${ICON.chat}</span><div><h3>Free one-to-one assessment</h3><p>Talk it through before you pay, so you book the right course.</p></div></div>
+    </div>
+  </div></section>
+
+  <section class="block"><div class="wrap split">
+    <div class="panel">
+      <div class="sec-head" style="margin-bottom:0"><div><p class="eyebrow">Reviews</p><h2 style="font-size:30px">What learners say</h2></div></div>
+      <div class="empty-reviews">
+        <b>Google reviews appear here</b>
+        <p class="muted">Once Thurrock Training's Google Business Profile is connected, the real rating and latest reviews show here automatically. With no reviews, this block hides.</p>
+      </div>
+    </div>
+    <div class="employer">
+      <p class="eyebrow" style="color:#8DB8FF">For employers</p>
+      <h3>Training your team?</h3>
+      <p>Group bookings, invoice payment and one contact for all your staff's training.</p>
+      <a class="btn btn-primary" href="#/employers" style="margin-top:auto">Training for businesses ${ICON.arrow}</a>
+    </div>
+  </div></section>
+
+  <section class="block" style="padding-top:0"><div class="wrap">
+    <div class="sec-head"><div><p class="eyebrow">Questions</p><h2>Before you book</h2></div><a class="link" href="#/faqs">All FAQs ${ICON.arrow.replace('<svg','<svg width="16" height="16"')}</a></div>
+    ${faqList(FAQS.slice(0,6), true)}
+  </div></section>
+  ${ctaBand()}`;
+},
+
+courses() {
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><span>Courses</span></nav>
+    <h1>Courses</h1><p>Security and workplace safety training in Thurrock. Not sure where to start? Book a free one-to-one assessment.</p>
+  </div></section>
+  <section class="block"><div class="wrap"><div class="course-grid">${COURSES.map(courseCard).join('')}</div></div></section>
+  ${ctaBand()}`;
+},
+
+course(slug) {
+  const c = course(slug);
+  if (!c) return pages.notfound();
+  const list = upcoming(slug);
+  const firstOpen = list.find(s => s.seats > 0);
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><a href="#/courses">Courses</a><span>/</span><span>${esc(c.short)}</span></nav>
+    <p class="eyebrow" style="color:#8DB8FF;margin-bottom:12px">${esc(c.kicker)}</p>
+    <h1>${esc(c.name)}</h1><p>${esc(c.outcome)}</p>
+    <div class="keyfacts">
+      <span>${ICON.clock}${c.duration ? esc(c.duration) : 'Duration TBC'}</span>
+      <span>${ICON.pin}${esc(c.format)} · Thurrock</span>
+      <span>${ICON.cert}${esc(c.cert)}</span>
+      <span>From ${c.price ? '£'+c.price : 'price TBC'}</span>
+    </div>
+  </div></section>
+  <div class="wrap course-layout">
+    <div class="prose">
+      <section><h2>What you'll learn</h2><ul class="learn">${c.learn.map(l=>`<li>${esc(l)}</li>`).join('')}</ul></section>
+      <section><h2>Who it's for</h2><p>${esc(c.who)}</p></section>
+      <section><h2>Entry requirements</h2><ul class="checklist">${c.requirements.map(([t,d])=>`<li>${ICON.tick}<div><b>${esc(t)}</b><span>${esc(d)}</span></div></li>`).join('')}</ul></section>
+      <section><h2>How the course runs</h2><div class="days">${c.days.map(([d,t,pre])=>`<div class="day ${pre?'pre':''}"><b>${esc(d)}</b><span>${esc(t)}</span></div>`).join('')}</div></section>
+      <section><h2>Assessment</h2><p>${esc(c.assessment)}</p></section>
+      <section><h2>After the course</h2><div class="note"><p>${esc(c.after)}</p></div></section>
+      <section><h2>Questions about this course</h2>${faqList(c.faqs)}</section>
+    </div>
+    <aside class="book-card" aria-label="Book this course">
+      <header><p class="muted" style="font-size:13px">From</p><b>${c.price ? '£'+c.price : '<span class="tbc">Price TBC</span>'}</b></header>
+      ${list.length ? `<form class="rows" data-pick>
+        ${list.map(s => `<label class="pick ${s.seats===0?'is-full':''}">
+          <input type="radio" name="session" value="${s.id}" ${s.seats===0?'disabled':''} ${s===firstOpen?'checked':''}>
+          <span><b>${esc(dateRange(s))}</b><small>${s.times ? esc(s.times) : 'Times TBC'} · Venue TBC</small></span>
+          ${seatChip(s.seats)}
+        </label>`).join('')}
+        <footer><button class="btn btn-primary btn-block" type="submit" ${firstOpen?'':'disabled'}>Book this date ${ICON.arrow}</button><p>Free one-to-one assessment available before you pay.</p></footer>
+      </form>` : `<footer><p style="text-align:left;font-size:15px;color:var(--ink)">No dates scheduled yet.</p><a class="btn btn-primary btn-block" href="#/contact?interest=${c.slug}">Register your interest</a><p>We'll email you when dates are released.</p></footer>`}
+    </aside>
+  </div>
+  <section class="block"><div class="wrap">
+    <div class="sec-head"><h2>Other courses</h2></div>
+    <div class="course-grid">${COURSES.filter(x=>x.slug!==slug).map(courseCard).join('')}</div>
+  </div></section>`;
+},
+
+dates() {
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><span>Course dates</span></nav>
+    <h1>Course dates</h1><p>Every upcoming course, with places left. Pick a date to book.</p>
+  </div></section>
+  <div class="wrap">
+    <div class="filters" role="group" aria-label="Filter by course">
+      <button class="chip" type="button" data-filter="" aria-pressed="true">All courses</button>
+      ${COURSES.map(c=>`<button class="chip" type="button" data-filter="${c.slug}" aria-pressed="false">${esc(c.short)}</button>`).join('')}
+    </div>
+    <div id="date-list"></div>
+  </div>`;
+},
+
+book(id) {
+  const s = SESSIONS.find(x => x.id === id);
+  if (!s) return pages.notfound();
+  const c = course(s.course);
+  if (s.seats === 0) return `<section class="page-hero"><div class="wrap"><h1>This date is fully booked</h1><p>Choose another date for ${esc(c.short)}, or join the waiting list and we'll contact you if a place opens.</p><div class="keyfacts"><a class="btn btn-primary" href="#/courses/${c.slug}">See other dates</a></div></div></section>`;
+  const needsSia = c.slug === 'door-supervisor';
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><a href="#/courses/${c.slug}">${esc(c.short)}</a><span>/</span><span>Book</span></nav>
+    <h1>Book your place</h1><p>${esc(c.name)} · ${esc(dateRange(s))}</p>
+  </div></section>
+  <div class="wrap book-layout">
+    <div>
+      <ol class="stepper" aria-label="Booking progress"><li data-step="1">Your details</li><li data-step="2">Requirements</li><li data-step="3">Payment</li></ol>
+      <form class="form" data-step-form="1" novalidate>
+        <h2>Your details</h2>
+        <div class="grid2">
+          <div class="field"><label for="fn">Full name</label><input id="fn" name="name" autocomplete="name" value="Jordan Ellis"><span class="err">Enter your full name as it appears on your ID.</span></div>
+          <div class="field"><label for="dob">Date of birth</label><input id="dob" name="dob" type="date" value="1998-04-12"><span class="err">${needsSia ? 'You must be 18 or over to take SIA training.' : 'Enter your date of birth.'}</span></div>
+          <div class="field"><label for="em">Email</label><input id="em" name="email" type="email" autocomplete="email" value="jordan.ellis@example.com"><span class="err">Enter an email address so we can send your joining instructions.</span></div>
+          <div class="field"><label for="mo">Mobile</label><input id="mo" name="mobile" type="tel" autocomplete="tel" value="07700 900123"><span class="err">Enter a mobile number.</span></div>
+        </div>
+        <fieldset class="field"><legend>Who is this booking for?</legend>
+          <label class="opt"><input type="radio" name="for" value="me" checked><div><b>Me</b><span>I'm booking my own place.</span></div></label>
+          <label class="opt"><input type="radio" name="for" value="company"><div><b>My company</b><span>We'll invoice your business. For several people, use the employer booking form.</span></div></label>
+        </fieldset>
+        <p class="muted" style="font-size:13px">Example details are filled in for this prototype.</p>
+        <div class="form-actions"><a class="btn btn-line" href="#/courses/${c.slug}">Back</a><button class="btn btn-primary" type="submit">Continue ${ICON.arrow}</button></div>
+      </form>
+      <form class="form" data-step-form="2" hidden novalidate>
+        <h2>Before you book</h2>
+        <p class="muted">Tick each one to confirm. If you can't yet, call us and we'll help you sort it.</p>
+        <fieldset>
+          ${(needsSia ? [
+            ['id','I have accepted identity documents','We check these before the course starts. The accepted list will be sent with your booking.'],
+            ['fa','I hold a first aid certificate valid for 12+ months from the start date','Emergency First Aid at Work or equivalent. No certificate yet? Book first aid first.'],
+            ['dl','I will complete the distance learning before day one','We email it to you straight after booking. There is a 20-question test on it on day one.'],
+          ] : [
+            ['id','I can attend every session','Certificates are only issued for full attendance.'],
+            ['pr','I can take part in the practical work',''],
+          ]).map(([k,t,d])=>`<label class="opt"><input type="checkbox" name="${k}"><div><b>${esc(t)}</b>${d?`<span>${esc(d)}</span>`:''}</div></label>`).join('')}
+        </fieldset>
+        <p class="err-all" style="color:var(--red);font-weight:600;display:none">Confirm each requirement to continue, or call us on 01375 486 325.</p>
+        <div class="form-actions"><button class="btn btn-line" type="button" data-back="1">Back</button><button class="btn btn-primary" type="submit">Continue ${ICON.arrow}</button></div>
+      </form>
+      <form class="form" data-step-form="3" hidden novalidate>
+        <h2>Payment</h2>
+        <fieldset>
+          <label class="opt"><input type="radio" name="pay" value="deposit" checked><div><b>Pay a deposit</b><span>Secure your place now and pay the rest before the course. Deposit amount TBC.</span></div></label>
+          <label class="opt"><input type="radio" name="pay" value="full"><div><b>Pay in full</b><span>Nothing more to pay.</span></div></label>
+        </fieldset>
+        <div class="note"><p><b>Secure card payment.</b> In the live site this step opens a secure card form. This prototype takes no payment.</p></div>
+        <div class="form-actions"><button class="btn btn-line" type="button" data-back="2">Back</button><button class="btn btn-primary" type="submit">Confirm booking ${ICON.arrow}</button></div>
+      </form>
+    </div>
+    <aside class="book-card summary" aria-label="Your booking">
+      <header><b style="font-size:18px">Your booking</b></header>
+      <div style="padding:18px 20px">
+        <dl>
+          <dt>Course</dt><dd>${esc(c.short)}</dd>
+          <dt>Dates</dt><dd>${esc(dateRange(s))}</dd>
+          <dt>Times</dt><dd>${s.times ? esc(s.times) : 'TBC'}</dd>
+          <dt>Venue</dt><dd><span class="tbc">TBC</span></dd>
+          <dt>Places</dt><dd>${seatChip(s.seats)}</dd>
+        </dl>
+        <div class="total"><span>Total</span><b>${price(c)}</b></div>
+      </div>
+    </aside>
+  </div>`;
+},
+
+confirmed() {
+  return `<div class="wrap" style="padding-top:48px;max-width:760px">
+    <div class="form" style="gap:22px">
+      <span class="done-icon">${ICON.tick}</span>
+      <div><h1 style="font-size:clamp(30px,4vw,44px);font-weight:900">You're booked in</h1><p class="muted" style="margin-top:8px">Booking reference <b class="num" style="color:var(--ink)">TT-2610-0147</b> (example). A confirmation is on its way to your email.</p></div>
+      <div><h2 style="font-size:22px;margin-bottom:14px">What happens next</h2>
+        <ol class="next-steps">
+          <li><div><b>Joining instructions</b><p class="muted">Venue, start time and what to bring, by email.</p></div></li>
+          <li><div><b>Distance learning</b><p class="muted">Complete it before day one. There's a short test on it on the first morning.</p></div></li>
+          <li><div><b>Bring your ID and first aid certificate</b><p class="muted">We check them before the course starts.</p></div></li>
+        </ol>
+      </div>
+      <div class="form-actions"><button class="btn btn-line" type="button" data-toast="Calendar file ready on the live site">Add to calendar</button><a class="btn btn-primary" href="#/">Back to home</a></div>
+    </div>
+  </div>`;
+},
+
+employers() {
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><span>Employers</span></nav>
+    <h1>Training for your team</h1><p>Book several staff at once, pay by invoice, and keep one contact for all their training and renewals.</p>
+  </div></section>
+  <div class="wrap two-col" style="padding-top:36px">
+    <div class="prose">
+      <section><h2>How we work with businesses</h2>
+        <ul class="checklist">
+          <li>${ICON.tick}<div><b>Group bookings</b><span>Reserve places for your team on a scheduled course.</span></div></li>
+          <li>${ICON.tick}<div><b>Pay by invoice</b><span>One invoice to your business.</span></div></li>
+          <li>${ICON.tick}<div><b>Renewal reminders</b><span>We remind you before your team's certificates run out.</span></div></li>
+          <li>${ICON.tick}<div><b>Training at your workplace</b><span>Ask us about running a course on your site.</span></div></li>
+        </ul>
+      </section>
+    </div>
+    <form class="form" data-enquiry novalidate>
+      <h2>Tell us what you need</h2>
+      <div class="grid2">
+        <div class="field"><label for="co">Company</label><input id="co" required><span class="err">Enter your company name.</span></div>
+        <div class="field"><label for="cn">Your name</label><input id="cn" required autocomplete="name"><span class="err">Enter your name.</span></div>
+        <div class="field"><label for="ce">Work email</label><input id="ce" type="email" required autocomplete="email"><span class="err">Enter an email address.</span></div>
+        <div class="field"><label for="cp">Phone</label><input id="cp" type="tel" autocomplete="tel"></div>
+        <div class="field"><label for="cc">Course</label><select id="cc">${COURSES.map(c=>`<option>${esc(c.short)}</option>`).join('')}<option>Not sure yet</option></select></div>
+        <div class="field"><label for="cl">Number of learners</label><input id="cl" type="number" min="1" value="4"></div>
+      </div>
+      <div class="field"><label for="cm">Preferred dates or anything else</label><textarea id="cm"></textarea></div>
+      <button class="btn btn-primary" type="submit">Send enquiry ${ICON.arrow}</button>
+    </form>
+  </div>`;
+},
+
+guide() {
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><span>SIA licence guide</span></nav>
+    <h1>How to get your SIA licence</h1><p>A plain-English guide to becoming a licensed door supervisor, from first aid to your first shift.</p>
+  </div></section>
+  <div class="wrap" style="max-width:900px;padding-top:24px">
+    <div class="guide-step"><span class="n">1</span><div><h3>Check you're eligible</h3><p class="muted">You must be 18 or over. The SIA checks your identity and criminal record when you apply, so make sure you have accepted ID documents.</p></div></div>
+    <div class="guide-step"><span class="n">2</span><div><h3>Get your first aid certificate</h3><p class="muted">You need Emergency First Aid at Work (or equivalent), valid for at least 12 months from the day your door supervisor course starts. <a class="link" href="#/courses/emergency-first-aid">See the first aid course</a></p></div></div>
+    <div class="guide-step"><span class="n">3</span><div><h3>Book your door supervisor course</h3><p class="muted">The Level 2 Door Supervisor qualification is the training the SIA asks for. <a class="link" href="#/courses/door-supervisor">See dates</a></p></div></div>
+    <div class="guide-step"><span class="n">4</span><div><h3>Do the distance learning</h3><p class="muted">For the six-day course you must finish the distance learning before day one, and pass a 20-question multiple-choice test on it that morning.</p></div></div>
+    <div class="guide-step"><span class="n">5</span><div><h3>Pass the course</h3><p class="muted">Six days in the classroom, with exams and practical assessments.</p></div></div>
+    <div class="guide-step"><span class="n">6</span><div><h3>Apply to the SIA</h3><p class="muted">Apply and pay for your licence on the SIA website. You can start work once your licence is granted.</p></div></div>
+    <div class="note warn" style="margin-top:12px"><p>The SIA sets these rules and can change them. We'll keep this guide up to date; check the SIA website before you apply.</p></div>
+  </div>
+  <div style="height:56px"></div>${ctaBand()}`;
+},
+
+about() {
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><span>About</span></nav>
+    <h1>About Thurrock Training</h1><p>Security and safety training in Thurrock, Essex, built around getting learners qualified and into work.</p>
+  </div></section>
+  <div class="wrap two-col" style="padding-top:36px">
+    <div class="prose"><section><h2>Our approach</h2>
+      <p>Professional instructors, detailed learning materials you can come back to any time, and training shaped around what each learner needs to pass.</p>
+      <p>Everyone starts with a free one-to-one assessment, so you book the right course at the right cost.</p>
+      <p class="muted">Company story, instructor profiles and accreditations to be supplied by Thurrock Training.</p>
+    </section></div>
+    <div class="slot" style="border-radius:18px;aspect-ratio:4/3"><span>Photo: the training room</span></div>
+  </div>`;
+},
+
+faqs() {
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><span>FAQs</span></nav>
+    <h1>Frequently asked questions</h1>
+  </div></section>
+  <div class="wrap" style="padding-top:32px;max-width:900px">${faqList([...FAQS, ...COURSES.flatMap(c=>c.faqs)])}</div>
+  <div style="height:56px"></div>${ctaBand()}`;
+},
+
+contact(q) {
+  const interest = course(new URLSearchParams(q).get('interest') || '');
+  return `<section class="page-hero"><div class="wrap">
+    <nav class="crumbs" aria-label="Breadcrumb"><a href="#/">Home</a><span>/</span><span>Contact</span></nav>
+    <h1>${interest ? 'Register your interest' : 'Book a free assessment'}</h1>
+    <p>${interest ? `We'll email you as soon as new ${esc(interest.short)} dates are released.` : `Tell us what you want to do and we'll call you back to find the right course. No cost, no commitment.`}</p>
+  </div></section>
+  <div class="wrap two-col" style="padding-top:36px">
+    <div class="prose"><section><h2>Talk to us</h2>
+      <ul class="contact-list">
+        <li><a href="tel:+441375486325"><span class="ico">${ICON.phone}</span><span class="num">01375 486 325</span></a></li>
+        <li><a href="mailto:info@thurrocktraining.co.uk"><span class="ico">${ICON.mail}</span>info@thurrocktraining.co.uk</a></li>
+        <li><span style="display:flex;gap:12px;align-items:center;font-weight:700"><span class="ico" style="width:44px;height:44px;border-radius:12px;background:var(--blue-tint);display:grid;place-items:center;color:var(--blue)">${ICON.pin}</span>Venue address <span class="tbc">TBC</span></span></li>
+      </ul>
+    </section></div>
+    <form class="form" data-enquiry novalidate>
+      <h2>${interest ? 'Your details' : 'Request a call back'}</h2>
+      <div class="grid2">
+        <div class="field"><label for="n1">Name</label><input id="n1" required autocomplete="name"><span class="err">Enter your name.</span></div>
+        <div class="field"><label for="p1">Phone</label><input id="p1" type="tel" required autocomplete="tel"><span class="err">Enter a phone number so we can call you back.</span></div>
+      </div>
+      <div class="field"><label for="e1">Email</label><input id="e1" type="email" required autocomplete="email"><span class="err">Enter an email address.</span></div>
+      <div class="field"><label for="c1">Course</label><select id="c1">${COURSES.map(c=>`<option ${interest&&interest.slug===c.slug?'selected':''}>${esc(c.short)}</option>`).join('')}<option ${interest?'':'selected'}>Not sure yet</option></select></div>
+      <div class="field"><label for="m1">Message</label><textarea id="m1" placeholder="What would you like to do?"></textarea></div>
+      <button class="btn btn-primary" type="submit">${interest ? 'Register interest' : 'Request call back'} ${ICON.arrow}</button>
+    </form>
+  </div>`;
+},
+
+notfound() {
+  return `<section class="page-hero"><div class="wrap"><h1>Page not found</h1><p>That page doesn't exist. Try the course list.</p><div class="keyfacts"><a class="btn btn-primary" href="#/courses">See courses</a></div></div></section>`;
+},
+};
+
+function renderDates(filter) {
+  const list = SESSIONS.filter(s => !filter || s.course === filter);
+  const byMonth = {};
+  list.forEach(s => { const k = fmt(s.start,{month:'long',year:'numeric'}); (byMonth[k] ||= []).push(s); });
+  $('#date-list').innerHTML = Object.entries(byMonth).map(([m, rows]) => `<div class="month"><h2>${m}</h2>${rows.map(s => { const c = course(s.course); return `
+    <div class="session-row">
+      ${cal(s.start)}
+      <div><h3>${esc(c.short)}</h3><p class="meta">${esc(dateRange(s))}</p></div>
+      <p class="meta">${s.times ? esc(s.times) : 'Times TBC'}<br>Venue <span class="tbc">TBC</span></p>
+      <div>${seatChip(s.seats)}<p class="meta" style="margin-top:6px">From ${price(c)}</p></div>
+      ${s.seats === 0 ? `<a class="btn btn-line" href="#/contact?interest=${c.slug}">Join waiting list</a>` : `<a class="btn btn-primary" href="#/book/${s.id}">Book ${ICON.arrow}</a>`}
+    </div>`; }).join('')}</div>`).join('') || '<p class="muted" style="padding:24px 0">No dates for this course yet.</p>';
+}
+
+function toast(msg) {
+  const t = $('.toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+function wire(route) {
+  document.querySelectorAll('[data-pick]').forEach(f => f.addEventListener('submit', e => {
+    e.preventDefault(); const v = new FormData(f).get('session'); if (v) location.hash = `#/book/${v}`;
+  }));
+  if (route === 'dates') {
+    renderDates('');
+    document.querySelectorAll('[data-filter]').forEach(b => b.addEventListener('click', () => {
+      document.querySelectorAll('[data-filter]').forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      renderDates(b.dataset.filter);
+    }));
+  }
+  const steps = document.querySelectorAll('[data-step-form]');
+  if (steps.length) {
+    const show = n => {
+      steps.forEach(f => f.hidden = f.dataset.stepForm !== String(n));
+      document.querySelectorAll('.stepper li').forEach(li => { const k = +li.dataset.step; li.className = k < n ? 'done' : k === n ? 'now' : ''; li.toggleAttribute('aria-current', k === n); });
+      window.scrollTo({ top: 0 });
+    };
+    show(1);
+    steps[0].addEventListener('submit', e => {
+      e.preventDefault(); let ok = true;
+      steps[0].querySelectorAll('.field').forEach(fd => {
+        const i = fd.querySelector('input'); if (!i || i.type === 'radio') return;
+        let bad = !i.value.trim();
+        if (i.type === 'email') bad = !/^\S+@\S+\.\S+$/.test(i.value);
+        if (i.name === 'dob' && i.value) { const age = (Date.now() - new Date(i.value)) / 31557600000; bad = age < 18; }
+        fd.classList.toggle('bad', bad); if (bad) ok = false;
+      });
+      if (ok) show(2);
+    });
+    steps[1].addEventListener('submit', e => {
+      e.preventDefault(); const all = [...steps[1].querySelectorAll('input[type=checkbox]')].every(i => i.checked);
+      steps[1].querySelector('.err-all').style.display = all ? 'none' : 'block'; if (all) show(3);
+    });
+    steps[2].addEventListener('submit', e => { e.preventDefault(); location.hash = '#/book/confirmed'; });
+    document.querySelectorAll('[data-back]').forEach(b => b.addEventListener('click', () => show(+b.dataset.back)));
+  }
+  document.querySelectorAll('[data-enquiry]').forEach(f => f.addEventListener('submit', e => {
+    e.preventDefault(); let ok = true;
+    f.querySelectorAll('.field').forEach(fd => { const i = fd.querySelector('input[required]'); if (!i) return;
+      const bad = !i.value.trim() || (i.type === 'email' && !/^\S+@\S+\.\S+$/.test(i.value)); fd.classList.toggle('bad', bad); if (bad) ok = false; });
+    if (ok) { f.reset(); toast('Sent. We’ll be in touch within one working day.'); }
+  }));
+  document.querySelectorAll('[data-toast]').forEach(b => b.addEventListener('click', () => toast(b.dataset.toast)));
+}
+
+function router() {
+  const [path, q = ''] = (location.hash.slice(1) || '/').split('?');
+  const parts = path.split('/').filter(Boolean);
+  let html, route = parts[0] || 'home';
+  if (!parts.length) html = pages.home();
+  else if (route === 'courses') html = parts[1] ? pages.course(parts[1]) : pages.courses();
+  else if (route === 'book') html = parts[1] === 'confirmed' ? pages.confirmed() : pages.book(parts[1]);
+  else if (route === 'sia-licence') html = pages.guide();
+  else if (pages[route] && route !== 'course' && route !== 'book') html = pages[route](q);
+  else html = pages.notfound();
+  const app = $('#app'); app.innerHTML = html;
+  document.querySelectorAll('.nav a').forEach(a => { if (a.getAttribute('href') === '#/' + route) a.setAttribute('aria-current','page'); else a.removeAttribute('aria-current'); });
+  $('#drawer').classList.remove('open'); $('.menu-btn').setAttribute('aria-expanded','false');
+  window.scrollTo({ top: 0 });
+  wire(route);
+}
+
+$('.menu-btn').addEventListener('click', e => {
+  const open = $('#drawer').classList.toggle('open'); e.currentTarget.setAttribute('aria-expanded', String(open));
+});
+window.addEventListener('hashchange', router);
+router();
+})();
+</script>

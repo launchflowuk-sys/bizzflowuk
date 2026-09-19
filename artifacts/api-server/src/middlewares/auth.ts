@@ -3,6 +3,7 @@ import jwt from "jsonwebtoken";
 import { db } from "@workspace/db";
 import { usersTable, userTenantsTable, tenantsTable } from "@workspace/db";
 import { eq, and, SQL } from "drizzle-orm";
+import { resolveModules } from "../lib/modules";
 
 export interface AuthUser {
   id: number;
@@ -155,4 +156,34 @@ export function requireTenantAccess(req: Request, res: Response, next: NextFunct
 export function tenantFilter(req: Request, column: any): SQL | undefined {
   if (req.authUser?.role === "SUPER_ADMIN") return undefined;
   return eq(column, req.authUser?.tenantId ?? -1);
+}
+
+/**
+ * Gate a router on a module being switched on for the caller's active tenant.
+ *
+ * Answers 404 when the module is off — the same terse answer as a route that
+ * doesn't exist, deliberately not 403 (a 403 would confirm the feature exists
+ * but is locked, which is more than a competitor probing routes needs to know).
+ * A SUPER_ADMIN outside impersonation has no active tenant to gate on and
+ * passes through, matching every other tenant-scoped middleware here.
+ *
+ * Mount after requireAuth: `router.use("/quotes", requireModule("quotes"), quotesRouter)`.
+ */
+export function requireModule(key: string) {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const tenantId = req.authUser?.tenantId;
+    if (!tenantId) { next(); return; }
+    try {
+      const [tenant] = await db.select({ industry: tenantsTable.industry, features: tenantsTable.features })
+        .from(tenantsTable).where(eq(tenantsTable.id, tenantId)).limit(1);
+      if (!tenant || !resolveModules(tenant.industry, tenant.features).includes(key)) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      next();
+    } catch {
+      // A lookup failure must never silently grant access to a gated module.
+      res.status(404).json({ error: "Not found" });
+    }
+  };
 }
